@@ -1,0 +1,160 @@
+#+TEXINFO_CLASS: info
+#+TEXINFO_HEADER: @syncodeindex pg cp
+#+TITLE: EBDB Manual
+#+SUBTITLE: for version 1, updated 3 October, 2014
+#+TEXINFO_DIR_CATEGORY: Emacs
+#+TEXINFO_DIR_TITLE: EBDB: (ebdb)
+#+TEXINFO_DIR_DESC: Contact management package
+#+OPTIONS: *:nil num:t toc:nil
+
+* Introduction
+This manual is for EBDB version 0.1
+
+   Copyright © 2016 Free Software Foundation, Inc.
+
+     Permission is granted to copy, distribute and/or modify this
+     document under the terms of the GNU Free Documentation License,
+     Version 1.3 or any later version published by the Free Software
+     Foundation; with no Invariant Sections, with the Front-Cover Texts
+     being “A GNU Manual,” and with the Back-Cover Texts as in (a)
+     below.  A copy of the license is included in the section entitled
+     “GNU Free Documentation License.”
+
+     (a) The FSF’s Back-Cover Text is: “You have the freedom to copy and
+     modify this GNU manual.”
+* The EBDB Database
+EBDB supports multiple databases, and each database definition is
+saved in a file on disk.  The default database class, `ebdb-db-file',
+stores its contacts in the same file as the database itself, though
+other database classes may store contacts elsewhere.
+
+- Variable: ebdb-sources
+  User option specifying one or more databases to load.  It can be a
+  single element, or a list of elements.  Each element can be a
+  filename, from which a database is loaded, or it can be an instance
+  of a subclass of the `ebdb-db' class.  The database at the front of
+  the list will be considered the default database.
+
+Databases have a few user-facing settings:
+
+- Option: read-only
+  If t, records can only be read from the database, not edited or
+  deleted.
+- Option: auto-save
+  Set to nil to prevent auto-saving of the database's records.
+- Option: buffer-char
+  Set to a single character that will be displayed next to records in
+  the \ast{}EBDB\ast{} buffer, indicating which database they belong
+  to.
+- Option: uuid-prefix
+  A string to be appended to the uuids of all records created in this
+  database.
+- Option: disabled
+  When t, the database will essentially be ignored -- no records will
+  be read from it.
+- Option record-class
+  The default record class to use when creating new records in this
+  database.  The default is `ebdb-default-record-class'.
+
+While it's possible to edit database definitions directly in the file,
+it's safer to use the customization interface to do so from the
+\ast{}EBDB\ast{} buffer.
+
+- Command: ebdb-customize-database db
+  Use the customize interface to edit the definition of DB.
+
+Records can be moved or copied from one database to another.  It's
+also possible for a single record to live in more than one database,
+though this functionality is experimental.  When a record is loaded
+from more than one database, the two copies are compared using the
+"timestamp" field, and the most recently updated copy is kept.
+
+- Command: ebdb-move-record record to-db
+  More RECORD from its existing database to TO-DB.
+
+- Command: ebdb-copy-record record to-db
+  Copy RECORD into TO-DB, leaving it in its existing database(s).
+
+* MUA Interaction
+One of EBDB's most important features is the ability to create, update
+and display records based on messages received in your mail user
+agent.
+** Loading MUA code
+MUA code is activated simply by loading the relevant library.  Keep in
+mind that "MUA" here means both a mail-reading client, and a
+mail-sending client.  For instance, if you use the Gnus package for
+reading mail, and Message for sending it, you'll want two require
+statements:
+
+#+BEGIN_SRC elisp
+(require 'ebdb-gnus)
+(require 'ebdb-message)
+#+END_SRC
+
+There are other packages that provide other functionality: these are
+likewise activated simply by requiring the relevant library.
+** Display and updating
+When you open a message in your MUA, EBDB can react in many different
+ways: displaying records for the sender and recipients of the message;
+creating new records for unfamiliar mail addresses; and updating
+existing records with new information.  EBDB also provides several
+interactive commands for editing the records associated with the
+selected message.
+
+The first and most important option governing this behavior is:
+
+- Variable: ebdb-mua-auto-update-p
+  This option determines how EBDB acts upon mail addresses found in
+  incoming messages.  If nil, nothing will happen.  Other options
+  include the symbols 'search (only find existing records), 'update
+  (only find existing records, and update their name and mail fields
+  as necessary), 'query (find existing records, and query about the
+  creation of new records), and 'create (automatically create new
+  records).  A value of t is considered equivalent to 'create.  The
+  option can also be set to a function which returns one of the above
+  symbols.
+
+
+*** Pop-up buffers
+** EBDB and MUA summary buffers
+EBDB can affect the way message senders are displayed in your MUA's
+summary buffer.  It can do this in two ways: 1) by changing the way
+the contact name is displayed, and 2) by optionally displaying a
+one-character mark next to the contact's name.
+*** Sender name display
+EBDB can "unify" the name displayed for a sender that exists in the
+database.  In general, an MUA will display the name part of the From:
+header in the mailbox summary buffer.  EBDB can replace that display
+name with information from the database.
+
+- Variable: ebdb-message-clean-name-function
+- Variable: ebdb-message-mail-as-name
+- Variable: edb-mua-summary-unification-list
+
+- Variable: ebdb-mua-summary-unify-format-letter
+  Format letter to use for the EBDB-unified sender name in an MUA
+  summary buffer.  Defaults to "E".
+
+*** Summary buffer marks
+EBDB can display a one-character mark next to the name of senders that
+are in the database -- at present this is only possible in the Gnus
+and VM MUAs.  This can be done in one of three ways.  From most
+general to most specific:
+
+- Variable: ebdb-mua-summary-mark
+  Set to a single-character string to use for all senders in the EBDB
+  database.  Set to nil to not mark senders at all.
+- Function: ebdb-mua-make-summary-mark record
+  This generic function accepts RECORD as a single argument, and
+  returns a single-character string to be used as a mark.
+- Field class: ebdb-field-summary-mark
+  Give a record an instance of this field class to use a
+  specific mark for that record.
+
+Marks are displayed in MUA summary buffers by customizing the format
+string provided by Gnus or VM, and adding the EBDB-specific format
+code:
+
+- Variable: ebdb-mua-summary-mark-format-letter
+  Format letter to use in the summary buffer format string to mark a
+  record.  Defaults to "e".
