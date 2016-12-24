@@ -281,7 +281,8 @@ With ARG a negative number do not append."
     (define-key km "!"          'ebdb-search-invert)
     (define-key km "a"          'ebdb-record-action)
     (define-key km "A"          'ebdb-mail-aliases)
-    (define-key km "c"          'ebdb-create)
+    (define-key km "c"          'ebdb-create-record)
+    (define-key km "C"          'ebdb-create-record-extended)
     (define-key km "e"          'ebdb-edit-field)
     (define-key km ";"          'ebdb-edit-foo)
     (define-key km "n"          'ebdb-next-record)
@@ -1526,7 +1527,7 @@ actually-editable records."
 	 (ebdb-next-field 1)))))
 
 ;;;###autoload
-(defun ebdb-create (arg &optional db record-class)
+(defun ebdb-create-record (db record-class)
   "Create a new EBDB record.
 
 With no prefix argument, assume that we're creating a record in
@@ -1535,34 +1536,35 @@ record class.
 
 With a prefix arg, prompt for the database to use (assuming there
 is more than one), and prompt for the record class to use."
-  (interactive "P")
-  (let* ((db
-	  (or db
-	      (if (or (= 1 (length ebdb-db-list))
-		      (null arg))
-		  (car ebdb-db-list)
-		(ebdb-prompt-for-db))))
-	 (record-class
-	  (or record-class
-	      (if arg
-		  (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)
-		(if db
-		    (slot-value db 'record-class)
-		  'ebdb-record-person))))
-	 (record (ebdb-read record-class)))
-    (condition-case nil
-	(progn
-	  (ebdb-db-editable db nil t)
-	  (run-hook-with-args 'ebdb-create-hook record)
-	  (run-hook-with-args 'ebdb-change-hook record)
-	  (ebdb-db-add-record db record)
-	  (ebdb-init record)
-	  (run-hook-with-args 'ebdb-after-change-hook record)
-	  (ebdb-display-records (list record)))
-      (ebdb-readonly-db
-       (message "%s is read-only" (ebdb-string db)))
-      (ebdb-unsynced-db
-       (message "%s is out of sync" (ebdb-string db))))))
+  (interactive
+   (list (car ebdb-db-list)
+	 (slot-value db 'record-class)))
+  (let ((record (ebdb-read record-class)))
+   (condition-case nil
+       (progn
+	 (ebdb-db-editable db nil t)
+	 (run-hook-with-args 'ebdb-create-hook record)
+	 (run-hook-with-args 'ebdb-change-hook record)
+	 (ebdb-db-add-record db record)
+	 (ebdb-init record)
+	 (run-hook-with-args 'ebdb-after-change-hook record)
+	 (ebdb-display-records (list record)))
+     (ebdb-readonly-db
+      (message "%s is read-only" (ebdb-string db)))
+     (ebdb-unsynced-db
+      (message "%s is out of sync" (ebdb-string db))))))
+
+;;;###autoload
+(defun ebdb-create-record-extended ()
+  (interactive)
+  (let ((db
+	 (if (or (= 1 (length ebdb-db-list))
+		 (null arg))
+	     (car ebdb-db-list)
+	   (ebdb-prompt-for-db)))
+	(record-class
+	 (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)))
+    (ebdb-create-record db record-class)))
 
 ;;;###autoload
 (defun ebdb-insert-field (records)
