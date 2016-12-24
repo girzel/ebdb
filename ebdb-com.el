@@ -1938,6 +1938,14 @@ in either the name(s), organization, address, phone, mail, or xfields."
 	  (ebdb-display-records unchanged-records fmt))
       (ebdb-display-records dirty fmt))))
 
+;;;###autoload
+(defun ebdb-search-database (db &optional fmt)
+  "Select a database and show all records from that database."
+  (interactive
+   (list (ebdb-prompt-for-db)
+	 (ebdb-formatter-prefix)))
+  (ebdb-display-records (slot-value db 'records) fmt))
+
 (defun ebdb-search-prog (function &optional fmt)
   "Search records using FUNCTION.
 FUNCTION is called with one argument, the record, and should return
