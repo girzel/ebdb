@@ -316,8 +316,8 @@ With ARG a negative number do not append."
     (define-key km (kbd "?")          'ebdb-help)
     ;; (define-key km (kbd "q"       'quit-window) ; part of `special-mode' bindings
     (define-key km (kbd "C-x C-t")   'ebdb-transpose-fields)
-    (define-key km (kbd "C r")         'ebdb-copy-records-as-kill)
-    (define-key km (kbd "C f")         'ebdb-copy-fields-as-kill)
+    (define-key km (kbd "w r")         'ebdb-copy-records-as-kill)
+    (define-key km (kbd "w f")         'ebdb-copy-fields-as-kill)
     (define-key km (kbd "u")          'ebdb-browse-url)
     ;; (define-key km (kbd "P"       'ebdb-print)
     (define-key km (kbd "=")          'delete-other-windows)
