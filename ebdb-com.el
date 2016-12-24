@@ -563,7 +563,7 @@ This happens in addition to any pre-defined indentation of STRING."
     (setq step (point))
     (insert (slot-value (ebdb-record-cache record) 'name-string))
     (add-text-properties (line-beginning-position) (point)
-			 '(ebdb-record record-class))
+			 (list 'ebdb-record record-class))
     (add-text-properties step (point)
 			 (list
 			  'face (cdr (assoc record-class ebdb-name-face-alist)))))
