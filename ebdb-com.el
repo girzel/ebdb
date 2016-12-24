@@ -362,9 +362,13 @@ If FULL is non-nil record includes the display information."
   (unless (ebdb-current-record) (error "Not a EBDB record"))
   (or (get-text-property (point) 'ebdb-field)
       (get-text-property
-       (next-single-property-change (line-beginning-position)
-				    'ebdb-field nil
-				    (line-end-position))
+       (if (eolp)
+	   (previous-single-property-change (point)
+					    'ebdb-field nil
+					    (line-beginning-position))
+	 (next-single-property-change (point)
+				      'ebdb-field nil
+				      (line-end-position)))
        'ebdb-field)))
 
 ;;; *EBDB* formatting
@@ -561,11 +565,15 @@ This happens in addition to any pre-defined indentation of STRING."
     (when db-chars
       (insert db-chars " "))
     (setq step (point))
+    ;; We don't actually ask the name field to format itself, just use
+    ;; the cached canonical name string.  We do add the field to the
+    ;; string as a text property, however.
     (insert (slot-value (ebdb-record-cache record) 'name-string))
     (add-text-properties (line-beginning-position) (point)
 			 (list 'ebdb-record record-class))
     (add-text-properties step (point)
 			 (list
+			  'ebdb-field (slot-value record 'name)
 			  'face (cdr (assoc record-class ebdb-name-face-alist)))))
   ;; Everything else
   (when field-list
@@ -1600,16 +1608,15 @@ is more than one), and prompt for the record class to use."
   "Edit the field under point.  If point is on the name header of
 the record, change the name of the record."
   (interactive
-   (save-excursion
-     (let* ((field (or (get-text-property (point) 'ebdb-record)
-		       (ebdb-current-field)
-		       (user-error "Point not in a field"))))
-       (list (ebdb-current-record)
-	     field))))
-  (ebdb-with-record-edits (r (list record))
-    (if (eieio-object-p field)
-	(ebdb-record-change-field record field)
-      (ebdb-record-change-name record))))
+   (list (ebdb-current-record)
+	 (ebdb-current-field)))
+  (let ((header-p (get-text-property (point) 'ebdb-record)))
+    (ebdb-with-record-edits (r (list record))
+      (if header-p
+	  (ebdb-record-change-name record)
+	(if (eieio-object-p field)
+	    (ebdb-record-change-field record field)
+	  (message "Point not in field"))))))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
@@ -1672,23 +1679,13 @@ I and J start with zero.  Return the modified LIST."
 ;;;###autoload
 (defun ebdb-delete-field-or-record (records field &optional noprompt)
   "For RECORDS delete FIELD.
-If FIELD is the `name' field, delete RECORDS from datanbase.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records',
-and FIELD is the field point is on.
-If prefix NOPROMPT is non-nil, do not confirm deletion."
-  ;; The value of FIELD is whatever `ebdb-current-field' returns.
-  ;; This way we can identify more accurately what really needs
-  ;; to be done.
+
+If point is on the record header (within the name), delete
+RECORDS from the database.  If prefix NOPROMPT is non-nil, do not
+confirm deletion."
   (interactive
    (list (ebdb-do-records) (ebdb-current-field) current-prefix-arg))
-  (unless field (error "Not a field"))
   (setq records (ebdb-record-list records))
-  ;; TODO: Will this delete the record if we try to delete an AKA?  We
-  ;; need a less ambiguous way of knowing if the record should be
-  ;; deleted.  Probably `ebdb-fmt-record-header' should lay some
-  ;; special text property on the header name, and we should check for
-  ;; that.
   (if (get-text-property (point) 'ebdb-record)
       (ebdb-delete-records records noprompt)
     (ebdb-with-record-edits (record records)
