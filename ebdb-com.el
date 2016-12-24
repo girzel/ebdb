@@ -41,6 +41,13 @@
     map)
   "Keymap used for EBDB crm completions.")
 
+(defvar-local ebdb-custom-field-record nil
+  "Variable local to EBDB field customization buffers, pointing
+to the record that field belongs to.
+
+A hacky bit of bookkeeping that lets us mark the record as dirty
+and redisplay it after the field is edited.")
+
 ;; Customizations for display routines
 
 (defgroup ebdb-record-display nil
@@ -284,6 +291,7 @@ With ARG a negative number do not append."
     (define-key km "c"          'ebdb-create-record)
     (define-key km "C"          'ebdb-create-record-extended)
     (define-key km "e"          'ebdb-edit-field)
+    (define-key km "E"          'ebdb-edit-field-customize)
     (define-key km ";"          'ebdb-edit-foo)
     (define-key km "n"          'ebdb-next-record)
     (define-key km "p"          'ebdb-prev-record)
@@ -1617,6 +1625,21 @@ the record, change the name of the record."
 	(if (eieio-object-p field)
 	    (ebdb-record-change-field record field)
 	  (message "Point not in field"))))))
+
+;;;###autoload
+(defun ebdb-edit-field-customize (record field)
+  (interactive
+   (list (ebdb-current-record)
+	 (ebdb-current-field)))
+  (require 'eieio-custom)
+  (eieio-customize-object field)
+  (setq ebdb-custom-field-record record))
+
+(cl-defmethod eieio-done-customizing ((_f ebdb-field))
+  (let ((rec ebdb-custom-field-record))
+    (when rec
+      (setf (slot-value rec 'dirty) t)
+      (ebdb-redisplay-record-globally rec))))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)

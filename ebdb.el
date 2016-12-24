@@ -625,6 +625,7 @@ message."
   ((name
     :type string
     :initarg :name
+    :custom string
     :initform ""))
   :documentation "A name class for \"simple\" names: ie plain
   strings."
@@ -647,23 +648,32 @@ message."
   ((surname
     :initarg :surname
     :type (or null string)
+    :custom (choice (const :tag "No surname" nil)
+		    (string :tag "Surname"))
     :initform nil)
    (given-names
     :initarg :given-names
     :type (list-of string)
+    :custom (repeat (string :tag "Name"))
     :initform nil)
    (prefix
     :initarg :prefix
     :type (or null string)
+    :custom (choice (const :tag "No prefix" nil)
+		    (string :tag "Prefix"))
     :initform nil)
    (suffix
     :initarg :suffix
     :type (or null string)
+    :custom (choice (const :tag "No suffix" nil)
+		    (string :tag "Suffic"))
     :initform nil)
    ;; What is an affix, actually?
    (affix
     :initarg :affix
     :type (or null string)
+    :custom (choice (const :tag "No affix" nil)
+		    (string :tag "Affix"))
     :initform nil))
   :documentation "A name class for \"complex\", ie structured,
   names."
@@ -761,8 +771,14 @@ values, by default the search is not handed to the name field itself."
 ;; this, it will be a pure mixin class.  Probably we can do away with
 ;; this inheritance without hurting anything.
 (defclass ebdb-field-labeled (ebdb-field eieio-named)
-  ;; The `eieio-named' superclass provides an "object-name" slot.
-  ((label-list
+  ;; Override the object-name slot from `eieio-named' so we can add a
+  ;; custom declaration to it.
+  ((object-name
+    :initarg :object-name
+    :custom (choice (const :tag "Empty" nil)
+		    string)
+    :initform nil)
+   (label-list
     :initform nil
     :type (or null symbol)
     :allocation :class
@@ -835,6 +851,7 @@ process."
     :initarg :value
     :type (or atom list)
     :initform ""
+    :custom string
     :documentation "The value of this user-defined field."))
   :human-readable "user field")
 
@@ -877,6 +894,7 @@ process."
    (defunct
      :initarg :defunct
      :type boolean
+     :custom boolean
      :initform nil
      :documentation "If t, this role is considered defunct (ie
      the person left their job, etc).  Fields in the \"fields\"
@@ -987,18 +1005,23 @@ process."
   ((aka
     :initarg :aka
     :type (or null string)
-    :initform nil)
+    :custom (choice (const :tag "None" nil)
+		    (string :tag "Mail AKA"))
+    :initform nil
+    :documentation "Alternate contact name for this address.")
    (mail
     :initarg :mail
     :type string
-    :initform "")
+    :custom string
+    :initform ""
+    :documentation "Email address")
    (priority
     :initarg :priority
     :type (or null symbol)
     :initform normal
-    :custom '(choice (const :tag "Normal priority" normal)
-		     (const :tag "Primary address" primary)
-		     (const :tag "Defunct address" defunct))
+    :custom (choice (const :tag "Normal priority" normal)
+		    (const :tag "Primary address" primary)
+		    (const :tag "Defunct address" defunct))
     :documentation
     "The priority of this email address. The symbol 'normal means
     normal priority, 'defunct means the address will not be
@@ -1073,27 +1096,37 @@ process."
     :initarg :streets
     :type (list-of string)
     :initform nil
-    :accessor ebdb-address-streets)
+    :custom (repeat string)
+    :accessor ebdb-address-streets
+    :documentation "A list of strings representing the street address(es).")
    (locality
     :initarg :locality
     :type string
     :initform ""
-    :accessor ebdb-address-locality)
+    :custom string
+    :accessor ebdb-address-locality
+    :documentation "City, town, village, etc.")
    (region
     :initarg :region
     :type string
     :initform ""
-    :accessor ebdb-address-region)
+    :custom string
+    :accessor ebdb-address-region
+    :documentation "State, province, region, etc.")
    (postcode
     :initarg :postcode
     :type string
     :initform ""
+    :custom string
     :accessor ebdb-address-postcode)
    (country
     :initarg :country
     :type (or string symbol)
     :initform ""
-    :accessor ebdb-address-country))
+    :custom (choice (symbol)
+		    (string))
+    :accessor ebdb-address-country
+    :documentation "Country, represented either by a symbol (see ebdb-i18n.el) or a string."))
   :documentation "A field representing an address."
   :human-readable "address")
 
@@ -1178,18 +1211,26 @@ process."
    (country-code
     :initarg :country-code
     :type (or null number)
+    :custom (choice (const :tag "Empty" nil)
+		    (integer :tag "Country code"))
     :initform nil)
    (area-code
     :initarg :area-code
     :type (or null number)
+    :custom (choice (const :tag "Empty" nil)
+		    (integer :tag "Area code"))
     :initform nil)
    (number
     :initarg :number
     :type (or null string)
+    :custom (choice (const :tag "Empty" nil)
+		    (string :tag "Number"))
     :initform nil)
    (extension
     :initarg :extension
     :type (or null number)
+    :custom (choice (const :tag "Empty" nil)
+		    (integer :tag "Extension"))
     :initform nil)
    (actions
     :initform '(ebdb-field-phone-dial)))
@@ -1418,6 +1459,7 @@ override parsing."
    (rel-label
     :initarg :rel-label
     :type string
+    :custom string
     :initform ""
     :documentation "The label on the \"other side\" of the
     relation, pointing at this record."))
@@ -1474,6 +1516,7 @@ override parsing."
    (url
     :type string
     :initarg :url
+    :custom string
     :initform "")
    (actions
     :initform '(ebdb-field-url-browse)))
@@ -1496,6 +1539,7 @@ override parsing."
   ((alias
     :type string
     :initarg :alias
+    :custom string
     :documentation
     "A string used as a mail alias for this record."))
   :human-readable "mail alias")
@@ -1517,11 +1561,15 @@ override parsing."
   ((country
     :type string
     :initarg :country
+    :custom string
     :initform "")
    (number
     :type string
     :initarg :number
+    :custom string
     :initform "")
+   ;; TODO: issue-date and expiration-date should just be plain
+   ;; strings, this is stupid.
    (issue-date
     :initarg :issue-date
     :type (or nil number))
