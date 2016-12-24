@@ -122,7 +122,8 @@ pinyin will find the record."
 
 (cl-defmethod ebdb-delete-i18n ((field ebdb-field-name)
 				record
-				(scrip (eql han)))
+				(script (eql han))
+				_unload)
   (ebdb-china-handle-name field record 'del))
 
 (provide 'ebdb-chn)
