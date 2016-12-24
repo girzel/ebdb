@@ -1716,6 +1716,20 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
       (ebdb-redisplay-record-globally record nil t))))
 
 ;;;###autoload
+(defun ebdb-move-records (records db)
+  (interactive (list (ebdb-do-records)
+		     (ebdb-prompt-for-db)))
+  (ebdb-with-record-edits (r records)
+    (ebdb-move-record r db)))
+
+;;;###autoload
+(defun ebdb-copy-records (records db)
+  (interactive (list (ebdb-do-records)
+		     (ebdb-prompt-for-db)))
+  (ebdb-with-record-edits (r records)
+    (ebdb-copy-record r db)))
+
+;;;###autoload
 (defun ebdb-display-all-records (&optional fmt)
   "Show all records.
 If invoked in a *EBDB* buffer point stays on the currently visible record.

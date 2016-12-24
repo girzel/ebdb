@@ -3048,23 +3048,16 @@ the persistent save, or allow them to propagate."
 
 (defun ebdb-move-record (record to-db)
   "Move RECORD from its existing database to TO-DB."
-  (interactive
-   (list (ebdb-current-record)
-	 (ebdb-prompt-for-db)))
   ;; It's not quite right to assume that we're *only* removing the
   ;; record from the first db in its list of dbs.
   (let ((existing (car (slot-value (ebdb-record-cache record)
-			     'database))))
-    (if (equal existing to-db)
-	(message "Can't move record into same database")
+				   'database))))
+    (unless (equal existing to-db)
       (ebdb-db-add-record to-db record)
       (ebdb-db-remove-record existing record))))
 
 (defun ebdb-copy-record (record to-db)
   "Copy RECORD into TO-DB."
-  (interactive
-   (list (ebdb-current-record)
-	 (ebdb-prompt-for-db)))
   (ebdb-db-add-record to-db record))
 
 ;;; Utility functions
