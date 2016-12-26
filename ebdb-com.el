@@ -109,15 +109,6 @@ Used by `ebdb-mouse-menu'."
   :group 'ebdb-record-display
   :type 'hook)
 
-(defcustom ebdb-multiple-buffers nil
-  "When non-nil we create a new buffer of every buffer causing pop-ups.
-You can also set this to a function returning a buffer name.
-Here a value may be the predefined function `ebdb-multiple-buffers-default'."
-  :group 'ebdb-record-display
-  :type '(choice (const :tag "Disabled" nil)
-                 (function :tag "Enabled" ebdb-multiple-buffers-default)
-                 (function :tag "User defined function")))
-
 ;; Faces for font-lock
 (defgroup ebdb-faces nil
   "Faces used by EBDB."
@@ -171,15 +162,18 @@ Here a value may be the predefined function `ebdb-multiple-buffers-default'."
   "Face used to display a databases's identifying character string."
   :group 'ebdb-faces)
 
-(defvar ebdb-buffer-name "*EBDB*" "Name of the EBDB buffer.")
+(defvar ebdb-buffer-name "EBDB"
+  "Default name of the EBDB buffer, without surrounding asterisks.")
+
+(defvar-local ebdb-this-buffer-name nil
+  "Buffer-local var holding the name of this particular EBDB buffer.")
 
 ;;; Buffer-local variables for the database.
-(defvar ebdb-records nil
+(defvar-local ebdb-records nil
   "EBDB records list.
 
 In the *EBDB* buffers it includes the records that are actually displayed
 and its elements are (RECORD DISPLAY-FORMAT MARKER-POS MARK).")
-(make-variable-buffer-local 'ebdb-records)
 
 (defvar ebdb-append-display nil
   "Controls the behavior of the command `ebdb-append-display'.")
@@ -193,7 +187,7 @@ INVERT-M is the mode line info if `ebdb-search-invert' is non-nil.")
 (defun ebdb-get-records (prompt)
   "If inside the *EBDB* buffer get the current records.
 In other buffers ask the user."
-  (if (string= ebdb-buffer-name (buffer-name))
+  (if (eql major-mode 'ebdb-mode)
       (ebdb-do-records)
     (ebdb-completing-read-records prompt)))
 
@@ -638,8 +632,25 @@ This happens in addition to any pre-defined indentation of STRING."
      body-fields)
     (insert "\n")))
 
+(cl-defgeneric ebdb-make-buffer-name (&context (major-mode t))
+  "Return the buffer to be used by EBDB.
+
+This examines the current major mode, and makes a decision from
+there.  The result is fed to `with-current-buffer', so it's
+acceptable to return either a buffer object, or a buffer name.")
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode ebdb-mode))
+  "If we're already in a ebdb-mode buffer, continue using that
+buffer."
+  (current-buffer))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode _other))
+  "If we're in a totally unrelated buffer, use the value of
+  `ebdb-buffer-name'."
+  (format "*%s*" ebdb-buffer-name))
+
 (defun ebdb-display-records (records &optional fmt append
-                                     select horiz-p)
+                                     select horiz-p buf)
   "Display RECORDS using FMT.
 If APPEND is non-nil append RECORDS to the already displayed records.
 Otherwise RECORDS overwrite the displayed records.
@@ -655,24 +666,21 @@ SELECT and HORIZ-P have the same meaning as in `ebdb-pop-up-window'."
     (setq records (mapcar (lambda (record)
                             (list record fmt (make-marker) nil))
                           records)))
+  ;; First new record.
+  (let ((first-new (caar records))
+	;; `ebdb-make-buffer-name' is a generic function that
+	;; dispatches on the current major mode.
+	(target-buffer buf))
 
-  (let ((first-new (caar records))	; first new record
-        new-name)
+    ;; This is all a huge hack until someone tells me how to override
+    ;; `cl-no-applicable-method'.
+    (unless target-buffer
+      (condition-case nil
+	  (setq target-buffer (ebdb-make-buffer-name))
+	(cl-no-applicable-method
+	 (setq target-buffer (format "*%s*" ebdb-buffer-name)))))
 
-    ;; If `ebdb-multiple-buffers' is non-nil we create a new EBDB buffer
-    ;; when not already within one.  The new buffer name starts with a space,
-    ;; i.e. it does not clutter the buffer list.
-    (when (and ebdb-multiple-buffers
-               (not (assq 'ebdb-buffer-name (buffer-local-variables))))
-      (setq new-name (concat " *EBDB " (if (functionp ebdb-multiple-buffers)
-                                           (funcall ebdb-multiple-buffers)
-                                         (buffer-name))
-			     "*"))
-      ;; `ebdb-buffer-name' becomes buffer-local in the current buffer
-      ;; as well as in the buffer `ebdb-buffer-name'
-      (set (make-local-variable 'ebdb-buffer-name) new-name))
-
-    (with-current-buffer (get-buffer-create ebdb-buffer-name) ; *EBDB*
+    (with-current-buffer (get-buffer-create target-buffer)
       ;; If we are appending RECORDS to the ones already displayed,
       ;; then first remove any duplicates, and then sort them.
       (if append
@@ -689,8 +697,8 @@ SELECT and HORIZ-P have the same meaning as in `ebdb-pop-up-window'."
       ;; in the *EBDB* buffer.  It is intentionally not permanent-local.
       ;; A value of nil indicates that we need to (re)process the records.
       (setq ebdb-records records)
-      (if new-name
-          (set (make-local-variable 'ebdb-buffer-name) new-name))
+      ;; The following might not be needed anymore?
+      (set (make-local-variable 'ebdb-this-buffer-name) (buffer-name (current-buffer)))
 
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
@@ -901,9 +909,9 @@ Select this window if SELECT is non-nil.
 If `ebdb-mua-pop-up' is 'horiz, and the first window matching
 the predicate HORIZ-P is wider than the car of `ebdb-horiz-pop-up-window-size'
 then the window will be split horizontally rather than vertically."
-  (let ((buffer (get-buffer ebdb-buffer-name)))
+  (let ((buffer (get-buffer ebdb-this-buffer-name)))
     (unless buffer
-      (error "No %s buffer to display" ebdb-buffer-name))
+      (error "No EBDB buffer to display"))
     (cond ((let ((window (get-buffer-window buffer t)))
              ;; We already have a EBDB window so that at most we select it
              (and window
@@ -1268,6 +1276,27 @@ With prefix N move backwards N (sub)fields."
    (lambda (rec)
      (ebdb-toggle-record-mark rec 'mark))
    ebdb-records))
+
+;; Buffer manipulation
+
+;;;###autoload
+(defun ebdb-clone-buffer (&optional arg)
+  "Make a copy of the current *EBDB* buffer, renaming it."
+  (interactive (list current-prefix-arg))
+  (let ((new-name (read-string "New buffer name: "))
+	(current-records (when (eql major-mode 'ebdb-mode) ebdb-records)))
+    (ebdb-display-records current-records nil nil nil nil
+			  (generate-new-buffer-name
+			   (format "*%s-%s*" ebdb-buffer-name new-name)))))
+
+;;;###autoload
+(defun ebdb-rename-buffer (new-name)
+  "Rename current *EBDB* buffer."
+  (interactive (list (read-string "New buffer name: ")))
+  (when (eql major-mode 'ebdb-mode)
+    (rename-buffer
+     (generate-new-buffer-name
+      (format "*%s-%s*" ebdb-buffer-name new-name)))))
 
 
 ;; clean-up functions

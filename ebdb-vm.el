@@ -288,32 +288,49 @@ from different senders."
 ;;; should be able to collapse all these various methods into one that
 ;;; checks `derived-mode-p'.  Check how to do that with &context.
 
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode vm-mode))
+  "Produce a EBDB buffer name associated with VM mode."
+  (format "*%s-VM*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode vm-presentation-mode))
+  "Produce a EBDB buffer name associated with VM mode."
+  (format "*%s-VM*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode vm-summary-mode))
+  "Produce a EBDB buffer name associated with VM mode."
+  (format "*%s-VM*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode vm-virtual-mode))
+  "Produce a EBDB buffer name associated with VM mode."
+  (format "*%s-VM*" ebdb-buffer-name))
+
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql vm-mode)))
+				   &context (major-mode vm-mode))
   (ebdb/vm-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql vm-virtual-mode)))
+				   &context (major-mode vm-virtual-mode))
   (ebdb/vm-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql vm-summary-mode)))
+				   &context (major-mode vm-summary-mode))
   (ebdb/vm-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql vm-presentation-mode)))
+				   &context (major-mode vm-presentation-mode))
   (ebdb/vm-header header))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql vm-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode vm-mode))
   (vm-follow-summary-cursor))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql vm-virtual-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode vm-virtual-mode))
   (vm-follow-summary-cursor))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql vm-summary-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode vm-summary-mode))
   (vm-follow-summary-cursor))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql vm-presentation-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode vm-presentation-mode))
   (vm-follow-summary-cursor))
 
 ;;;###autoload

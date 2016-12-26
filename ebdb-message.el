@@ -39,16 +39,24 @@
 ;; (define-key message-mode-map ";" 'ebdb-mua-edit-field-recipients)
 ;; (define-key message-mode-map "/" 'ebdb)
 
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode message-mode))
+  "Produce a EBDB buffer name associated with Message mode."
+  (format "*%s-Message*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode mail-mode))
+  "Produce a EBDB buffer name associated with Mail mode."
+  (format "*%s-Message*" ebdb-buffer-name))
+
 (cl-defgeneric ebdb-message-header ((header string)
-				    &context (major-mode (eql message-mode)))
+				    &context (major-mode message-mode))
   (message-field-value header))
 
 (cl-defgeneric ebdb-message-header ((header string)
-				    &context (major-mode (eql notmuch-message-mode)))
+				    &context (major-mode notmuch-message-mode))
   (message-field-value header))
 
 (cl-defgeneric ebdb-message-header ((header string)
-				    &context (major-mode (eql mail-mode)))
+				    &context (major-mode mail-mode))
   (message-field-value header))
 
 (defun ebdb-insinuate-message ()
