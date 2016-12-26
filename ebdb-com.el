@@ -323,7 +323,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "=")          'delete-other-windows)
 
     ;; Search keys
-    (define-key km (kbd "b")          'ebdb)
+    (define-key km (kbd "/ /")         'ebdb)
     (define-key km (kbd "/ 1")         'ebdb-display-records)
     (define-key km (kbd "/ n")         'ebdb-search-name)
     (define-key km (kbd "/ o")         'ebdb-search-organization)
