@@ -2698,7 +2698,8 @@ Run as a hook in the `auto-save-hook"
       (when (and auto-save
 		 (null disabled)
 		 (null read-only)
-		 (ebdb-db-dirty d))
+		 (ebdb-db-dirty d)
+		 (null (ebdb-db-unsynced d)))
 	(ebdb-db-do-auto-save d)))))
 
 (add-hook 'auto-save-hook #'ebdb-auto-save-databases)
