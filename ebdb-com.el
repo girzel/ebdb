@@ -1284,7 +1284,7 @@ With prefix N move backwards N (sub)fields."
   (interactive (list current-prefix-arg))
   (let ((new-name (read-string "New buffer name: "))
 	(current-records (when (eql major-mode 'ebdb-mode) ebdb-records)))
-    (ebdb-display-records current-records nil nil nil nil
+    (ebdb-display-records current-records nil nil t nil
 			  (generate-new-buffer-name
 			   (format "*%s-%s*" ebdb-buffer-name new-name)))))
 
