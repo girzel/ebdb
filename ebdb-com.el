@@ -1574,8 +1574,7 @@ is more than one), and prompt for the record class to use."
 (defun ebdb-create-record-extended ()
   (interactive)
   (let ((db
-	 (if (or (= 1 (length ebdb-db-list))
-		 (null arg))
+	 (if (= 1 (length ebdb-db-list))
 	     (car ebdb-db-list)
 	   (ebdb-prompt-for-db)))
 	(record-class
