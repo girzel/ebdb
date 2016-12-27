@@ -147,6 +147,10 @@ Used by `ebdb-mouse-menu'."
   "Face used for clickable links/URLs in field values."
   :group 'ebdb-faces)
 
+(defface ebdb-field-hidden
+  '((t (:inherit font-lock-constant-face)))
+  "Face used for placeholder text for fields that aren't actually displayed.")
+
 (defface ebdb-defunct
   '((t (:inherit font-lock-comment-face)))
   "Face used to display defunct roles and mails."
@@ -469,6 +473,14 @@ property is the field instance itself."
   (let ((value (copy-sequence (ebdb-string field))))
     (add-face-text-property 0 (length value) 'ebdb-field-url nil value)
     value))
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field-obfuscated)
+			      _style
+			      (_record ebdb-record))
+  (let ((str "HIDDEN"))
+    (add-face-text-property 0 (length str) 'ebdb-field-hidden nil str)
+    str))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-mail)
@@ -1602,8 +1614,7 @@ is more than one), and prompt for the record class to use."
 (defun ebdb-create-record-extended ()
   (interactive)
   (let ((db
-	 (if (or (= 1 (length ebdb-db-list))
-		 (null arg))
+	 (if (= 1 (length ebdb-db-list))
 	     (car ebdb-db-list)
 	   (ebdb-prompt-for-db)))
 	(record-class
