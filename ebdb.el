@@ -851,7 +851,9 @@ process."
   :documentation
   "Fields that should be user-editable, but need more complicated
   slot structures than the simple \"value\" provided by
-  `ebdb-field-user', can subclass this class.")
+  `ebdb-field-user-simple', can subclass this class.  Any field
+  class that subclasses this will be offered as a choice to the
+  user when inserting new fields.")
 
 (defvar ebdb-user-label-list nil
   "List of existing labels of user fields.")
