@@ -315,7 +315,9 @@ With ARG a negative number do not append."
     (define-key km (kbd "u")          'ebdb-browse-url)
     ;; (define-key km (kbd "P"       'ebdb-print)
     (define-key km (kbd "=")          'delete-other-windows)
-
+    ;; Buffer manipulation
+    (define-key km (kbd "b c")         'ebdb-clone-buffer)
+    (define-key km (kbd "b r")         'ebdb-rename-buffer)
     ;; Search keys
     (define-key km (kbd "/ /")         'ebdb)
     (define-key km (kbd "/ 1")         'ebdb-display-records)
