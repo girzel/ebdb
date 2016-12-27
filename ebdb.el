@@ -1451,6 +1451,32 @@ override parsing."
    (calendar-gregorian-from-absolute (slot-value ann 'date))
    nil t))
 
+;;; Id field
+
+;; Used for recording an ID or tax id number.  Ie, national
+;; identification numbers, SSNs, TINs, UTRs, and so on.
+
+(defvar ebdb-id-label-list '("SSN" "TIN" "ID" "UTR")
+  "List of known ID labels.")
+
+(defclass ebdb-field-id (ebdb-field-labeled ebdb-field-obfuscated ebdb-field-user)
+  ((label-list :initform ebdb-id-label-list)
+   (id-number
+    :type string
+    :custom string
+    :initarg :id-number
+    :initform ""
+    :documentation "The ID number itself."))
+  :human-readable "id number")
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
+  (let ((id-number (ebdb-read-string "ID number: "
+				     (when obj (slot-value obj 'id-number)))))
+    (cl-call-next-method class (plist-put slots :id-number id-number) obj)))
+
+(cl-defmethod ebdb-string ((field ebdb-field-id))
+  (slot-value field 'id-number))
+
 ;;; Relationship field
 
 ;; This is a bit different from the organization role field, mostly
