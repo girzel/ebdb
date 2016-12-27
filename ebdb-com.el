@@ -636,15 +636,17 @@ This happens in addition to any pre-defined indentation of STRING."
   "Return the buffer to be used by EBDB.
 
 This examines the current major mode, and makes a decision from
-there.  The result is fed to `with-current-buffer', so it's
-acceptable to return either a buffer object, or a buffer name.")
+there.  The result is passed to `with-current-buffer', so a
+buffer object or a buffer name are both acceptable.")
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode ebdb-mode))
   "If we're already in a ebdb-mode buffer, continue using that
 buffer."
   (current-buffer))
 
-(cl-defmethod ebdb-make-buffer-name (&context (major-mode _other))
+;; Apparently this is the only way to make a catch-all method with
+;; &context.
+(cl-defmethod ebdb-make-buffer-name ()
   "If we're in a totally unrelated buffer, use the value of
   `ebdb-buffer-name'."
   (format "*%s*" ebdb-buffer-name))
@@ -652,9 +654,12 @@ buffer."
 (defun ebdb-display-records (records &optional fmt append
                                      select horiz-p buf)
   "Display RECORDS using FMT.
-If APPEND is non-nil append RECORDS to the already displayed records.
-Otherwise RECORDS overwrite the displayed records.
-SELECT and HORIZ-P have the same meaning as in `ebdb-pop-up-window'."
+If APPEND is non-nil append RECORDS to the already displayed
+records.  Otherwise RECORDS overwrite the displayed records.
+SELECT and HORIZ-P have the same meaning as in
+`ebdb-pop-up-window'.  BUF indicates which *EBDB* buffer to use,
+or nil to generate a buffer name based on the current major
+mode."
   (interactive (list (ebdb-completing-read-records "Display records: ")
                      (ebdb-formatter-prefix)))
   (if (ebdb-append-display-p) (setq append t))
@@ -670,15 +675,7 @@ SELECT and HORIZ-P have the same meaning as in `ebdb-pop-up-window'."
   (let ((first-new (caar records))
 	;; `ebdb-make-buffer-name' is a generic function that
 	;; dispatches on the current major mode.
-	(target-buffer buf))
-
-    ;; This is all a huge hack until someone tells me how to override
-    ;; `cl-no-applicable-method'.
-    (unless target-buffer
-      (condition-case nil
-	  (setq target-buffer (ebdb-make-buffer-name))
-	(cl-no-applicable-method
-	 (setq target-buffer (format "*%s*" ebdb-buffer-name)))))
+	(target-buffer (or buf (ebdb-make-buffer-name))))
 
     (with-current-buffer (get-buffer-create target-buffer)
       ;; If we are appending RECORDS to the ones already displayed,
