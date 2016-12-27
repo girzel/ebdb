@@ -823,6 +823,17 @@ process."
     (ebdb-add-to-list label-var (slot-value field 'object-name))
     (cl-call-next-method)))
 
+;;; The obfuscated field type.  This is a little goofy, but might come
+;;; in handy.
+
+(defclass ebdb-field-obfuscated (ebdb-field)
+  nil
+  :abstract t
+  :documentation
+  "A field class mixin that prevents the contents from being
+  displayed in the *EBDB* buffer.  Use for mildly sensitive
+  information.")
+
 ;;; User-defined fields.  There are two kinds.  The first is
 ;;; `ebdb-field-user', which provides no information about labels or
 ;;; slots, but simply gives us the right to live in the "fields" slot
