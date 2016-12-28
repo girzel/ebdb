@@ -1271,7 +1271,8 @@ With prefix N move backwards N (sub)fields."
    (list (ebdb-current-record t)
 	 'mark))
   (setf (nth 3 record) (if (nth 3 record) nil mark))
-  (ebdb-redisplay-record (car record)))
+  (ebdb-redisplay-record (car record))
+  (ebdb-next-record 1))
 
 (defun ebdb-toggle-all-record-marks ()
   "Reverse the marked status of all records."
