@@ -1282,6 +1282,15 @@ With prefix N move backwards N (sub)fields."
      (ebdb-toggle-record-mark rec 'mark))
    ebdb-records))
 
+(defun ebdb-unmark-all-records ()
+  "Remove the mark from all records."
+  (interactive)
+  (mapcar
+   (lambda (rec)
+     (setf (nth 3 rec) nil)
+     (ebdb-redisplay-record (car rec)))
+   ebdb-records))
+
 
 ;; clean-up functions
 
