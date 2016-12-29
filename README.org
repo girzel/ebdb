@@ -37,7 +37,8 @@ EBDB as it stands provides a few enhancements over BBDB.
 4. Records can have relations to other records.
 5. ebdb-i18n.el. This pluggable internationalization framework allows
    developers to write country-specific libraries providing different
-   behavior for records and fields depending on nationality.
+   behavior for records and fields depending on nationality. It works
+   for all countries except Abkhazia and the Vatican (don't ask).
 6. High configurability. EBDB has many customization options (though
    fewer than BBDB had), but users and developers who are familiar
    with generic functions can use them to fundamentally alter the
@@ -45,7 +46,8 @@ EBDB as it stands provides a few enhancements over BBDB.
    low risk of breakage. Want to prepend the string "Hi my name is "
    to all the contact names in your *BBDB* buffer? That would be three
    lines of code.
-7. A native Vcard database class is on its way.
+7. A native Vcard database class is on its way. A native CardDav
+   database class is following at a significant distance.
 ** What Are the Drawbacks?
 
 Buggy code! Potential data loss! This is still very much alpha. Many
@@ -56,11 +58,10 @@ Also, many of the customization options are likely to change as the
 package gets through beta to something stable.
 
 Other than that, load and save times are a bit slow, and the database
-persistence file is significantly larger than it was in BBDB. In part
-this is because there's simply more data being recorded, and the
-persistence format is verbose. It's likely that optimizations can be
-made to reduce load times.
-** I Still Want to Try This, Is There A Migration Scheme?
+persistence file is significantly larger than it was in BBDB. It's
+likely that optimizations can be made to reduce load times, and the
+size of the persistence file.
+** I Still Want to Try This, Is There a Migration Scheme?
 Yes, EBDB will read and migrate from a BBDB v3 data file. Actually,
 EBDB preserves the BBDB's old migration routines, so theoretically you
 could go from a BBDB v2 file, through BBDB v3, straight to EBDB. I

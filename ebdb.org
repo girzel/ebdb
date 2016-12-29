@@ -6,6 +6,7 @@
 #+TEXINFO_DIR_TITLE: EBDB: (ebdb)
 #+TEXINFO_DIR_DESC: Contact management package
 #+OPTIONS: *:nil num:t toc:nil
+#+MACRO: ebuf \ast{}EBDB\ast{}
 
 * Introduction
 This manual is for EBDB version 0.1
@@ -44,7 +45,7 @@ Databases have a few user-facing settings:
   Set to nil to prevent auto-saving of the database's records.
 - Option: buffer-char
   Set to a single character that will be displayed next to records in
-  the \ast{}EBDB\ast{} buffer, indicating which database they belong
+  the {{{ebuf}}} buffer, indicating which database they belong
   to.
 - Option: uuid-prefix
   A string to be appended to the uuids of all records created in this
@@ -58,23 +59,107 @@ Databases have a few user-facing settings:
 
 While it's possible to edit database definitions directly in the file,
 it's safer to use the customization interface to do so from the
-\ast{}EBDB\ast{} buffer.
+{{{ebuf}}} buffer.
 
 - Command: ebdb-customize-database db
   Use the customize interface to edit the definition of DB.
 
-Records can be moved or copied from one database to another.  It's
-also possible for a single record to live in more than one database,
-though this functionality is experimental.  When a record is loaded
-from more than one database, the two copies are compared using the
-"timestamp" field, and the most recently updated copy is kept.
+Records can be moved or copied from one database to another. It's also
+possible for a single record to live in more than one database, though
+this functionality is experimental. When a record is loaded from more
+than one database, the two copies are compared using the "timestamp"
+field, and the older copy is discarded.
 
 - Command: ebdb-move-record record to-db
   More RECORD from its existing database to TO-DB.
 
 - Command: ebdb-copy-record record to-db
   Copy RECORD into TO-DB, leaving it in its existing database(s).
+* Creating records
 
+Create a record using "c" (`ebdb-create') in the {{{ebuf}}} buffer.
+With no prefix arg, this command will create an instance of the
+default record class, in the database at the head of `ebdb-sources'.
+
+- Variable: ebdb-default-record-class
+  The default record class to use when creating new records.
+
+Alternately create a record using "C" (`ebdb-create-extended'), which
+will prompt for a record class to use, as well as a database to store
+the record in, if there is more than one.
+** Record classes
+EBDB comes with two record classes, representing individuals and
+organizations.
+
+* Record fields
+** Inserting new fields
+Press "i" (`ebdb-insert-field') with point on a record will prompt for
+a field type, then field values, and add the field to the record.  See
+[[id:cb2190f4-f2e6-4082-9671-24e11e5cc0c6][Field types]] for more information about the various kinds of fields.
+
+When entering field data, optional data can be skipped by entering a
+blank string, or by pressing "C-g".  The first "C-g" will cancel the
+current data prompt; the second "C-g" will cancel the creation of the
+field altogether.  For instance, when creating address fields, EBDB
+will allow you to create an arbitrary number of street lines.  When
+you've added enough, either enter a blank string, or hit "C-g".
+** Editing existing fields
+Pressing "e" (`ebdb-edit-field') with point on a field will allow you
+to edit an existing field, with the previous values as defaults.
+
+Alternately, press "E" (`ebdb-edit-field-customize') to edit the
+field's values using the Customize interface.  Some fields have slots
+that can only be edited this way; other fields have slots that cannot
+be edited at all once the field is created.
+** Deleting records and fields
+Pressing "C-k" on a field will ask you for confirmation, then delete
+the field.  Pressing "C-k" while point is on or before a record's main
+name will instead prompt to delete the whole record.
+** Field types
+:PROPERTIES:
+:ID:       cb2190f4-f2e6-4082-9671-24e11e5cc0c6
+:END:
+Fields can be classed in a few different categories.  Some are
+"plumbing" fields, that are present for all records, but not generally
+visible or user-editable: these include the creation date, timestamp,
+and UUID.  Others are "built-in" fields: basic fields that get special
+treatment.  These include the name, mail, phone, address, and notes
+fields.  EBDB comes with default classes for these fields: if you
+would like to use different defaults, you can create new classes
+(inheriting from the existing ones), then set these user options to
+your custom class name:
+
+- Variable: ebdb-default-name-class
+  Defaults to `ebdb-field-name-complex'.  In fact, person records are
+  created with name fields of `ebdb-field-name-complex', and
+  organization records are created with `ebdb-field-name-simple'.
+- Variable: ebdb-default-mail-class
+  Defaults to `ebdb-field-mail'.
+- Variable: ebdb-default-phone-class
+  Defaults to `ebdb-field-phone'.
+- Variable: ebdb-default-address-class
+  Defaults to `ebdb-field-address'.
+- Variable: ebdb-default-notes-class
+  Defaults to `ebdb-field-notes'.
+
+Besides the "plumbing" and "built-in" fields, all other fields belong
+to one of two types: `ebdb-field-user' and `ebdb-field-user-simple'.
+The former is an abstract class, used to built fields with more
+complicated structures.  The latter is a simple class with a string
+label and a string value.
+
+When adding fields to a record, EBDB offers up all the known labels of
+the simple user field class as possible choices.  Typing in an unknown
+string will define a new label, which will be offered as a choice in
+the future.
+
+Fields built from `ebdb-field-user' will have their own identifier.
+EBDB comes with classes including "anniversary", "url", "id",
+"relation", "role" and more.  Many of these fields have their own list
+of labels (for instance, "anniversary" fields may be labeled
+"birthday", "wedding", etc).
+
+Loading secondary libraries may make more field types available.
 * MUA Interaction
 One of EBDB's most important features is the ability to create, update
 and display records based on messages received in your mail user
