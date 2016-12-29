@@ -324,7 +324,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "b r")         'ebdb-rename-buffer)
     ;; Search keys
     (define-key km (kbd "/ /")         'ebdb)
-    (define-key km (kbd "/ 1")         'ebdb-display-records)
+    (define-key km (kbd "/ 1")         'ebdb-display-one-record)
     (define-key km (kbd "/ n")         'ebdb-search-name)
     (define-key km (kbd "/ o")         'ebdb-search-organization)
     (define-key km (kbd "/ p")         'ebdb-search-phone)
@@ -674,14 +674,16 @@ SELECT and HORIZ-P have the same meaning as in
 `ebdb-pop-up-window'.  BUF indicates which *EBDB* buffer to use,
 or nil to generate a buffer name based on the current major
 mode."
-  (interactive (list (ebdb-completing-read-records "Display records: ")
-                     (ebdb-formatter-prefix)))
   (if (ebdb-append-display-p) (setq append t))
   ;; `ebdb-redisplay-record' calls `ebdb-display-records'
   ;; with display information already amended to RECORDS.
   (unless (or (null records)
               (consp (car records)))
-    ;; add fmt and a marker to the local list of records
+    ;; All functions that call `ebdb-display-records' set the "fmt"
+    ;; argument, but that's not guaranteed.
+    (unless fmt
+      (setq fmt ebdb-default-multiline-formatter))
+    ;; Add fmt and a marker to the local list of records.
     (setq records (mapcar (lambda (record)
                             (list record fmt (make-marker) nil))
                           records)))
@@ -841,7 +843,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Show all fields" ebdb-display-records-completely t])
     ("Searching"
      ["General search" ebdb t]
-     ["Search one record" ebdb-display-records t]
+     ["Search one record" ebdb-display-one-record t]
      ["Search name" ebdb-search-name t]
      ["Search organization" ebdb-search-organization t]
      ["Search phone" ebdb-search-phone t]
@@ -2022,6 +2024,13 @@ The search results are displayed in the EBDB buffer."
    (list (ebdb-prompt-for-db)
 	 (ebdb-formatter-prefix)))
   (ebdb-display-records (slot-value db 'records) fmt))
+
+;;;###autoload
+(defun ebdb-display-one-record (record &optional fmt)
+  "Prompt for a single record, and display it."
+  (interactive (list (ebdb-completing-read-records "Display records: ")
+                     (ebdb-formatter-prefix)))
+  (ebdb-display-records record fmt))
 
 (defun ebdb-search-prog (function &optional fmt)
   "Search records using FUNCTION.
