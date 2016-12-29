@@ -212,10 +212,10 @@ If FULL is non-nil, assume that RECORDS include display information."
           (if (vectorp (car records)) (list records) records)
         (if (vectorp records) (list records) records))))
 
-;; Note about EBDB prefix commands:
-;; `ebdb-do-all-records', `ebdb-append-display' and `ebdb-search-invert'
-;; are fake prefix commands. They need not precede the main commands.
-;; Also, `ebdb-append-display' can act on multiple commands.
+;; Note about EBDB prefix commands: `ebdb-append-display' and
+;; `ebdb-search-invert' are fake prefix commands. They need not
+;; precede the main commands.  Also, `ebdb-append-display' can act on
+;; multiple commands.
 
 (defun ebdb-prefix-message ()
   "Display a message about selected EBDB prefix commands."
@@ -281,7 +281,6 @@ With ARG a negative number do not append."
 ;;; Keymap
 (defvar ebdb-mode-map
   (let ((km (make-sparse-keymap)))
-    (define-key km (kbd "*")          'ebdb-do-all-records)
     (define-key km (kbd "+")          'ebdb-append-display)
     (define-key km (kbd "!")          'ebdb-search-invert)
     (define-key km (kbd "a")          'ebdb-record-action)
@@ -869,8 +868,6 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Add mail alias" ebdb-add-mail-alias t]
      ["(Re-)Build mail aliases" ebdb-mail-aliases t])
     ("Use database"
-     ["Prefix: do all records" ebdb-do-all-records t]
-     "--"
      ["Send mail" ebdb-mail t]
      ["Dial phone number" ebdb-dial t]
      ["Browse URL" ebdb-browse-url t]
@@ -880,8 +877,6 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      "--"
      ["Print records" ebdb-print t])
     ("Manipulate database"
-     ["Prefix: do all records" ebdb-do-all-records t]
-     "--"
      ["Create new record" ebdb-create t]
      ["Edit current field" ebdb-edit-field t]
      ["Insert new field" ebdb-insert-field t]
@@ -1025,8 +1020,6 @@ displayed record, respectively.
 \\[ebdb-create]\t Create a new record.
 \\[ebdb-toggle-records-format]\t Toggle whether the current record is displayed in a \
 one-line\n\t listing, or a full multi-line listing.
-\\[ebdb-do-all-records]\\[ebdb-toggle-records-format]\t Do that \
-for all displayed records.
 \\[ebdb-merge-records]\t Merge the contents of the current record with \
 some other, and then\n\t delete the current record.
 \\[ebdb-omit-record]\t Remove the current record from the display without \
@@ -1041,13 +1034,9 @@ before using one\n\t of the `*' commands.
 was saved.
 \\[ebdb-mail]\t Compose mail to the person represented by the \
 current record.
-\\[ebdb-do-all-records]\\[ebdb-mail]\t Compose mail \
-to everyone whose record is displayed.
 \\[ebdb-save]\t Save the EBDB file to disk.
 \\[ebdb-print]\t Create a TeX file containing a pretty-printed version \
 of all the\n\t records in the database.
-\\[ebdb-do-all-records]\\[ebdb-print]\t Do that for the \
-displayed records only.
 \\[other-window]\t Move to another window.
 \\[ebdb-info]\t Read the Info documentation for EBDB.
 \\[ebdb-help]\t Display a one line command summary in the echo area.
@@ -1344,8 +1333,6 @@ In particular, ignore addresses \"Joe Smith <foo@baz.com>\"."
   "Delete redundant or duplicate mails from RECORDS.
 For example, \"foo@bar.baz.com\" is redundant w.r.t. \"foo@baz.com\".
 Duplicates may (but should not) occur if we feed EBDB automatically.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 If QUERY is non-nil (as in interactive calls, unless we use a prefix arg)
 query before deleting the redundant mail addresses.
 If UPDATE is non-nil (as in interactive calls) update the database.
@@ -1734,8 +1721,6 @@ confirm deletion."
 ;;;###autoload
 (defun ebdb-delete-records (records &optional noprompt)
   "Delete RECORDS.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 If prefix NOPROMPT is non-nil, do not confirm deletion."
   (interactive (list (ebdb-do-records) current-prefix-arg))
   (dolist (record (ebdb-record-list records))
@@ -1787,8 +1772,6 @@ Inverse of `ebdb-display-current-record'."
 ;;;###autoload
 (defun ebdb-toggle-records-format (records &optional arg)
   "Toggle fmt of RECORDS (elided or expanded).
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 With prefix ARG 0, RECORDS are displayed elided.
 With any other non-nil ARG, RECORDS are displayed expanded."
   (interactive (list (ebdb-do-records t) current-prefix-arg))
@@ -1811,9 +1794,7 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 
 ;;;###autoload
 (defun ebdb-display-records-completely (records)
-  "Display RECORDS using layout `full-multi-line' (i.e., display all fields).
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'."
+  "Display RECORDS using layout `full-multi-line' (i.e., display all fields)."
   (interactive (list (ebdb-do-records t)))
   (let* ((record (ebdb-current-record))
          (current-fmt (nth 1 (assq record ebdb-records)))
@@ -2118,8 +2099,6 @@ If MAIL is nil use RECORD's primary mail address."
 ;;;###autoload
 (defun ebdb-mail (records &optional subject n verbose)
   "Compose a mail message to RECORDS (optional: using SUBJECT).
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 By default, the first mail addresses of RECORDS are used.
 If prefix N is a number, use Nth mail address of RECORDS (starting from 1).
 If prefix N is C-u (t noninteractively) use all mail addresses of RECORDS.
@@ -2137,8 +2116,6 @@ If VERBOSE is non-nil (as in interactive calls) be verbose."
 
 (defun ebdb-mail-address (records &optional n kill-ring-save verbose)
   "Return mail addresses of RECORDS as a string.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 By default, the first mail addresses of RECORDS are used.
 If prefix N is a number, use Nth mail address of RECORDS (starting from 1).
 If prefix N is C-u (t noninteractively) use all mail addresses of RECORDS.
@@ -2782,8 +2759,6 @@ If we are past `fill-column', wrap at the previous comma."
 ;; (defun ebdb-add-mail-alias (records &optional alias delete)
 ;;   "Add ALIAS to RECORDS.
 ;; If prefix DELETE is non-nil, remove ALIAS from RECORDS.
-;; Interactively, use EBDB prefix \
-;; \\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 ;; Arg ALIAS is ignored if list RECORDS contains more than one record.
 ;; Instead read ALIAS interactively for each record in RECORDS.
 ;; If the function `ebdb-init-mail-alias' is defined, it is called with
@@ -2905,8 +2880,6 @@ is non-nil.  Do not dial the extension."
 ;;;###autoload
 (defun ebdb-browse-url (records &optional which)
   "Browse URLs stored in the `url' field of RECORDS.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'.
 Prefix WHICH specifies which URL in field `url' is used (starting from 0).
 Default is the first URL."
   (interactive (list (ebdb-get-records "Visit (URL): ")
@@ -2938,9 +2911,7 @@ Default is the first URL."
 
 ;;;###autoload
 (defun ebdb-copy-records-as-kill (records)
-  "Copy RECORDS to kill ring.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'."
+  "Copy RECORDS to kill ring."
   (interactive (list (ebdb-do-records t)))
   (let (drec)
     (dolist (record (ebdb-record-list records t))
@@ -2957,9 +2928,7 @@ Interactively, use EBDB prefix \
   "For RECORDS copy values of FIELD at point to kill ring.
 If FIELD is an address or phone with a label, copy only field values
 with the same label.  With numeric prefix NUM, if the value of FIELD
-is a list, copy only the NUMth list element.
-Interactively, use EBDB prefix \
-\\<ebdb-mode-map>\\[ebdb-do-all-records], see `ebdb-do-all-records'."
+is a list, copy only the NUMth list element."
   (interactive
    (list (ebdb-do-records t) (ebdb-current-field)
          (and current-prefix-arg
