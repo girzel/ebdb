@@ -1945,6 +1945,13 @@ only return fields that are suitable for user editing.")
   "Provide a base method that does nothing."
   nil)
 
+(cl-defmethod object-print ((record ebdb-record) &optional strings)
+  (cl-call-next-method
+   record
+   (append strings (format " %s" (if (ebdb-record-cache record)
+				     (ebdb-record-name record)
+				   (ebdb-string (slot-value record 'name)))))))
+
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
 
