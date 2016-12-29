@@ -924,6 +924,9 @@ process."
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
 	   (org (ebdb-gethash org-uuid 'uuid))
+	   (org-string (if org
+			   (ebdb-string (slot-value org 'name))
+			 "record not loaded"))
 	   ;; TODO: Guard against org-entry not being found.
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
 	   (record-uuid (ebdb-record-uuid record))
@@ -1000,7 +1003,10 @@ process."
   ;; This is used in person records headers, so it just shows the
   ;; organization name. Perhaps this could have a multi-line option
   ;; later.
-  (ebdb-string (ebdb-gethash (slot-value role 'org-uuid) 'uuid)))
+  (let ((org (ebdb-gethash (slot-value role 'org-uuid) 'uuid)))
+    (if org
+	(ebdb-string org)
+      "record not loaded")))
 
 ;;; Mail fields.
 
@@ -1506,7 +1512,10 @@ override parsing."
     (cl-call-next-method class slots obj)))
 
 (cl-defmethod ebdb-string ((rel ebdb-field-relation))
-  (ebdb-string (ebdb-gethash (slot-value rel 'rel-uuid) 'uuid)))
+  (let ((rec (ebdb-gethash (slot-value rel 'rel-uuid) 'uuid)))
+    (if rec
+	(ebdb-string rec)
+      "record not loaded")))
 
 ;; Image field
 
