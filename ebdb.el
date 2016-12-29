@@ -923,11 +923,7 @@ process."
 (cl-defmethod ebdb-init ((role ebdb-field-role) &optional record)
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
-	   (org (seq-find ;; TODO: This is very slow.
-		 (lambda (r)
-		   (equal org-uuid (ebdb-record-uuid r)))
-		 ebdb-record-tracker))
-	   (org-string (ebdb-string (slot-value org 'name)))
+	   (org (ebdb-gethash org-uuid 'uuid))
 	   ;; TODO: Guard against org-entry not being found.
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
 	   (record-uuid (ebdb-record-uuid record))
@@ -943,7 +939,7 @@ process."
       (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
       ;; Init the role mail against the record.
       (when (and role-mail (slot-value role-mail 'mail))
-       (ebdb-init role-mail record))
+	(ebdb-init role-mail record))
       ;; Make sure this role is in the `ebdb-org-hashtable'.
       (unless (and org-entry
 		   (dolist (pair org-entry exists-p)
@@ -966,9 +962,6 @@ process."
     (let* ((org-uuid (slot-value role 'org-uuid))
 	   (org-string
 	    (slot-value
-	     ;; `ebdb-init' can't use `ebdb-gethash' for this, because
-	     ;; not all the records will be hashed during the loading
-	     ;; process.  We should be safe to use it here, though.
 	     (ebdb-gethash org-uuid 'uuid)
 	     'name))
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
@@ -1740,8 +1733,6 @@ from its respective databases, un-hashing its uuid, running
 record."
   (dolist (field (ebdb-record-user-fields record))
     (ebdb-init field record))
-  (let ((uuid (ebdb-record-uuid record)))
-    (ebdb-puthash uuid record))
   (ebdb-record-set-sortkey record))
 
 (cl-defmethod ebdb-merge ((left ebdb-record)
@@ -2500,10 +2491,7 @@ appropriate person record."
 					       _slot
 					       (field ebdb-field-role))
   (let* ((org-uuid (slot-value field 'org-uuid))
-	 (org (seq-find
-	       (lambda (r)
-		 (equal org-uuid (ebdb-record-uuid r)))
-	       ebdb-record-tracker))
+	 (org (ebdb-gethash org-uuid 'uuid))
 	 (org-domain (slot-value org 'domain))
 	 (role-mail (slot-value field 'mail)))
     (when (and org-domain (not role-mail))
@@ -2570,10 +2558,7 @@ instances to add as part of the role."
 error containing the record that already has that uuid."
   (when (member uuid ebdb-seen-uuids)
     (signal 'ebdb-duplicate-uuid
-	    (list (seq-find
-		   (lambda (r)
-		     (equal uuid (ebdb-record-uuid r)))
-		   ebdb-record-tracker)))))
+	    (list (ebdb-gethash uuid 'uuid)))))
 
 (defun ebdb-make-uuid (&optional prefix)
   "Create and return a new UUID.
@@ -2781,7 +2766,11 @@ overwrite data somewhere."
 			      'database db)
 
 	  ;; Make sure its UUID is unique.  Doesn't create new UUIDs.
-	  (ebdb-check-uuid (ebdb-record-uuid rec)))
+	  (ebdb-check-uuid (ebdb-record-uuid rec))
+
+	  ;; Hash the record against its UUID.  This provides some
+	  ;; speedup in the later initialization process.
+	  (ebdb-puthash (ebdb-record-uuid rec) rec))
 
       (ebdb-duplicate-uuid
        ;; There's a duplicate, decide what to do about it.  In the
