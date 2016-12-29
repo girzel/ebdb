@@ -297,7 +297,8 @@ With ARG a negative number do not append."
     (define-key km (kbd "TAB")         'ebdb-next-field) ; TAB
     (define-key km (kbd "P")          'ebdb-prev-field)
     (define-key km (kbd "DEL")         'ebdb-prev-field) ; DEL
-    (define-key km (kbd "d")          'ebdb-delete-field-or-record)
+    (define-key km (kbd "d c")          'ebdb-copy-records)
+    (define-key km (kbd "d m")          'ebdb-move-records)
     (define-key km (kbd "C-k")       'ebdb-delete-field-or-record)
     (define-key km (kbd "i")          'ebdb-insert-field)
     (define-key km (kbd "RET")  'ebdb-follow-related)
