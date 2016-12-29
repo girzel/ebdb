@@ -49,25 +49,38 @@ Returns the empty string if HEADER is not in the message."
              (backward-char 1)
              (buffer-substring-no-properties start (point)))))))
 
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode mhe-mode))
+  "Produce a EBDB buffer name associated with mh-hmode."
+  (format "*%s-MHE*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode mhe-summary-mode))
+  "Produce a EBDB buffer name associated with mh-hmode."
+  (format "*%s-MHE*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode mhe-folder-mode))
+  "Produce a EBDB buffer name associated with mh-hmode."
+  (format "*%s-MHE*" ebdb-buffer-name))
+
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql mhe-mode)))
+				   &context (major-mode mhe-mode))
   (ebdb/mh-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql mhe-summary-mode)))
+				   &context (major-mode mhe-summary-mode))
   (ebdb/mh-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql mhe-folder-mode)))
+				   &context (major-mode mhe-folder-mode))
   (ebdb/mh-header header))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql mhe-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode mhe-mode))
   (mh-show))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql mhe-summary-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode mhe-summary-mode))
   (mh-show))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql mhe-folder-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode mhe-folder-mode))
   (mh-show))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

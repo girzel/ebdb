@@ -400,6 +400,17 @@ Note that `\( is the backquote, NOT the quote '\(."
 
 (add-hook 'gnus-startup-hook 'ebdb-insinuate-gnus)
 
+(defsubst ebdb-gnus-buffer-name ()
+  (format "*%s-Gnus*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode gnus-summary-mode))
+  "Produce a EBDB buffer name associated with Gnus."
+  (ebdb-gnus-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode gnus-article-mode))
+  "Produce a EBDB buffer name associated with Gnus."
+  (ebdb-gnus-buffer-name))
+
 ;; It seems that `gnus-fetch-field' fetches decoded content of
 ;; `gnus-visible-headers', ignoring `gnus-ignored-headers'.
 ;; Here we use instead `gnus-fetch-original-field' that fetches
@@ -410,26 +421,26 @@ Note that `\( is the backquote, NOT the quote '\(."
 ;; See http://permalink.gmane.org/gmane.emacs.gnus.general/78741
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql gnus-summary-mode)))
+				   &context (major-mode gnus-summary-mode))
   "Return value of HEADER for current Gnus message."
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))
 
 ;; This is all a little goofy.
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql gnus-article-mode)))
+				   &context (major-mode gnus-article-mode))
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql gnus-tree-mode)))
+				   &context (major-mode gnus-tree-mode))
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql gnus-summary-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode gnus-summary-mode))
   (gnus-summary-select-article))
 
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode (eql gnus-article-mode)))
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode gnus-article-mode))
   (gnus-summary-select-article))
 
 (defun ebdb-insinuate-gnus ()

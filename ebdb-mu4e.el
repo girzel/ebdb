@@ -30,9 +30,13 @@
 ;; Tackle `mu4e-headers-mode' later
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql mu4e-view-mode)))
+				   &context (major-mode mu4e-view-mode))
   (set-buffer mu4e~view-buffer-name)
   (message-field-value header))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode mu4e-view-mode))
+  "Produce a EBDB buffer name associated with mu4e mode."
+  (format "*%s-mu4e*" ebdb-buffer-name))
 
 (defun ebdb-insinuate-mu4e ()
   "Hook EBDB into mu4e.

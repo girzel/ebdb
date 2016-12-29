@@ -3774,20 +3774,6 @@ The return value is the new value of LIST-VAR."
       (symbol-value list-var)
     (set list-var (cons element (symbol-value list-var)))))
 
-(defun ebdb-multiple-buffers-default ()
-  "Default function for guessing a name for new *EBDB* buffers.
-May be used as value of variable `ebdb-multiple-buffers'."
-  (save-current-buffer
-    (cond ((memq major-mode '(vm-mode vm-summary-mode vm-presentation-mode
-                                      vm-virtual-mode))
-           (vm-select-folder-buffer)
-           (buffer-name))
-          ((memq major-mode '(gnus-summary-mode gnus-group-mode))
-           (set-buffer gnus-article-buffer)
-           (buffer-name))
-          ((memq major-mode '(mail-mode vm-mail-mode message-mode))
-           "message composition"))))
-
 (defsubst ebdb-add-job (spec record string)
   "Internal function: Evaluate SPEC for RECORD and STRING.
 If SPEC is a function call it with args RECORD and STRING.  Return value.

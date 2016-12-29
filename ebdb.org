@@ -243,3 +243,29 @@ code:
 - Variable: ebdb-mua-summary-mark-format-letter
   Format letter to use in the summary buffer format string to mark a
   record.  Defaults to "e".
+* EBDB Buffers
+:PROPERTIES:
+:ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30
+:END:
+EBDB buffers inherit from special-mode, and so the usual special-mode
+keybindings apply.
+
+EBDB can create several separate buffers for displaying contacts.
+Typically, each MUA creates its own EBDB buffer, with names like
+\ast{}EBDB-Gnus\ast{}, etc.  Users can also create their own buffers
+that won't be interfered with by MUA pop-up action.  Calling the
+`ebdb' command directly will create such a "user-owned" buffer; it's
+also possible to create more by using the `ebdb-clone-buffer' and
+`ebdb-rename-buffer' commands within existing EBDB buffers.
+
+- Variable ebdb-buffer-name
+  The base string that is used to create EBDB buffers, without
+  asterisks.  Defaults to "EBDB".
+
+- "b c" ebdb-clone-buffer
+  Prompt for a buffer name, and create a new EBDB buffer displaying
+  the same records as the original buffer.
+- "b r" ebdb-rename-buffer
+  Rename the current EBDB buffer.  If this is done in a MUA pop-up
+  buffer, the original buffer will be recreated next time the MUA
+  requests another pop up.
