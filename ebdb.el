@@ -1736,17 +1736,12 @@ from its respective databases, un-hashing its uuid, running
       (cl-call-next-method record slots))))
 
 (cl-defmethod ebdb-init ((record ebdb-record))
-  "Initiate a record after loading a database or creating a new record.
-
-Call `ebdb-init' on all of a record's user fields."
+  "Initiate a record after loading a database or creating a new
+record."
   (dolist (field (ebdb-record-user-fields record))
     (ebdb-init field record))
   (let ((uuid (ebdb-record-uuid record)))
-    (ebdb-puthash uuid record)
-    ;; I don't think there are any cases when we would be at this
-    ;; point in the code and the uuid would already be seen, but...
-    (unless (member uuid ebdb-seen-uuids)
-      (push uuid ebdb-seen-uuids)))
+    (ebdb-puthash uuid record))
   (ebdb-record-set-sortkey record))
 
 (cl-defmethod ebdb-merge ((left ebdb-record)
@@ -2781,17 +2776,12 @@ overwrite data somewhere."
     ;; Cycle over each loaded record.
     (condition-case err
 	(progn
-	  ;; First, tell it about the database.
+	  ;; Tell it about the database.
 	  (object-add-to-list (ebdb-record-cache rec)
 			      'database db)
 
-	  ;; Make sure its UUID is unique.
-	  (ebdb-check-uuid (ebdb-record-uuid rec))
-
-      	  ;; Lastly initialize it.  This has to come after
-      	  ;; `ebdb-check-uuid' because it adds the record's UUID to
-      	  ;; `ebdb-seen-uuids'.
-	  (ebdb-init rec))
+	  ;; Make sure its UUID is unique.  Doesn't create new UUIDs.
+	  (ebdb-check-uuid (ebdb-record-uuid rec)))
 
       (ebdb-duplicate-uuid
        ;; There's a duplicate, decide what to do about it.  In the
@@ -2837,11 +2827,7 @@ overwrite data somewhere."
 	   (object-add-to-list db 'records keeper)
 	   (object-add-to-list (ebdb-record-cache keeper)
 			       'database d))
-	 (ebdb-delete deleter)
-	 ;; Double was initialized, rec wasn't.  If we end up keeping
-	 ;; rec, we need to initialize it.
-	 (when delete-double
-	   (ebdb-init keeper)))))))
+	 (ebdb-delete deleter))))))
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
   "Unload database DB.
@@ -4320,10 +4306,22 @@ important work is done by the `ebdb-db-load' method."
 	;; We're migrating from a previous version of EBDB.
 	(ebdb-migrate-from-bbdb)
       (message "Loading EBDB sources... done"))
+    (ebdb-initialize)
     ;; Users will expect the same ordering as `ebdb-sources'
     (setq ebdb-db-list (nreverse ebdb-db-list))
     (run-hooks 'ebdb-after-load-hook)
     (length ebdb-record-tracker)))
+
+;; If we wanted to make it seem like EBDB was loading faster, we could
+;; defer calls to `ebdb-initialize' until the first time the database
+;; is searched.
+(defun ebdb-initialize ()
+  "After all databases are loaded, initialize the records.
+
+This results in the creation of all the secondary data
+structures: label lists, `ebdb-org-hashtable', record caches,
+etc."
+  (mapcar #'ebdb-init ebdb-record-tracker))
 
 (defun ebdb-address-continental-p (address)
   "Return non-nil if ADDRESS is a continental address.
