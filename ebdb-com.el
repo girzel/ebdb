@@ -1385,50 +1385,6 @@ which is probably more suited for your needs."
           (when update
             (ebdb-change-record record)))))))
 
-(defun ebdb-search-duplicates (&optional fields)
-  "Search all records that have duplicate entries for FIELDS.
-The list FIELDS may contain the symbols `name', `mail', and `aka'.
-If FIELDS is nil use all these fields.  With prefix, query for FIELDS.
-The search results are displayed in the EBDB buffer."
-  (interactive (list (if current-prefix-arg
-                         (list (intern (completing-read "Field: "
-                                                        '("name" "mail" "aka")
-                                                        nil t))))))
-  (setq fields (or fields '(name mail aka)))
-  (let (hash ret)
-    (dolist (record (ebdb-records))
-
-      (when (and (memq 'name fields)
-                 (ebdb-record-name record)
-                 (setq hash (ebdb-gethash (ebdb-record-name record)
-                                          '(fl-name lf-name aka)))
-                 (> (length hash) 1))
-        (setq ret (append hash ret))
-        (message "EBDB record `%s' has duplicate name."
-                 (ebdb-record-name record))
-        (sit-for 0))
-
-      (if (memq 'mail fields)
-          (dolist (mail (ebdb-record-mail-canon record))
-              (setq hash (ebdb-gethash mail '(mail)))
-              (when (> (length hash) 1)
-                (setq ret (append hash ret))
-                (message "EBDB record `%s' has duplicate mail `%s'."
-                         (ebdb-record-name record) mail)
-                (sit-for 0))))
-
-      (if (memq 'aka fields)
-          (dolist (aka (ebdb-record-aka record))
-            (setq hash (ebdb-gethash aka '(fl-name lf-name aka)))
-            (when (> (length hash) 1)
-              (setq ret (append hash ret))
-              (message "EBDB record `%s' has duplicate aka `%s'"
-                       (ebdb-record-name record) aka)
-              (sit-for 0)))))
-
-    (ebdb-display-records (sort (delete-dups ret)
-                                'ebdb-record-lessp))))
-
 (defun ebdb-touch-records (records)
   "Touch RECORDS by calling `ebdb-change-hook' unconditionally."
   (interactive (list (ebdb-do-records)))
@@ -2009,6 +1965,55 @@ in either the name(s), organization, address, phone, mail, or xfields."
 	      (push record unchanged-records)))
 	  (ebdb-display-records unchanged-records fmt))
       (ebdb-display-records dirty fmt))))
+
+;;;###autoload
+(defun ebdb-search-duplicates (&optional fields fmt)
+  "Search all records that have duplicate entries for FIELDS.
+The list FIELDS may contain the symbols `name', `mail', and `aka'.
+If FIELDS is nil use all these fields.  With prefix, query for FIELDS.
+The search results are displayed in the EBDB buffer."
+  (interactive (list (if current-prefix-arg
+                         (list (intern (completing-read "Field: "
+                                                        '("name" "mail" "aka")
+                                                        nil t))))
+		     (ebdb-formatter-prefix)))
+  (setq fields (or fields '(name mail aka)))
+  (let (hash ret)
+    (dolist (record (ebdb-records))
+
+      (when (and (memq 'name fields)
+                 (ebdb-record-name record)
+                 (setq hash (ebdb-gethash (ebdb-record-name record)
+                                          '(fl-name lf-name aka)))
+                 (> (length hash) 1))
+        (setq ret (append hash ret))
+        (message "EBDB record `%s' has duplicate name."
+                 (ebdb-record-name record))
+        (sit-for 0))
+
+      (if (memq 'mail fields)
+          (dolist (mail (ebdb-record-mail-canon record))
+              (setq hash (ebdb-gethash mail '(mail)))
+              (when (> (length hash) 1)
+                (setq ret (append hash ret))
+                (message "EBDB record `%s' has duplicate mail `%s'."
+                         (ebdb-record-name record) mail)
+                (sit-for 0))))
+
+      (if (and (memq 'aka fields)
+	       (slot-exists-p record 'aka))
+          (dolist (aka (ebdb-record-aka record))
+	    (setq aka (ebdb-string aka))
+            (setq hash (ebdb-gethash aka '(fl-name lf-name aka)))
+            (when (> (length hash) 1)
+              (setq ret (append hash ret))
+              (message "EBDB record `%s' has duplicate aka `%s'"
+                       (ebdb-record-name record) aka)
+              (sit-for 0)))))
+
+    (ebdb-display-records (sort (delete-dups ret)
+                                'ebdb-record-lessp)
+			  fmt)))
 
 ;;;###autoload
 (defun ebdb-search-database (db &optional fmt)
