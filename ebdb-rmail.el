@@ -44,12 +44,18 @@
                      (mail-header-extract))))))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql rmail-mode)))
+				   &context (major-mode rmail-mode))
   (ebdb/rmail-header header))
 
 (cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode (eql rmail-summary-mode)))
+				   &context (major-mode rmail-summary-mode))
   (ebdb/rmail-header header))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode rmail-mode))
+  (format "*%s-Rmail*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode rmail-summary-mode))
+  (format "*%s-Rmail*" ebdb-buffer-name))
 
 (defun ebdb-insinuate-rmail ()
   "Hook EBDB into RMAIL.
