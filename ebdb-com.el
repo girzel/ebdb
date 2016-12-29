@@ -334,6 +334,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "/ x")         'ebdb-search-user-fields)
     (define-key km (kbd "/ c")         'ebdb-search-changed)
     (define-key km (kbd "/ d")         'ebdb-search-duplicates)
+    (define-key km (kbd "/ D")         'ebdb-search-database)
     (define-key km (kbd "C-x n w")     'ebdb-display-all-records)
     (define-key km (kbd "C-x n d")     'ebdb-display-current-record)
 
