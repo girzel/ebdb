@@ -1541,7 +1541,7 @@ actually-editable records."
 	 (ebdb-next-field 1)))))
 
 ;;;###autoload
-(defun ebdb-create-record (db record-class)
+(defun ebdb-create-record (db &optional record-class)
   "Create a new EBDB record.
 
 With no prefix argument, assume that we're creating a record in
@@ -1551,8 +1551,9 @@ record class.
 With a prefix arg, prompt for the database to use (assuming there
 is more than one), and prompt for the record class to use."
   (interactive
-   (list (car ebdb-db-list)
-	 (slot-value db 'record-class)))
+   (list (car ebdb-db-list)))
+  (unless record-class
+    (setq record-class (slot-value db 'record-class)))
   (let ((record (ebdb-read record-class)))
    (condition-case nil
        (progn
