@@ -3229,6 +3229,8 @@ Returns a list of (\"label\" slot . field-class)."
 	(list choice (cons 'fields 'ebdb-field-user-simple)))))
 
 (defun ebdb-prompt-for-db (&optional db-list)
+  (unless (or db-list ebdb-db-list)
+    (ebdb-load))
   (let* ((collection (or db-list ebdb-db-list))
 	 (db-string
 	  (ebdb-read-string "Choose a database: "

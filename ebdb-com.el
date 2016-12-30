@@ -2227,6 +2227,8 @@ Obey `ebdb-completion-list'."
   "Read and return list of records from the ebdb.
 Completion is done according to `ebdb-completion-list'.  If the user
 just hits return, nil is returned.  Otherwise, a valid response is forced."
+  (unless ebdb-record-tracker
+    (ebdb-load))
   (let* ((completion-ignore-case t)
          (string (completing-read prompt ebdb-hashtable
                                   'ebdb-completion-predicate t)))
