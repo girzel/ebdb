@@ -59,13 +59,7 @@
   (autoload 'ebdb-dwim-mail "ebdb-com")
   (autoload 'ebdb-spec-prefix "ebdb-com")
   (autoload 'ebdb-completing-read-records "ebdb-com")
-  (autoload 'mail-position-on-field "sendmail")
-  (autoload 'vm-select-folder-buffer "vm-folder")
-  (autoload 'eieio-customize-object "eieio-custom")
-  ;; cannot use autoload for variables...
-  (defvar message-mode-map) ;; message.el
-  (defvar mail-mode-map) ;; sendmail.el
-  (defvar gnus-article-buffer)) ;; gnus-art.el
+  (autoload 'eieio-customize-object "eieio-custom"))
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -3007,7 +3001,6 @@ the persistent save, or allow them to propagate."
     (message "Database %s is disabled." (ebdb-string db))))
 
 (cl-defmethod ebdb-db-customize ((db ebdb-db))
-  (require 'eieio-custom)
   (eieio-customize-object db))
 
 (defun ebdb-customize-database (db)
@@ -4549,6 +4542,39 @@ but not allowing for regexps."
   (read-string (format "Search records%s %smatching regexp: "
                        (if field (concat " with " field) "")
                        (if ebdb-search-invert "not " ""))))
+
+;; Create autoload statements for fields defined in other files.
+;; Might save users some small surprises.
+
+(eieio-defclass-autoload
+ 'gnorb-ebdb-field-messages
+ 'ebdb-field-user
+ "ebdb-gnorb"
+ "Gnorb field holding links to Gnus messages.")
+
+(eieio-defclass-autoload
+ 'gnorb-ebdb-field-tags
+ 'ebdb-field-user
+ "ebdb-gnorb"
+ "Gnorb field holding Org-style tags.")
+
+(eieio-defclass-autoload
+ 'ebdb-gnus-score-field
+ 'ebdb-field-user
+ "ebdb-gnus"
+ "Gnus field holding record score.")
+
+(eieio-defclass-autoload
+ 'ebdb-gnus-private-field
+ 'ebdb-field-user
+ "ebdb-gnus"
+ "Gnus field holding private mailbox name.")
+
+(eieio-defclass-autoload
+ 'ebdb-gnus-imap-field
+ 'ebdb-field-user
+ "ebdb-gnus"
+ "Gnus field holding private IMAP mailbox name.")
 
 (provide 'ebdb)
 ;;; ebdb.el ends here
