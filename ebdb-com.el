@@ -1560,7 +1560,7 @@ is more than one), and prompt for the record class to use."
 	 (run-hook-with-args 'ebdb-create-hook record)
 	 (run-hook-with-args 'ebdb-change-hook record)
 	 (ebdb-db-add-record db record)
-	 (ebdb-init record)
+	 (ebdb-init-record record)
 	 (run-hook-with-args 'ebdb-after-change-hook record)
 	 (ebdb-display-records (list record)))
      (ebdb-readonly-db
@@ -1729,7 +1729,7 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
     (when (or noprompt
               (y-or-n-p (format "Delete the EBDB record of %s? "
                                 (ebdb-string record))))
-      (ebdb-delete record)
+      (ebdb-delete-record record)
       (ebdb-redisplay-record-globally record nil t))))
 
 ;;;###autoload

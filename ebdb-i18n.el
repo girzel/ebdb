@@ -71,11 +71,11 @@ This method should return a new instance of CLASS.")
 (cl-defgeneric ebdb-string-i18n (field spec)
   "An internationalized version of `ebdb-string'.")
 
-(cl-defgeneric ebdb-init-i18n (field record spec)
-  "An internationalized version of `ebdb-init'.")
+(cl-defgeneric ebdb-init-field-i18n (field record spec)
+  "An internationalized version of `ebdb-init-field'.")
 
-(cl-defgeneric ebdb-delete-i18n (field record spec unload)
-  "An internationalized version of `ebdb-delete'.")
+(cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
+  "An internationalized version of `ebdb-delete-field'.")
 
 ;;;###autoload
 (defun ebdb-internationalize-addresses ()
@@ -171,24 +171,24 @@ for their symbol representations.")
 	(cl-no-applicable-method nil)))
     str))
 
-(cl-defmethod ebdb-init :extra "i18n" ((name ebdb-field-name) &optional record)
+(cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
   "Do additional initialization work for international names."
   (let* ((res (cl-call-next-method name record))
 	 (str (ebdb-string name))
 	 (script (aref char-script-table (aref str 0))))
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
-	  (ebdb-init-i18n name record script)
+	  (ebdb-init-field-i18n name record script)
 	(cl-no-applicable-method nil)))
     res))
 
-(cl-defmethod ebdb-delete :extra "i18n" ((name ebdb-field-name) &optional record unload)
+(cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) &optional record unload)
   "Do additional deletion work for international names."
   (let* ((str (ebdb-string name))
 	 (script (aref char-script-table (aref str 0))))
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
-	  (ebdb-delete-i18n name record script unload)
+	  (ebdb-delete-field-i18n name record script unload)
 	(cl-no-applicable-method nil))))
   (cl-call-next-method))
 

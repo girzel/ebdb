@@ -1108,7 +1108,7 @@ Return the records matching ADDRESS or nil."
                      (message "created %s's record with address \"%s\""
                               (ebdb-string record) mail)
                    (message "created record with naked address \"%s\"" mail)))
-               (ebdb-init record))
+               (ebdb-init-record record))
 
               (change-p
                (unless ebdb-silent

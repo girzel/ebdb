@@ -89,9 +89,9 @@ and mail.")
   member records.
 
 Keys are string UUIDs of organizations. Values are lists
-of (record-uuid . role-field). Hashtable entries are created
-and deleted by the `ebdb-init' and `ebdb-delete' methods of the
-`ebdb-field-role' field class.")
+of (record-uuid . role-field). Hashtable entries are created and
+deleted by the `ebdb-init-field' and `ebdb-delete-field' methods
+of the `ebdb-field-role' field class.")
 
 ;;; Internal variables
 (eval-and-compile
@@ -486,8 +486,16 @@ You really should not disable debugging.  But it will speed things up."
   :documentation "Abstract class for EBDB fields.  Subclass this
 to produce real field types.")
 
-(cl-defmethod ebdb-init (_field-value &rest _args)
-  "Catch-all `ebdb-init' method for fields.
+(cl-defgeneric ebdb-init-field (field record)
+  "Initialize FIELD.
+
+What this means is entirely dependent upon the field class in
+question.  Often it involves manipulating secondary data
+structures such as label lists.  If RECORD is given, it may also
+involve using FIELD as a hash value to get to RECORD.")
+
+(cl-defmethod ebdb-init-field (_field-value _record)
+  "Catch-all `ebdb-init-field' method for fields.
 
 This method may also get called on field values that aren't
 actually `ebdb-field' instances -- for instance, plain strings.
@@ -519,7 +527,8 @@ to add to a record."
 ;; Presumably I'll have to look into that struct?  Or maybe I should
 ;; just write bottom-level do-nothing methods for the cases where I
 ;; don't want to raise an error.  I guess I'll do that for
-;; `ebdb-delete' and `ebdb-init', for the base `ebdb-field' class.
+;; `ebdb-delete-field' and `ebdb-init-field', for the base
+;; `ebdb-field' class.
 
 ;; (cl-defmethod cl-no-applicable-method (_generic &rest _args)
 ;;   "Don't raise errors for unimplemented methods."
@@ -533,14 +542,23 @@ to add to a record."
 ;; obsolete as of 25.2.  There may be a `delete-instance' method, but
 ;; then again there may not.  Handle it ourselves.
 
-(cl-defmethod ebdb-delete ((field ebdb-field) &optional _record _unload)
+(cl-defgeneric ebdb-delete-field (field &optional record unload)
+  "Delete FIELD.
+
+Often involves un-hashing RECORD against the field value, or
+removing labels from label lists.
+
+If UNLOAD is true, it indicates that RECORD is only being
+unloaded, not actually deleted.")
+
+(cl-defmethod ebdb-delete-field ((field ebdb-field) &optional _record _unload)
   "User-level deletion routine for FIELD.
 
 Override this to do any necessary cleanup work after FIELD is
 removed."
   (delete-instance field))
 
-(cl-defmethod ebdb-delete ((_field string) &optional _record _unload)
+(cl-defmethod ebdb-delete-field ((_field string) &optional _record _unload)
   t)
 
 (cl-defmethod delete-instance ((_field ebdb-field) &rest _args)
@@ -639,7 +657,7 @@ message."
   (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj name)))))
     (cl-call-next-method class (plist-put slots :name name) obj)))
 
-(cl-defmethod ebdb-init ((name ebdb-field-name-simple) &optional record)
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) &optional record)
   (when record
     (ebdb-puthash (ebdb-string name) record))
   (cl-call-next-method))
@@ -720,7 +738,7 @@ first one."
   ;; value also gets stored in the cache.
   (ebdb-name-fl name))
 
-(cl-defmethod ebdb-init ((name ebdb-field-name-complex) &optional record)
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) &optional record)
   (when record
     (let ((lf (ebdb-name-lf name))
 	  (fl (ebdb-name-fl name)))
@@ -730,7 +748,7 @@ first one."
 	(object-add-to-list (ebdb-record-cache record) 'alt-names fl)))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete ((name ebdb-field-name-complex) &optional record _unload)
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) &optional record _unload)
   (when record
     (let ((lf (ebdb-name-lf name))
 	  (fl (ebdb-name-fl name)))
@@ -818,7 +836,7 @@ process."
 	(cl-call-next-method class slots obj)
       (signal 'ebdb-empty (list class)))))
 
-(cl-defmethod ebdb-init ((field ebdb-field-labeled) &optional _record)
+(cl-defmethod ebdb-init-field ((field ebdb-field-labeled) &optional _record)
   (let ((label-var (slot-value field 'label-list)))
     (ebdb-add-to-list label-var (slot-value field 'object-name))
     (cl-call-next-method)))
@@ -920,7 +938,7 @@ process."
   might be relevant to the role."
   :human-readable "role")
 
-(cl-defmethod ebdb-init ((role ebdb-field-role) &optional record)
+(cl-defmethod ebdb-init-field ((role ebdb-field-role) &optional record)
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
 	   (org (ebdb-gethash org-uuid 'uuid))
@@ -942,7 +960,7 @@ process."
       (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
       ;; Init the role mail against the record.
       (when (and role-mail (slot-value role-mail 'mail))
-	(ebdb-init role-mail record))
+	(ebdb-init-field role-mail record))
       ;; Make sure this role is in the `ebdb-org-hashtable'.
       (unless (and org-entry
 		   (dolist (pair org-entry exists-p)
@@ -957,10 +975,10 @@ process."
 	(push (cons record-uuid role) new-org-entry))
       (puthash org-uuid new-org-entry ebdb-org-hashtable)))
   (when (slot-value role 'mail)
-    (ebdb-init (slot-value role 'mail) record))
+    (ebdb-init-field (slot-value role 'mail) record))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete ((role ebdb-field-role) &optional record unload)
+(cl-defmethod ebdb-delete-field ((role ebdb-field-role) &optional record unload)
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
 	   (org (ebdb-gethash org-uuid 'uuid))
@@ -985,7 +1003,7 @@ process."
 	;; RECORD no long has any roles at ORG.
 	(object-remove-from-list (ebdb-record-cache record) 'organizations org-string))))
   (when (slot-value role 'mail)
-    (ebdb-delete (slot-value role 'mail) record unload))
+    (ebdb-delete-field (slot-value role 'mail) record unload))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((role (subclass ebdb-field-role)) &optional slots obj)
@@ -1046,7 +1064,7 @@ process."
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
 
-(cl-defmethod ebdb-init ((mail ebdb-field-mail) &optional record)
+(cl-defmethod ebdb-init-field ((mail ebdb-field-mail) &optional record)
   (with-slots (aka mail) mail
     (ebdb-puthash mail record)
     (object-add-to-list (ebdb-record-cache record) 'mail-canon mail)
@@ -1054,7 +1072,7 @@ process."
       (ebdb-puthash aka record)
       (object-add-to-list (ebdb-record-cache record) 'mail-aka aka))))
 
-(cl-defmethod ebdb-delete ((mail ebdb-field-mail) &optional record _unload)
+(cl-defmethod ebdb-delete-field ((mail ebdb-field-mail) &optional record _unload)
   (with-slots (aka mail) mail
     (when record
       (when aka
@@ -1143,7 +1161,7 @@ process."
   :documentation "A field representing an address."
   :human-readable "address")
 
-(cl-defmethod ebdb-init ((address ebdb-field-address) &optional _record)
+(cl-defmethod ebdb-init-field ((address ebdb-field-address) &optional _record)
   (with-slots (object-name streets locality region postcode country) address
     (dolist (s streets)
       (ebdb-add-to-list 'ebdb-street-list s))
@@ -1593,9 +1611,9 @@ override parsing."
 (cl-defmethod ebdb-string ((field ebdb-field-mail-alias))
   (slot-value field 'alias))
 
-;; TODO: Write `ebdb-init' and `ebdb-delete' methods for the
-;; `ebdb-field-mail-alias' class.  These methods should do the work of
-;; changing the defined mail aliases.
+;; TODO: Write `ebdb-init-field' and `ebdb-delete-field' methods for
+;; the `ebdb-field-mail-alias' class.  These methods should do the
+;; work of changing the defined mail aliases.
 
 ;; Passports
 
@@ -1690,6 +1708,29 @@ override parsing."
   :documentation "An abstract base class for creating EBDB
   records.")
 
+(cl-defgeneric ebdb-init-record (record)
+  "Initialize RECORD.
+
+Specific behavior is determined by subclass, but usually involves
+setting up RECORD's cache, and calling `ebdb-init-field' on the
+record's fields.
+
+Note this specifically does *not* hash the record against its
+UUID -- this is done earlier in the process, by the record's
+database(s).")
+
+(cl-defgeneric ebdb-delete-record (record &optional db unload)
+  "Delete RECORD.
+
+This goes through a series of deletion routines, removing RECORD
+from its respective databases, un-hashing its uuid, running
+`ebdb-delete-field' on its fields, etc.
+
+If DB is given, only delete RECORD from DB.
+
+If UNLOAD is non-nil, we should only unload RECORD, not delete it
+altogether.")
+
 (cl-defmethod ebdb-record-uuid ((record ebdb-record))
   (slot-value (slot-value record 'uuid) 'uuid))
 
@@ -1702,12 +1743,7 @@ override parsing."
       (setq slots (plist-put slots :notes notes)))
     (apply 'make-instance class slots)))
 
-(cl-defmethod ebdb-delete ((record ebdb-record) &optional db unload)
-  "Delete RECORD.
-
-This goes through a series of deletion routines, removing RECORD
-from its respective databases, un-hashing its uuid, running
-`ebdb-delete' on its fields, etc."
+(cl-defmethod ebdb-delete-record ((record ebdb-record) &optional db unload)
   (let ((dbs (if db (list db)
 	       (slot-value (ebdb-record-cache record) 'database)))
 	(uuid (ebdb-record-uuid record)))
@@ -1719,7 +1755,7 @@ from its respective databases, un-hashing its uuid, running
     (setq ebdb-seen-uuids
 	  (delete uuid ebdb-seen-uuids))
     (dolist (field (slot-value record 'fields))
-      (ebdb-delete field record unload))
+      (ebdb-delete-field field record unload))
     (ebdb-remhash uuid record)
     (delete-instance record)))
 
@@ -1738,11 +1774,11 @@ from its respective databases, un-hashing its uuid, running
 	(ebdb-stamp-time timestamp))
       (cl-call-next-method record slots))))
 
-(cl-defmethod ebdb-init ((record ebdb-record))
+(cl-defmethod ebdb-init-record ((record ebdb-record))
   "Initiate a record after loading a database or creating a new
 record."
   (dolist (field (ebdb-record-user-fields record))
-    (ebdb-init field record))
+    (ebdb-init-field field record))
   (ebdb-record-set-sortkey record))
 
 (cl-defmethod ebdb-merge ((left ebdb-record)
@@ -1800,7 +1836,7 @@ record."
 	(object-add-to-list record slot field)
       (invalid-slot-type
        (setf (slot-value record slot) field)))
-    (ebdb-init field record))
+    (ebdb-init-field field record))
   field)
 
 (cl-defmethod ebdb-record-delete-field ((record ebdb-record) slot field)
@@ -1812,7 +1848,7 @@ record."
   (if (listp (slot-value record slot))
       (object-remove-from-list record slot field)
     (setf (slot-value record slot) nil))
-  (ebdb-delete field record))
+  (ebdb-delete-field field record))
 
 (cl-defgeneric ebdb-record-field-slot-query (record-class &optional query alist)
   "Ask RECORD-CLASS for information about its interactively-settable fields.
@@ -2022,13 +2058,13 @@ or actual image data."
   :documentation "An abstract class representing basic entities
   that have mail, phone and address fields.")
 
-(cl-defmethod ebdb-init ((record ebdb-record-entity))
+(cl-defmethod ebdb-init-record ((record ebdb-record-entity))
   (dolist (phone (slot-value record 'phone))
-    (ebdb-init phone record))
+    (ebdb-init-field phone record))
   (dolist (mail (slot-value record 'mail))
-    (ebdb-init mail record))
+    (ebdb-init-field mail record))
   (dolist (address (slot-value record 'address))
-    (ebdb-init address record))
+    (ebdb-init-field address record))
   (cl-call-next-method))
 
 ;; `ebdb-read' is only called for records on first creation, so we
@@ -2047,12 +2083,12 @@ or actual image data."
     (setq slots (plist-put slots :address address))
     (cl-call-next-method class slots)))
 
-(cl-defmethod ebdb-delete ((record ebdb-record-entity) &optional _db unload)
+(cl-defmethod ebdb-delete-record ((record ebdb-record-entity) &optional _db unload)
   (dolist (mail (slot-value record 'mail))
-    (ebdb-delete mail record unload))
+    (ebdb-delete-field mail record unload))
   (dolist (field (ebdb-record-user-fields record))
-    (ebdb-delete field record unload))
-  ;; Maybe should also be calling `ebdb-delete' on the phone and
+    (ebdb-delete-field field record unload))
+  ;; Maybe should also be calling `ebdb-delete-field' on the phone and
   ;; address fields, just in case.
   (cl-call-next-method))
 
@@ -2183,26 +2219,26 @@ priority."
     (cl-call-next-method
      class (plist-put slots :name name))))
 
-(cl-defmethod ebdb-init ((record ebdb-record-person))
+(cl-defmethod ebdb-init-record ((record ebdb-record-person))
   (let ((name (slot-value record 'name)))
-    (ebdb-init name record)
+    (ebdb-init-field name record)
     (setf (slot-value (ebdb-record-cache record) 'name-string) (ebdb-string name)))
   (dolist (aka (slot-value record 'aka))
-      (ebdb-init aka record))
+    (ebdb-init-field aka record))
   (dolist (relation (slot-value record 'relations))
-    (ebdb-init relation record))
+    (ebdb-init-field relation record))
   (dolist (role (slot-value record 'organizations))
-    (ebdb-init role record))
+    (ebdb-init-field role record))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete ((record ebdb-record-person) &optional _db unload)
-  (ebdb-delete (slot-value record 'name) record unload)
+(cl-defmethod ebdb-delete-record ((record ebdb-record-person) &optional _db unload)
+  (ebdb-delete-field (slot-value record 'name) record unload)
   (dolist (a (slot-value record 'aka))
-    (ebdb-delete a record unload))
+    (ebdb-delete-field a record unload))
   (dolist (r (slot-value record 'relations))
-    (ebdb-delete r record unload))
+    (ebdb-delete-field r record unload))
   (dolist (o (slot-value record 'organizations))
-    (ebdb-delete o record unload))
+    (ebdb-delete-field o record unload))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-merge ((left ebdb-record-person)
@@ -2397,14 +2433,14 @@ Currently only works for mail fields."
   :allow-nil-initform t
   :documentation "A record class representing an organization.")
 
-(cl-defmethod ebdb-init ((record ebdb-record-organization))
+(cl-defmethod ebdb-init-record ((record ebdb-record-organization))
   (let ((name (slot-value record 'name)))
-    (ebdb-init name record)
+    (ebdb-init-field name record)
     (setf (slot-value (ebdb-record-cache record) 'name-string)
 	  (ebdb-string name))
     (cl-call-next-method)))
 
-(cl-defmethod ebdb-delete ((org ebdb-record-organization) &optional _db unload)
+(cl-defmethod ebdb-delete-record ((org ebdb-record-organization) &optional _db unload)
   (let* ((uuid (ebdb-record-uuid org))
 	 (org-entry (gethash uuid ebdb-org-hashtable))
 	 record)
@@ -2547,7 +2583,7 @@ instances to add as part of the role."
     (when mail
       (setf (slot-value role 'mail) mail))
     (ebdb-record-insert-field record 'organizations role)
-    (ebdb-init role record)))
+    (ebdb-init-field role record)))
 
 (defclass ebdb-record-mailing-list (ebdb-record eieio-named)
   ((name
@@ -2833,7 +2869,7 @@ overwrite data somewhere."
 	   (object-add-to-list db 'records keeper)
 	   (object-add-to-list (ebdb-record-cache keeper)
 			       'database d))
-	 (ebdb-delete deleter))))))
+	 (ebdb-delete-record deleter))))))
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
   "Unload database DB.
@@ -2844,7 +2880,7 @@ that doesn't belong to a different database."
     ;; Only disappear the record if it doesn't belong to any other
     ;; databases.
     (if (= 1 (length (slot-value (ebdb-record-cache r) 'database)))
-	(ebdb-delete r db t)
+	(ebdb-delete-record r db t)
       (object-remove-from-list (ebdb-record-cache r) 'database db))
     (object-remove-from-list db 'records r)))
 
@@ -4315,7 +4351,7 @@ important work is done by the `ebdb-db-load' method."
 This results in the creation of all the secondary data
 structures: label lists, `ebdb-org-hashtable', record caches,
 etc."
-  (mapcar #'ebdb-init ebdb-record-tracker))
+  (mapcar #'ebdb-init-record ebdb-record-tracker))
 
 (defun ebdb-address-continental-p (address)
   "Return non-nil if ADDRESS is a continental address.

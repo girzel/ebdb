@@ -419,7 +419,7 @@ holding valid contacts in a previous BBDB format."
 	  (fit-window-to-buffer)
 	  (goto-char (point-min)))
 	(dolist (r c-records)
-	  (ebdb-init r))
+	  (ebdb-init-record r))
 	(eieio-oset target-db 'dirty t)
 	(message "Migrating records... %d records migrated" (length c-records))))))
 

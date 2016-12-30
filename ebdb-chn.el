@@ -66,12 +66,12 @@ the record cache."
 				      add-or-del)
   "Add or remove a hash for a Chinese-character name.
 
-This function is called by both the `ebdb-init-i18n' and
-`ebdb-delete-i18n' methods.  It checks if the name is in Chinese
-characters, and if it is, converts it into pinyin, and either
-adds or removes a hash entry for the record under that name.  It
-also adds the pinyin to the record's name cache, so searchs via
-pinyin will find the record."
+This function is called by both the `ebdb-init-field-i18n' and
+`ebdb-delete-field-i18n' methods.  It checks if the name is in
+Chinese characters, and if it is, converts it into pinyin, and
+either adds or removes a hash entry for the record under that
+name.  It also adds the pinyin to the record's name cache, so
+searchs via pinyin will find the record."
   ;; We use `pyim-hanzi2pinyin-simple' because it's cheaper, and
   ;; because checking for multiple character pronunciations isn't
   ;; really helpful in people's names.
@@ -115,15 +115,15 @@ pinyin will find the record."
     (funcall hashfunc name-string record)
     (funcall listfunc (ebdb-record-cache record) 'alt-names name-string)))
 
-(cl-defmethod ebdb-init-i18n ((field ebdb-field-name)
-			      record
-			      (script (eql han)))
+(cl-defmethod ebdb-init-field-i18n ((field ebdb-field-name)
+				    record
+				    (script (eql han)))
   (ebdb-china-handle-name field record 'add))
 
-(cl-defmethod ebdb-delete-i18n ((field ebdb-field-name)
-				record
-				(script (eql han))
-				_unload)
+(cl-defmethod ebdb-delete-field-i18n ((field ebdb-field-name)
+				      record
+				      (script (eql han))
+				      _unload)
   (ebdb-china-handle-name field record 'del))
 
 (provide 'ebdb-chn)
