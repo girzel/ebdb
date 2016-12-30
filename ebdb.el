@@ -963,10 +963,11 @@ process."
 (cl-defmethod ebdb-delete ((role ebdb-field-role) &optional record unload)
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
+	   (org (ebdb-gethash org-uuid 'uuid))
 	   (org-string
-	    (slot-value
-	     (ebdb-gethash org-uuid 'uuid)
-	     'name))
+	    (if org
+		(slot-value org 'name)
+	      "bogus"))
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
 	   (record-uuid (ebdb-record-uuid record))
 	   record-entry new-org-entry)
