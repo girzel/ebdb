@@ -2877,8 +2877,8 @@ that doesn't belong to a different database."
     ;; databases.
     (if (= 1 (length (slot-value (ebdb-record-cache r) 'database)))
 	(ebdb-delete-record r db t)
-      (object-remove-from-list (ebdb-record-cache r) 'database db))
-    (object-remove-from-list db 'records r)))
+      (object-remove-from-list (ebdb-record-cache r) 'database db)))
+  (setq ebdb-db-list (cl-remove db ebdb-db-list)))
 
 (defun ebdb-db-reload (db)
   (ebdb-db-unload db)
