@@ -76,9 +76,6 @@
 (defvar ebdb-record-tracker nil
   "A list of all the loaded records")
 
-(defvar ebdb-seen-uuids nil
-  "A list of all previously-loaded UUIDs.")
-
 (defvar ebdb-hashtable (make-hash-table :test 'equal)
   "Hash table for EBDB records.
 Hashes the fields first-last-name, last-first-name, organization, aka,
@@ -1752,8 +1749,6 @@ altogether.")
     (unless db
       (dolist (db dbs)
 	(ebdb-db-remove-record db record)))
-    (setq ebdb-seen-uuids
-	  (delete uuid ebdb-seen-uuids))
     (dolist (field (slot-value record 'fields))
       (ebdb-delete-field field record unload))
     (ebdb-remhash uuid record)
@@ -2609,9 +2604,10 @@ instances to add as part of the role."
 (defun ebdb-check-uuid (uuid)
   "Ensure that UUID hasn't been seen before.  If it has, raise an
 error containing the record that already has that uuid."
-  (when (member uuid ebdb-seen-uuids)
-    (signal 'ebdb-duplicate-uuid
-	    (list (ebdb-gethash uuid 'uuid)))))
+  (let ((dup (ebdb-gethash uuid 'uuid)))
+    (when dup
+      (signal 'ebdb-duplicate-uuid
+	      (list dup)))))
 
 (defun ebdb-make-uuid (&optional prefix)
   "Create and return a new UUID.
@@ -3155,8 +3151,7 @@ the persistent save, or allow them to propagate."
 (defun ebdb-clear-vars ()
   "Set all internal EBDB vars to nil."
   (setq ebdb-db-list nil
-	ebdb-record-tracker nil
-	ebdb-seen-uuids nil)
+	ebdb-record-tracker nil)
   (clrhash ebdb-org-hashtable)
   (clrhash ebdb-hashtable))
 
