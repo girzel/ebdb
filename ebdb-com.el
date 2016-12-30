@@ -333,6 +333,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "/ N")         'ebdb-search-user-fields)
     (define-key km (kbd "/ x")         'ebdb-search-user-fields)
     (define-key km (kbd "/ c")         'ebdb-search-changed)
+    (define-key km (kbd "/ C")         'ebdb-search-record-class)
     (define-key km (kbd "/ d")         'ebdb-search-duplicates)
     (define-key km (kbd "/ D")         'ebdb-search-database)
     (define-key km (kbd "C-x n w")     'ebdb-display-all-records)
@@ -2007,6 +2008,15 @@ The search results are displayed in the EBDB buffer."
    (list (ebdb-prompt-for-db)
 	 (ebdb-formatter-prefix)))
   (ebdb-display-records (slot-value db 'records) fmt))
+
+;;;###autoload
+(defun ebdb-search-record-class (class &optional fmt)
+  "Prompt for a record class and display all records of that class."
+  (interactive (list (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)
+		     (ebdb-formatter-prefix)))
+  (let ((recs (seq-filter (lambda (r) (object-of-class-p t class))
+			 (ebdb-records))))
+    (ebdb-display-records recs fmt)))
 
 ;;;###autoload
 (defun ebdb-display-one-record (record &optional fmt)
