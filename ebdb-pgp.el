@@ -133,11 +133,6 @@ See info node `(message)security'."
   :group 'ebdb-utilities-pgp)
 
 ;;;###autoload
-(defun ebdb-read-xfield-pgp-mail (&optional init)
-  "Set `ebdb-pgp-field', requiring match with `ebdb-pgp-ranked-actions'."
-  )
-
-;;;###autoload
 (defun ebdb-pgp ()
   "Add PGP MML tags to a message according to the recipients' EBDB records.
 
