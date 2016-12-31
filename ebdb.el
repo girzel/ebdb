@@ -90,9 +90,6 @@ of the `ebdb-field-role' field class.")
     "Enable debugging if non-nil during compile time.
 You really should not disable debugging.  But it will speed things up."))
 
-(defconst ebdb-file-coding-system 'utf-8
-  "Coding system used for reading and writing `ebdb-file'.")
-
 (defvar ebdb-version "e"
   "EBDB version.")
 
