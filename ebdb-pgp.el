@@ -28,21 +28,34 @@
 (require 'message)
 (require 'ebdb-com)
 
-(defcustom ebdb-pgp-field 'pgp-mail
-  "EBDB xfield holding the PGP action.
-If the recipient of a message has this xfield in his/her EBDB record,
-its value determines whether `ebdb-pgp' signs or encrypts the message.
-The value of this xfield should be one of the following symbols:
-  sign            Sign the message
-  sign-query      Query whether to sign the message
-  encrypt         Encrypt the message
-  encrypt-query   Query whether to encrypt the message
-If the xfield is absent use `ebdb-pgp-default'.
-See also info node `(message)security'."
-  :type '(symbol :tag "EBDB xfield")
-  :group 'ebdb-utilities-pgp)
+(defclass ebdb-field-pgp (ebdb-field-user)
+  ((action
+    :initarg :action
+    :type symbol
+    :custom (choice
+	     (const :tag "Encrypt" encrypt)
+	     (const :tag "Query encryption" encrypt-query)
+	     (const :tag "Sign" sign)
+	     (const :tag "Query signing" sign-query))
+    :documentation
+    "A symbol indicating what action to take when sending a
+    message to this contact."))
+  :documentation "A field defining a default signing/encryption
+  action for a record.  This action is taken by calling
+  `ebdb-pgp' in a message/mail composition buffer, or by adding
+  that function to the message/mail-send-hook."
+    :human-readable "pgp action")
 
-(defcustom ebdb-pgp-default nil
+(cl-defmethod ebdb-string ((field ebdb-field-pgp))
+  (symbol-name (slot-value field 'action)))
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-pgp)) &optional slots obj)
+  (let ((val (intern (ebdb-read-string
+		      "PGP action: " (when obj (slot-value obj 'action))
+		      ebdb-pgp-ranked-actions t))))
+    (cl-call-next-method class (plist-put slots :action val) obj)))
+
+(defcustom ebdb-pgp-default-action nil
   "Default action when sending a message and the recipients are not in EBDB.
 This should be one of the following symbols:
   nil             Do nothing
@@ -79,7 +92,7 @@ This list should include the following four symbols:
   :group 'ebdb-utilities-pgp)
 
 (defcustom ebdb-pgp-method 'pgpmime
-  "Method for signing and encrypting messages.
+  "Default method for signing and encrypting messages.
 It should be one of the keys of `ebdb-pgp-method-alist'.
 The default methods include
   pgp       Add MML tags for PGP format
@@ -122,29 +135,36 @@ See info node `(message)security'."
 ;;;###autoload
 (defun ebdb-read-xfield-pgp-mail (&optional init)
   "Set `ebdb-pgp-field', requiring match with `ebdb-pgp-ranked-actions'."
-  (ebdb-read-string "PGP action: " init
-                    (mapcar 'list ebdb-pgp-ranked-actions) t))
+  )
 
 ;;;###autoload
 (defun ebdb-pgp ()
   "Add PGP MML tags to a message according to the recipients' EBDB records.
-For all message recipients in `ebdb-pgp-headers', this grabs the action
-in `ebdb-pgp-field' of their EBDB records.  If this proposes multiple actions,
-perform the action which appears first in `ebdb-pgp-ranked-actions'.
-If this proposes no action at all, use `ebdb-pgp-default'.
-The variable `ebdb-pgp-method' defines the method which is actually used
-for signing and encrypting.
+
+Use it by adding a \"pgp action\" field to one or more records.
+
+When sending a message to those records (ie, the records appear
+in `ebdb-pgp-headers' headers), this grabs the action from their
+`ebdb-field-pgp' field.  If multiple records propose different
+actions, perform the action which appears first in
+`ebdb-pgp-ranked-actions'.  If this proposes no action at all,
+use `ebdb-pgp-default-action'.  The variable `ebdb-pgp-method'
+defines the method which is actually used for signing and
+encrypting.
 
 This command works with both `mail-mode' and `message-mode' to send
 signed or encrypted mail.
 
-To run this command automatically when sending a message,
-use `ebdb-initialize' with arg `pgp' to add this function
-to `message-send-hook' and `mail-send-hook'.
-Yet see info node `(message)Signing and encryption' why you
-might not want to rely for encryption on a hook function
-which runs just before the message is sent, that is, you might want
-to call the command `ebdb-pgp' manually, then call `mml-preview'."
+This file does not automatically set up hooks for signing and
+encryption, see Info node `(message)Signing and encryption' for
+reasons why.  Instead, you might want to call the command
+`ebdb-pgp' manually, then call `mml-preview'.
+
+If you do decide to set up automatic signing/encryption hooks,
+use one of the following, as appropriate:
+
+(add-hook 'message-send-hook 'ebdb-pgp)
+(add-hook 'mail-send-hook 'ebdb-pgp)"
   (interactive)
   (save-excursion
     (save-restriction
@@ -158,7 +178,8 @@ to call the command `ebdb-pgp' manually, then call `mml-preview'."
                        (delete-dups
                         (mapcar
                          (lambda (record)
-                           (ebdb-record-xfield-intern record ebdb-pgp-field))
+                           (if-let ((field (car-safe (ebdb-record-field record ebdb-field-pgp))))
+			       (slot-value field 'action)))
                          (delete-dups
                           (apply 'nconc
                                  (mapcar
@@ -168,11 +189,11 @@ to call the command `ebdb-pgp' manually, then call `mml-preview'."
                                   (ebdb-extract-address-components
                                    (mapconcat
                                     (lambda (header)
-                                      (mail-fetch-field header nil t))
+                                      (ebdb-message-header header))
                                     ebdb-pgp-headers ", ")
                                    t)))))))
-                 (and ebdb-pgp-default
-                      (list ebdb-pgp-default)))))
+                 (and ebdb-pgp-default-action
+                      (list ebdb-pgp-default-action)))))
         (when actions
           (widen) ; after analyzing the headers
           (let ((ranked-actions ebdb-pgp-ranked-actions)
@@ -191,9 +212,6 @@ to call the command `ebdb-pgp' manually, then call `mml-preview'."
                          (funcall (nth 2 (assq ebdb-pgp-method
                                                ebdb-pgp-method-alist)))
                          (setq ranked-actions nil)))))))))))
-
-(add-hook 'message-send-hook 'ebdb-pgp)
-(add-hook 'mail-send-hook 'ebdb-pgp)
 
 (provide 'ebdb-pgp)
 ;;; ebdb-pgp.el ends here

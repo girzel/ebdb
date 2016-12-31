@@ -4571,5 +4571,11 @@ but not allowing for regexps."
  "ebdb-gnus"
  "Gnus field holding private IMAP mailbox name.")
 
+(eieio-defclass-autoload
+ 'ebdb-field-pgp
+ 'ebdb-field-user
+ "ebdb-pgp"
+ "Field holding default pgp action when sending messages to this record.")
+
 (provide 'ebdb)
 ;;; ebdb.el ends here
