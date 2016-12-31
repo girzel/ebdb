@@ -645,7 +645,7 @@ message."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-simple))
 			 &optional slots obj)
-  (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj name)))))
+  (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj 'name)))))
     (cl-call-next-method class (plist-put slots :name name) obj)))
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) &optional record)
@@ -2550,7 +2550,7 @@ appropriate person record."
 	   m))))))
 
 (cl-defmethod ebdb-record-change-name ((org ebdb-record-organization) &optional name)
-  (let ((new-name (or name (ebdb-read 'ebdb-field-name-simple nil (slot-value org 'name)))))
+  (let ((new-name (or name (ebdb-read ebdb-field-name-simple nil (slot-value org 'name)))))
     (setf (slot-value (ebdb-record-cache org) 'name-string) (ebdb-string new-name))
     (cl-call-next-method org new-name)))
 
