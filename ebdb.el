@@ -2850,11 +2850,11 @@ overwrite data somewhere."
 	 (dolist (d (slot-value (ebdb-record-cache deleter) 'database))
 	   ;; Use low-level functions for this so we don't set the
 	   ;; database dirty.
-	   (object-remove-from-list db 'records deleter)
-	   (object-add-to-list db 'records keeper)
+	   (object-remove-from-list d 'records deleter)
+	   (object-add-to-list d 'records keeper)
 	   (object-add-to-list (ebdb-record-cache keeper)
-			       'database d))
-	 (ebdb-delete-record deleter))))))
+			       'database d)
+	   (ebdb-delete-record deleter d t)))))))
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
   "Unload database DB.
