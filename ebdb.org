@@ -1,3 +1,4 @@
+ -*- sentence-end-double-space: t; -*-
 #+TEXINFO_CLASS: info
 #+TEXINFO_HEADER: @syncodeindex pg cp
 #+TITLE: EBDB Manual
@@ -90,7 +91,15 @@ the record in, if there is more than one.
 ** Record classes
 EBDB comes with two record classes, representing individuals and
 organizations.
-
+** Record names
+EBDB comes with two classes for name fields: "simple" and "complex".
+Simple names are just a single string, complex names are split out
+into surname, given names, suffix, etc.  All records have a single
+canonical name: person records have a complex name, organization
+records have a simple name.  In addition, person records can have one
+or more "aka" names, and these akas can be either simple or complex.
+When adding fields to a record, the simple name class is labeled
+"nickname", and the complex class is labeled "alt name".
 * Record fields
 ** Inserting new fields
 Press "i" (`ebdb-insert-field') with point on a record will prompt for
@@ -144,7 +153,7 @@ your custom class name:
 
 Besides the "plumbing" and "built-in" fields, all other fields belong
 to one of two types: `ebdb-field-user' and `ebdb-field-user-simple'.
-The former is an abstract class, used to built fields with more
+The former is an abstract class, used to build fields with more
 complicated structures.  The latter is a simple class with a string
 label and a string value.
 
@@ -156,8 +165,8 @@ the future.
 Fields built from `ebdb-field-user' will have their own identifier.
 EBDB comes with classes including "anniversary", "url", "id",
 "relation", "role" and more.  Many of these fields have their own list
-of labels (for instance, "anniversary" fields may be labeled
-"birthday", "wedding", etc).
+of labels (for instance, anniversary fields may be labeled "birthday",
+"wedding", etc).
 
 Loading secondary libraries may make more field types available.
 * MUA Interaction

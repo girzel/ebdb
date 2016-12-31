@@ -617,163 +617,6 @@ message."
 (cl-defmethod ebdb-string ((field ebdb-field-uuid))
   (slot-value field 'uuid))
 
-;;; The name fields.  One abstract base class, and two instantiable
-;;; subclasses.
-
-;; TODO: Allow the user to choose whether the aka slot uses
-;; `ebdb-field-name-simple' or `ebdb-field-name-complex'.  Or maybe on
-;; a case-by-case basis?
-
-(defclass ebdb-field-name (ebdb-field)
-  nil
-  :abstract t
-  :documentation "Abstract base class for creating record
-  names.")
-
-(defclass ebdb-field-name-simple (ebdb-field-name)
-  ((name
-    :type string
-    :initarg :name
-    :custom string
-    :initform ""))
-  :documentation "A name class for \"simple\" names: ie plain
-  strings."
-  :human-readable "name")
-
-(cl-defmethod ebdb-string ((name ebdb-field-name-simple))
-  (slot-value name 'name))
-
-(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-simple))
-			 &optional slots obj)
-  (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj 'name)))))
-    (cl-call-next-method class (plist-put slots :name name) obj)))
-
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) &optional record)
-  (when record
-    (ebdb-puthash (ebdb-string name) record))
-  (cl-call-next-method))
-
-(defclass ebdb-field-name-complex (ebdb-field-name)
-  ((surname
-    :initarg :surname
-    :type (or null string)
-    :custom (choice (const :tag "No surname" nil)
-		    (string :tag "Surname"))
-    :initform nil)
-   (given-names
-    :initarg :given-names
-    :type (list-of string)
-    :custom (repeat (string :tag "Name"))
-    :initform nil)
-   (prefix
-    :initarg :prefix
-    :type (or null string)
-    :custom (choice (const :tag "No prefix" nil)
-		    (string :tag "Prefix"))
-    :initform nil)
-   (suffix
-    :initarg :suffix
-    :type (or null string)
-    :custom (choice (const :tag "No suffix" nil)
-		    (string :tag "Suffic"))
-    :initform nil)
-   ;; What is an affix, actually?
-   (affix
-    :initarg :affix
-    :type (or null string)
-    :custom (choice (const :tag "No affix" nil)
-		    (string :tag "Affix"))
-    :initform nil))
-  :documentation "A name class for \"complex\", ie structured,
-  names."
-  ;; This returns "aka" because the prompt is only used when _adding_
-  ;; another name to an existing record.
-  :human-readable "aka")
-
-(cl-defmethod ebdb-name-last ((name ebdb-field-name-complex))
-  "Return the surname of this name field."
-  (slot-value name 'surname))
-
-(cl-defmethod ebdb-name-given ((name ebdb-field-name-complex) &optional full)
-  "Return the given names of this name field.
-
-If FULL is t, return all the given names, otherwise just the
-first one."
-  (let ((given (slot-value name 'given-names)))
-    (if full
-	(mapconcat #'identity given " ")
-      (car given))))
-
-(cl-defmethod ebdb-name-lf ((name ebdb-field-name-complex) &optional full)
-  (let ((given-string (ebdb-name-given name full))
-	(prefix (slot-value name 'prefix)))
-    (concat (ebdb-name-last name)
-	    (when prefix prefix)
-	    (when given-string (format ", %s" given-string)))))
-
-(cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional _full)
-  (with-slots (prefix surname suffix) name
-    (concat (ebdb-name-given name t)
-	    " "
-	    (when prefix
-	      (format "%s " prefix))
-	    (slot-value name 'surname)
-	    (when suffix
-	      (format ", %s" suffix)))))
-
-(cl-defmethod ebdb-string ((name ebdb-field-name-complex))
-  "Produce a canonical string for NAME."
-  ;; This is the crux of things, really.  This is the method that
-  ;; produces the name you'll see in the *EBDB* buffer, so this is the
-  ;; bit that should be most customizable, and most flexible.  This
-  ;; value also gets stored in the cache.
-  (ebdb-name-fl name))
-
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) &optional record)
-  (when record
-    (let ((lf (ebdb-name-lf name))
-	  (fl (ebdb-name-fl name)))
-	(ebdb-puthash lf record)
-	(ebdb-puthash fl record)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names lf)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names fl)))
-  (cl-call-next-method))
-
-(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) &optional record _unload)
-  (when record
-    (let ((lf (ebdb-name-lf name))
-	  (fl (ebdb-name-fl name)))
-      (ebdb-remhash lf record)
-      (ebdb-remhash fl record)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names lf)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names fl)))
-  (cl-call-next-method))
-
-(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
-  (if ebdb-read-name-articulate
-      (let* ((surname-default (when obj (ebdb-name-last obj)))
-	     (given-default (when obj (ebdb-name-given obj t)))
-	     (surname (read-string "Surname: " surname-default))
-	     (given-names (read-string "Given name(s): " given-default)))
-	(setq slots (plist-put slots :surname surname))
-	(setq slots (plist-put slots :given-names (split-string given-names)))
-	(cl-call-next-method class slots obj))
-    (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))))))
-
-(cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
-  "Short-circuit the plain field search for names.
-
-The record itself performs more complex searches on cached name
-values, by default the search is not handed to the name field itself."
-  nil)
-
-(cl-defmethod ebdb-parse ((_class (subclass ebdb-field-name-complex)) string)
-  (let ((bits (ebdb-divide-name string)))
-    (make-instance 'ebdb-field-name-complex
-     :given-names (when (car bits)
-		    (list (car bits)))
-     :surname (cdr bits))))
-
 ;;; The labeled abstract class.  Can be subclassed, or used as a mixin.
 
 ;; Probably there's no need to subclass from `ebdb-field'.  Without
@@ -890,6 +733,161 @@ process."
     (let ((default (when obj (ebdb-string obj))))
       (setq slots (plist-put slots :value (ebdb-read-string "Value: " default)))))
   (cl-call-next-method class slots obj))
+
+;;; The name fields.  One abstract base class, and two instantiable
+;;; subclasses.
+
+;; TODO: Allow the user to choose whether the aka slot uses
+;; `ebdb-field-name-simple' or `ebdb-field-name-complex'.  Or maybe on
+;; a case-by-case basis?
+
+(defclass ebdb-field-name (ebdb-field-user)
+  nil
+  :abstract t
+  :documentation "Abstract base class for creating record
+  names.")
+
+(defclass ebdb-field-name-simple (ebdb-field-name)
+  ((name
+    :type string
+    :initarg :name
+    :custom string
+    :initform ""))
+  :documentation "A name class for \"simple\" names: ie plain
+  strings."
+  :human-readable "nickname")
+
+(cl-defmethod ebdb-string ((name ebdb-field-name-simple))
+  (slot-value name 'name))
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-simple))
+			 &optional slots obj)
+  (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj 'name)))))
+    (cl-call-next-method class (plist-put slots :name name) obj)))
+
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) &optional record)
+  (when record
+    (ebdb-puthash (ebdb-string name) record))
+  (cl-call-next-method))
+
+(defclass ebdb-field-name-complex (ebdb-field-name)
+  ((surname
+    :initarg :surname
+    :type (or null string)
+    :custom (choice (const :tag "No surname" nil)
+		    (string :tag "Surname"))
+    :initform nil)
+   (given-names
+    :initarg :given-names
+    :type (list-of string)
+    :custom (repeat (string :tag "Name"))
+    :initform nil)
+   (prefix
+    :initarg :prefix
+    :type (or null string)
+    :custom (choice (const :tag "No prefix" nil)
+		    (string :tag "Prefix"))
+    :initform nil)
+   (suffix
+    :initarg :suffix
+    :type (or null string)
+    :custom (choice (const :tag "No suffix" nil)
+		    (string :tag "Suffic"))
+    :initform nil)
+   ;; What is an affix, actually?
+   (affix
+    :initarg :affix
+    :type (or null string)
+    :custom (choice (const :tag "No affix" nil)
+		    (string :tag "Affix"))
+    :initform nil))
+  :documentation "A name class for \"complex\", ie structured,
+  names."
+  :human-readable "alt name")
+
+(cl-defmethod ebdb-name-last ((name ebdb-field-name-complex))
+  "Return the surname of this name field."
+  (slot-value name 'surname))
+
+(cl-defmethod ebdb-name-given ((name ebdb-field-name-complex) &optional full)
+  "Return the given names of this name field.
+
+If FULL is t, return all the given names, otherwise just the
+first one."
+  (let ((given (slot-value name 'given-names)))
+    (if full
+	(mapconcat #'identity given " ")
+      (car given))))
+
+(cl-defmethod ebdb-name-lf ((name ebdb-field-name-complex) &optional full)
+  (let ((given-string (ebdb-name-given name full))
+	(prefix (slot-value name 'prefix)))
+    (concat (ebdb-name-last name)
+	    (when prefix prefix)
+	    (when given-string (format ", %s" given-string)))))
+
+(cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional _full)
+  (with-slots (prefix surname suffix) name
+    (concat (ebdb-name-given name t)
+	    " "
+	    (when prefix
+	      (format "%s " prefix))
+	    (slot-value name 'surname)
+	    (when suffix
+	      (format ", %s" suffix)))))
+
+(cl-defmethod ebdb-string ((name ebdb-field-name-complex))
+  "Produce a canonical string for NAME."
+  ;; This is the crux of things, really.  This is the method that
+  ;; produces the name you'll see in the *EBDB* buffer, so this is the
+  ;; bit that should be most customizable, and most flexible.  This
+  ;; value also gets stored in the cache.
+  (ebdb-name-fl name))
+
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) &optional record)
+  (when record
+    (let ((lf (ebdb-name-lf name))
+	  (fl (ebdb-name-fl name)))
+	(ebdb-puthash lf record)
+	(ebdb-puthash fl record)
+	(object-add-to-list (ebdb-record-cache record) 'alt-names lf)
+	(object-add-to-list (ebdb-record-cache record) 'alt-names fl)))
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) &optional record _unload)
+  (when record
+    (let ((lf (ebdb-name-lf name))
+	  (fl (ebdb-name-fl name)))
+      (ebdb-remhash lf record)
+      (ebdb-remhash fl record)
+      (object-remove-from-list (ebdb-record-cache record) 'alt-names lf)
+      (object-remove-from-list (ebdb-record-cache record) 'alt-names fl)))
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
+  (if ebdb-read-name-articulate
+      (let* ((surname-default (when obj (ebdb-name-last obj)))
+	     (given-default (when obj (ebdb-name-given obj t)))
+	     (surname (read-string "Surname: " surname-default))
+	     (given-names (read-string "Given name(s): " given-default)))
+	(setq slots (plist-put slots :surname surname))
+	(setq slots (plist-put slots :given-names (split-string given-names)))
+	(cl-call-next-method class slots obj))
+    (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))))))
+
+(cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
+  "Short-circuit the plain field search for names.
+
+The record itself performs more complex searches on cached name
+values, by default the search is not handed to the name field itself."
+  nil)
+
+(cl-defmethod ebdb-parse ((_class (subclass ebdb-field-name-complex)) string)
+  (let ((bits (ebdb-divide-name string)))
+    (make-instance 'ebdb-field-name-complex
+     :given-names (when (car bits)
+		    (list (car bits)))
+     :surname (cdr bits))))
 
 ;;; Role fields.
 
