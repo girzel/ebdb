@@ -27,6 +27,15 @@
 (cl-defstruct gnorb-ebdb-link
   subject date group id)
 
+(defvar gnorb-ebdb-org-tags nil
+  "Variable holding tags defined for EBDB records.
+
+This list is added to the result of
+`org-global-tags-completion-table' when producing a list of
+potential tags for completion.")
+
+(push '(gnorb-ebdb-field-tags ";" ";") ebdb-separator-alist)
+
 (defclass gnorb-ebdb-field-messages (ebdb-field-user)
   ((messages
     :type (list-of gnorb-ebdb-link)
@@ -46,6 +55,7 @@
   ((tags
     :type (list-of string)
     :initarg :tags
+    :custom (repeat string)
     :initform nil))
   :human-readable "gnorb tags")
 
@@ -53,8 +63,19 @@
   (ebdb-concat 'gnorb-ebdb-field-tags (slot-value field 'tags)))
 
 (cl-defmethod ebdb-read ((field (subclass gnorb-ebdb-field-tags)) &optional slots obj)
-  (let ((val (ebdb-read-string "Tags: " (when obj (ebdb-string obj))
-			       (org-global-tags-completion-table))))
-    (cl-call-next-method field (plist-put slots :tags (split-string val)))))
+  (let* ((crm-separator (cadr (assq 'gnorb-ebdb-field-tags ebdb-separator-alist)))
+	 (val (completing-read-multiple
+	       "Tags: "
+	       (append (org-global-tags-completion-table)
+		       (when gnorb-ebdb-org-tags
+			 (mapcar #'list gnorb-ebdb-org-tags)))
+	       nil nil
+	       (when obj (ebdb-string obj)))))
+    (cl-call-next-method field (plist-put slots :tags val))))
+
+(cl-defmethod ebdb-init-field ((field gnorb-ebdb-field-tags) _record)
+  (let ((tags (slot-value field 'tags)))
+    (dolist (tag tags)
+      (add-to-list 'gnorb-ebdb-org-tags tag))))
 
 (provide 'ebdb-gnorb)
