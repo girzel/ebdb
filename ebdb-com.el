@@ -316,7 +316,6 @@ With ARG a negative number do not append."
     (define-key km (kbd "C-x C-t")   'ebdb-transpose-fields)
     (define-key km (kbd "w r")         'ebdb-copy-records-as-kill)
     (define-key km (kbd "w f")         'ebdb-copy-fields-as-kill)
-    (define-key km (kbd "u")          'ebdb-browse-url)
     ;; (define-key km (kbd "P"       'ebdb-print)
     (define-key km (kbd "=")          'delete-other-windows)
     ;; Buffer manipulation
@@ -872,7 +871,6 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
     ("Use database"
      ["Send mail" ebdb-mail t]
      ["Dial phone number" ebdb-dial t]
-     ["Browse URL" ebdb-browse-url t]
      ["Copy records as kill" ebdb-copy-records-as-kill t]
      ["Copy fields as kill" ebdb-copy-fields-as-kill t]
      ["Follow relation" ebdb-follow-related t]
@@ -1042,8 +1040,6 @@ of all the\n\t records in the database.
 \\[other-window]\t Move to another window.
 \\[ebdb-info]\t Read the Info documentation for EBDB.
 \\[ebdb-help]\t Display a one line command summary in the echo area.
-\\[ebdb-browse-url]\t Visit Web sites listed in the `url' field(s) of the current \
-record.
 
 For address completion using the names and mail addresses in the database:
 \t in Sendmail mode, type \\<mail-mode-map>\\[ebdb-complete-mail].
@@ -2889,23 +2885,7 @@ is non-nil.  Do not dial the extension."
       (message "Dialing %s" number))
     (ebdb-dial-number number)))
 
-;;; url interface
-
-;;;###autoload
-(defun ebdb-browse-url (records &optional which)
-  "Browse URLs stored in the `url' field of RECORDS.
-Prefix WHICH specifies which URL in field `url' is used (starting from 0).
-Default is the first URL."
-  (interactive (list (ebdb-get-records "Visit (URL): ")
-                     (and current-prefix-arg
-                          (prefix-numeric-value current-prefix-arg))))
-  (unless which (setq which 0))
-  (dolist (record (ebdb-record-list records))
-    (let ((url (ebdb-record-xfield-split record 'url)))
-      (when url
-        (setq url (read-string "fetch: " (nth which url)))
-        (unless (string= "" url)
-          (browse-url url))))))
+;;; Adding urls
 
 ;;;###autoload
 (defun ebdb-grab-url (record url label)
