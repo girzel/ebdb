@@ -3409,12 +3409,20 @@ This is used for fields which do not have an entry in `ebdb-separator-alist'."
 
 (defcustom ebdb-separator-alist
   '((record "\n\n" "\n\n") ; used by `ebdb-copy-fields-as-kill'
-    (name-first-last "[ ,;]" " ") (name-last-first "[ ,;]" ", ")
+    (name-first-last "[ ,;]" " ")
+    (name-last-first "[ ,;]" ", ")
     (name-field ":\n" ":\n") ; used by `ebdb-copy-fields-as-kill'
-    (phone "[,;]" ", ") (address ";\n" ";\n") ; ditto
-    (organization "[,;]" ", ") (affix "[,;]"  ", ") (aka "[,;]" ", ")
-    (mail "[,;]" ", ") (mail-alias "[,;]" ", ") (vm-folder "[,;]" ", ")
-    (birthday "\n" "\n") (wedding "\n" "\n") (anniversary "\n" "\n")
+    (phone "[,;]" ", ")
+    (address ";\n" ";\n")
+    (organization "[,;]" ", ")
+    (affix "[,;]"  ", ")
+    (aka "[,;]" ", ")
+    (mail "[,;]" ", ")
+    (mail-alias "[,;]" ", ")
+    (vm-folder "[,;]" ", ")
+    (birthday "\n" "\n")
+    (wedding "\n" "\n")
+    (anniversary "\n" "\n")
     (notes "\n" "\n"))
   "Alist of field separators.
 Each element is of the form (FIELD SPLIT-RE JOIN).
