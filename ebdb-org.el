@@ -44,6 +44,9 @@
 ;; When calling `org-store-link' on a contact, a "ebdb:uuid/" style
 ;; link is created by default.
 
+;; This file also defines a "tags" field class, for tagging EBDB
+;; contacts with Org tags.
+
 ;;; Code:
 
 (if (fboundp 'org-link-set-parameters)
@@ -104,6 +107,43 @@ italicized, in all other cases it is left unchanged."
    ((eq format 'odt)
     (format "<text:span text:style-name=\"Emphasis\">%s</text:span>" desc))
    (t desc)))
+
+(defvar ebdb-org-tags nil
+  "Variable holding tags defined for EBDB records.
+
+This list is added to the result of
+`org-global-tags-completion-table' when producing a list of
+potential tags for completion.")
+
+(push '(ebdb-org-field-tags ";" ";") ebdb-separator-alist)
+
+
+(defclass ebdb-org-field-tags (ebdb-field-user)
+  ((tags
+    :type (list-of string)
+    :initarg :tags
+    :custom (repeat string)
+    :initform nil))
+  :human-readable "org tags")
+
+(cl-defmethod ebdb-string ((field ebdb-org-field-tags))
+  (ebdb-concat 'ebdb-org-field-tags (slot-value field 'tags)))
+
+(cl-defmethod ebdb-read ((field (subclass ebdb-org-field-tags)) &optional slots obj)
+  (let* ((crm-separator (cadr (assq 'ebdb-org-field-tags ebdb-separator-alist)))
+	 (val (completing-read-multiple
+	       "Tags: "
+	       (append (org-global-tags-completion-table)
+		       (when ebdb-org-tags
+			 (mapcar #'list ebdb-org-tags)))
+	       nil nil
+	       (when obj (ebdb-string obj)))))
+    (cl-call-next-method field (plist-put slots :tags val))))
+
+(cl-defmethod ebdb-init-field ((field ebdb-org-field-tags) _record)
+  (let ((tags (slot-value field 'tags)))
+    (dolist (tag tags)
+      (add-to-list 'ebdb-org-tags tag))))
 
 (provide 'ebdb-org)
 ;;; ebdb-org.el ends here

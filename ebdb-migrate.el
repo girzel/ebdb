@@ -354,6 +354,11 @@ checked for a score to add to the mail addresses in the same record."
   :group 'ebdb-mua-gnus-scoring
   :type 'symbol)
 
+(defcustom gnorb-ebdb-org-tag-field 'org-tags
+  "The name (as a symbol) of the field to use for org tags."
+  :group 'gnorb-ebdb
+  :type 'symbol)
+
 ;;;###autoload
 (defun ebdb-migrate-from-bbdb ()
   "Migrate from BBDB to EBDB.
@@ -366,6 +371,7 @@ Assume that the variable `bbdb-file' points to an existing file
 holding valid contacts in a previous BBDB format."
   (require 'url-handlers)
   (require 'ebdb-gnorb)
+  (require 'ebdb-org)
   (require 'ebdb-gnus)
   (with-current-buffer (find-file-noselect bbdb-file)
     (when (and (/= (point-min) (point-max))
@@ -542,10 +548,10 @@ holding valid contacts in a previous BBDB format."
 				 :messages val)
 		  fields)))
 	 ((eq lab gnorb-ebdb-org-tag-field)
-	  (push (make-instance 'gnorb-ebdb-field-tags
+	  (push (make-instance 'ebdb-org-field-tags
 			       :tags (if (listp val)
 					 val
-				       (ebdb-split gnorb-ebdb-org-tag-field val)))
+				       (split-string val ";" t t)))
 		fields))
 	 ((memq lab (list bbdb/gnus-score-field
 			  bbdb/gnus-split-private-field
