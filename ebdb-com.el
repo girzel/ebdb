@@ -1276,10 +1276,11 @@ With prefix N move backwards N (sub)fields."
 (defun ebdb-toggle-all-record-marks ()
   "Reverse the marked status of all records."
   (interactive)
-  (mapcar
-   (lambda (rec)
-     (ebdb-toggle-record-mark rec 'mark))
-   ebdb-records))
+  (save-excursion
+    (mapcar
+     (lambda (rec)
+       (ebdb-toggle-record-mark rec 'mark))
+     ebdb-records)))
 
 (defun ebdb-unmark-all-records ()
   "Remove the mark from all records."
