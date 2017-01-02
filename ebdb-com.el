@@ -316,6 +316,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "C-x C-t")   'ebdb-transpose-fields)
     (define-key km (kbd "w r")         'ebdb-copy-records-as-kill)
     (define-key km (kbd "w f")         'ebdb-copy-fields-as-kill)
+    (define-key km (kbd "w m")         'ebdb-copy-mail-as-kill)
     ;; (define-key km (kbd "P"       'ebdb-print)
     (define-key km (kbd "=")          'delete-other-windows)
     ;; Buffer manipulation
@@ -873,6 +874,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Dial phone number" ebdb-dial t]
      ["Copy records as kill" ebdb-copy-records-as-kill t]
      ["Copy fields as kill" ebdb-copy-fields-as-kill t]
+     ["Copy mail as kill" ebdb-copy-mail-as-kill t]
      ["Follow relation" ebdb-follow-related t]
      "--"
      ["Print records" ebdb-print t])
@@ -2954,6 +2956,16 @@ is a list, copy only the NUMth list element."
     (let ((str (ebdb-concat 'record (nreverse val-list))))
       (kill-new str)
       (message "%s" str))))
+
+;;;###autoload
+(defun ebdb-copy-mail-as-kill (records)
+  "Copy dwim-style mail addresses for RECORDS.
+
+Ie, looks like \"John Doe <john@doe.com>\"."
+  (interactive (list (ebdb-do-records)))
+  (let ((str (mapconcat #'ebdb-dwim-mail records ", ")))
+    (kill-new str)
+    (message str)))
 
 
 
