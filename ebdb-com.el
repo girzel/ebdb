@@ -298,6 +298,8 @@ With ARG a negative number do not append."
     (define-key km (kbd "DEL")         'ebdb-prev-field) ; DEL
     (define-key km (kbd "d c")          'ebdb-copy-records)
     (define-key km (kbd "d m")          'ebdb-move-records)
+    (define-key km (kbd "d e")          'ebdb-customize-database)
+    (define-key km (kbd "f")          'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "C-k")       'ebdb-delete-field-or-record)
     (define-key km (kbd "i")          'ebdb-insert-field)
     (define-key km (kbd "RET")  'ebdb-follow-related)
@@ -313,7 +315,6 @@ With ARG a negative number do not append."
     (define-key km (kbd "h")          'ebdb-info)
     (define-key km (kbd "?")          'ebdb-help)
     ;; (define-key km (kbd "q"       'quit-window) ; part of `special-mode' bindings
-    (define-key km (kbd "C-x C-t")   'ebdb-transpose-fields)
     (define-key km (kbd "w r")         'ebdb-copy-records-as-kill)
     (define-key km (kbd "w f")         'ebdb-copy-fields-as-kill)
     (define-key km (kbd "w m")         'ebdb-copy-mail-as-kill)
@@ -338,9 +339,6 @@ With ARG a negative number do not append."
     (define-key km (kbd "/ D")         'ebdb-search-database)
     (define-key km (kbd "C-x n w")     'ebdb-display-all-records)
     (define-key km (kbd "C-x n d")     'ebdb-display-current-record)
-
-    (define-key km [delete]     'scroll-down) ; 24.1: part of `special-mode'
-    (define-key km " "          'scroll-up)   ; 24.1: part of `special-mode'
 
     (define-key km [mouse-3]    'ebdb-mouse-menu)
     (define-key km [mouse-2]    (lambda (event)
@@ -851,7 +849,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Search phone" ebdb-search-phone t]
      ["Search address" ebdb-search-address t]
      ["Search mail" ebdb-search-mail t]
-     ["Search xfields" ebdb-search-xfields t]
+     ["Search user fields" ebdb-search-user-fields t]
      ["Search changed records" ebdb-search-changed t]
      ["Search duplicates" ebdb-search-duplicates t]
      "--"
@@ -876,6 +874,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Copy fields as kill" ebdb-copy-fields-as-kill t]
      ["Copy mail as kill" ebdb-copy-mail-as-kill t]
      ["Follow relation" ebdb-follow-related t]
+     ["Export records in other format" ebdb-format-to-tmp-buffer t]
      "--"
      ["Print records" ebdb-print t])
     ("Manipulate database"
@@ -883,15 +882,11 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Edit current field" ebdb-edit-field t]
      ["Insert new field" ebdb-insert-field t]
      ["Edit some field" ebdb-edit-foo t]
-     ["Transpose fields" ebdb-transpose-fields t]
      ["Delete record or field" ebdb-delete-field-or-record t]
      "--"
-     ["Sort addresses" ebdb-sort-addresses t]
-     ["Sort phones" ebdb-sort-phones t]
-     ["Sort xfields" ebdb-sort-xfields t]
-     ["Merge records" ebdb-merge-records t]
-     ["Sort database" ebdb-sort-records t]
      ["Delete duplicate mails" ebdb-delete-redundant-mails t]
+     "--"
+     ["Edit database" ebdb-customize-database t]
      "--"
      ["Save EBDB" ebdb-save t]
      ["Revert EBDB" revert-buffer t])
@@ -1006,31 +1001,37 @@ If `ebdb-dedicated-window' is non-nil, mark the window as dedicated."
 Letters no longer insert themselves.  Numbers are prefix arguments.
 You can move around using the usual cursor motion commands.
 \\<ebdb-mode-map>
-\\[ebdb-add-mail-alias]\t Add new mail alias to visible records or \
-remove it.
+\\[ebdb-insert-field]\t Insert a new field into the current record.  \
+Note that this\n\t will let you add new fields of your own as well.
 \\[ebdb-edit-field]\t Edit the field on the current line.
+\\[ebdb-edit-field-customize]\t Edit field using the customize interface.
 \\[ebdb-delete-field-or-record]\t Delete the field on the \
 current line.  If the current line is the\n\t first line of a record, then \
 delete the entire record.
-\\[ebdb-insert-field]\t Insert a new field into the current record.  \
-Note that this\n\t will let you add new fields of your own as well.
-\\[ebdb-transpose-fields]\t Swap the field on the current line with the \
-previous field.
 \\[ebdb-dial]\t Dial the current phone field.
 \\[ebdb-next-record], \\[ebdb-prev-record]\t Move to the next or the previous \
 displayed record, respectively.
-\\[ebdb-create]\t Create a new record.
+\\[ebdb-next-field], \\[ebdb-prev-field]\t Move to the next or the previous \
+record field.
+\\[ebdb-create-record]\t Create a new record.
+\\[ebdb-create-record-extended]\t Create a new record with extended options.
 \\[ebdb-toggle-records-format]\t Toggle whether the current record is displayed in a \
 one-line\n\t listing, or a full multi-line listing.
-\\[ebdb-merge-records]\t Merge the contents of the current record with \
-some other, and then\n\t delete the current record.
+\\[ebdb-copy-fields-as-kill]\t Copy field(s) under point as a kill.
+\\[ebdb-copy-mail-as-kill]\t Copy name+mail of record as a kill.
+\\[ebdb-copy-records-as-kill]\t Copy record(s) as a kill.
+\\[ebdb-fmt-to-tmp-buffer]\t Export records to a different format.
 \\[ebdb-omit-record]\t Remove the current record from the display without \
-deleting it from\n\t the database.  This is often a useful thing to do \
-before using one\n\t of the `*' commands.
+deleting it from\n\t the database.
+\\[ebdb-toggle-record-mark]\t Mark or unmark record under point.
+\\[ebdb-toggle-all-record-marks]\t Toggle all record marks
+\\[ebdb-unmark-all-records]\t Unmark all records.
+\\[ebdb-clone-buffer]\t Clone the current EBDB buffer.
+\\[ebdb-rename-buffer]\t Rename the current EBDB buffer.
 \\[ebdb]\t Search for records in the database (on all fields).
 \\[ebdb-search-mail]\t Search for records by mail address.
 \\[ebdb-search-organization]\t Search for records by organization.
-\\[ebdb-search-xfields]\t Search for records by xfields.
+\\[ebdb-search-user-fields]\t Search for records by user fields.
 \\[ebdb-search-name]\t Search for records by name.
 \\[ebdb-search-changed]\t Display records that have changed since the database \
 was saved.
@@ -1039,7 +1040,6 @@ current record.
 \\[ebdb-save]\t Save the EBDB file to disk.
 \\[ebdb-print]\t Create a TeX file containing a pretty-printed version \
 of all the\n\t records in the database.
-\\[other-window]\t Move to another window.
 \\[ebdb-info]\t Read the Info documentation for EBDB.
 \\[ebdb-help]\t Display a one line command summary in the echo area.
 
@@ -1048,21 +1048,17 @@ For address completion using the names and mail addresses in the database:
 \t in Message mode, type \\<message-mode-map>\\[ebdb-complete-mail].
 
 Important variables:
-\t `ebdb-auto-revert'
 \t `ebdb-ignore-redundant-mails'
 \t `ebdb-case-fold-search'
 \t `ebdb-completion-list'
 \t `ebdb-default-domain'
-\t `ebdb-layout'
-\t `ebdb-file'
-\t `ebdb-check-auto-save-file'
-\t `ebdb-pop-up-layout'
+\t `ebdb-sources'
 \t `ebdb-pop-up-window-size'
+\t `ebdb-mua-auto-update-p'
 \t `ebdb-add-name'
 \t `ebdb-add-aka'
 \t `ebdb-add-mails'
 \t `ebdb-new-mails-primary'
-\t `ebdb-read-only'
 \t `ebdb-mua-pop-up'
 \t `ebdb-user-mail-address-re'
 
