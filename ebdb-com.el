@@ -209,8 +209,8 @@ If RECORDS is a single record turn it into a list.
 If FULL is non-nil, assume that RECORDS include display information."
   (if records
       (if full
-          (if (vectorp (car records)) (list records) records)
-        (if (vectorp records) (list records) records))))
+          (if (eieio-object-p (car records)) (list records) records)
+        (if (eieio-object-p records) (list records) records))))
 
 ;; Note about EBDB prefix commands: `ebdb-append-display' and
 ;; `ebdb-search-invert' are fake prefix commands. They need not
