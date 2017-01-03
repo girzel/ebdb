@@ -2153,7 +2153,7 @@ priority."
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
 				  (_type (eql mail))
 				  (regexp string))
-  (let ((mails (ebdb-record-mail record t)))
+  (let ((mails (ebdb-record-mail record t nil t)))
     (if mails
 	(catch 'found
 	  (dolist (m mails)
@@ -3310,13 +3310,25 @@ If RECORDS are given, only search those records."
 	(object-assoc label 'object-name phones)
       phones)))
 
-(defun ebdb-record-mail (record &optional roles label)
+(defun ebdb-record-mail (record &optional roles label defunct)
+  "Return a list of all RECORD's mail fields.
+
+If ROLES is non-nil, also consider mail fields from RECORD's
+roles.  If LABEL is a string, return the mail with that label.
+If DEFUNCT is non-nil, also consider RECORD's defunct mail
+addresses."
   (let ((mails (slot-value record 'mail)))
     (when (and roles (slot-exists-p record 'organizations))
       (dolist (r (slot-value record 'organizations))
 	(when (and (slot-value r 'mail)
-		   (null (slot-value r 'defunct)))
+		   (or defunct
+		       (null (slot-value r 'defunct))))
 	  (push (slot-value r 'mail) mails))))
+    (unless defunct
+      (setq mails
+	    (seq-filter (lambda (m)
+			  (null (eq (slot-value m 'priority) 'defunct)))
+			mails)))
     (if label
 	(object-assoc label 'object-name mails)
       mails)))
