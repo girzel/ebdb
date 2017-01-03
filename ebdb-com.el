@@ -2955,14 +2955,29 @@ is a list, copy only the NUMth list element."
       (message "%s" str))))
 
 ;;;###autoload
-(defun ebdb-copy-mail-as-kill (records)
+(defun ebdb-copy-mail-as-kill (records &optional arg)
   "Copy dwim-style mail addresses for RECORDS.
 
-Ie, looks like \"John Doe <john@doe.com>\"."
-  (interactive (list (ebdb-do-records)))
-  (let ((str (mapconcat #'ebdb-dwim-mail records ", ")))
-    (kill-new str)
-    (message str)))
+Ie, looks like \"John Doe <john@doe.com>\".
+
+With prefix argument ARG, prompt for which mail address to use."
+  (interactive (list (ebdb-do-records)
+		     current-prefix-arg))
+  (let* (mail-list mail result)
+    (dolist (r records)
+      (setq mail (if arg
+	       (ebdb-prompt-for-mail r)
+	       (car-safe (ebdb-record-mail r t))))
+      (when mail
+	(push (cons r mail) mail-list)))
+    (setq result
+      (mapconcat
+       (lambda (e)
+	 (ebdb-dwim-mail
+	  (car e) (cdr e)))
+       (reverse mail-list) ", "))
+    (kill-new result)
+    (message result)))
 
 
 
