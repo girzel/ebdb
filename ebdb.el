@@ -3266,8 +3266,10 @@ Returns a list of (\"label\" slot . field-class)."
   (let ((mail-alist (mapcar
 		     (lambda (m) (cons (ebdb-string m) m))
 		     (ebdb-record-mail record t))))
-    (cdr (assoc (ebdb-read-string "Mail address: " nil mail-alist t)
-		mail-alist))))
+    (cdr (if (= 1 (length mail-alist))
+	     (car mail-alist)
+	   (assoc (ebdb-read-string "Mail address: " nil mail-alist t)
+		  mail-alist)))))
 
 (defun ebdb-dirty-records (&optional records)
   "Return all records with unsaved changes.
