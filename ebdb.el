@@ -3268,7 +3268,9 @@ Returns a list of (\"label\" slot . field-class)."
 		     (ebdb-record-mail record t))))
     (cdr (if (= 1 (length mail-alist))
 	     (car mail-alist)
-	   (assoc (ebdb-read-string "Mail address: " nil mail-alist t)
+	   (assoc (ebdb-read-string
+		   (format "Mail address for %s: " (ebdb-string record))
+		   nil mail-alist t)
 		  mail-alist)))))
 
 (defun ebdb-dirty-records (&optional records)
