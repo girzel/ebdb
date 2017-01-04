@@ -2863,8 +2863,8 @@ overwrite data somewhere."
        ;; newly-loaded record ("rec").
        (let* ((double (cadr err))
 	      (delete-double t)
-	      (equal (equal (clone rec :cache nil)
-			    (clone double :cache nil)))
+	      (recs-equal (equal (clone rec :cache nil)
+				 (clone double :cache nil)))
 	      deleter keeper)
 
 	 ;; If any of the double's databases are read-only, we should
@@ -2877,7 +2877,7 @@ overwrite data somewhere."
 
 	 ;; If the records are the same, it doesn't matter which we
 	 ;; delete, so don't change our assumption.
-	 (unless equal
+	 (unless recs-equal
 
 	   ;; But if double is newer, we still need to keep it.
 	   (unless (ebdb-record-compare rec double 'timestamp)
@@ -2889,8 +2889,11 @@ overwrite data somewhere."
 	 ;; Merge the records, either automatically or
 	 ;; interactively, depending on the value of
 	 ;; `ebdb-auto-merge-records'.
-	 (unless equal
+	 (unless recs-equal
 	   (setq keeper (ebdb-merge keeper deleter ebdb-auto-merge-records)))
+
+	 ;; Make sure the right record is hashed against the duplicate uuid.
+	 (ebdb-puthash (ebdb-record-uuid keeper) keeper)
 
 	 (dolist (d (slot-value (ebdb-record-cache deleter) 'database))
 	   ;; Use low-level functions for this so we don't set the
