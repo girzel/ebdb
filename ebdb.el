@@ -1042,10 +1042,14 @@ values, by default the search is not handed to the name field itself."
     offered for completion, and 'primary means this address will
     be used as the default.  Only one of a record's addresses can
     be set to 'primary.")
-   (actions :initform '(ebdb-mail)))
+   (actions :initform '(ebdb-field-mail-compose)))
   :documentation "A field representing a single email address.
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
+
+(cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
+				       (mail ebdb-field-mail))
+  (ebdb-compose-mail (ebdb-dwim-mail record mail)))
 
 (cl-defmethod ebdb-init-field ((mail ebdb-field-mail) &optional record)
   (with-slots (aka mail) mail
