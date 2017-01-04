@@ -501,25 +501,33 @@ property is the field instance itself."
 			      (field ebdb-field-role)
 			      _style
 			      (record ebdb-record-organization))
-  (let ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
-	(mail (slot-value field 'mail)))
-    (if mail
-	(format "%s (%s)"
-		(ebdb-string person)
-		(ebdb-fmt-field fmt mail 'oneline record))
-      (ebdb-string person))))
+  (let* ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
+	 (mail (slot-value field 'mail))
+	 (value (copy-sequence
+		 (if mail
+		     (format "%s (%s)"
+			     (ebdb-string person)
+			     (ebdb-fmt-field fmt mail 'oneline record))
+		   (ebdb-string person)))))
+    (when (slot-value field 'defunct)
+      (add-face-text-property 0 (length value) 'ebdb-defunct nil value))
+    value))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
 			      _style
 			      (record ebdb-record-person))
-  (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid))
-	(mail (slot-value field 'mail)))
-    (if mail
-	(format "%s (%s)"
-		(ebdb-string org)
-		(ebdb-fmt-field fmt mail 'oneline record))
-      (ebdb-string org))))
+  (let* ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid))
+	 (mail (slot-value field 'mail))
+	 (value (copy-sequence
+		 (if mail
+		     (format "%s (%s)"
+			     (ebdb-string org)
+			     (ebdb-fmt-field fmt mail 'oneline record))
+		   (ebdb-string org)))))
+    (when (slot-value field 'defunct)
+      (add-face-text-property 0 (length value) 'ebdb-defunct nil value))
+    value))
 
 (defsubst ebdb-indent-string (string column)
   "Indent nonempty lines in STRING to COLUMN (except first line).
