@@ -4604,10 +4604,10 @@ but not allowing for regexps."
  "Gnorb field holding links to Gnus messages.")
 
 (eieio-defclass-autoload
- 'gnorb-ebdb-field-tags
+ 'ebdb-org-field-tags
  'ebdb-field-user
- "ebdb-gnorb"
- "Gnorb field holding Org-style tags.")
+ "ebdb-org"
+ "Field holding Org-style tags.")
 
 (eieio-defclass-autoload
  'ebdb-gnus-score-field
