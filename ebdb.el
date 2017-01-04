@@ -1047,10 +1047,6 @@ values, by default the search is not handed to the name field itself."
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
 
-(cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
-				       (mail ebdb-field-mail))
-  (ebdb-compose-mail (ebdb-dwim-mail record mail)))
-
 (cl-defmethod ebdb-init-field ((mail ebdb-field-mail) &optional record)
   (with-slots (aka mail) mail
     (ebdb-puthash mail record)
@@ -2158,6 +2154,10 @@ or actual image data."
 priority."
   (let ((sorted (ebdb-sort-mails (slot-value record 'mail))))
     (setf (slot-value record 'mail) sorted)))
+
+(cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
+				       (mail ebdb-field-mail))
+  (ebdb-compose-mail (ebdb-dwim-mail record mail)))
 
 (cl-defmethod ebdb-record-primary-mail ((record ebdb-record-entity))
   "Return the primary mail field of RECORD."
