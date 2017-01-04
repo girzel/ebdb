@@ -310,7 +310,6 @@ With ARG a negative number do not append."
     (define-key km (kbd "#")    'ebdb-toggle-record-mark)
     (define-key km (kbd "o")          'ebdb-omit-record)
     (define-key km (kbd "m")          'ebdb-mail)
-    (define-key km (kbd "M")          'ebdb-mail-address)
     (define-key km (kbd "M-d")       'ebdb-dial)
     (define-key km (kbd "h")          'ebdb-info)
     (define-key km (kbd "?")          'ebdb-help)
@@ -863,7 +862,6 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Invert search" ebdb-search-invert t])
     ("Mail"
      ["Send mail" ebdb-mail t]
-     ["Save mail address" ebdb-mail-address t]
      "--"
      ["(Re-)Build mail aliases" ebdb-mail-aliases t])
     ("Use database"
@@ -2103,60 +2101,24 @@ If MAIL is nil use RECORD's primary mail address."
   (apply 'compose-mail args))
 
 ;;;###autoload
-(defun ebdb-mail (records &optional subject n verbose)
+(defun ebdb-mail (records &optional subject arg)
   "Compose a mail message to RECORDS (optional: using SUBJECT).
-By default, the first mail addresses of RECORDS are used.
-If prefix N is a number, use Nth mail address of RECORDS (starting from 1).
-If prefix N is C-u (t noninteractively) use all mail addresses of RECORDS.
-If VERBOSE is non-nil (as in interactive calls) be verbose."
+
+If ARG (interactively, the prefix arg) is nil, use the first mail
+address of each record.  If it is t, prompt the user for which
+address to use.
+
+Another approach is to put point on a mail field and press \"a\",
+for `ebdb-field-action'."
   (interactive (list (ebdb-do-records) nil
                      (or (consp current-prefix-arg)
-                         current-prefix-arg)
-                     t))
+                         current-prefix-arg)))
   (setq records (ebdb-record-list records))
-  (if (not records)
-      (if verbose (message "No records"))
-    (let ((to (ebdb-mail-address records n nil verbose)))
-      (unless (string= "" to)
-        (ebdb-compose-mail to subject)))))
-
-(defun ebdb-mail-address (records &optional n kill-ring-save verbose)
-  "Return mail addresses of RECORDS as a string.
-By default, the first mail addresses of RECORDS are used.
-If prefix N is a number, use Nth mail address of RECORDS (starting from 1).
-If prefix N is C-u (t noninteractively) use all mail addresses of RECORDS.
-If KILL-RING-SAVE is non-nil (as in interactive calls), copy mail addresses
-to kill ring.  If VERBOSE is non-nil (as in interactive calls) be verbose."
-  (interactive (list (ebdb-do-records)
-                     (or (consp current-prefix-arg)
-                         current-prefix-arg)
-                     t t))
-  (setq records (ebdb-record-list records))
-  (if (not records)
-      (progn (if verbose (message "No records")) "")
-    (let ((good "") bad)
-      (dolist (record records)
-        (let ((mails (ebdb-record-mail record t)))
-          (cond ((not mails)
-                 (push record bad))
-                ((eq n t)
-                 (setq good (ebdb-concat ",\n\t"
-                                         good
-                                         (mapcar (lambda (mail)
-                                                   (ebdb-dwim-mail record mail))
-                                                 mails))))
-                (t
-                 (setq good (ebdb-concat ",\n\t" good
-                            (ebdb-dwim-mail record (and (numberp n)
-							(nth (1- n) mails)))))))))
-      (when (and bad verbose)
-        (message "No mail addresses for %s."
-                 (mapconcat 'ebdb-string (nreverse bad) ", "))
-        (unless (string= "" good) (sit-for 2)))
-      (when (and kill-ring-save (not (string= good "")))
-        (kill-new good)
-        (if verbose (message "%s" good)))
-      good)))
+  (let ((to (mapconcat
+	     (lambda (r) (ebdb-dwim-mail r (when arg (ebdb-prompt-for-mail r))))
+	     records ", ")))
+    (unless (string= "" to)
+      (ebdb-compose-mail to subject))))
 
 ;; Is there better way to yank selected mail addresses from the EBDB
 ;; buffer into a message buffer?  We need some kind of a link between
