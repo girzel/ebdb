@@ -96,9 +96,6 @@ You really should not disable debugging.  But it will speed things up."))
 (defvar ebdb-version-date "October 15, 2016"
   "Date this version of EBDB was released.")
 
-(defvar ebdb-mail-aliases-need-rebuilt nil
-  "Non-nil if mail aliases need to be rebuilt.")
-
 (defvar ebdb-silent-internal nil
   "Bind this to t to quiet things down - do not set it.
 See also `ebdb-silent'.")
@@ -1575,11 +1572,21 @@ override parsing."
 (cl-defmethod ebdb-string ((field ebdb-field-url))
   (slot-value field 'url))
 
-;;; Fields that change EBDB's behavior.  Right now we've got
-;;; `ebdb-mail-name' and the hard-coded 'name-format xfield that are
-;;; meant to change a record's behavior.  I'm not convinced that
-;;; that's the best way to handle that.  At the very least we need
-;;; mail aliases, though.
+;;; Fields that change EBDB's behavior.
+
+;;; Mail aliases
+
+;; As alias fields are initialized or deleted, they modify
+;; `ebdb-mail-alias-alist', which is read by `ebdb-mail-aliases'
+;; later.
+
+(defvar ebdb-mail-alias-alist nil
+  "An alist holding all alias definitions from EBDB.
+
+Each element looks like: (alias (rec1 addr1) (rec2 addr2) ...).
+
+Instead of actual records, the rec1, rec2 elements can also be
+record uuids.")
 
 (defclass ebdb-field-mail-alias (ebdb-field-user)
   ((alias
@@ -1587,19 +1594,44 @@ override parsing."
     :initarg :alias
     :custom string
     :documentation
-    "A string used as a mail alias for this record."))
-  :human-readable "mail alias")
+    "A mail alias for this record.")
+   (address
+    :type (or null ebdb-field-mail)
+    :initarg :address
+    :documentation. "The mail address to use with this record."))
+  :human-readable "mail alias"
+  :documentation "A field holding a single mail alias for a
+  record.  The field holds the alias string, and an optional
+  mail address to use with that alias.")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-mail-alias)) &optional slots obj)
-  (let ((alias (ebdb-read-string "Alias: " (when obj (slot-value obj 'alias)))))
+  (let ((alias (ebdb-read-string "Alias: " (when obj (car (slot-value obj 'alias)))
+				 (mapcar #'car ebdb-mail-alias-alist))))
     (cl-call-next-method class (plist-put slots :alias alias) obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-field-mail-alias))
-  (slot-value field 'alias))
+  (with-slots (alias address) field
+    (format (if address
+		"%s: %s"
+	      "%s")
+	    alias (ebdb-string address))))
 
-;; TODO: Write `ebdb-init-field' and `ebdb-delete-field' methods for
-;; the `ebdb-field-mail-alias' class.  These methods should do the
-;; work of changing the defined mail aliases.
+(cl-defmethod ebdb-init-field ((field ebdb-field-mail-alias) &optional record)
+  (with-slots (alias address) field
+    (let ((existing (assoc alias ebdb-mail-alias-alist)))
+      (if existing
+	  (setcdr existing (cons (list record address) (cdr existing)))
+	(push (list alias (list record address)) ebdb-mail-alias-alist)))))
+
+(cl-defmethod ebdb-delete-field ((field ebdb-field-mail-alias)
+				 &optional record unload)
+  (with-slots (alias address) field
+    (let* ((existing (assoc alias ebdb-mail-alias-alist))
+	   (entry (assq record (cdr-safe existing))))
+      (if entry
+	  (setcdr existing (remove entry (cdr existing)))
+	(setq ebdb-mail-alias-alist
+	      (delq existing ebdb-mail-alias-alist))))))
 
 ;; Passports
 
@@ -2160,6 +2192,19 @@ priority."
 	    (when (ebdb-field-search m regexp)
 	      (throw 'found t))))
       (string-match-p regexp ""))))
+
+;; This needs to be a :before method so that the 'address slot is
+;; filled by the time we call `ebdb-init-field'.
+(cl-defmethod ebdb-record-insert-field :before ((record ebdb-record-entity)
+					       _slot
+					       (field ebdb-field-mail-alias))
+  "After inserting a new alias field, prompt the user for which
+  address to use with it."
+  (unless (and (slot-boundp field 'address)
+	       (slot-value field 'address))
+   (let ((mail (ebdb-prompt-for-mail record)))
+     (when mail
+      (setf (slot-value field 'address) mail)))))
 
 ;; TODO: There's no reason why the aka slot can't belong to
 ;; `ebdb-record-entity'.  In fact, what we ought to do is put both the
@@ -3608,26 +3653,6 @@ for this record, these are formatted obeying `ebdb-mail-name-format'."
   :group 'ebdb-sendmail
   :type '(choice (symbol :tag "xfield")
                  (function :tag "mail name function")))
-
-(defcustom ebdb-mail-alias-field 'mail-alias
-  "Xfield holding the mail alias for a record.
-Used by `ebdb-mail-aliases'.  See also `ebdb-mail-alias'."
-  :group 'ebdb-sendmail
-  :type 'symbol)
-
-(defcustom ebdb-mail-alias 'first
-  "Defines which mail aliases are generated for a EBDB record.
-first: Generate one alias \"<alias>\" that expands to the first mail address
-       of a record.
-star:  Generate a second alias \"<alias>*\" that expands to all mail addresses
-       of a record.
-all:   Generate the aliases \"<alias>\" and \"<alias>*\" (as for 'star)
-       and aliases \"<alias>n\" for each mail address, where n is the position
-       of the mail address of a record."
-  :group 'ebdb-sendmail
-  :type '(choice (symbol :tag "Only first" first)
-                 (symbol :tag "<alias>* for all mails" star)
-                 (symbol :tag "All aliases" all)))
 
 (defcustom ebdb-mail-avoid-redundancy nil
   "Mail address to use for EBDB records when sending mail.

@@ -865,7 +865,6 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Send mail" ebdb-mail t]
      ["Save mail address" ebdb-mail-address t]
      "--"
-     ["Add mail alias" ebdb-add-mail-alias t]
      ["(Re-)Build mail aliases" ebdb-mail-aliases t])
     ("Use database"
      ["Send mail" ebdb-mail t]
@@ -2607,212 +2606,67 @@ If we are past `fill-column', wrap at the previous comma."
 
 ;;; interface to mail-abbrevs.el.
 
-;; Just stub this out for now.
 ;;;###autoload
-(defun ebdb-mail-aliases (&optional _force-rebuilt _noisy)
-  t)
-;; (defun ebdb-mail-aliases (&optional force-rebuilt noisy)
-;;   "Define mail aliases for the records in the database.
-;; Define a mail alias for every record that has a `mail-alias' field
-;; which is the contents of that field.
-;; If there are multiple comma-separated words in the `mail-alias' field,
-;; then all of those words will be defined as aliases for that person.
+(defun ebdb-mail-aliases (&optional noisy)
+  "Add aliases from the database to the global alias table.
 
-;; If multiple records in the database have the same mail alias,
-;; then that alias expands to a comma-separated list of the mail addresses
-;; of all of these people.
-;; Add this command to `mail-setup-hook'.
+Give records a \"mail alias\" field to define an alias for that
+record.
 
-;; Mail aliases are (re)built only if `ebdb-mail-aliases-need-rebuilt' is non-nil
-;; because the database was newly loaded or it has been edited.
-;; Rebuilding the aliases is enforced if prefix FORCE-REBUILT is t."
-;;   (interactive (list current-prefix-arg t))
-;;   ;; Build `mail-aliases' if not yet done.
-;;   ;; Note: `mail-abbrevs-setup' rebuilds the mail-aliases only if
-;;   ;; `mail-personal-alias-file' has changed.  So it would not do anything
-;;   ;; if we want to rebuild the mail-aliases because of changes in EBDB.
-;;   (if (or force-rebuilt (eq t mail-aliases)) (build-mail-aliases))
+If multiple records in the database have the same mail alias,
+then that alias expands to a comma-separated list of the mail addresses
+of all of these people."
+  (interactive)
 
-;;   ;; We should be cleverer here and instead of rebuilding all aliases
-;;   ;; we should just do what's necessary, i.e. remove deleted records
-;;   ;; and add new records
-;;   ;; Calling `ebdb-records' can change `ebdb-mail-aliases-need-rebuilt'
-;;   (let ((records (ebdb-search (ebdb-records) nil nil nil
-;;                               (cons ebdb-mail-alias-field ".")))
-;;         results match)
-;;     (if (not (or force-rebuilt ebdb-mail-aliases-need-rebuilt))
-;;         (if noisy (message "EBDB mail alias: nothing to do"))
-;;       (setq ebdb-mail-aliases-need-rebuilt nil)
+  ;; Build `mail-aliases' if not yet done.
+  (when (eq t mail-aliases) (build-mail-aliases))
 
-;;       ;; collect an alist of (alias rec1 [rec2 ...])
-;;       (dolist (record records)
-;;         (if (ebdb-record-mail record)
-;;             (dolist (alias (ebdb-record-xfield-split record ebdb-mail-alias-field))
-;;               (if (setq match (assoc alias results))
-;;                   ;; If an alias appears more than once, we collect all records
-;;                   ;; that refer to it.
-;;                   (nconc match (list record))
-;;                 (push (list alias record) results)))
-;;           (unless ebdb-silent
-;;             (ebdb-warn "record %S has no mail address, but the aliases: %s"
-;;                        (ebdb-record-name record)
-;;                        (ebdb-record-xfield record ebdb-mail-alias-field))
-;;             (sit-for 1))))
+  ;; Create the aliases from `ebdb-mail-alias-alist'.
+  (dolist (entry ebdb-mail-alias-alist)
+    (let* ((alias (car entry))
+	   (expansion
+	    (mapconcat
+	     (lambda (e)
+	       (ebdb-dwim-mail (if (stringp (car e))
+				   (ebdb-gethash e 'uuid)
+				 (car e))
+			       (second e)))
+	     (cdr entry) ", "))
+	   f-alias)
 
-;;       ;; Iterate over the results and create the aliases
-;;       (dolist (result results)
-;;         (let* ((aliasstem (car result))
-;;                (expansions
-;;                 (if (cddr result)
-;;                     ;; for group aliases we just take all the primary mails
-;;                     ;; and define only one expansion!
-;;                     (list (mapconcat (lambda (record) (ebdb-dwim-mail record))
-;;                                      (cdr result) mail-alias-separator-string))
-;;                   ;; this is an alias for a single person so deal with it
-;;                   ;; according to `ebdb-mail-alias'
-;;                   (let* ((record (nth 1 result))
-;;                          (mails (ebdb-record-mail record)))
-;;                     (if (or (eq 'first ebdb-mail-alias)
-;;                             (not (cdr mails)))
-;;                         ;; Either we want to define only one alias for
-;;                         ;; the first mail address or there is anyway
-;;                         ;; only one address.  In either case, we take
-;;                         ;; take only the first address.
-;;                         (list (ebdb-dwim-mail record (car mails)))
-;;                       ;; We need to deal with more than one mail address...
-;;                       (let* ((all (mapcar (lambda (m) (ebdb-dwim-mail record m))
-;;                                           mails))
-;;                              (star (ebdb-concat mail-alias-separator-string all)))
-;;                         (if (eq 'star ebdb-mail-alias)
-;;                             (list star (car all))
-;;                           ;; if `ebdb-mail-alias' is 'all, we create
-;;                           ;; two aliases for the primary mail address
-;;                           (cons star (cons (car all) all))))))))
-;;                (count -1) ; n=-1: <alias>*;  n=0: <alias>;  n>0: <alias>n
-;;                (len (length expansions))
-;;                alias f-alias)
+      (add-to-list 'mail-aliases (cons alias expansion))
 
-;;           ;; create the aliases for each expansion
-;;           (dolist (expansion expansions)
-;;             (cond ((or (= 1 len)
-;;                        (= count 0))
-;;                    (setq alias aliasstem))
-;;                   ((= count -1) ;; all the mails of a record
-;;                    (setq alias (concat aliasstem "*")))
-;;                   (t ;; <alias>n for each mail of a record
-;;                    (setq alias (format "%s%s" aliasstem count))))
-;;             (setq count (1+ count))
+      (define-mail-abbrev alias expansion)
+      (unless (setq f-alias (intern-soft (downcase alias) mail-abbrevs))
+	(error "Cannot find the alias"))
 
-;;             (add-to-list 'mail-aliases (cons alias expansion))
+      ;; `define-mail-abbrev' initializes f-alias to be
+      ;; `mail-abbrev-expand-hook'.  We replace this with
+      ;; `ebdb-mail-abbrev-expand-hook'
+      (unless (eq (symbol-function f-alias) 'mail-abbrev-expand-hook)
+	(error "mail-aliases contains unexpected hook %s"
+	       (symbol-function f-alias)))
+      (fset f-alias `(lambda ()
+		       (ebdb-mail-abbrev-expand-hook
+			,alias
+			',(mapcar (lambda (r) (ebdb-record-uuid (car r)))
+				  (cdr entry)))))))
 
-;;             (define-mail-abbrev alias expansion)
-;;             (unless (setq f-alias (intern-soft (downcase alias) mail-abbrevs))
-;;               (error "Cannot find the alias"))
+  (if noisy (message "EBDB mail alias: rebuilding done")))
 
-;;             ;; `define-mail-abbrev' initializes f-alias to be
-;;             ;; `mail-abbrev-expand-hook'. We replace this by
-;;             ;; `ebdb-mail-abbrev-expand-hook'
-;;             (unless (eq (symbol-function f-alias) 'mail-abbrev-expand-hook)
-;;               (error "mail-aliases contains unexpected hook %s"
-;;                      (symbol-function f-alias)))
-;;             ;; `ebdb-mail-abbrev-hook' is called with mail addresses instead of
-;;             ;; ebdb records to avoid keeping pointers to records, which would
-;;             ;; lose if the database was reverted.
-;;             ;; `ebdb-mail-abbrev-hook' uses `ebdb-message-search' to convert
-;;             ;; these mail addresses to records, which is plenty fast.
-;;             ;; FIXME: The value of arg MAILS for `ebdb-mail-abbrev-hook'
-;;             ;; is wrong. Currently it is based on the list of records that have
-;;             ;; referenced ALIASTEM and we simply take the first mail address
-;;             ;; from each of these records.
-;;             ;; Then `ebdb-message-search' will find the correct records
-;;             ;; (assuming that each mail address appears only once in the
-;;             ;; database).  Nonethless, arg MAILS for `ebdb-mail-abbrev-hook'
-;;             ;; does not, in general, contain the actual mail addresses
-;;             ;; of EXPANSION.  So what we would need is to go back from
-;;             ;; EXPANSION to the mail addresses it contains (which is tricky
-;;             ;; because mail addresses in the database can be shortcuts for
-;;             ;; the addresses in EXPANSION).
-;;             (fset f-alias `(lambda ()
-;;                              (ebdb-mail-abbrev-expand-hook
-;;                               ,alias
-;;                               ',(mapcar (lambda (r) (car (ebdb-record-mail r)))
-;;                                         (cdr result))))))))
+(defun ebdb-mail-abbrev-expand-hook (alias records)
+;  (run-hook-with-args 'ebdb-mail-abbrev-expand-hook alias records)
+  (mail-abbrev-expand-hook)
+  (when ebdb-completion-display-record
+    (let ((ebdb-silent-internal t))
+      (ebdb-display-records
+       (delq nil
+	     (mapcar (lambda (u) (ebdb-gethash u 'uuid)) records))
+       nil t))))
 
-;;       (if noisy (message "EBDB mail alias: rebuilding done")))))
-
-;; (defun ebdb-mail-abbrev-expand-hook (alias mails)
-;;   (run-hook-with-args 'ebdb-mail-abbrev-expand-hook alias mails)
-;;   (mail-abbrev-expand-hook)
-;;   (when ebdb-completion-display-record
-;;     (let ((ebdb-silent-internal t))
-;;       (ebdb-display-records
-;;        (apply 'append
-;;               (mapcar (lambda (mail) (ebdb-message-search nil mail)) mails))
-;;        nil t))))
-
-;; (defun ebdb-get-mail-aliases ()
-;;   "Return a list of mail aliases used in the EBDB."
-;;   (let ((records (ebdb-search (ebdb-records) nil nil nil
-;;                               (cons ebdb-mail-alias-field ".")))
-;;         result)
-;;     (dolist (record records result)
-;;       (dolist (alias (ebdb-record-xfield-split record ebdb-mail-alias-field))
-;;         (add-to-list 'result alias)))))
-
-;; ;;;###autoload
-;; (defsubst ebdb-mail-alias-list (alias)
-;;   (if (stringp alias)
-;;       (ebdb-split ebdb-mail-alias-field alias)
-;;     alias))
-
-;; (defun ebdb-add-mail-alias (records &optional alias delete)
-;;   "Add ALIAS to RECORDS.
-;; If prefix DELETE is non-nil, remove ALIAS from RECORDS.
-;; Arg ALIAS is ignored if list RECORDS contains more than one record.
-;; Instead read ALIAS interactively for each record in RECORDS.
-;; If the function `ebdb-init-mail-alias' is defined, it is called with
-;; one arg RECORD to define the default value for ALIAS of RECORD."
-;;   (interactive (list (ebdb-do-records) nil current-prefix-arg))
-;;   (ebdb-editable)
-;;   (setq records (ebdb-record-list records))
-;;   (if (< 1 (length records)) (setq alias nil))
-;;   (let* ((tmp (intern-soft
-;;                (concat "ebdb-init-" (symbol-name ebdb-mail-alias-field))))
-;;          (init-f (if (functionp tmp) tmp)))
-;;     (dolist (record records)
-;;       (let ((r-a-list (ebdb-record-xfield-split record ebdb-mail-alias-field))
-;;             (alias alias)
-;;             a-list)
-;;         (if alias
-;;             (setq a-list (ebdb-mail-alias-list alias))
-;;           (when init-f
-;;             (setq a-list (ebdb-mail-alias-list (funcall init-f record))
-;;                   alias (if a-list (ebdb-concat ebdb-mail-alias-field a-list))))
-;;           (let ((crm-separator
-;;                  (concat "[ \t\n]*"
-;;                          (cadr (assq ebdb-mail-alias-field ebdb-separator-alist))
-;;                          "[ \t\n]*"))
-;;                 (crm-local-completion-map ebdb-crm-local-completion-map)
-;;                 (prompt (format "%s mail alias:%s " (if delete "Remove" "Add")
-;;                                 (if alias (format " (default %s)" alias) "")))
-;;                 (collection (if delete
-;;                                 (or r-a-list (error "Record has no alias"))
-;;                               (ebdb-get-mail-aliases))))
-;;             (setq a-list (if (string< "24.3" (substring emacs-version 0 4))
-;;                              (completing-read-multiple prompt collection nil
-;;                                                        delete nil nil alias)
-;;                           (ebdb-split ebdb-mail-alias-field
-;;                                       (completing-read prompt collection nil
-;;                                                        delete nil nil alias))))))
-;;         (dolist (a a-list)
-;;           (if delete
-;;               (setq r-a-list (delete a r-a-list))
-;;             ;; Add alias only if it is not there yet
-;;             (add-to-list 'r-a-list a)))
-;;         ;; This also handles `ebdb-mail-aliases-need-rebuilt'
-;;         (ebdb-record-set-xfield record ebdb-mail-alias-field
-;;                                 (ebdb-concat ebdb-mail-alias-field r-a-list))
-;;         (ebdb-change-record record)))))
+(defun ebdb-get-mail-aliases ()
+  "Return a list of mail aliases used in the EBDB."
+  (mapcar #'car ebdb-mail-alias-alist))
 
 ;;; Actions
 
