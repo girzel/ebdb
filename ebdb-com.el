@@ -31,7 +31,8 @@
 
 (eval-and-compile
   (autoload 'build-mail-aliases "mailalias")
-  (autoload 'browse-url-url-at-point "browse-url"))
+  (autoload 'browse-url-url-at-point "browse-url")
+  (autoload 'eieio-customize-object "eieio-custom"))
 
 (require 'crm)
 (defvar ebdb-crm-local-completion-map
@@ -1621,7 +1622,6 @@ the record, change the name of the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (require 'eieio-custom)
   (eieio-customize-object field)
   (setq ebdb-custom-field-record record))
 
