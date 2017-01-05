@@ -1047,16 +1047,16 @@ values, by default the search is not handed to the name field itself."
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
 
-(cl-defmethod ebdb-init-field ((mail ebdb-field-mail) &optional record)
-  (with-slots (aka mail) mail
+(cl-defmethod ebdb-init-field ((field ebdb-field-mail) &optional record)
+  (with-slots (aka mail) field
     (ebdb-puthash mail record)
     (object-add-to-list (ebdb-record-cache record) 'mail-canon mail)
     (when aka
       (ebdb-puthash aka record)
       (object-add-to-list (ebdb-record-cache record) 'mail-aka aka))))
 
-(cl-defmethod ebdb-delete-field ((mail ebdb-field-mail) &optional record _unload)
-  (with-slots (aka mail) mail
+(cl-defmethod ebdb-delete-field ((field ebdb-field-mail) &optional record _unload)
+  (with-slots (aka mail) field
     (when record
       (when aka
 	(ebdb-remhash aka record)
@@ -2364,7 +2364,8 @@ Currently only works for mail fields."
 					(ebdb-string m)
 					(ebdb-string org))))
 	  (setf (slot-value r 'mail) m)
-	  (ebdb-record-delete-field record 'mail m))))))
+	  (ebdb-record-delete-field record 'mail m)
+	  (ebdb-init-field m record))))))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
