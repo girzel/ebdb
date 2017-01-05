@@ -22,7 +22,7 @@
 (require 'company)
 (require 'cl-lib)
 
-(declare-function ebdb-record-get-field "ebdb")
+(declare-function ebdb-record-mail "ebdb")
 (declare-function ebdb-records "ebdb")
 (declare-function ebdb-dwim-mail "ebdb-com")
 (declare-function ebdb-search "ebdb-com")
@@ -31,7 +31,7 @@
   "Completion backend for EBDB."
   :group 'company)
 
-(defcustom company-ebdb-modes '(message-mode)
+(defcustom company-ebdb-modes '(message-mode mail-mode)
   "Major modes in which `company-ebdb' may complete."
   :type '(repeat (symbol :tag "Major mode"))
   :package-version '(company . "0.8.8"))
@@ -39,7 +39,7 @@
 (defun company-ebdb--candidates (arg)
   (cl-mapcan (lambda (record)
                (mapcar (lambda (mail) (ebdb-dwim-mail record mail))
-                       (ebdb-record-get-field record 'mail)))
+                       (ebdb-record-mail record t)))
              (eval '(ebdb-search (ebdb-records) arg nil arg))))
 
 ;;;###autoload
