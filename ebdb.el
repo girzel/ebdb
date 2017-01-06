@@ -2791,10 +2791,15 @@ not be instantiated directly, subclass it instead."
 	    "#")))
 
 (cl-defmethod ebdb-db-do-auto-save ((db ebdb-db))
-  (let ((auto-save-file
-	 (ebdb-db-make-auto-save-file-name
-	  (slot-value db 'file))))
-    (eieio-persistent-save db auto-save-file)))
+  (let* ((orig-file (slot-value db 'file))
+	 (auto-save-file
+	  (ebdb-db-make-auto-save-file-name
+	   orig-file)))
+    (eieio-persistent-save db auto-save-file)
+    ;; The call to `eieio-persistent-save' sets the 'file slot to the
+    ;; auto-save-file name, for some reason, see FIXME in there.
+    ;; Setting it back ought to have us covered.
+    (setf (slot-value db 'file) orig-file)))
 
 (defun ebdb-auto-save-databases ()
   "Auto-save all EBDB databases.
