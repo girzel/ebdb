@@ -170,9 +170,6 @@ Used by `ebdb-mouse-menu'."
 (defvar ebdb-buffer-name "EBDB"
   "Default name of the EBDB buffer, without surrounding asterisks.")
 
-(defvar-local ebdb-this-buffer-name nil
-  "Buffer-local var holding the name of this particular EBDB buffer.")
-
 ;;; Buffer-local variables for the database.
 (defvar-local ebdb-records nil
   "EBDB records list.
@@ -718,8 +715,6 @@ mode."
       ;; in the *EBDB* buffer.  It is intentionally not permanent-local.
       ;; A value of nil indicates that we need to (re)process the records.
       (setq ebdb-records records)
-      ;; The following might not be needed anymore?
-      (set (make-local-variable 'ebdb-this-buffer-name) (buffer-name (current-buffer)))
 
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
@@ -921,9 +916,7 @@ Select this window if SELECT is non-nil.
 If `ebdb-mua-pop-up' is 'horiz, and the first window matching
 the predicate HORIZ-P is wider than the car of `ebdb-horiz-pop-up-window-size'
 then the window will be split horizontally rather than vertically."
-  (let ((buffer (get-buffer ebdb-this-buffer-name)))
-    (unless buffer
-      (error "No EBDB buffer to display"))
+  (let ((buffer (current-buffer)))
     (cond ((let ((window (get-buffer-window buffer t)))
              ;; We already have a EBDB window so that at most we select it
              (and window
