@@ -322,7 +322,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "b r")         'ebdb-rename-buffer)
     ;; Search keys
     (define-key km (kbd "/ /")         'ebdb)
-    (define-key km (kbd "/ 1")         'ebdb-display-one-record)
+    (define-key km (kbd "/ 1")         'ebdb-search-single-record)
     (define-key km (kbd "/ n")         'ebdb-search-name)
     (define-key km (kbd "/ o")         'ebdb-search-organization)
     (define-key km (kbd "/ p")         'ebdb-search-phone)
@@ -846,7 +846,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Show all fields" ebdb-display-records-completely t])
     ("Searching"
      ["General search" ebdb t]
-     ["Search one record" ebdb-display-one-record t]
+     ["Search one record" ebdb-search-single-record t]
      ["Search name" ebdb-search-name t]
      ["Search organization" ebdb-search-organization t]
      ["Search phone" ebdb-search-phone t]
@@ -2013,7 +2013,7 @@ The search results are displayed in the EBDB buffer."
     (ebdb-display-records recs fmt)))
 
 ;;;###autoload
-(defun ebdb-display-one-record (record &optional fmt)
+(defun ebdb-search-single-record (record &optional fmt)
   "Prompt for a single record, and display it."
   (interactive (list (ebdb-completing-read-records "Display records: ")
                      (ebdb-formatter-prefix)))
