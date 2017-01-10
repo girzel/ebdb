@@ -3058,11 +3058,18 @@ the persistent save, or allow them to propagate."
   (if (ebdb-db-dirty db)
       (message "Database %s has unsaved changes, you should save it first."
 	       (ebdb-string db))
-    (setf (slot-value db 'disabled) t)
-    (setf (slot-value db 'dirty) t)
-    (ebdb-db-save db)
-    (ebdb-db-unload db)
-    (message "Database %s is disabled." (ebdb-string db))))
+    (let ((recs (seq-filter (lambda (r)
+			      ;; Only disappear records that belong to
+			      ;; no other database.
+			      (= 1 (length
+				    (slot-value (ebdb-record-cache r) 'database))))
+			    (slot-value db 'records))))
+     (setf (slot-value db 'disabled) t)
+     (setf (slot-value db 'dirty) t)
+     (ebdb-db-save db)
+     (ebdb-redisplay-records recs 'remove)
+     (ebdb-db-unload db)
+     (message "Database %s is disabled." (ebdb-string db)))))
 
 (cl-defmethod ebdb-db-customize ((db ebdb-db))
   (eieio-customize-object db))

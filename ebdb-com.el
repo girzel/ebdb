@@ -297,6 +297,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "d c")          'ebdb-copy-records)
     (define-key km (kbd "d m")          'ebdb-move-records)
     (define-key km (kbd "d e")          'ebdb-customize-database)
+    (define-key km (kbd "d r")          'ebdb-reload-database)
     (define-key km (kbd "f")          'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "C-k")       'ebdb-delete-field-or-record)
     (define-key km (kbd "i")          'ebdb-insert-field)
@@ -305,8 +306,10 @@ With ARG a negative number do not append."
     (define-key km (kbd "C-x C-s")   'ebdb-save)
     (define-key km (kbd "t")          'ebdb-toggle-records-format)
     (define-key km (kbd "T")          'ebdb-display-records-completely)
-    (define-key km (kbd "#")    'ebdb-toggle-record-mark)
-    (define-key km (kbd "o")          'ebdb-omit-record)
+    (define-key km (kbd "#")          'ebdb-toggle-record-mark)
+    (define-key km (kbd "M-#")        'ebdb-toggle-all-record-marks)
+    (define-key km (kbd "C-#")        'ebdb-unmark-all-records)
+    (define-key km (kbd "o")          'ebdb-omit-records)
     (define-key km (kbd "m")          'ebdb-mail)
     (define-key km (kbd "M-d")       'ebdb-dial)
     (define-key km (kbd "h")          'ebdb-info)
@@ -680,57 +683,42 @@ SELECT and HORIZ-P have the same meaning as in
 or nil to generate a buffer name based on the current major
 mode."
   (if (ebdb-append-display-p) (setq append t))
-  ;; `ebdb-redisplay-record' calls `ebdb-display-records'
-  ;; with display information already amended to RECORDS.
-  (unless (or (null records)
-              (consp (car records)))
-    ;; All functions that call `ebdb-display-records' set the "fmt"
-    ;; argument, but that's not guaranteed.
-    (unless fmt
-      (setq fmt ebdb-default-multiline-formatter))
-    ;; Add fmt and a marker to the local list of records.
-    (setq records (mapcar (lambda (record)
-                            (list record fmt (make-marker) nil))
-                          records)))
-  ;; First new record.
-  (let ((first-new (caar records))
-	;; `ebdb-make-buffer-name' is a generic function that
-	;; dispatches on the current major mode.
-	(target-buffer (or buf (ebdb-make-buffer-name))))
+
+  ;; All functions that call `ebdb-display-records' set the "fmt"
+  ;; argument, but that's not guaranteed.
+  (unless fmt
+    (setq fmt ebdb-default-multiline-formatter))
+  ;; `ebdb-make-buffer-name' is a generic function that
+  ;; dispatches on the current major mode.
+  (let ((target-buffer (or buf (ebdb-make-buffer-name))))
 
     (with-current-buffer (get-buffer-create target-buffer)
       ;; If we are appending RECORDS to the ones already displayed,
       ;; then first remove any duplicates, and then sort them.
       (if append
-          (let ((old-rec (mapcar 'car ebdb-records)))
-            (dolist (record records)
-              (unless (memq (car record) old-rec)
-                (push record ebdb-records)))
+          (let ((existing (mapcar #'car ebdb-records)))
             (setq records
-                  (sort ebdb-records
-                        (lambda (x y) (ebdb-record-lessp (car x) (car y)))))))
+                  (sort (delete-dups (append records existing))
+                        (lambda (x y) (ebdb-record-lessp x y))))))
 
       (ebdb-mode)
-      ;; Normally `ebdb-records' is the only EBDB-specific buffer-local variable
-      ;; in the *EBDB* buffer.  It is intentionally not permanent-local.
-      ;; A value of nil indicates that we need to (re)process the records.
-      (setq ebdb-records records)
+
+      (setq ebdb-records
+	    (mapcar (lambda (r)
+		      (list r fmt (make-marker) nil))
+		    records))
 
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
       (let ((record-number 0)
-	    (fmt ebdb-default-multiline-formatter)
-            buffer-read-only all-records start)
+	    buffer-read-only)
         (erase-buffer)
-        (ebdb-debug (setq all-records (ebdb-records)))
 	(insert (ebdb-fmt-header fmt records))
-        (dolist (record records)
-          (ebdb-debug (unless (memq (car record) all-records)
-                        (error "Record %s does not exist" (car record))))
+        (dolist (record ebdb-records)
 	  (setq start (set-marker (nth 2 record) (point)))
           (ebdb-fmt-record fmt (car record))
 	  (put-text-property start (point) 'ebdb-record-number record-number)
-	  (setq record-number (1+ record-number)))
+	  (cl-incf record-number))
 	(insert (ebdb-fmt-footer fmt records))
         (run-hooks 'ebdb-display-hook))
 
@@ -739,11 +727,8 @@ mode."
       (set-buffer-modified-p nil)
 
       (ebdb-pop-up-window select horiz-p)
-      (if (not first-new)
-          (goto-char (point-min))
-        ;; Put point on first new record in *EBDB* buffer.
-        (goto-char (nth 2 (assq first-new ebdb-records)))
-        (set-window-start (get-buffer-window (current-buffer)) (point))))))
+      (goto-char (point-min))
+      (set-window-start (get-buffer-window (current-buffer)) (point)))))
 
 (defun ebdb-undisplay-records (&optional all-buffers)
   "Undisplay records in *EBDB* buffer, leaving this buffer empty.
@@ -758,75 +743,155 @@ If ALL-BUFFERS is non-nil undisplay records in all EBDB buffers."
         (setq ebdb-records nil)
         (set-buffer-modified-p nil)))))
 
-(defun ebdb-redisplay-record (record &optional sort delete-p)
-  "Redisplay RECORD in current EBDB buffer.
-If SORT is t, usually because RECORD has a new sortkey, re-sort
-the displayed records.
-If DELETE-P is non-nil RECORD is removed from the EBDB buffer."
-  ;; For deletion in the *EBDB* buffer we use the full information
-  ;; about the record in the database. Therefore, we need to delete
-  ;; the record in the *EBDB* buffer before deleting the record in
-  ;; the database.
-  (let ((full-record (assq record ebdb-records)))
-    (unless full-record
-      (error "Record `%s' not displayed" (ebdb-record-name record)))
-    (if (and sort (not delete-p))
-        ;; FIXME: For records requiring re-sorting it may be more efficient
-        ;; to insert these records in their proper location instead of
-        ;; re-displaying all records.
-        (ebdb-display-records (list record) nil t)
-      (let ((marker (nth 2 full-record))
-            (end-marker (nth 2 (car (cdr (memq full-record ebdb-records)))))
-	    (fmt (nth 1 full-record))
-            buffer-read-only record-number)
-        ;; If point is inside record, put it at the beginning of the record.
-        (if (and (<= marker (point))
-                 (< (point) (or end-marker (point-max))))
-            (goto-char marker))
-        (save-excursion
-          (goto-char marker)
-          (setq record-number (get-text-property (point) 'ebdb-record-number))
-          (unless delete-p
-            ;; First insert the reformatted record, then delete the old one,
-            ;; so that the marker of this record cannot collapse with the
-            ;; marker of the subsequent record
-	    (ebdb-fmt-record fmt (car full-record))
-	    (put-text-property marker (point) 'ebdb-record-number record-number)
-	    (when (eq (nth 3 full-record) 'mark)
-	      (add-face-text-property
-	       marker
-	       (next-property-change marker nil (line-end-position) )
-	       'ebdb-marked)))
-          (delete-region (point) (or end-marker (point-max)))
-          ;; If we deleted a record we need to update the subsequent
-          ;; record numbers.
-          (when delete-p
-            (let* ((markers (append (mapcar (lambda (x) (nth 2 x))
-                                            (cdr (memq full-record ebdb-records)))
-                                    (list (point-max))))
-                   (start (pop markers)))
-              (dolist (end markers)
-                (put-text-property start end
-                                   'ebdb-record-number record-number)
-                (setq start end
-                      record-number (1+ record-number))))
-            (setq ebdb-records (delq full-record ebdb-records)))
-          (run-hooks 'ebdb-display-hook))))))
+(defun ebdb-redisplay-all-records (_ignore-auto _noconfirm)
+  "Used as the value of `revert-buffer-function' in *EBDB* buffers."
+  (let ((recs (mapcar #'car ebdb-records)))
+    (ebdb-undisplay-records)
+    (ebdb-display-records recs)))
 
-(defun ebdb-redisplay-record-globally (record &optional sort delete-p)
-  "Redisplay RECORD in all EBDB buffers.
-If SORT is t, usually because RECORD has a new sortkey, re-sort
-the displayed records.
-If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
-  (dolist (buffer (buffer-list))
-    (with-current-buffer buffer
-      (if (and (eq major-mode 'ebdb-mode)
-               (memq record (mapcar 'car ebdb-records)))
-          (let ((window (get-buffer-window ebdb-buffer-name)))
-            (if window
-                (with-selected-window window
-                  (ebdb-redisplay-record record sort delete-p))
-              (ebdb-redisplay-record record sort delete-p)))))))
+(cl-defgeneric ebdb-redisplay-record (record action full-record)
+  "Redisplay RECORD in current buffer, as specified by ACTION.
+
+FULL-RECORD includes layout information, in case that needs to be
+altered.
+
+This function may return a symbol value, which is used to pass
+information back to `ebdb-redisplay-records'.  Currently that
+only happens when removing records.")
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (fmt ebdb-formatter-ebdb)
+				     full-record)
+  (let ((marker (nth 2 full-record)))
+    (ebdb-fmt-record fmt record)
+    (setf (nth 1 full-record) fmt)
+    (if (eq (nth 3 full-record) 'mark)
+	(add-face-text-property
+	 marker
+	 (next-property-change marker nil (line-end-position))
+	 'ebdb-marked)))
+  'replaced)
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (_action (eql remove))
+				     full-record)
+  (setq ebdb-records (delq full-record ebdb-records))
+  'removed)
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (_action (eql unload))
+				     full-record)
+  ;; Leave FULL-RECORD as an element of `ebdb-records', but replace
+  ;; the actual record object with uuid string.  This state is
+  ;; "fragile": whenever this happens, it is followed immediately by a
+  ;; 'reformat redisplay that restores the full record.  It's
+  ;; theoretically possible that the *EBDB* buffer will be left in
+  ;; that state, however.  In that case, users will be able to see,
+  ;; but not interact with, the leftover uuid.
+  (let ((uuid (ebdb-record-uuid record)))
+   (setf (car full-record) uuid)
+   (insert uuid)
+   'replaced))
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (_action (eql reformat))
+				     full-record)
+  (setcar full-record record)
+  (ebdb-redisplay-record record (nth 1 full-record) full-record))
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (action (head toggle-mark))
+				     full-record)
+  (setf (nth 3 full-record) (if (nth 3 full-record) nil (nth 1 action)))
+  (ebdb-redisplay-record record (nth 1 full-record) full-record))
+
+(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+				     (action (eql unmark))
+				     full-record)
+  (setf (nth 3 full-record) nil)
+  (ebdb-redisplay-record record (nth 1 full-record) full-record))
+
+(defun ebdb-redisplay-records (records action &optional all-buffers sort)
+  "Take ACTION to alter the display of RECORDS in one or more EBDB buffers.
+
+If ACTION is an instance of `ebdb-formatter-ebdb', then redisplay
+RECORDS using that formatter.  Otherwise, action can be one of:
+
+remove: remove RECORDS
+unload: replace RECORDS with their uuid strings
+reformat: reformat RECORDS and replace them
+toggle-mark: toggle the mark for RECORDS
+
+If ALL-BUFFERS is t, redisplay RECORDS in all EBDB buffers.  If
+SORT is t, usually because RECORDS have new sortkeys, re-sort the
+displayed records."
+  (let ((bufs (if all-buffers
+		  (seq-filter (lambda (b)
+				(eq (buffer-local-value 'major-mode b)
+				    'ebdb-mode))
+			      (buffer-list))
+		(and (eq major-mode 'ebdb-mode)
+		     (list (current-buffer)))))
+	local-record renumber-index marker end-marker fmt record-number ret)
+    (setq records (ebdb-record-list records))
+    ;; First check if we've been given any records as uuid strings,
+    ;; rather than actual records.
+    (setq records (mapcar
+		   (lambda (r)
+		     (or (and (stringp r)
+			      (ebdb-gethash r 'uuid))
+			 r))
+		   records))
+    (dolist (b bufs)
+      (with-current-buffer b
+	(let (renumber buffer-read-only)
+	 (dolist (r records)
+	   (catch 'bail
+	     ;; Find the location of record in this buffer.  The
+	     ;; majority of the time this function will be working on
+	     ;; the single record under point, so short-circuit that
+	     ;; case.  Check if record is present, or if its uuid has
+	     ;; been left behind by some previous redisplay.  If
+	     ;; record isn't in this buffer, then bail.
+	     (setq local-record (cond ((equal r (ebdb-current-record))
+				       (ebdb-current-record t))
+				      ((assoc r ebdb-records))
+				      ((assoc (ebdb-record-uuid r) ebdb-records))
+				      (t (throw 'bail nil)))
+		   marker (nth 2 local-record)
+		   end-marker (nth 2 (car (cdr (memq local-record ebdb-records)))))
+	     (unless renumber-index
+	       (setq renumber-index (cl-position local-record ebdb-records)))
+	     ;; If point is inside record, put it at the beginning of the record.
+	     (when (and (<= marker (point))
+			(< (point) (or end-marker (point-max))))
+	       (goto-char marker))
+	     (save-excursion
+	       (goto-char marker)
+	       (setq record-number (get-text-property (point) 'ebdb-record-number))
+	       ;; First insert the reformatted record, then delete the old one,
+	       ;; so that the marker of this record cannot collapse with the
+	       ;; marker of the subsequent record
+	       (setq ret (ebdb-redisplay-record r action local-record))
+	       (put-text-property marker (point) 'ebdb-record-number record-number)
+	       (when (eq ret 'removed)
+		 (setq renumber t))
+	       (when (memq ret '(removed replaced))
+		 (delete-region (point) (or end-marker (point-max)))))))
+	 (when renumber
+	   ;; If we deleted a record we need to update the subsequent
+	   ;; record numbers.
+	   (let* ((markers (append (mapcar (lambda (x) (nth 2 x))
+					   (cl-subseq ebdb-records renumber-index))
+				   (list (point-max))))
+		  (start (pop markers)))
+	     (dolist (end markers)
+	       (put-text-property start end
+				  'ebdb-record-number record-number)
+	       (setq start end
+		     record-number (1+ record-number))))
+	   (setq first-record nil)))
+	(run-hooks 'ebdb-display-hook)))))
 
 (easy-menu-define
   ebdb-menu ebdb-mode-map "EBDB Menu"
@@ -839,7 +904,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      "--"
      ["Show all records" ebdb-display-all-records t]
      ["Show current record" ebdb-display-current-record t]
-     ["Omit record" ebdb-omit-record t]
+     ["Omit record" ebdb-omit-records t]
      ["Toggle record mark" ebdb-toggle-record-mark t]
      "--"
      ["Toggle layout" ebdb-toggle-records-format t]
@@ -888,6 +953,7 @@ If DELETE-P is non-nil RECORD is removed from the EBDB buffers."
      ["Delete duplicate mails" ebdb-delete-redundant-mails t]
      "--"
      ["Edit database" ebdb-customize-database t]
+     ["Reload database" ebdb-reload-database t]
      "--"
      ["Save EBDB" ebdb-save t]
      ["Revert EBDB" revert-buffer t])
@@ -1020,7 +1086,7 @@ one-line\n\t listing, or a full multi-line listing.
 \\[ebdb-copy-mail-as-kill]\t Copy name+mail of record as a kill.
 \\[ebdb-copy-records-as-kill]\t Copy record(s) as a kill.
 \\[ebdb-fmt-to-tmp-buffer]\t Export records to a different format.
-\\[ebdb-omit-record]\t Remove the current record from the display without \
+\\[ebdb-omit-records]\t Remove the current record from the display without \
 deleting it from\n\t the database.
 \\[ebdb-toggle-record-mark]\t Mark or unmark record under point.
 \\[ebdb-toggle-all-record-marks]\t Toggle all record marks
@@ -1081,8 +1147,8 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
         '(:eval (if (object-assoc t 'dirty ebdb-db-list) "**" "--")))
   ;; `ebdb-revert-buffer' acts on `ebdb-buffer'.  Yet this command is usually
   ;; called from the *EBDB* buffer.
-  ;; (set (make-local-variable 'revert-buffer-function)
-  ;;      'ebdb-revert-buffer)
+  (set (make-local-variable 'revert-buffer-function)
+       'ebdb-redisplay-all-records)
   (add-hook 'post-command-hook 'force-mode-line-update nil t))
 
 
@@ -1168,7 +1234,7 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
            ["Delete Record" ebdb-delete-records t]
            ["Toggle Record Display Layout" ebdb-toggle-records-format t]
            ["Fully Display Record" ebdb-display-records-completely t]
-           ["Omit Record" ebdb-omit-record t]
+           ["Omit Record" ebdb-omit-records t]
            ["Merge Record" ebdb-merge-records t])
           (if (ebdb-record-mail record)
               (ebdb-sendmail-menu record))
@@ -1262,29 +1328,21 @@ With prefix N move backwards N (sub)fields."
 (defun ebdb-toggle-record-mark (record &optional mark)
   "Mark or unmark RECORD."
   (interactive
-   (list (ebdb-current-record t)
+   (list (ebdb-current-record)
 	 'mark))
-  (setf (nth 3 record) (if (nth 3 record) nil mark))
-  (ebdb-redisplay-record (car record))
+  (ebdb-redisplay-records record (list 'toggle-mark mark))
   (ebdb-next-record 1))
 
 (defun ebdb-toggle-all-record-marks ()
   "Reverse the marked status of all records."
   (interactive)
-  (save-excursion
-    (mapcar
-     (lambda (rec)
-       (ebdb-toggle-record-mark rec 'mark))
-     ebdb-records)))
+  (ebdb-redisplay-records (mapcar #'car ebdb-records) (list 'toggle-mark 'mark)))
 
-(defun ebdb-unmark-all-records ()
+(defun ebdb-unmark-all-records (records)
   "Remove the mark from all records."
-  (interactive)
-  (mapcar
-   (lambda (rec)
-     (setf (nth 3 rec) nil)
-     (ebdb-redisplay-record (car rec)))
-   ebdb-records))
+  (interactive (list (seq-filter (lambda (r) (nth 3 r))
+				 ebdb-records)))
+  (ebdb-redisplay-records (mapcar #'car records) 'unmark))
 
 ;; Buffer manipulation
 
@@ -1293,7 +1351,7 @@ With prefix N move backwards N (sub)fields."
   "Make a copy of the current *EBDB* buffer, renaming it."
   (interactive (list current-prefix-arg))
   (let ((new-name (read-string "New buffer name: "))
-	(current-records (when (eql major-mode 'ebdb-mode) ebdb-records)))
+	(current-records (when (eql major-mode 'ebdb-mode) (mapcar #'car ebdb-records))))
     (ebdb-display-records current-records nil nil t nil
 			  (generate-new-buffer-name
 			   (format "*%s-%s*" ebdb-buffer-name new-name)))))
@@ -1306,6 +1364,22 @@ With prefix N move backwards N (sub)fields."
     (rename-buffer
      (generate-new-buffer-name
       (format "*%s-%s*" ebdb-buffer-name new-name)))))
+
+;; Unloading/Reloading/Disabling
+
+(defun ebdb-reload-database (db)
+  "Reload all records from one database."
+  (interactive (list (ebdb-prompt-for-db)))
+  (let ((db-str (ebdb-string db))
+	(rec-uuids (mapcar #'ebdb-record-uuid (slot-value db 'records))))
+    ;; I don't actually know if keeping pointers to DB's records would
+    ;; interfere with the reloading of the database.  I suspect it
+    ;; wouldn't, but safer to use the uuids.
+   (message "Reloading %s..." db-str)
+   (ebdb-redisplay-records rec-uuids 'unload)
+   (ebdb-db-reload db)
+   (ebdb-redisplay-records rec-uuids 'reformat)
+   (message "Reloading %s... done" db-str)))
 
 
 ;; clean-up functions
@@ -1496,20 +1570,8 @@ actually-editable records."
   (declare (indent 1) (debug ((symbolp form) body)))
   (let ((editable-records (cl-gensym))
 	(bad-dbs (cl-gensym))
-	(good-dbs (cl-gensym))
-	(fields-from-head (cl-gensym)))
-    `(let ((,fields-from-head 0)
-	   ,editable-records ,bad-dbs ,good-dbs)
-       ;; This is a trick for keeping point from jumping all over the
-       ;; place when fields are added/deleted/edited.  We record how
-       ;; many fields away from the record header point is, and after
-       ;; the editing process we go to that number again.
-       (save-excursion
-	 (while (null (get-text-property (line-beginning-position) 'ebdb-record))
-	   (condition-case nil
-	       (ebdb-prev-field 1)
-	     (error (forward-line -1)))
-	   (cl-incf ,fields-from-head)))
+	(good-dbs (cl-gensym)))
+    `(let (,editable-records ,bad-dbs ,good-dbs)
        (dolist (r ,(nth 1 spec))
 	 (unless
 	     ;; "Unless the record has a bum database..."
@@ -1520,7 +1582,7 @@ actually-editable records."
 		       ((object-assoc (slot-value d 'file) 'file ,bad-dbs)
 			(throw 'bad t))
 		       (t
-			(if (ebdb-db-editable d t t)
+			(if (ebdb-db-editable d)
 			    (push d ,good-dbs)
 			  (push d ,bad-dbs)
 			  (throw 'bad t))))))
@@ -1529,10 +1591,8 @@ actually-editable records."
        (dolist (,(car spec) ,editable-records)
 	 (run-hook-with-args 'ebdb-change-hook ,(car spec))
 	 ,@body
-	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec))
-	 (ebdb-redisplay-record-globally ,(car spec)))
-       (dotimes (_i ,fields-from-head)
-	 (ebdb-next-field 1)))))
+	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec)))
+       (ebdb-redisplay-records ,editable-records 'reformat))))
 
 ;;;###autoload
 (defun ebdb-create-record (db &optional record-class)
@@ -1557,7 +1617,7 @@ is more than one), and prompt for the record class to use."
 	 (ebdb-db-add-record db record)
 	 (ebdb-init-record record)
 	 (run-hook-with-args 'ebdb-after-change-hook record)
-	 (ebdb-display-records (list record)))
+	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t))
      (ebdb-readonly-db
       (message "%s is read-only" (ebdb-string db)))
      (ebdb-unsynced-db
@@ -1630,7 +1690,7 @@ the record, change the name of the record."
   (let ((rec ebdb-custom-field-record))
     (when rec
       (setf (slot-value rec 'dirty) t)
-      (ebdb-redisplay-record-globally rec))))
+      (ebdb-redisplay-records rec 'reformat t))))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
@@ -1712,7 +1772,7 @@ confirm deletion."
 		      (eieio-object-class record)
 		      (cons nil (eieio-object-class field))))
 	 field))
-      (ebdb-redisplay-record-globally record))))
+      (ebdb-redisplay-records record 'reformat t))))
 
 ;;;###autoload
 (defun ebdb-delete-records (records &optional noprompt)
@@ -1724,7 +1784,7 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
               (y-or-n-p (format "Delete the EBDB record of %s? "
                                 (ebdb-string record))))
       (ebdb-delete-record record)
-      (ebdb-redisplay-record-globally record nil t))))
+      (ebdb-redisplay-records record 'remove t))))
 
 ;;;###autoload
 (defun ebdb-move-records (records db)
@@ -1759,19 +1819,13 @@ Inverse of `ebdb-display-current-record'."
   (interactive (list (ebdb-formatter-prefix)))
   (ebdb-display-records (list (ebdb-current-record)) fmt))
 
-(defun ebdb-change-records-fmt (records fmt)
-  (dolist (record records)
-    (unless (eq fmt (nth 1 record))
-      (setf (nth 1 record) fmt)
-      (ebdb-redisplay-record (car record)))))
-
 ;;;###autoload
 (defun ebdb-toggle-records-format (records &optional arg)
   "Toggle fmt of RECORDS (elided or expanded).
 With prefix ARG 0, RECORDS are displayed elided.
 With any other non-nil ARG, RECORDS are displayed expanded."
   (interactive (list (ebdb-do-records t) current-prefix-arg))
-  (let* ((current-fmt (nth 1 (assq (ebdb-current-record) ebdb-records)))
+  (let* ((current-fmt (nth 1 (ebdb-current-record t)))
 	 (formatters (ebdb-available-ebdb-formatters))
          (fmt
           (cond ((eq arg 0)
@@ -1786,18 +1840,18 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 		       (car formatters)
 		     (nth (1+ idx) formatters)))))))
     (message "Using %S layout" (ebdb-string fmt))
-    (ebdb-change-records-fmt (ebdb-record-list records t) fmt)))
+    (ebdb-redisplay-records (mapcar #'car records) fmt)))
 
 ;;;###autoload
 (defun ebdb-display-records-completely (records)
   "Display RECORDS using layout `full-multi-line' (i.e., display all fields)."
-  (interactive (list (ebdb-do-records t)))
-  (let* ((record (ebdb-current-record))
-         (current-fmt (nth 1 (assq record ebdb-records)))
+  (interactive (list (ebdb-do-records)))
+  (let* ((record (ebdb-current-record t))
+         (current-fmt (nth 1 record))
 	 ;; TODO: Something weird happens with duplication of
 	 ;; formatter objects when we do this.
          (fmt (clone current-fmt :include nil :exclude nil)))
-    (ebdb-change-records-fmt (ebdb-record-list records t) fmt)))
+    (ebdb-redisplay-records records fmt)))
 
 ;;;###autoload
 (defun ebdb-display-records-with-fmt (records fmt)
@@ -1811,22 +1865,14 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 	       (mapcar
 		(lambda (s) (cons (ebdb-string s) s))
 		(ebdb-available-ebdb-formatters))))))
-  (ebdb-change-records-fmt (ebdb-record-list records t) fmt))
+  (ebdb-redisplay-records records fmt))
 
 ;;;###autoload
-(defun ebdb-omit-record (n)
+(defun ebdb-omit-records (records)
   "Remove current record from the display without deleting it from EBDB.
 With prefix N, omit the next N records.  If negative, omit backwards."
-  (interactive "p")
-  (let ((num  (get-text-property (if (and (not (bobp)) (eobp))
-                                     (1- (point)) (point))
-                                 'ebdb-record-number)))
-    (if (> n 0)
-        (setq n (min n (- (length ebdb-records) num)))
-      (setq n (min (- n) num))
-      (ebdb-prev-record n))
-    (dotimes (_ n)
-      (ebdb-redisplay-record (ebdb-current-record) nil t))))
+  (interactive (list (ebdb-do-records)))
+  (ebdb-redisplay-records records 'remove))
 
 ;; Entry points to EBDB
 
@@ -2008,8 +2054,7 @@ The search results are displayed in the EBDB buffer."
   "Prompt for a record class and display all records of that class."
   (interactive (list (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)
 		     (ebdb-formatter-prefix)))
-  (let ((recs (seq-filter (lambda (r) (object-of-class-p t class))
-			 (ebdb-records))))
+  (let ((recs (ebdb-records class t)))
     (ebdb-display-records recs fmt)))
 
 ;;;###autoload
