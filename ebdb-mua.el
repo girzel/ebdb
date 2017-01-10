@@ -746,6 +746,7 @@ are discarded as appropriate."
 	(dolist (headers message-headers)
 	  (dolist (header (cdr headers))
 	    (when (setq content (ebdb-message-header header))
+	      (setq content (mail-decode-encoded-word-string content))
 	      (dolist (address (ebdb-extract-address-components content t))
 		(setq mail (cadr address))
 		;; Ignore addresses that should be ignored.
