@@ -589,7 +589,7 @@ This happens in addition to any pre-defined indentation of STRING."
     ;; We don't actually ask the name field to format itself, just use
     ;; the cached canonical name string.  We do add the field to the
     ;; string as a text property, however.
-    (insert (slot-value (ebdb-record-cache record) 'name-string))
+    (insert (ebdb-record-name record))
     (add-text-properties (line-beginning-position) (point)
 			 (list 'ebdb-record record-class))
     (add-text-properties step (point)

@@ -1988,7 +1988,13 @@ only return fields that are suitable for user editing.")
 
 ;; TODO: rename this to `ebdb-record-name-string', it's confusing.
 (cl-defmethod ebdb-record-name ((record ebdb-record))
-  (slot-value (ebdb-record-cache record) 'name-string))
+  "Get or set-and-get the cached name string of RECORD."
+  (let ((cached (slot-value (ebdb-record-cache record) 'name-string))
+	str)
+    (or cached
+	(and (slot-value record 'name)
+	     (setf (slot-value (ebdb-record-cache record) 'name-string)
+		   (ebdb-string (slot-value record 'name)))))))
 
 (cl-defmethod ebdb-record-alt-names ((record ebdb-record))
   (slot-value (ebdb-record-cache record) 'alt-names))
@@ -2244,7 +2250,7 @@ priority."
 
 (cl-defmethod ebdb-string ((record ebdb-record-person))
   "Return a readable string label for RECORD."
-  (slot-value (ebdb-record-cache record) 'name-string))
+  (ebdb-record-name record))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record-person)) &optional slots)
   "Read the name slot for a \"person\" record."
@@ -2253,9 +2259,7 @@ priority."
      class (plist-put slots :name name))))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record-person))
-  (let ((name (slot-value record 'name)))
-    (ebdb-init-field name record)
-    (setf (slot-value (ebdb-record-cache record) 'name-string) (ebdb-string name)))
+  (ebdb-init-field (slot-value record 'name) record)
   (dolist (aka (slot-value record 'aka))
     (ebdb-init-field aka record))
   (dolist (relation (slot-value record 'relations))
@@ -2470,8 +2474,6 @@ Currently only works for mail fields."
 (cl-defmethod ebdb-init-record ((record ebdb-record-organization))
   (let ((name (slot-value record 'name)))
     (ebdb-init-field name record)
-    (setf (slot-value (ebdb-record-cache record) 'name-string)
-	  (ebdb-string name))
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-delete-record ((org ebdb-record-organization) &optional _db unload)
@@ -2490,7 +2492,7 @@ Currently only works for mail fields."
 
 (cl-defmethod ebdb-string ((record ebdb-record-organization))
   "Return a string representation of RECORD."
-  (slot-value (ebdb-record-cache record) 'name-string))
+  (ebdb-record-name record))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record-organization)) &optional slots)
   (let ((name (ebdb-read 'ebdb-field-name-simple slots
