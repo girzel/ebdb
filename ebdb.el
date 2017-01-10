@@ -1819,8 +1819,13 @@ record."
 	      (delete-dups
 	       (append fields lfields)))
 	(when (or notes lnotes)
-	  (setf (slot-value left 'notes)
-		(mapconcat #'identity (list notes lnotes) "\n\n"))))))
+	  (when (null (equal notes lnotes))
+	    (setf (slot-value left 'notes)
+		  (make-instance
+		   ebdb-default-notes-class
+		   :notes
+		   (concat (when notes (ebdb-string notes)) " "
+			   (when lnotes (ebdb-string lnotes))))))))))
   left)
 
 (cl-defmethod ebdb-stamp-time ((record ebdb-record))
@@ -2282,10 +2287,10 @@ priority."
 			  (right ebdb-record-person)
 			  &optional auto)
   "Merge person RIGHT into LEFT, and return LEFT."
-  (with-slots (name
-	       aka
-	       relations
-	       organizations)
+  (with-slots ((rname name)
+	       (raka aka)
+	       (rrelations relations)
+	       (rorganizations organizations))
       right
     (with-slots ((lname name)
 		 (laka aka)
@@ -2296,18 +2301,22 @@ priority."
       (if auto
 	  (object-add-to-list left 'aka name)
 
-	(if (yes-or-no-p (format "Make %s the primary name? " (ebdb-record-name right)))
-	    (progn
-	      (ebdb-record-change-name left name)
-	      (when (yes-or-no-p (format "Keep %s as an aka? " (ebdb-record-name left)))
-		(object-add-to-list left 'aka lname)))
-	  (when (yes-or-no-p (format "Keep %s as an aka? " (ebdb-record-name right)))
-	    (object-add-to-list left 'aka name))))
+	(unless (equal rname lname)
+	  (let ((prefix (format "Merging %s with %s:"
+				(ebdb-record-name right)
+				(ebdb-record-name left))))
+	   (if (yes-or-no-p (format "%s Use %s as primary name? " prefix (ebdb-record-name right)))
+	       (progn
+		 (ebdb-record-change-name left name)
+		 (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name left)))
+		   (object-add-to-list left 'aka lname)))
+	     (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name right)))
+	       (object-add-to-list left 'aka name))))))
 
       (setf (slot-value left 'relations)
-	    (delete-dups (append relations lrelations)))
+	    (delete-dups (append rrelations lrelations)))
       (setf (slot-value left 'organizations)
-	    (delete-dups (append organizations lorganizations)))))
+	    (delete-dups (append rorganizations lorganizations)))))
   (cl-call-next-method left right auto))
 
 (cl-defmethod ebdb-record-field-slot-query ((class (subclass ebdb-record-person)) &optional query alist)
