@@ -3027,7 +3027,8 @@ the persistent save, or allow them to propagate."
     (setf (slot-value record 'uuid)
 	  (make-instance
 	   'ebdb-field-uuid
-	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix)))))
+	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
+    (ebdb-puthash (ebdb-record-uuid record) record))
   (object-add-to-list db 'records record)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
