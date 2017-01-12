@@ -2989,14 +2989,16 @@ that doesn't belong to a different database."
 (cl-defmethod ebdb-db-load :before ((db ebdb-db))
   (run-hook-with-args 'ebdb-before-read-db-hook db))
 
-(cl-defmethod ebdb-db-editable ((db ebdb-db) &optional noerror reload)
+(cl-defgeneric ebdb-db-editable (db &optional noerror reload)
   "Check that DB is in an editable state, and signal an error if
 it isn't.  This method is called before most operations that
 would alter DB.
 
 With optional argument NOERROR, return nil instead of signalling
 an error.  With optional argument RELOAD, reload DB if it is out
-of sync but has no local modifications."
+of sync but has no local modifications.")
+
+(cl-defmethod ebdb-db-editable ((db ebdb-db) &optional noerror reload)
   (let ((err
 	 (cond ((slot-value db 'read-only)
 		'ebdb-readonly-db)
