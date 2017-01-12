@@ -298,6 +298,7 @@ With ARG a negative number do not append."
     (define-key km (kbd "d m")          'ebdb-move-records)
     (define-key km (kbd "d e")          'ebdb-customize-database)
     (define-key km (kbd "d r")          'ebdb-reload-database)
+    (define-key km (kbd "d d")          'ebdb-disable-database)
     (define-key km (kbd "f")          'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "C-k")       'ebdb-delete-field-or-record)
     (define-key km (kbd "i")          'ebdb-insert-field)
@@ -954,6 +955,7 @@ displayed records."
      "--"
      ["Edit database" ebdb-customize-database t]
      ["Reload database" ebdb-reload-database t]
+     ["Disable database" ebdb-disable-database t]
      "--"
      ["Save EBDB" ebdb-save t]
      ["Revert EBDB" revert-buffer t])
@@ -1380,6 +1382,26 @@ With prefix N move backwards N (sub)fields."
    (ebdb-db-reload db)
    (ebdb-redisplay-records rec-uuids 'reformat)
    (message "Reloading %s... done" db-str)))
+
+(defun ebdb-disable-database (db)
+  "Disable database DB.
+
+This will unload (and undisplay) all of DB's records.  DB will
+remain disabled until it is manually re-enabled, and then
+reloaded with `ebdb-reload-database'."
+  (interactive (list (ebdb-prompt-for-db)))
+  (if (ebdb-db-dirty db)
+      (message "Database %s has unsaved changes, you should save it first."
+	       (ebdb-string db))
+    (let ((recs (seq-filter (lambda (r)
+			      ;; Only disappear records that belong to
+			      ;; no other database.
+			      (= 1 (length
+				    (slot-value (ebdb-record-cache r) 'database))))
+			    (slot-value db 'records))))
+      (ebdb-redisplay-records recs 'remove)
+      (ebdb-db-disable db)
+      (message "Database %s is disabled." (ebdb-string db)))))
 
 
 ;; clean-up functions

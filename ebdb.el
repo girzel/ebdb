@@ -2751,8 +2751,9 @@ executable.  When a symbol, assume an Elisp function."
     :type boolean
     :custom boolean
     :documentation
-    "Set to t to temporarily disable this database.  Records will
-    not be loaded from or saved to it.")
+    "When t, records will not be loaded from or saved to this
+    database.  Use `ebdb-disable-database' to disable the
+    database immediately.")
    (record-class
     :initarg :record-class
     ;; I don't think I can actually set this to `ebdb-record': the
@@ -2935,8 +2936,7 @@ that doesn't belong to a different database."
     ;; databases.
     (if (= 1 (length (slot-value (ebdb-record-cache r) 'database)))
 	(ebdb-delete-record r db t)
-      (object-remove-from-list (ebdb-record-cache r) 'database db)))
-  (setq ebdb-db-list (cl-remove db ebdb-db-list)))
+      (object-remove-from-list (ebdb-record-cache r) 'database db))))
 
 (defun ebdb-db-reload (db)
   (ebdb-db-unload db)
@@ -3054,23 +3054,11 @@ the persistent save, or allow them to propagate."
 (cl-defmethod ebdb-string ((db ebdb-db))
   (format "Database: %s" (slot-value db 'file)))
 
-(defun ebdb-db-disable (db)
-  (interactive (list (ebdb-prompt-for-db)))
-  (if (ebdb-db-dirty db)
-      (message "Database %s has unsaved changes, you should save it first."
-	       (ebdb-string db))
-    (let ((recs (seq-filter (lambda (r)
-			      ;; Only disappear records that belong to
-			      ;; no other database.
-			      (= 1 (length
-				    (slot-value (ebdb-record-cache r) 'database))))
-			    (slot-value db 'records))))
-     (setf (slot-value db 'disabled) t)
-     (setf (slot-value db 'dirty) t)
-     (ebdb-db-save db)
-     (ebdb-redisplay-records recs 'remove)
-     (ebdb-db-unload db)
-     (message "Database %s is disabled." (ebdb-string db)))))
+(cl-defmethod ebdb-db-disable ((db ebdb-db))
+  (setf (slot-value db 'disabled) t
+	(slot-value db 'dirty) t)
+  (ebdb-db-save db)
+  (ebdb-db-unload db))
 
 (cl-defmethod ebdb-db-customize ((db ebdb-db))
   (eieio-customize-object db))
