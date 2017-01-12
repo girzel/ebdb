@@ -1599,15 +1599,34 @@ actually-editable records."
 	     ;; "Unless the record has a bum database..."
 	     (catch 'bad
 	       ;; Return nil unless we throw a 'bad.
-	       (dolist (d (slot-value (ebdb-record-cache r) 'database) nil)
-		 (cond ((object-assoc (slot-value d 'file) 'file ,good-dbs))
-		       ((object-assoc (slot-value d 'file) 'file ,bad-dbs)
-			(throw 'bad t))
-		       (t
-			(if (ebdb-db-editable d)
-			    (push d ,good-dbs)
-			  (push d ,bad-dbs)
-			  (throw 'bad t))))))
+	       (condition-case err
+		   (dolist (d (slot-value (ebdb-record-cache r) 'database) nil)
+		     (cond ((object-assoc (slot-value d 'file) 'file ,good-dbs))
+			   ((object-assoc (slot-value d 'file) 'file ,bad-dbs)
+			    (throw 'bad t))
+			   (t
+			    (ebdb-db-editable d)
+			    (push d ,good-dbs))))
+		 (ebdb-unsynced-db
+		  (let ((db (cadr err)))
+		    (if (ebdb-db-dirty db)
+			(error "Database %s is out of sync and has unsaved changes" db)
+		      (if (or ebdb-auto-revert
+			      (yes-or-no-p
+			       (format "Database %s is out of sync, reload?"
+				       (ebdb-string db))))
+			  (progn
+			    (ebdb-reload-database db)
+			    (push db ,good-dbs))
+			(push db ,bad-dbs)
+			(message "Database %s is out of sync" db)
+			(sit-for 1)
+			(throw 'bad t)))))
+		 (ebdb-readonly-db
+		  (push (cadr err) ,bad-dbs)
+		  (message "Database %s is read-only" (cadr err))
+		  (sit-for 1)
+		  (throw 'bad t))))
 	   ;; No bum database, it's okay.
 	   (push r ,editable-records)))
        (dolist (,(car spec) ,editable-records)
