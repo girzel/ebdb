@@ -48,12 +48,11 @@ Databases have a few user-facing settings:
   Set to a single character that will be displayed next to records in
   the {{{ebuf}}} buffer, indicating which database they belong
   to.
-- Option: uuid-prefix
-  A string to be appended to the uuids of all records created in this
-  database.
 - Option: disabled
   When t, the database will essentially be ignored -- no records will
-  be read from it.
+  be read from it.  Setting this to t will only take effect on next
+  restart; to disable a database immediately, use
+  `ebdb-disable-database' below.
 - Option record-class
   The default record class to use when creating new records in this
   database.  The default is `ebdb-default-record-class'.
@@ -76,6 +75,18 @@ field, and the older copy is discarded.
 
 - Command: ebdb-copy-record record to-db
   Copy RECORD into TO-DB, leaving it in its existing database(s).
+
+Other database-related commands:
+
+- Command: ebdb-reload-database db
+  Reload all records from a database.  This also redisplays and of
+  those records that were visible in {{{ebuf}}} buffers.
+- Command: ebdb-disable-database db
+  This command disables a database, unloading all of its records and
+  essentially ignoring it from now on.  The disabled state persists
+  between restarts.  To re-enable a database, edit it using
+  `ebdb-customize-database', set 'disabled to nil, and then reload it
+  with `ebdb-reload-database'.
 * Creating records
 
 Create a record using "c" (`ebdb-create') in the {{{ebuf}}} buffer.
