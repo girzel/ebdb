@@ -925,7 +925,7 @@ Return the records matching ADDRESS or nil."
   (let* ((mail (nth 1 address))		; possibly nil
          (name (unless (or (equal mail (car address))
 			   (null (car address)))
-                 (ebdb-string (ebdb-parse 'ebdb-field-name-complex (car address)))))
+                 (ebdb-string (ebdb-parse ebdb-default-name-class (car address)))))
          (records (ebdb-message-search name mail))
          created-p new-records)
     (if (and (not records) (functionp update-p))

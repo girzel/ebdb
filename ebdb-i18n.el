@@ -149,7 +149,8 @@ for their symbol representations.")
 ;; `ebdb-read-name-articulate' to nil, in which case the name is
 ;; passed to this `ebdb-parse' method.
 (cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-name-complex))
-					(string string))
+					(string string)
+					&optional slots)
   ;; For now, only test the first character of whatever string the
   ;; user has entered.
   (let ((script (unless (string-empty-p string)

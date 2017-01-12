@@ -502,6 +502,22 @@ to add to a record."
 (cl-defmethod ebdb-field-readable-name ((_field (eql string)))
   "Value")
 
+(cl-defgeneric ebdb-parse (field-class str &optional slots)
+  "Attempt to construct an instance of FIELD-CLASS using STR.
+
+Implementations should extract information from STR and put it
+into SLOTS, provided that SLOTS does not already contain relevant
+values (ie, parsing should not override what's already in SLOTS).
+Then call `cl-call-next-method' with the new values.")
+
+(cl-defmethod ebdb-parse ((field-class (subclass ebdb-field)) _str &optional slots)
+  "Create the actual field instance."
+  (apply 'make-instance field-class slots))
+
+(cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional slots)
+  (when (string-empty-p str)
+    (signal 'ebdb-empty (list "Empty string cannot be parsed"))))
+
 ;;; Errors
 
 ;; I haven't figured this out quite yet.  What I want to do is avoid
@@ -731,15 +747,28 @@ process."
 ;;; The name fields.  One abstract base class, and two instantiable
 ;;; subclasses.
 
-;; TODO: Allow the user to choose whether the aka slot uses
-;; `ebdb-field-name-simple' or `ebdb-field-name-complex'.  Or maybe on
-;; a case-by-case basis?
-
 (defclass ebdb-field-name (ebdb-field-user)
   nil
   :abstract t
   :documentation "Abstract base class for creating record
   names.")
+
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-name)) str &optional slots)
+  "Examine STR and try to interpret it as a name.
+
+This method dispatches to the equivalent method of either the
+simple or complex name class."
+  ;; Right now, all we do is send the input to field-name-simple if
+  ;; there are no spaces in it, otherwise to field-name-complex.  If
+  ;; "slots" is t, that means we've already been through the
+  ;; upper-level methods.
+  (let ((input (string-trim str)))
+    (cond (slots
+	   (cl-call-next-method class str slots))
+	  ((string-match-p "[[:space:]]" input)
+	   (ebdb-parse ebdb-default-name-class input slots))
+	  (t
+	   (ebdb-parse ebdb-field-name-simple input slots)))))
 
 (defclass ebdb-field-name-simple (ebdb-field-name)
   ((name
@@ -763,6 +792,11 @@ process."
   (when record
     (ebdb-puthash (ebdb-string name) record))
   (cl-call-next-method))
+
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
+  (unless (plist-get slots :name)
+    (setq slots (plist-put :name str)))
+  (cl-call-next-method class str slots))
 
 (defclass ebdb-field-name-complex (ebdb-field-name)
   ((surname
@@ -867,7 +901,7 @@ first one."
 	(setq slots (plist-put slots :surname surname))
 	(setq slots (plist-put slots :given-names (split-string given-names)))
 	(cl-call-next-method class slots obj))
-    (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))))))
+    (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))) slots)))
 
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
   "Short-circuit the plain field search for names.
@@ -876,12 +910,17 @@ The record itself performs more complex searches on cached name
 values, by default the search is not handed to the name field itself."
   nil)
 
-(cl-defmethod ebdb-parse ((_class (subclass ebdb-field-name-complex)) string)
-  (let ((bits (ebdb-divide-name string)))
-    (make-instance 'ebdb-field-name-complex
-     :given-names (when (car bits)
-		    (list (car bits)))
-     :surname (cdr bits))))
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
+  (let ((bits (ebdb-divide-name str)))
+    (unless (plist-get slots :given-names)
+      (setq slots (plist-put slots :given-names
+			     (when (car bits)
+			       (list (car bits))))))
+    (unless (plist-get slots :surname)
+      (setq slots (plist-put slots :surname
+			     (when (cdr bits)
+			       (cdr bits)))))
+    (cl-call-next-method class str slots)))
 
 ;;; Role fields.
 
@@ -1279,7 +1318,7 @@ values, by default the search is not handed to the name field itself."
   (let* ((country
 	  (or (and obj
 		   (slot-value obj 'country-code))
-	      (plist-get slots 'country-code)))
+	      (plist-get slots :country-code)))
 	 (area
 	  (or (and obj
 		   (slot-value obj 'area-code))
@@ -1291,27 +1330,16 @@ values, by default the search is not handed to the name field itself."
 		  (when area
 		    (format " (%d)" area))
 		  ": "))
-	 (default (when obj (slot-value obj 'number)))
-	 (plist
-	  (ebdb-error-retry
-	   (ebdb-parse class
-		       (ebdb-read-string prompt default)
-		       slots))))
-    (cl-call-next-method class plist obj)))
+	 (default (when obj (slot-value obj 'number))))
+    (ebdb-error-retry
+     (ebdb-parse class
+		 (ebdb-read-string prompt default)
+		 slots))))
 
-(cl-defmethod ebdb-parse ((_class (subclass ebdb-field-phone))
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-phone))
 			  (string string)
 			  &optional slots)
-  "Parse a phone number from STRING and return a plist of
-integers of the form \(country-code area-code number extension\).
 
-The plist should be suitable for creating an instance of
-`ebdb-field-phone'.
-
-If plist SLOTS is present, allow values from that plist to
-override parsing."
-  ;; TODO: This `ebdb-parse' method returns a plist.  Other such
-  ;; methods return an actual object.  We need consistency!
   (let ((country-regexp "\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+")
 	(area-regexp "(?\\([0-9]\\{1,4\\}\\)[-)./ \t]+")
         (ext-regexp "[ \t]?e?[xX]t?\\.?[ \t]?\\([0-9]+\\)")
@@ -1361,7 +1389,7 @@ override parsing."
 					   (match-string 1))))))
     (setq slots
 	  (plist-put slots :number acc))
-    slots))
+    (cl-call-next-method class string slots)))
 
 ;;; Notes field
 
