@@ -2874,12 +2874,12 @@ somehow out of sync.
 DB has unsaved changes.  Unsynced means that saving those
 changes (or re-loading the database from its source) would
 overwrite data somewhere."
-  (let ((file-access-time
-	 (nth 4
-	      (file-attributes
-	       (expand-file-name (slot-value db 'file))))))
-    (and file-access-time
-	 (time-less-p (slot-value db 'sync-time) file-access-time))))
+  (let ((file-mod-time
+	 (file-attribute-modification-time
+	  (file-attributes
+	   (expand-file-name (slot-value db 'file))))))
+    (and file-mod-time
+	 (time-less-p (slot-value db 'sync-time) file-mod-time))))
 
 (cl-defmethod ebdb-db-dirty ((db ebdb-db))
   "Return t if DB is marked dirty, or contains any dirty records."
@@ -2967,8 +2967,17 @@ that doesn't belong to a different database."
       (object-remove-from-list (ebdb-record-cache r) 'database db))))
 
 (defun ebdb-db-reload (db)
-  (ebdb-db-unload db)
-  (ebdb-db-load db))
+  "Reload DB.
+
+This consists of unloading all DB's records, re-reading its
+database definition from file, and then reloading all the
+records."
+  (let ((elt (cl-position db ebdb-db-list)))
+    (ebdb-db-unload db)
+    (setq db (eieio-persistent-read (slot-value db 'file) 'ebdb-db t))
+    ;; Stick DB back where it came from.
+    (setcar (nthcdr elt ebdb-db-list) db)
+    (ebdb-db-load db)))
 
 (cl-defmethod ebdb-record-compare ((left ebdb-record)
 				   (right ebdb-record)
