@@ -49,6 +49,8 @@
 
 ;;; Code:
 
+(require 'ebdb)
+
 (if (fboundp 'org-link-set-parameters)
     (org-link-set-parameters "ebdb"
 			     :follow 'ebdb-org-open
