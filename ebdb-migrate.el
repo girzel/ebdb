@@ -393,7 +393,10 @@ holding valid contacts in a previous BBDB format."
 		  (dolist (o orgs)
 		    ;; Make all the orgs into real records.
 		    (unless (string= o "") ; There are many of these.
-		      (setq org (or (object-assoc o 'name c-records)
+		      (setq org (or (seq-find
+				     (lambda (r)
+				       (string= o (ebdb-record-name r)))
+				     c-records)
 				    (let ((time (current-time)))
 				      (ebdb-db-add-record
 				       target-db
