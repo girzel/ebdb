@@ -795,7 +795,7 @@ simple or complex name class."
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
   (unless (plist-get slots :name)
-    (setq slots (plist-put :name str)))
+    (setq slots (plist-put slots :name str)))
   (cl-call-next-method class str slots))
 
 (defclass ebdb-field-name-complex (ebdb-field-name)
