@@ -53,6 +53,10 @@
 (defvar ebdb-offer-to-create nil
   "For communication between `ebdb-update-records' and `ebdb-query-create'.")
 
+(defvar ebdb-update-records-p nil
+  "For communication between `ebdb-update-records' and
+  `ebdb-query-create'.")
+
 (defvar ebdb-update-records-address nil
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
@@ -629,7 +633,7 @@ or if some FIELD of RECORD is empty."
   "Return a single-character string to mark RECORD in an MUA
   summary buffer.")
 
-(cl-defmethod ebdb-mua-make-summary-mark ((record ebdb-record))
+(cl-defmethod ebdb-mua-make-summary-mark ((_record ebdb-record))
   "By default, do nothing."
   nil)
 
@@ -671,7 +675,7 @@ Currently no other MUAs support this EBDB feature."
   (let ((val (ebdb-message-header header))
         (case-fold-search t)) ; RW: Is this what we want?
     (when (and val (string-match regexp val))
-      (throw done t))))
+      (throw 'done t))))
 
 (defun ebdb-mua-test-headers (header-type address-parts &optional ignore-address)
   "Decide if the address in ADDRESS-PARTS should be ignored or
@@ -1233,7 +1237,7 @@ bind `ebdb-message-all-addresses' to ALL."
 ;; as well as the current content of the field that gets edited.
 
 ;; In principle, this function can be used not only with MUAs.
-(defun ebdb-annotate-record (record annotation &optional field replace)
+(defun ebdb-annotate-record (record annotation &optional field _replace)
   "In RECORD add an ANNOTATION to field FIELD.
 FIELD defaults to `ebdb-annotate-field'.
 If REPLACE is non-nil, ANNOTATION replaces the content of FIELD.
@@ -1390,23 +1394,22 @@ For use as an element of `ebdb-notice-record-hook'."
   ;; It would be faster if we could somehow store (permanently?) that we
   ;; have already annotated a message.
   (let ((case-fold-search t))
-    (unless (or ebdb-read-only
-                ;; check the ignore-messages pattern
-                (let ((ignore-messages ebdb-auto-notes-ignore-messages)
-                      ignore rule)
-                  (while (and (not ignore) (setq rule (pop ignore-messages)))
-                    (if (cond ((functionp rule)
-                               ;; RULE may use `ebdb-update-records-address'
-                               (funcall rule record))
-                              ((symbolp rule)
-                               (eq rule (nth 4 ebdb-update-records-address)))
-                              ((eq 1 (safe-length rule))
-                               (ebdb-message-header-re (car rule) (cdr rule)))
-                              ((eq 2 (safe-length rule))
-                               (and (eq (car rule) (nth 4 ebdb-update-records-address))
-                                    (ebdb-message-header-re (nth 1 rule) (nth 2 rule)))))
-                        (setq ignore t)))
-                  ignore))
+    (unless ;; check the ignore-messages pattern
+	(let ((ignore-messages ebdb-auto-notes-ignore-messages)
+	      ignore rule)
+	  (while (and (not ignore) (setq rule (pop ignore-messages)))
+	    (if (cond ((functionp rule)
+		       ;; RULE may use `ebdb-update-records-address'
+		       (funcall rule record))
+		      ((symbolp rule)
+		       (eq rule (nth 4 ebdb-update-records-address)))
+		      ((eq 1 (safe-length rule))
+		       (ebdb-message-header-re (car rule) (cdr rule)))
+		      ((eq 2 (safe-length rule))
+		       (and (eq (car rule) (nth 4 ebdb-update-records-address))
+			    (ebdb-message-header-re (nth 1 rule) (nth 2 rule)))))
+		(setq ignore t)))
+	  ignore)
 
       ;; For speed-up expanded rules are stored in `ebdb-auto-notes-rules-expanded'.
       (when (and ebdb-auto-notes-rules

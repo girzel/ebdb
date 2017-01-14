@@ -481,7 +481,7 @@ property is the field instance itself."
     value))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
-			      (field ebdb-field-obfuscated)
+			      (_field ebdb-field-obfuscated)
 			      _style
 			      (_record ebdb-record))
   (let ((str "HIDDEN"))
@@ -778,7 +778,7 @@ only happens when removing records.")
 	 'ebdb-marked)))
   'replaced)
 
-(cl-defmethod ebdb-redisplay-record ((record ebdb-record)
+(cl-defmethod ebdb-redisplay-record ((_record ebdb-record)
 				     (_action (eql remove))
 				     full-record)
   (setq ebdb-records (delq full-record ebdb-records))
@@ -812,12 +812,12 @@ only happens when removing records.")
   (ebdb-redisplay-record record (nth 1 full-record) full-record))
 
 (cl-defmethod ebdb-redisplay-record ((record ebdb-record)
-				     (action (eql unmark))
+				     (_action (eql unmark))
 				     full-record)
   (setf (nth 3 full-record) nil)
   (ebdb-redisplay-record record (nth 1 full-record) full-record))
 
-(defun ebdb-redisplay-records (records action &optional all-buffers sort)
+(defun ebdb-redisplay-records (records action &optional all-buffers _sort)
   "Take ACTION to alter the display of RECORDS in one or more EBDB buffers.
 
 If ACTION is an instance of `ebdb-formatter-ebdb', then redisplay
@@ -838,7 +838,7 @@ displayed records."
 			      (buffer-list))
 		(and (eq major-mode 'ebdb-mode)
 		     (list (current-buffer)))))
-	local-record renumber-index marker end-marker fmt record-number ret)
+	local-record renumber-index marker end-marker record-number ret)
     (setq records (ebdb-record-list records))
     ;; First check if we've been given any records as uuid strings,
     ;; rather than actual records.
@@ -1363,9 +1363,9 @@ With prefix N move backwards N (sub)fields."
 ;; Buffer manipulation
 
 ;;;###autoload
-(defun ebdb-clone-buffer (&optional arg)
+(defun ebdb-clone-buffer ()
   "Make a copy of the current *EBDB* buffer, renaming it."
-  (interactive (list current-prefix-arg))
+  (interactive)
   (let ((new-name (read-string "New buffer name: "))
 	(current-records (when (eql major-mode 'ebdb-mode) (mapcar #'car ebdb-records))))
     (ebdb-display-records current-records nil nil t nil
@@ -2719,7 +2719,7 @@ of all of these people."
 
   (if noisy (message "EBDB mail alias: rebuilding done")))
 
-(defun ebdb-mail-abbrev-expand-hook (alias records)
+(defun ebdb-mail-abbrev-expand-hook (_alias records)
 ;  (run-hook-with-args 'ebdb-mail-abbrev-expand-hook alias records)
   (mail-abbrev-expand-hook)
   (when ebdb-completion-display-record

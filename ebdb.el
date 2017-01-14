@@ -514,7 +514,7 @@ Then call `cl-call-next-method' with the new values.")
   "Create the actual field instance."
   (apply 'make-instance field-class slots))
 
-(cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional slots)
+(cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional _slots)
   (when (string-empty-p str)
     (signal 'ebdb-empty (list "Empty string cannot be parsed"))))
 
@@ -768,7 +768,7 @@ simple or complex name class."
 	  ((string-match-p "[[:space:]]" input)
 	   (ebdb-parse ebdb-default-name-class input slots))
 	  (t
-	   (ebdb-parse ebdb-field-name-simple input slots)))))
+	   (ebdb-parse 'ebdb-field-name-simple input slots)))))
 
 (defclass ebdb-field-name-simple (ebdb-field-name)
   ((name
@@ -1652,7 +1652,7 @@ record uuids.")
 	(push (list alias (list record address)) ebdb-mail-alias-alist)))))
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field-mail-alias)
-				 &optional record unload)
+				 &optional record _unload)
   (with-slots (alias address) field
     (let* ((existing (assoc alias ebdb-mail-alias-alist))
 	   (entry (assq record (cdr-safe existing))))
@@ -2022,8 +2022,7 @@ only return fields that are suitable for user editing.")
 ;; TODO: rename this to `ebdb-record-name-string', it's confusing.
 (cl-defmethod ebdb-record-name ((record ebdb-record))
   "Get or set-and-get the cached name string of RECORD."
-  (let ((cached (slot-value (ebdb-record-cache record) 'name-string))
-	str)
+  (let ((cached (slot-value (ebdb-record-cache record) 'name-string)))
     (or cached
 	(and (slot-value record 'name)
 	     (setf (slot-value (ebdb-record-cache record) 'name-string)
@@ -2639,7 +2638,7 @@ appropriate person record."
     (ebdb-record-adopt-role-fields record org t)))
 
 (cl-defmethod ebdb-record-change-name ((org ebdb-record-organization) &optional name)
-  (let ((new-name (or name (ebdb-read ebdb-field-name-simple nil (slot-value org 'name)))))
+  (let ((new-name (or name (ebdb-read 'ebdb-field-name-simple nil (slot-value org 'name)))))
     (setf (slot-value (ebdb-record-cache org) 'name-string) (ebdb-string new-name))
     (cl-call-next-method org new-name)))
 
@@ -4424,7 +4423,7 @@ important work is done by the `ebdb-db-load' method."
 		  (setq s (make-instance 'ebdb-db-file :file s :dirty t))
 		  ;; Try to get it on disk first.
 		  (ebdb-db-save s))))
-	    ((null (object-of-class-p s ebdb-db))
+	    ((null (object-of-class-p s 'ebdb-db))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
       ;; Now load it.
       (if (object-of-class-p s 'ebdb-db)
