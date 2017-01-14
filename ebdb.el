@@ -4288,17 +4288,20 @@ also be one of the special symbols below.
 	((eq field 'mail-aka) (ebdb-record-mail-aka record)) ; derived (cached) field
 	((eq field 'aka-all)  (append (ebdb-record-aka record) ; derived field
 				      (ebdb-record-mail-aka record)))
-	;; It might be a class symbol.
-	((class-p field)
-	 (seq-filter
-	  (lambda (f)
-	    (object-of-class-p f field))
-	  (ebdb-record-user-fields record)))
 	;; Otherwise assume it is a valid slot name.
 	(t
 	 (when (and (slot-exists-p record field)
 		    (slot-boundp record field))
 	   (slot-value record field)))))
+
+(cl-defmethod ebdb-record-field ((record ebdb-record)
+				 (field (subclass ebdb-field-user)))
+  "If FIELD is a class name subclassing `ebdb-user-field', return
+ all instances of that field."
+  (seq-filter
+   (lambda (f)
+     (object-of-class-p f field))
+   (ebdb-record-user-fields record)))
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
 				 (field string))
