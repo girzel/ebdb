@@ -2420,6 +2420,14 @@ Currently only works for mail fields."
   "Return a list of organization string names from RECORD's cache."
   (slot-value (ebdb-record-cache record) 'organizations))
 
+(cl-defmethod ebdb-record-search ((record ebdb-record-person)
+				  (_type (eql organization))
+				  (regex string))
+  (or (seq-find (lambda (org)
+		  (string-match-p regex org))
+		(ebdb-record-organizations record))
+      (string-match-p regex "")))
+
 ;;; This needs some more thought.
 ;; (cl-defmethod ebdb-mail-set-priority ((mail ebdb-field-mail)
 ;; 				      (record ebdb-record-person)
@@ -2572,7 +2580,21 @@ Currently only works for mail fields."
 (cl-defmethod ebdb-record-search ((record ebdb-record-organization)
 				  (_type (eql name))
 				  (regex string))
-  (string-match-p regex (ebdb-string (slot-value record 'name))))
+  (string-match-p regex (ebdb-record-name record)))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record-organization)
+				  (_type (eql organization))
+				  (regex string))
+  (or (string-match-p regex (ebdb-record-name record))
+      (and (slot-value record 'domain)
+	   (string-match-p regex (ebdb-string (slot-value record 'domain))))))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record-organization)
+				  (_type (eql mail))
+				  (regexp string))
+  (let ((domain (slot-value record 'domain)))
+    (or (and domain (string-match-p regexp (ebdb-string domain)))
+	(cl-call-next-method))))
 
 (cl-defmethod ebdb-record-insert-field :after ((org ebdb-record-organization)
 					       _slot
@@ -4619,16 +4641,7 @@ but not allowing for regexps."
     (when name-re
       (push `(ebdb-record-search record 'name ,name-re) clauses))
     (when org-re
-      (push `(let ((organizations (when (slot-exists-p record 'organizations)
-				    (slot-value record 'organizations)))
-		   org done)
-	       (if organizations
-		   (while (and (setq org (pop organizations)) (not done))
-		     (setq done (string-match ,org-re (ebdb-string org))))
-		 ;; so that "^$" can be used to find records that
-		 ;; have no organization
-		 (setq done (string-match ,org-re "")))
-	       done)
+      (push `(ebdb-record-search record 'organization ,org-re)
 	    clauses))
 
     (when phone-re

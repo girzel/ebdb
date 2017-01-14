@@ -1954,8 +1954,10 @@ in either the name(s), organization, address, phone, mail, or xfields."
   "Display all records in the EBDB matching REGEXP in the organization field."
   (interactive (list (ebdb-search-read "organization") (ebdb-formatter-prefix)))
   (ebdb-display-records
-   (ebdb-search (ebdb-records 'ebdb-record-organization t)
-		regexp)
+   (seq-filter
+    (lambda (r)
+      (ebdb-record-search r 'organization regexp))
+    (ebdb-records))
    fmt))
 
 ;;;###autoload
