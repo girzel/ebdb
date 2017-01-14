@@ -2387,27 +2387,6 @@ priority."
     (setf (slot-value (ebdb-record-cache record) 'name-string) (ebdb-string new-name))
     (cl-call-next-method record new-name)))
 
-(cl-defmethod ebdb-record-adopt-role-fields ((record ebdb-record-person) &optional _prompt)
-  "Go through all of RECORDs fields and see if any of them should
-be moved to an organization role.
-
-Currently only works for mail fields."
-  (let ((roles (slot-value record 'organizations))
-	org domain)
-    (dolist (r roles)
-      (setq org (ebdb-gethash (slot-value r 'org-uuid) 'uuid))
-      (dolist (m (ebdb-record-mail record))
-	(setq domain (cadr (split-string (slot-value m 'mail) "@")))
-	(when (and domain
-		   (string-match-p domain
-				   (slot-value org 'domain))
-		   (yes-or-no-p (format "Move mail %s to organization %s? "
-					(ebdb-string m)
-					(ebdb-string org))))
-	  (setf (slot-value r 'mail) m)
-	  (ebdb-record-delete-field record 'mail m)
-	  (ebdb-init-field m record))))))
-
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
   (ebdb-gethash (slot-value field 'rel-uuid) 'uuid))
@@ -2596,27 +2575,45 @@ Currently only works for mail fields."
     (or (and domain (string-match-p regexp (ebdb-string domain)))
 	(cl-call-next-method))))
 
+(cl-defmethod ebdb-record-adopt-role-fields ((record ebdb-record-person)
+					     (org ebdb-record-organization)
+					     &optional _prompt)
+  "Go through all of RECORDs fields and see if any of them should
+be moved to a role at ORG.
+
+Currently only works for mail fields."
+  (let ((roles (slot-value record 'organizations))
+	(org-domain (slot-value org 'domain))
+	org mail-domain)
+    (dolist (r roles)
+      (when (and (string= (slot-value r 'org-uuid) (ebdb-record-uuid org))
+		 org-domain)
+	(dolist (m (ebdb-record-mail record))
+	  (setq mail-domain (cadr (split-string (slot-value m 'mail) "@")))
+	  (when (and mail-domain
+		     (string-match-p mail-domain
+				     (ebdb-string org-domain))
+		     (yes-or-no-p (format "Move %s's address %s to role at %s? "
+					  (ebdb-string record)
+					  (ebdb-string m)
+					  (ebdb-string org))))
+	    (setf (slot-value r 'mail) m)
+	    (ebdb-record-delete-field
+	     record
+	     (car (ebdb-record-field-slot-query
+		   (eieio-object-class record)
+		   `(nil . ,(eieio-object-class m))))
+	     m)
+	    (ebdb-init-field r record)))))))
+
 (cl-defmethod ebdb-record-insert-field :after ((org ebdb-record-organization)
 					       _slot
-					       (field ebdb-field-domain))
+					       (_field ebdb-field-domain))
   (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
-	(domain (slot-value field 'domain))
 	rec)
     (dolist (r roles)
       (setq rec (ebdb-gethash (car r) 'uuid))
-      (dolist (m (ebdb-record-mail rec))
-	(when (and (string-match-p domain (slot-value m 'mail))
-		   (yes-or-no-p (format "Move address %s of %s to %s role? "
-					(ebdb-string m)
-					(ebdb-string rec)
-					(ebdb-string org))))
-	  (setf (slot-value (cdr r) 'mail) m)
-	  (ebdb-record-delete-field
-	   rec
-	   (car (ebdb-record-field-slot-query
-		 (eieio-object-class rec)
-		 `(nil . ,(eieio-object-class m))))
-	   m))))))
+      (ebdb-record-adopt-role-fields rec org t))))
 
 (cl-defmethod ebdb-record-change-field ((_record ebdb-record-organization)
 					(old-field ebdb-field-role)
@@ -2638,22 +2635,8 @@ appropriate person record."
 (cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-person)
 					       _slot
 					       (field ebdb-field-role))
-  (let* ((org-uuid (slot-value field 'org-uuid))
-	 (org (ebdb-gethash org-uuid 'uuid))
-	 (org-domain (slot-value org 'domain))
-	 (role-mail (slot-value field 'mail)))
-    (when (and org-domain (not role-mail))
-      (dolist (m (ebdb-record-mail record t))
-	(when (and (string-match-p (slot-value org-domain 'domain) (ebdb-string m))
-		   (yes-or-no-p (format "Move address %s to %s role? "
-					(ebdb-string m) (ebdb-string org))))
-	  (setf (slot-value field 'mail) m)
-	  (ebdb-record-delete-field
-	   record
-	   (car (ebdb-record-field-slot-query
-		 (eieio-object-class record)
-		 `(nil . ,(eieio-object-class m))))
-	   m))))))
+  (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
+    (ebdb-record-adopt-role-fields record org t)))
 
 (cl-defmethod ebdb-record-change-name ((org ebdb-record-organization) &optional name)
   (let ((new-name (or name (ebdb-read ebdb-field-name-simple nil (slot-value org 'name)))))
