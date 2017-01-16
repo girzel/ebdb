@@ -375,7 +375,7 @@ holding valid contacts in a previous BBDB format."
   (require 'ebdb-gnus)
   (with-current-buffer (find-file-noselect bbdb-file)
     (when (and (/= (point-min) (point-max))
-	       (yes-or-no-p "Upgrade from previous version of BBDB?"))
+	       (yes-or-no-p "Upgrade from previous version of BBDB? "))
       (let ((v-records (ebdb-migrate-parse-records))
 	    (target-db (if (= (length ebdb-db-list) 1)
 			   (car ebdb-db-list)
@@ -522,11 +522,13 @@ holding valid contacts in a previous BBDB format."
 				      :timestamp
 				      (apply #'encode-time
 					     (parse-time-string val)))))
-	 ((eq lab ebdb-mail-alias-field)
+	 ((eq lab 'mail-alias)
 	  (push (make-instance 'ebdb-field-mail-alias
-			       :alias val)
+			       :alias val
+			       :address (car-safe mails))
 		fields))
-	 ((string-match-p val url-handler-regexp)
+	 ((and (stringp v)
+	       (string-match-p val url-handler-regexp))
 	  (push (make-instance 'ebdb-field-url
 			       :url val)
 		fields))
@@ -547,6 +549,15 @@ holding valid contacts in a previous BBDB format."
 				     :notes val)))
 	 ((eq lab 'messages)
 	  (unless (stringp val)
+	    (setq val
+		  (mapcar
+		   (lambda (s)
+		     (make-gnorb-ebdb-link
+		      :subject (aref s 1)
+		      :date (aref s 2)
+		      :group (aref s 3)
+		      :id (aref s 4)))
+		   val))
 	    (push (make-instance 'gnorb-ebdb-field-messages
 				 :messages val)
 		  fields)))
@@ -554,7 +565,7 @@ holding valid contacts in a previous BBDB format."
 	  (push (make-instance 'ebdb-org-field-tags
 			       :tags (if (listp val)
 					 val
-				       (split-string val ";" t t)))
+				       (split-string val ";" t " ")))
 		fields))
 	 ((memq lab (list bbdb/gnus-score-field
 			  bbdb/gnus-split-private-field
@@ -596,18 +607,18 @@ holding valid contacts in a previous BBDB format."
       (widen)
       (goto-char (point-min))
       ;; look backwards for file-format, and convert if necessary.
-      (let ((file-format (save-excursion
-                           (if (re-search-backward
-                                "^;+[ \t]*file-\\(format\\|version\\):[ \t]*\\([0-9]+\\)[ \t]*$" nil t)
-                               (string-to-number (match-string 2)))))
+      (let ((file-format
+	     (if (re-search-forward
+		  "^;+[ \t]*file-\\(format\\|version\\):[ \t]*\\([0-9]+\\)[ \t]*$" nil t)
+		 (string-to-number (match-string 2))))
             migrate records)
         (unless file-format ; current file-format, but no file-format: line.
           (error "BBDB corrupted: no file-format line"))
         (if (> file-format ebdb-file-format)
-            (error "BBDB version %s understands file format %s but not %s."
+            (error "EBDB version %s understands file format %s but not %s."
                    ebdb-version ebdb-file-format file-format)
           (setq migrate (< file-format ebdb-file-format)))
-
+	(forward-char)
         (or (eobp) (looking-at "\\[")
             (error "BBDB corrupted: no following bracket"))
 

@@ -45,6 +45,7 @@
 (require 'timezone)
 (require 'cl-lib)
 (require 'seq)
+(require 'subr-x)
 (require 'pcase)
 (require 'eieio)
 (require 'eieio-base)
@@ -52,7 +53,7 @@
 
 (eval-when-compile              ; pacify the compiler.
   (autoload 'widget-group-match "wid-edit")
-  (autoload 'ebdb-migrate "ebdb-migrate")
+  (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
   (autoload 'ebdb-do-records "ebdb-com")
   (autoload 'ebdb-append-display-p "ebdb-com")
   (autoload 'ebdb-toggle-records-layout "ebdb-com")
@@ -2583,7 +2584,7 @@ be moved to a role at ORG.
 Currently only works for mail fields."
   (let ((roles (slot-value record 'organizations))
 	(org-domain (slot-value org 'domain))
-	org mail-domain)
+	mail-domain)
     (dolist (r roles)
       (when (and (string= (slot-value r 'org-uuid) (ebdb-record-uuid org))
 		 org-domain)
@@ -2635,7 +2636,8 @@ appropriate person record."
 					       _slot
 					       (field ebdb-field-role))
   (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
-    (ebdb-record-adopt-role-fields record org t)))
+    (when org
+      (ebdb-record-adopt-role-fields record org t))))
 
 (cl-defmethod ebdb-record-change-name ((org ebdb-record-organization) &optional name)
   (let ((new-name (or name (ebdb-read 'ebdb-field-name-simple nil (slot-value org 'name)))))

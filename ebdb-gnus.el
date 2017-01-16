@@ -27,6 +27,8 @@
 (require 'ebdb-mua)
 (require 'gnus)
 
+(autoload 'message-make-domain "message")
+
 (defgroup ebdb-mua nil
   "Variables that specify the EBDB-MUA interface"
   :group 'ebdb)
