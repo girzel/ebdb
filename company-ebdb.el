@@ -40,7 +40,8 @@
   (cl-mapcan (lambda (record)
                (mapcar (lambda (mail) (ebdb-dwim-mail record mail))
                        (ebdb-record-mail record t)))
-             (eval '(ebdb-search (ebdb-records) arg nil arg))))
+             (eval '(ebdb-search (ebdb-records) `((name ,arg)
+						  (mail ,arg))))))
 
 ;;;###autoload
 (defun company-ebdb (command &optional arg &rest ignore)
