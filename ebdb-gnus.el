@@ -413,6 +413,17 @@ Note that `\( is the backquote, NOT the quote '\(."
   "Produce a EBDB buffer name associated with Gnus."
   (ebdb-gnus-buffer-name))
 
+(cl-defmethod ebdb-popup-window (&context (major-mode gnus-summary-mode))
+  (let ((win
+	 (progn
+	   (unless (gnus-buffer-live-p gnus-article-buffer)
+	     (gnus-summary-show-article))
+	   (get-buffer-window gnus-article-buffer))))
+    (list win nil 0.3)))
+
+(cl-defmethod ebdb-popup-window (&context (major-mode gnus-article-mode))
+  (list (get-buffer-window) nil 0.3))
+
 ;; It seems that `gnus-fetch-field' fetches decoded content of
 ;; `gnus-visible-headers', ignoring `gnus-ignored-headers'.
 ;; Here we use instead `gnus-fetch-original-field' that fetches

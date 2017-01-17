@@ -1142,18 +1142,30 @@ Dispatches on the value of major-mode."
   ;; Doesn't need to do anything by default.
   t)
 
-(defun ebdb-mua-window-p ()
-  "Return lambda function matching the MUA window.
-This return value can be used as arg HORIZ-P of `ebdb-display-records'."
-  (let ((mm-alist ebdb-mua-mode-alist)
-        elt fun)
-    (while (setq elt (cdr (pop mm-alist)))
-      (if (memq major-mode elt)
-          (setq fun `(lambda (window)
-                       (with-current-buffer (window-buffer window)
-                         (memq major-mode ',elt)))
-                mm-alist nil)))
-    fun))
+(cl-defgeneric ebdb-popup-window (major-mode)
+  "Return a spec for how to pop up a window on an *EBDB* buffer.
+
+This generic function dispatches on the current value of
+major-mode.  The return value should be a three-element list
+of (window horiz-p split), in which WINDOW is the window to
+split, HORIZ-P is t if the window should be split horizontally,
+else vertically, and SPLIT is either an integer, specifying
+number of rows/columns, or a float specifying what percentage of
+window real estate the pop-up should occupy.
+
+Alternately, the return value can be nil, which means continue
+using the current window.")
+
+(cl-defmethod ebdb-popup-window (&context (major-mode ebdb-mode))
+  "When popping up from an existing *EBDB* buffer, just reuse the window.
+
+Ie, don't pop up at all."
+  nil)
+
+(cl-defmethod ebdb-popup-window ()
+  "When popping up from a random window, use half the window."
+  (let ((horiz-p (> (window-total-width) (window-total-height))))
+    (list (get-buffer-window) horiz-p 0.5)))
 
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)
@@ -1174,7 +1186,7 @@ apply, however."
     (setq records (ebdb-update-records
 		   (ebdb-get-address-components header-class)
 		   'query t))
-    (if records (ebdb-display-records records fmt nil nil (ebdb-mua-window-p)))
+    (if records (ebdb-display-records records fmt nil nil (ebdb-popup-window)))
     records))
 
 ;;;###autoload
@@ -1196,7 +1208,7 @@ bind `ebdb-message-all-addresses' to ALL."
     (setq records (ebdb-update-records
 		   (ebdb-get-address-components header-class)
 		   'existing t))
-    (if records (ebdb-display-records records fmt nil nil (ebdb-mua-window-p)))
+    (if records (ebdb-display-records records fmt nil nil (ebdb-popup-window)))
     records))
 
 ;; The following commands are some frontends for `ebdb-mua-display-records',
@@ -1323,7 +1335,7 @@ use all classes in `ebdb-message-headers'."
 		  update-p))
 	(ebdb-pop-up-window-size ebdb-mua-pop-up-window-size))
     (when records
-      (ebdb-display-records records nil nil nil (ebdb-mua-window-p))
+      (ebdb-display-records records nil nil nil (ebdb-popup-window))
       (dolist (record records)
 	(ebdb-edit-field record field)))))
 
@@ -1379,7 +1391,7 @@ See `ebdb-mua-display-records' and friends for interactive commands."
     (if ebdb-mua-pop-up
 	(if records
 	    (ebdb-display-records records ebdb-default-multiline-formatter
-				  nil nil (ebdb-mua-window-p))
+				  nil nil (ebdb-popup-window))
 	  ;; If there are no records, empty the EBDB window.
 	  (ebdb-undisplay-records)))
     records))

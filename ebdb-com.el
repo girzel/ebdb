@@ -668,14 +668,13 @@ buffer."
   (format "*%s*" ebdb-buffer-name))
 
 (defun ebdb-display-records (records &optional fmt append
-                                     select horiz-p buf)
+                                     select pop buf)
   "Display RECORDS using FMT.
 If APPEND is non-nil append RECORDS to the already displayed
 records.  Otherwise RECORDS overwrite the displayed records.
-SELECT and HORIZ-P have the same meaning as in
-`ebdb-pop-up-window'.  BUF indicates which *EBDB* buffer to use,
-or nil to generate a buffer name based on the current major
-mode."
+SELECT and POP have the same meaning as in `ebdb-pop-up-window'.
+BUF indicates which *EBDB* buffer to use, or nil to generate a
+buffer name based on the current major mode."
 
   ;; All functions that call `ebdb-display-records' set the "fmt"
   ;; argument, but that's not guaranteed.
@@ -719,7 +718,7 @@ mode."
         (message "Formatting EBDB...done."))
       (set-buffer-modified-p nil)
 
-      (ebdb-pop-up-window select horiz-p)
+      (ebdb-pop-up-window target-buffer select pop)
       (goto-char (point-min))
       (set-window-start (get-buffer-window (current-buffer)) (point)))))
 
@@ -966,91 +965,50 @@ displayed records."
     map)
   "Keymap used by `ebdb-completing-read-mails'.")
 
-;;; window configuration hackery
-(defun ebdb-pop-up-window (&optional select horiz-p)
-  "Display *EBDB* buffer by popping up a new window.
-Finds the largest window on the screen, splits it, displaying the
-*EBDB* buffer in the bottom `ebdb-pop-up-window-size' lines (unless
-the *EBDB* buffer is already visible, in which case do nothing.)
-Select this window if SELECT is non-nil.
+;;; This version of the function is a bit of a stop-gap, it doesn't do
+;;; everything the original did, specifically it doesn't handle
+;;; dedicated windows, and doesn't have very robust error checking.
+(defun ebdb-pop-up-window (buf &optional select pop)
+  "Display *EBDB* buffer BUF by popping up a new window.
 
-If `ebdb-mua-pop-up' is 'horiz, and the first window matching
-the predicate HORIZ-P is wider than the car of `ebdb-horiz-pop-up-window-size'
-then the window will be split horizontally rather than vertically."
-  (let ((buffer (current-buffer)))
-    (cond ((let ((window (get-buffer-window buffer t)))
-             ;; We already have a EBDB window so that at most we select it
-             (and window
-                  (or (not select) (select-window window)))))
+POP is typically a three-element list of (window horiz-p split),
+where WINDOW is the window to be split, HORIZ-P says whether to
+split it vertically or horizontally, and SPLIT says to split it
+by how much.  If HORIZ-P is nil, split the longest way.  If SPLIT
+is nil, split 0.5.
 
-          ;; try horizontal split
-          ((and horiz-p
-                (>= (frame-width) (car ebdb-horiz-pop-up-window-size))
-                (let ((window-list (window-list))
-                      (b-width (cdr ebdb-horiz-pop-up-window-size))
-                      (search t) s-window)
-                  (while (and (setq s-window (pop window-list))
-                              (setq search (not (funcall horiz-p s-window)))))
-                  (unless (or search (<= (window-width s-window)
-                                         (car ebdb-horiz-pop-up-window-size)))
-                    (condition-case nil ; `split-window' might fail
-                        (let ((window (split-window
-                                       s-window
-                                       (if (integerp b-width)
-                                           (- (window-width s-window) b-width)
-                                         (round (* (- 1 b-width) (window-width s-window))))
-                                       t))) ; horizontal split
-                          (set-window-buffer window buffer)
-                          (cond (ebdb-dedicated-window
-                                 (set-window-dedicated-p window ebdb-dedicated-window))
-                                ((fboundp 'display-buffer-record-window) ; GNU Emacs >= 24.1
-                                 (set-window-prev-buffers window nil)
-                                 (display-buffer-record-window 'window window buffer)))
-                          (if select (select-window window))
-                          t)
-                      (error nil))))))
+If the whole POP argument is nil, just re-use the current
+buffer."
+  (let* ((split-window (car-safe pop))
+	 (buffer-window (get-buffer-window buf t))
+	 (horiz-p (or (cadr pop)
+		      (> (window-total-width split-window)
+			 (window-total-height split-window))))
+	 (size (cond ((null pop)
+		      nil)
+		     ((integerp (caddr pop)))
+		     (t
+		      (let ((ratio (- 1 (or (caddr pop) 0.5)))
+			    (dimension (max (window-total-width split-window)
+					    (window-total-height split-window))))
+			(round (* dimension ratio)))))))
 
-          ((eq t ebdb-pop-up-window-size)
-           (ebdb-pop-up-window-simple buffer select))
-
-          (t ;; vertical split
-           (let* ((window (selected-window))
-                  (window-height (window-height window)))
-             ;; find the tallest window...
-             (mapc (lambda (w)
-                     (let ((w-height (window-height w)))
-                       (if (> w-height window-height)
-                           (setq window w window-height w-height))))
-                   (window-list))
-             (condition-case nil
-                 (progn
-                   (unless (eql ebdb-pop-up-window-size 1.0)
-                     (setq window (split-window ; might fail
-                                   window
-                                   (if (integerp ebdb-pop-up-window-size)
-                                       (- window-height 1 ; for mode line
-                                          (max window-min-height ebdb-pop-up-window-size))
-                                     (round (* (- 1 ebdb-pop-up-window-size)
-                                               window-height))))))
-                   (set-window-buffer window buffer) ; might fail
-                   (cond (ebdb-dedicated-window
-                          (set-window-dedicated-p window ebdb-dedicated-window))
-                         ((and (fboundp 'display-buffer-record-window) ; GNU Emacs >= 24.1
-                               (not (eql ebdb-pop-up-window-size 1.0)))
-                          (set-window-prev-buffers window nil)
-                          (display-buffer-record-window 'window window buffer)))
-                   (if select (select-window window)))
-               (error (ebdb-pop-up-window-simple buffer select))))))))
-
-(defun ebdb-pop-up-window-simple (buffer select)
-  "Display BUFFER in some window, selecting it if SELECT is non-nil.
-If `ebdb-dedicated-window' is non-nil, mark the window as dedicated."
-  (let ((window (if select
-                    (progn (pop-to-buffer buffer)
-                           (get-buffer-window))
-                  (display-buffer buffer))))
-    (if ebdb-dedicated-window
-        (set-window-dedicated-p window ebdb-dedicated-window))))
+    (cond (buffer-window
+	   ;; It's already visible, re-use it.
+	   (or (null select)
+	       (select-window buffer-window)))
+	  ((and (null split-window) (null size))
+	   ;; Not splitting, but buffer isn't visible, just take up
+	   ;; the whole window.
+	   (set-window-buffer (selected-window) buf)
+	   (setq buffer-window (get-buffer-window buf t)))
+	  (t
+	   ;; Otherwise split.
+	   (setq buffer-window (split-window split-window size (if horiz-p 'right 'below)))
+	   (set-window-buffer buffer-window buf)))
+    (display-buffer-record-window 'window buffer-window buf)
+    (when select
+      (select-window buffer-window))))
 
 
 ;;; EBDB mode
@@ -2673,7 +2631,7 @@ If we are past `fill-column', wrap at the previous comma."
         (if ebdb-completion-display-record
             (let ((ebdb-silent-internal t))
               ;; FIXME: This pops up *EBDB* before removing *Completions*
-              (ebdb-display-records records nil t)))
+              (ebdb-display-records records nil t nil (ebdb-popup-window))))
         ;; `ebdb-complete-mail-hook' may access MAIL, ADDRESS, and RECORDS.
         (run-hooks 'ebdb-complete-mail-hook))))
 
@@ -2735,7 +2693,7 @@ of all of these people."
       (ebdb-display-records
        (delq nil
 	     (mapcar (lambda (u) (ebdb-gethash u 'uuid)) records))
-       nil t))))
+       nil t nil (ebdb-popup-window)))))
 
 (defun ebdb-get-mail-aliases ()
   "Return a list of mail aliases used in the EBDB."

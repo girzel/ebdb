@@ -47,17 +47,23 @@
   "Produce a EBDB buffer name associated with Mail mode."
   (format "*%s-Message*" ebdb-buffer-name))
 
-(cl-defgeneric ebdb-message-header ((header string)
+(cl-defmethod ebdb-message-header ((header string)
 				    &context (major-mode message-mode))
   (message-field-value header))
 
-(cl-defgeneric ebdb-message-header ((header string)
+(cl-defmethod ebdb-message-header ((header string)
 				    &context (major-mode notmuch-message-mode))
   (message-field-value header))
 
-(cl-defgeneric ebdb-message-header ((header string)
+(cl-defmethod ebdb-message-header ((header string)
 				    &context (major-mode mail-mode))
   (message-field-value header))
+
+(cl-defmethod ebdb-popup-window (&context (major-mode message-mode))
+  (list (get-buffer-window) nil 0.4))
+
+(cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
+  (list (get-buffer-window) nil 0.4))
 
 (defun ebdb-insinuate-message ()
   (when ebdb-complete-mail
@@ -66,16 +72,15 @@
 		:test #'equal)
     (define-key mail-mode-map (kbd "TAB") 'ebdb-complete-mail)))
 
-(defun bbdb-insinuate-mail ()
-  "Hook BBDB into Mail Mode.
-Do not call this in your init file.  Use `bbdb-initialize'."
+(defun ebdb-insinuate-mail ()
+  "Hook EBDB into Mail Mode."
   ;; Suggestions welcome: What are good keybindings for the following
   ;; commands that do not collide with existing bindings?
-  ;; (define-key mail-mode-map "'" 'bbdb-mua-display-recipients)
-  ;; (define-key mail-mode-map ";" 'bbdb-mua-edit-field-recipients)
-  ;; (define-key mail-mode-map "/" 'bbdb)
-  (if bbdb-complete-mail
-      (define-key mail-mode-map "\M-\t" 'bbdb-complete-mail)))
+  ;; (define-key mail-mode-map "'" 'ebdb-mua-display-recipients)
+  ;; (define-key mail-mode-map ";" 'ebdb-mua-edit-field-recipients)
+  ;; (define-key mail-mode-map "/" 'ebdb)
+  (if ebdb-complete-mail
+      (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
 
 (add-hook 'message-mode-hook 'ebdb-insinuate-message)
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
