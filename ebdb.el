@@ -4571,83 +4571,29 @@ With prefix ARG, insert string at point."
 
 ;;; Searching EBDB
 
-(defvar ebdb-search-invert nil
-  "Bind this variable to t in order to invert the result of `ebdb-search'.")
+(defun ebdb-search (records clauses &optional invert)
+  "Search RECORDS for records matching CLAUSES.
 
-(defun ebdb-search-invert-p ()
-  "Return variable `ebdb-search-invert' and set it to nil.
-To set it again, use command `ebdb-search-invert'."
-  (let ((result ebdb-search-invert))
-    (setq ebdb-search-invert nil)
-    (aset ebdb-modeline-info 2 nil)
-    (aset ebdb-modeline-info 3 nil)
-    result))
-
-;;;###autoload
-(defun ebdb-search-invert (&optional arg)
-  "Toggle inversion of the next search command.
-With prefix ARG a positive number, invert next search.
-With prefix ARG a negative number, do not invert next search."
-  (interactive "P")
-  (setq ebdb-search-invert
-        (or (and (numberp arg) (< 0 arg))
-            (and (not (numberp arg)) (not ebdb-search-invert))))
-  (aset ebdb-modeline-info 2 (if ebdb-search-invert "inv"))
-  (aset ebdb-modeline-info 3 (if ebdb-search-invert
-                                 (substitute-command-keys
-                                  "\\<ebdb-mode-map>\\[ebdb-search-invert]")))
-  (ebdb-prefix-message))
-
-(defmacro ebdb-search (records &optional name-re org-re mail-re notes-re
-			       user-field-re phone-re address-re)
-  "Search RECORDS for fields matching regexps.
-Regexp NAME-RE is matched against FIRST_LAST, LAST_FIRST, and
-AKA.  Regexp USER-FIELD-RE is matched against user fields.
-USER-FIELD-RE may also be a cons (LABEL . RE).  Then RE is
-matched against field LABEL.  If LABEL is '* then RE is matched
-against any user field.
-
-This macro only generates code for those fields actually being searched for;
-literal nils at compile-time cause no code to be generated.
-
-To reverse the search, bind variable `ebdb-search-invert' to t.
-
-See also `ebdb-message-search' for fast searches using `ebdb-hashtable'
-but not allowing for regexps."
-  (let (clauses)
-    ;; I did not protect these vars from multiple evaluation because that
-    ;; actually generates *less efficient code* in elisp, because the extra
-    ;; bindings cannot easily be optimized away without lexical scope.  fmh.
-    (or (stringp name-re) (symbolp name-re) (error "name-re must be atomic"))
-    (or (stringp org-re) (symbolp org-re) (error "org-re must be atomic"))
-    (or (stringp mail-re) (symbolp mail-re) (error "mail-re must be atomic"))
-    (or (stringp user-field-re) (symbolp user-field-re) (consp user-field-re)
-        (error "user-field-re must be atomic or cons"))
-    (or (stringp phone-re) (symbolp phone-re) (error "phone-re must be atomic"))
-    (or (stringp address-re) (symbolp address-re) (error "address-re must be atomic"))
-    (when name-re
-      (push `(ebdb-record-search record 'name ,name-re) clauses))
-    (when org-re
-      (push `(ebdb-record-search record 'organization ,org-re)
-	    clauses))
-
-    (when phone-re
-      (push `(ebdb-record-search record 'phone ,phone-re) clauses))
-    (when address-re
-      (push `(ebdb-record-search record 'address ,address-re) clauses))
-    (when mail-re
-      (push `(ebdb-record-search record 'mail ,mail-re) clauses))
-    (when notes-re
-      (push `(ebdb-record-search record 'notes ,notes-re) clauses))
-    (when user-field-re
-      (push `(ebdb-record-search record 'user ,user-field-re) clauses))
-    `(let ((case-fold-search ebdb-case-fold-search)
-           (invert (ebdb-search-invert-p))
-           matches)
-       (dolist (record ,records)
-         (unless (eq (not invert) (not (or ,@clauses)))
-           (push record matches)))
-       (nreverse matches))))
+Each element of CLAUSES is either a two-element list of (symbol
+criteria), which will be used to make a call to
+`ebdb-record-search', or it is a callable, which will be called
+with a record as the argument.  All other values will be
+interpreted as t, ie the record passes."
+  (let ((case-fold-search ebdb-case-fold-search))
+    (seq-filter
+     (lambda (r)
+       (eql (null invert)
+	    (catch 'found
+	      (dolist (c clauses)
+		(pcase c
+		  (`(,(and type (pred symbolp)) ,criteria)
+		   (and (ebdb-record-search r type criteria)
+			(throw 'found t)))
+		  (`,(and func (pred functionp))
+		   (and (funcall func r)
+			(throw 'found t)))
+		  (_ t))))))
+     records)))
 
 (defun ebdb-search-read (&optional field)
   "Read regexp to search FIELD values of records."

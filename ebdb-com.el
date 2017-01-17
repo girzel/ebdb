@@ -177,13 +177,10 @@ Used by `ebdb-mouse-menu'."
 In the *EBDB* buffers it includes the records that are actually displayed
 and its elements are (RECORD DISPLAY-FORMAT MARKER-POS MARK).")
 
-(defvar ebdb-append-display nil
-  "Controls the behavior of the command `ebdb-append-display'.")
-
-(defvar ebdb-modeline-info (make-vector 4 nil)
+(defvar ebdb-modeline-info (make-vector 2 nil)
   "Precalculated mode line info for EBDB commands.
-This is a vector [APPEND-M APPEND INVERT-M INVERT].
-APPEND-M is the mode line info if `ebdb-append-display' is non-nil.
+This is a vector [INVERT-M INVERT].
+
 INVERT-M is the mode line info if `ebdb-search-invert' is non-nil.")
 
 (defun ebdb-get-records (prompt)
@@ -210,15 +207,40 @@ If FULL is non-nil, assume that RECORDS include display information."
           (if (eieio-object-p (car records)) (list records) records)
         (if (eieio-object-p records) (list records) records))))
 
-;; Note about EBDB prefix commands: `ebdb-append-display' and
-;; `ebdb-search-invert' are fake prefix commands. They need not
-;; precede the main commands.  Also, `ebdb-append-display' can act on
-;; multiple commands.
+;; Note about EBDB prefix commands: `ebdb-search-invert' is a fake
+;; prefix commands. They need not precede the main commands.
+
+(defvar ebdb-search-invert nil
+  "Bind this variable to t in order to invert the result of `ebdb-search'.")
+
+(defun ebdb-search-invert-p ()
+  "Return variable `ebdb-search-invert' and set it to nil.
+To set it again, use command `ebdb-search-invert'."
+  (let ((result ebdb-search-invert))
+    (setq ebdb-search-invert nil)
+    (aset ebdb-modeline-info 0 nil)
+    (aset ebdb-modeline-info 1 nil)
+    result))
+
+;;;###autoload
+(defun ebdb-search-invert (&optional arg)
+  "Toggle inversion of the next search command.
+With prefix ARG a positive number, invert next search.
+With prefix ARG a negative number, do not invert next search."
+  (interactive "P")
+  (setq ebdb-search-invert
+        (or (and (numberp arg) (< 0 arg))
+            (and (not (numberp arg)) (not ebdb-search-invert))))
+  (aset ebdb-modeline-info 0 (if ebdb-search-invert "inv"))
+  (aset ebdb-modeline-info 1 (if ebdb-search-invert
+                                 (substitute-command-keys
+                                  "\\<ebdb-mode-map>\\[ebdb-search-invert]")))
+  (ebdb-prefix-message))
 
 (defun ebdb-prefix-message ()
   "Display a message about selected EBDB prefix commands."
-  (let ((msg (ebdb-concat " " (elt ebdb-modeline-info 1)
-                          (elt ebdb-modeline-info 3))))
+  (let ((msg (ebdb-concat " " (elt ebdb-modeline-info 0)
+                          (elt ebdb-modeline-info 1))))
     (unless (string= "" msg) (message "%s" msg))))
 
 ;;;###autoload
@@ -232,54 +254,9 @@ display information."
 	 (recs (or marked (list (ebdb-current-record t)))))
    (if full recs (mapcar 'car recs))))
 
-;;;###autoload
-(defun ebdb-append-display-p ()
-  "Return variable `ebdb-append-display' and reset."
-  (let ((job (cond ((eq t ebdb-append-display))
-                   ((numberp ebdb-append-display)
-                    (setq ebdb-append-display (1- ebdb-append-display))
-                    (if (zerop ebdb-append-display)
-                        (setq ebdb-append-display nil))
-                    t)
-                   (ebdb-append-display
-                    (setq ebdb-append-display nil)
-                    t))))
-    (cond ((numberp ebdb-append-display)
-           (aset ebdb-modeline-info 0
-                 (format "(add %dx)" ebdb-append-display)))
-          ((not ebdb-append-display)
-           (aset ebdb-modeline-info 0 nil)
-           (aset ebdb-modeline-info 1 nil)))
-    job))
-
-;;;###autoload
-(defun ebdb-append-display (&optional arg)
-  "Toggle appending next searched records in the *EBDB* buffer.
-With prefix ARG \\[universal-argument] always append.
-With ARG a positive number append for that many times.
-With ARG a negative number do not append."
-  (interactive "P")
-  (setq ebdb-append-display
-        (cond ((and arg (listp arg)) t)
-              ((and (numberp arg) (< 1 arg)) arg)
-              ((or (and (numberp arg) (< arg 0)) ebdb-append-display) nil)
-              (t 'once)))
-  (aset ebdb-modeline-info 0
-        (cond ((numberp ebdb-append-display)
-               (format "(add %dx)" ebdb-append-display))
-              ((eq t ebdb-append-display) "Add")
-              (ebdb-append-display "add")
-              (t nil)))
-  (aset ebdb-modeline-info 1
-        (if ebdb-append-display
-            (substitute-command-keys
-             "\\<ebdb-mode-map>\\[ebdb-append-display]")))
-  (ebdb-prefix-message))
-
 ;;; Keymap
 (defvar ebdb-mode-map
   (let ((km (make-sparse-keymap)))
-    (define-key km (kbd "+")		'ebdb-append-display)
     (define-key km (kbd "!")		'ebdb-search-invert)
     (define-key km (kbd "a")		'ebdb-record-action)
     (define-key km (kbd "A")		'ebdb-mail-aliases)
@@ -333,12 +310,23 @@ With ARG a negative number do not append."
     (define-key km (kbd "/ /")		'ebdb)
     (define-key km (kbd "/ 1")		'ebdb-search-single-record)
     (define-key km (kbd "/ n")		'ebdb-search-name)
+    (define-key km (kbd "| n")		'ebdb-search-name)
+    (define-key km (kbd "+ n")		'ebdb-search-name)
     (define-key km (kbd "/ o")		'ebdb-search-organization)
+    (define-key km (kbd "| o")		'ebdb-search-organization)
+    (define-key km (kbd "+ o")		'ebdb-search-organization)
     (define-key km (kbd "/ p")		'ebdb-search-phone)
+    (define-key km (kbd "| p")		'ebdb-search-phone)
+    (define-key km (kbd "+ p")		'ebdb-search-phone)
     (define-key km (kbd "/ a")		'ebdb-search-address)
+    (define-key km (kbd "| a")		'ebdb-search-address)
+    (define-key km (kbd "+ a")		'ebdb-search-address)
     (define-key km (kbd "/ m")		'ebdb-search-mail)
-    (define-key km (kbd "/ N")		'ebdb-search-user-fields)
+    (define-key km (kbd "| m")		'ebdb-search-mail)
+    (define-key km (kbd "+ m")		'ebdb-search-mail)
     (define-key km (kbd "/ x")		'ebdb-search-user-fields)
+    (define-key km (kbd "| x")		'ebdb-search-user-fields)
+    (define-key km (kbd "+ x")		'ebdb-search-user-fields)
     (define-key km (kbd "/ c")		'ebdb-search-changed)
     (define-key km (kbd "/ C")		'ebdb-search-record-class)
     (define-key km (kbd "/ d")		'ebdb-search-duplicates)
@@ -688,7 +676,6 @@ SELECT and HORIZ-P have the same meaning as in
 `ebdb-pop-up-window'.  BUF indicates which *EBDB* buffer to use,
 or nil to generate a buffer name based on the current major
 mode."
-  (if (ebdb-append-display-p) (setq append t))
 
   ;; All functions that call `ebdb-display-records' set the "fmt"
   ;; argument, but that's not guaranteed.
@@ -935,7 +922,6 @@ displayed records."
      ["New creation date" ebdb-creation-newer t]
      ["Creation date = time stamp" ebdb-creation-no-change t]
      "--"
-     ["Append search" ebdb-append-display t]
      ["Invert search" ebdb-search-invert t])
     ("Mail"
      ["Send mail" ebdb-mail t]
@@ -1149,7 +1135,7 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
                               (length (ebdb-records))))
               '(:eval (concat "  "
                               (ebdb-concat " " (elt ebdb-modeline-info 0)
-                                           (elt ebdb-modeline-info 2)))))
+                                           (elt ebdb-modeline-info 1)))))
         mode-line-modified
         ;; For the mode-line we want to be fast. So we skip the checks
         ;; performed by `ebdb-with-db-buffer'.
@@ -1931,108 +1917,130 @@ With prefix N, omit the next N records.  If negative, omit backwards."
 
 ;; Entry points to EBDB
 
+;; We need to have this first thing in the interactive declaration,
+;; because if you check `this-command-keys' after the
+;; `ebdb-search-read' interactive bit, it will return ^M.
+(defsubst ebdb-search-style ()
+  "Interactive form used for setting up search style.
+
+\"Style\" means whether to append/filter/display the search
+results -- it does this by checking `this-command-keys'."
+  (cl-case (car (string-to-list (this-command-keys)))
+    (?| 'filter)
+    (?+ 'append)
+    (t 'display)))
+
+(defun ebdb-search-display (style clauses &optional fmt)
+  "Common routine for interactive searches in the *EBDB* buffer.
+
+STYLE indicates whether the results are being displayed straight,
+appended to existing records, or filtered from existing records.
+TYPE is the type of search being conducted (ie, 'name, 'mail,
+'address, etc).  CRIT is the search criteria; often a regexp, but
+not necessarily.  FMT is the optional formatter to use."
+  (let* ((pool (if (eql style 'filter)
+		   (mapcar #'car ebdb-records)
+		 (ebdb-records)))
+	 (invert (ebdb-search-invert-p))
+	 (recs (ebdb-search pool clauses invert)))
+    (if recs
+	(ebdb-display-records recs fmt (eql style 'append))
+      (message "No matching records"))))
+
 ;;;###autoload
-(defun ebdb (regexp &optional fmt)
+(defun ebdb (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP
 in either the name(s), organization, address, phone, mail, or xfields."
-  (interactive (list (ebdb-search-read) (ebdb-formatter-prefix)))
-  (let ((records (ebdb-search (ebdb-records) regexp regexp regexp
-                              regexp (cons '* regexp) regexp regexp)))
-    (if records
-        (ebdb-display-records records fmt nil t)
-      (message "No records matching '%s'" regexp))))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read)
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((name ,regexp)
+			       (organization ,regexp)
+			       (mail ,regexp)
+			       (notes ,regexp)
+			       (user ,regexp)
+			       (phone ,regexp)
+			       (address ,regexp))
+		       fmt))
 
 ;;;###autoload
-(defun ebdb-search-name (regexp &optional fmt)
+(defun ebdb-search-name (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the name
 \(or ``alternate'' names\)."
-  (interactive (list (ebdb-search-read "names") (ebdb-formatter-prefix)))
-  (ebdb-display-records (ebdb-search (ebdb-records) regexp) fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "names")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((name ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-organization (regexp &optional fmt)
+(defun ebdb-search-organization (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the organization field."
-  (interactive (list (ebdb-search-read "organization") (ebdb-formatter-prefix)))
-  (ebdb-display-records
-   (seq-filter
-    (lambda (r)
-      (ebdb-record-search r 'organization regexp))
-    (ebdb-records))
-   fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "organization")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((organization ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-address (regexp &optional fmt)
+(defun ebdb-search-address (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the address fields."
-  (interactive (list (ebdb-search-read "address") (ebdb-formatter-prefix)))
-  (ebdb-display-records
-   (seq-filter
-    (lambda (r)
-      (ebdb-record-search r 'address regexp))
-    (ebdb-records))
-   fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "address")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((address ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-mail (regexp &optional fmt)
+(defun ebdb-search-mail (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the mail address."
-  (interactive (list (ebdb-search-read "mail address") (ebdb-formatter-prefix)))
-  (ebdb-display-records
-   (seq-filter
-    (lambda (r)
-      (ebdb-record-search r 'mail regexp))
-    (ebdb-records))
-   fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "mail address")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((mail ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-phone (regexp &optional fmt)
+(defun ebdb-search-phone (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the phones field."
-  (interactive (list (ebdb-search-read "phone") (ebdb-formatter-prefix)))
-  (ebdb-display-records
-   (seq-filter
-    (lambda (r)
-      (ebdb-record-search r 'phone regexp))
-    (ebdb-records))
-   fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "phone")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((phone ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-notes (regexp &optional fmt)
+(defun ebdb-search-notes (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the phones field."
-  (interactive (list (ebdb-search-read "notes") (ebdb-formatter-prefix)))
-  (ebdb-display-records
-   (seq-filter
-    (lambda (r)
-      (ebdb-record-search r 'notes regexp))
-    (ebdb-records))
-   fmt))
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read "notes")
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((notes ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-user-fields (field regexp &optional fmt)
+(defun ebdb-search-user-fields (style field regexp &optional fmt)
   "Display all EBDB records for which user field FIELD matches REGEXP."
   (interactive
    ;; TODO: Refactor this with `ebdb-prompt-for-field-type'
-   (let* ((field-alist
-	  (append
-	   (mapcar
-	    (lambda (f)
-	      (cons
-	       (ebdb-field-readable-name (intern (car f)))
-	       (intern (car f))))
-	    (eieio-build-class-alist 'ebdb-field-user t))
-	   (mapcar
-	    (lambda (l)
-	      (cons l 'ebdb-field-user-simple))
-	    ebdb-user-label-list)))
-	 (field (assoc (completing-read "Field to search (RET for all): "
-					field-alist
-					nil t)
-		       field-alist)))
-     (list (if (null field) '* field)
+   (let* ((style (ebdb-search-style))
+	  (field-alist
+	   (append
+	    (mapcar
+	     (lambda (f)
+	       (cons
+		(ebdb-field-readable-name (intern (car f)))
+		(intern (car f))))
+	     (eieio-build-class-alist 'ebdb-field-user t))
+	    (mapcar
+	     (lambda (l)
+	       (cons l 'ebdb-field-user-simple))
+	     ebdb-user-label-list)))
+	  (field (assoc (completing-read "Field to search (RET for all): "
+					 field-alist
+					 nil t)
+			field-alist)))
+     (list style
+	   (if (null field) '* field)
            (ebdb-search-read (if (null field)
 				 "any user field"
 			       (car field)))
            (ebdb-formatter-prefix))))
-  (ebdb-display-records (ebdb-search (ebdb-records) nil nil nil nil
-                                     (cons field regexp))
-                        fmt))
+  (ebdb-search-display style `((user ,(cons field regexp))) fmt))
 
 ;;;###autoload
 (defun ebdb-search-changed (&optional fmt)
