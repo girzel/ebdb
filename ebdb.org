@@ -289,3 +289,38 @@ also possible to create more by using the `ebdb-clone-buffer' and
   Rename the current EBDB buffer.  If this is done in a MUA pop-up
   buffer, the original buffer will be recreated next time the MUA
   requests another pop up.
+** Searching
+The most general search is performed with "/ /", which searches on
+many different record fields and displays the results.
+
+The EBDB major mode provides many keys for searching on specific
+record fields.  Most of these keys are used after one of three prefix
+keys, which change the behavior of the search: "/" clears the buffer
+before displaying the results, "|" searches only among the records
+already displayed, and "+" appends the search results to the records
+already displayed.
+
+For instance, record name search is on the key "n", meaning you can
+use "/ n", "| n", or "+ n".  Search keys that work this way are:
+
+- "n": Search names
+- "o": Search organizations
+- "p": Search phones
+- "a": Search addresses
+- "m": Search mails
+- "x": Search user fields (prompts for which field to search on)
+
+Search commands that currently only work with the "/" prefix are:
+
+- "/ 1": Prompt for a single record, and display it
+- "/ c": Search records that have been modified since last save
+- "/ C": Search by record class
+- "/ d": Search duplicate records
+- "/ D": Prompt for a database and display all records belonging to
+  that database
+** Marking
+Records can be marked and acted on in bulk.  The "#" key will toggle
+the mark of the record under point.  "M-#" will toggle the marks of
+all the records in the buffer, and "C-#" will unmark all records in
+the buffer.  Many editing commands can act on multiple marked
+records.
