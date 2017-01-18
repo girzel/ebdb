@@ -3691,7 +3691,7 @@ Whether this is used at all depends on the variable `ebdb-check-postcode'."
   :group 'ebdb-record-edit
   :type '(repeat regexp))
 
-(defcustom ebdb-default-user-field 'notes
+(defcustom ebdb-default-user-field 'ebdb-field-notes
   "Default field when editing EBDB records."
   :group 'ebdb-record-edit
   :type '(symbol :tag "Field"))
