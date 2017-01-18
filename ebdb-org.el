@@ -117,7 +117,7 @@ This list is added to the result of
 `org-global-tags-completion-table' when producing a list of
 potential tags for completion.")
 
-(push '(ebdb-org-field-tags ";" ";") ebdb-separator-alist)
+(push '(ebdb-org-field-tags ":" ":") ebdb-separator-alist)
 
 
 (defclass ebdb-org-field-tags (ebdb-field-user)
