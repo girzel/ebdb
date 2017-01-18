@@ -1287,41 +1287,36 @@ If ANNOTATION is an empty string and REPLACE is non-nil, delete FIELD."
                                     '(affix organization mail aka))))
                  ebdb-annotate-field)))
     (list (read-string (format "Annotate `%s': " field))
-          field current-prefix-arg
-          (car ebdb-mua-update-interactive-p))))
+          field current-prefix-arg)))
 
 ;;;###autoload
-(defun ebdb-mua-annotate-sender (annotation &optional field replace update-p)
+(defun ebdb-mua-annotate-sender (annotation &optional field replace)
   "Add ANNOTATION to field FIELD of the EBDB record(s) of message sender(s).
 FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD.
-UPDATE-P may take the same values as `ebdb-update-records-p'."
-  (interactive)
+If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
+  (interactive (ebdb-mua-annotate-field-interactive))
   (ebdb-mua-prepare-article)
   (dolist (record (ebdb-update-records
 		   (ebdb-get-address-components 'sender)
-		   update-p))
+		   'existing))
     (ebdb-annotate-record record annotation field replace)))
 
 ;;;###autoload
-(defun ebdb-mua-annotate-recipients (annotation &optional field replace
-                                                update-p)
+(defun ebdb-mua-annotate-recipients (annotation &optional field replace)
   "Add ANNOTATION to field FIELD of the EBDB records of message recipients.
 FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD.
-UPDATE-P may take the same values as `ebdb-update-records-p'."
-  (interactive)
+If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
+  (interactive (ebdb-mua-annotate-field-interactive))
   (ebdb-mua-prepare-article)
   (dolist (record (ebdb-update-records
 		   (ebdb-get-address-components 'recipients)
-		   update-p))
+		   'existing))
     (ebdb-annotate-record record annotation field replace)))
 
 ;;;###autoload
-(defun ebdb-mua-edit-field (&optional field update-p header-class)
+(defun ebdb-mua-edit-field (&optional field header-class)
   "Edit FIELD of the EBDB record(s) of message sender(s) or recipients.
 FIELD defaults to value of variable `ebdb-mua-edit-field'.
-UPDATE-P may take the same values as `ebdb-update-records-p'.
 HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'."
   (interactive)
@@ -1332,29 +1327,34 @@ use all classes in `ebdb-message-headers'."
   (ebdb-mua-prepare-article)
   (let ((records (ebdb-update-records
 		  (ebdb-get-address-components header-class)
-		  update-p))
-	(ebdb-pop-up-window-size ebdb-mua-pop-up-window-size))
+		  'existing))
+	(ebdb-pop-up-window-size ebdb-mua-pop-up-window-size)
+	field-instance slot)
     (when records
       (ebdb-display-records records nil nil nil (ebdb-popup-window))
-      (dolist (record records)
-	(ebdb-edit-field record field)))))
+      (ebdb-with-record-edits (record records)
+	;; All this is very bad, we need to rework `ebdb-edit-foo' so
+	;; it can be used here.
+	(setq field-instance (ebdb-record-field record field))
+	(if field-instance
+	    (ebdb-record-change-field record field-instance)
+	  (setq field-instance (ebdb-read field)
+		slot (car (ebdb-record-field-slot-query
+			   (eieio-object-class record) `(nil . ,field))))
+	  (ebdb-record-insert-field record slot field-instance))))))
 
 ;;;###autoload
-(defun ebdb-mua-edit-field-sender (&optional field update-p)
+(defun ebdb-mua-edit-field-sender (&optional field)
   "Edit FIELD of record corresponding to sender of this message.
-FIELD defaults to value of variable `ebdb-mua-edit-field'.
-UPDATE-P may take the same values as `ebdb-update-records-p'.
-For interactive calls, see function `ebdb-mua-update-interactive-p'."
+FIELD defaults to value of variable `ebdb-mua-edit-field'."
   (interactive)
-  (ebdb-mua-edit-field field update-p 'sender))
+  (ebdb-mua-edit-field field 'sender))
 
 ;;;###autoload
-(defun ebdb-mua-edit-field-recipients (&optional field update-p)
-  "Edit FIELD of record corresponding to recipient of this message.
-FIELD defaults to value of variable `ebdb-mua-edit-field'.
-UPDATE-P may take the same values as `ebdb-update-records-p'."
+(defun ebdb-mua-edit-field-recipients (&optional field)
+  "Edit FIELD of record corresponding to recipient of this message."
   (interactive)
-  (ebdb-mua-edit-field field update-p 'recipients))
+  (ebdb-mua-edit-field field 'recipients))
 
 ;; Functions for noninteractive use in MUA hooks
 
