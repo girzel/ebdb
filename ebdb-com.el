@@ -1297,7 +1297,8 @@ With prefix N move backwards N (sub)fields."
   (when (eql major-mode 'ebdb-mode)
     (rename-buffer
      (generate-new-buffer-name
-      (format "*%s-%s*" ebdb-buffer-name new-name)))))
+      (format "*%s-%s*" ebdb-buffer-name new-name)))
+    (force-mode-line-update)))
 
 ;; Unloading/Reloading/Disabling
 
