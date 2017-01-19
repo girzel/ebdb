@@ -1081,9 +1081,7 @@ Return the records matching ADDRESS or nil."
 
     (nreverse new-records)))
 
-;; I hope this (&context (major-mode t)) is the proper way to create a
-;; &context catchall.
-(cl-defmethod ebdb-mua-prepare-article (&context (major-mode t))
+(cl-defmethod ebdb-mua-prepare-article ()
   "Do whatever preparations are necessary to work on records
   associated with the current message.
 
