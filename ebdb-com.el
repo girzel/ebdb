@@ -2883,5 +2883,9 @@ delete field: \\[ebdb-delete-field-or-record]; \
 mode help: \\[describe-mode]; \
 info: \\[ebdb-info]")))
 
+;;; Lastly, install a save hook.
+
+(add-hook 'kill-emacs-hook #'ebdb-save)
+
 (provide 'ebdb-com)
 ;;; ebdb-com.el ends here
