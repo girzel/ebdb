@@ -2845,7 +2845,9 @@ With prefix argument ARG, prompt for which mail address to use."
 ;;;###autoload
 (defun ebdb-info ()
   (interactive)
-  (info (format "(%s)Top" (or ebdb-info-file "ebdb"))))
+  (message "The manual is not yet complete, please see ebdb.org")
+;  (info (format "(%s)Top" (or ebdb-info-file "ebdb")))
+  )
 
 ;;;###autoload
 (defun ebdb-help ()
