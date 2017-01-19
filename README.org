@@ -3,7 +3,7 @@
 EBDB is a EIEIO port of the BBDB package for Emacs.
 
 In plain English: it is a re-write of the Insidious Big Brother
-Database -- Emacs' principle contact management/addressbook program --
+Database -- Emacs' principal contact management/addressbook program --
 using Emacs Lisp's (relatively new) object oriented libraries. The "E"
 is vaguely meant to signify "EIEIO".
 ** Why Did You Do This?
@@ -82,3 +82,7 @@ wouldn't recommend that, though. To migrate:
 Once you're migrated, load MUA interaction by simply requiring the
 relevant libraries, ie ebdb-gnus or ebdb-message. There's no more
 `initialize' or `auto-update-init'.
+
+Many of the customization options have changed: there are fewer of
+them, for a start. Please see ebdb.org (the nascent Info manual), for
+details.

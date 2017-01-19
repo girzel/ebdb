@@ -79,7 +79,7 @@ field, and the older copy is discarded.
 Other database-related commands:
 
 - Command: ebdb-reload-database db
-  Reload all records from a database.  This also redisplays and of
+  Reload all records from a database.  This also redisplays any of
   those records that were visible in {{{ebuf}}} buffers.
 - Command: ebdb-disable-database db
   This command disables a database, unloading all of its records and
@@ -162,18 +162,18 @@ your custom class name:
 - Variable: ebdb-default-notes-class
   Defaults to `ebdb-field-notes'.
 
-Besides the "plumbing" and "built-in" fields, all other fields belong
-to one of two types: `ebdb-field-user' and `ebdb-field-user-simple'.
-The former is an abstract class, used to build fields with more
-complicated structures.  The latter is a simple class with a string
-label and a string value.
+Besides the "plumbing" and "built-in" fields, all other fields are
+"user" fields, and belong to one of two types: `ebdb-field-user' and
+`ebdb-field-user-simple'.  The former is an abstract class, used to
+build fields with more complicated structures.  The latter is a simple
+class with a string label and a string value.
 
 When adding fields to a record, EBDB offers up all the known labels of
 the simple user field class as possible choices.  Typing in an unknown
 string will define a new label, which will be offered as a choice in
 the future.
 
-Fields built from `ebdb-field-user' will have their own identifier.
+Fields built from `ebdb-field-user' will have their own string name.
 EBDB comes with classes including "anniversary", "url", "id",
 "relation", "role" and more.  Many of these fields have their own list
 of labels (for instance, anniversary fields may be labeled "birthday",
@@ -219,6 +219,37 @@ The first and most important option governing this behavior is:
   option can also be set to a function which returns one of the above
   symbols.
 
+This option only governs what EBDB does automatically, each time a
+message is displayed.  It's also possible to manually display,
+update and edit records using the commands in [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in
+MUAs]].  When updating records either automatically or interactively, a
+few more options come into play:
+
+- Variable: ebdb-add-name
+  Whether to automatically change record names.  See docstring for
+  details.
+- Variable: ebdb-add-aka
+  Whether to automatically add new names as akas.  See docstring for
+  details.
+- Variable: ebdb-add-mails
+  How to handle apparently new mail addresses.  See docstring for
+  details.
+
+There are also options governing whether EBDB considers mail addresses
+or not:
+
+- Variable: ebdb-accept-header-alist
+  An alist governing which addresses in which headers will be
+  accepted.  See docstring for details.
+- Variable: ebdb-ignore-header-alist
+  An alist governing which addresses in which headers will be ignored.
+  See docstring for details.
+- Variable: ebdb-user-mail-address-re
+  A regular expression matching the user's own mail address(es).  In
+  addition to a regexp, this can also be the symbol 'message, in which
+  case the value will be copied from `message-alternative-emails', or
+  the symbol 'self, in which case the value will be constructed from
+  the record pointed to by the option `ebdb-record-self'.
 
 *** Pop-up buffers
 Each MUA associated with EBDB will create its own pop-up buffer, with
@@ -278,6 +309,10 @@ code:
 - Variable: ebdb-mua-summary-mark-format-letter
   Format letter to use in the summary buffer format string to mark a
   record.  Defaults to "e".
+*** Interactive Commands in MUAs
+:PROPERTIES:
+:ID:       38166454-6750-48e9-a5e5-313ff9264c6d
+:END:
 * EBDB Buffers
 :PROPERTIES:
 :ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30
@@ -339,3 +374,17 @@ the mark of the record under point.  "M-#" will toggle the marks of
 all the records in the buffer, and "C-#" will unmark all records in
 the buffer.  Many editing commands can act on multiple marked
 records.
+* Migration from BBDB
+** Record Migration
+It's possible to migrate records from a BBDB file.  With your BBDB
+customizations still in place, set `ebdb-sources' to a non-existent
+file name, and then run `ebdb-load' (or any of the other EBDB entry
+commands).  You'll be prompted to create the new database, and upgrade
+from BBDB.  If any records could not be upgraded, they will be
+displayed in an \ast{}EBDB Migration\ast{} buffer.
+** Variables and Options
+Many of the old BBDB customization options have been changed or
+removed entirely in EBDB.  It's probably best to put your BBDB
+customizations aside, and set new EBDB options as you come across
+them.  The most important options are detailed in this manual, you can
+also customize the "EBDB" group to see what's available.
