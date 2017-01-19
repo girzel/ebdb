@@ -1910,7 +1910,7 @@ not necessarily.  FMT is the optional formatter to use."
   "Display all records in the EBDB matching REGEXP
 in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
-		     (ebdb-search-read)
+		     (ebdb-search-read 'all)
 		     (ebdb-formatter-prefix)))
   (ebdb-search-display style `((name ,regexp)
 			       (organization ,regexp)
@@ -1942,7 +1942,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
 (defun ebdb-search-address (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the address fields."
   (interactive (list (ebdb-search-style)
-		     (ebdb-search-read "address")
+		     (ebdb-search-read ebdb-default-address-class)
 		     (ebdb-formatter-prefix)))
   (ebdb-search-display style `((address ,regexp)) fmt))
 
@@ -1950,7 +1950,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
 (defun ebdb-search-mail (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the mail address."
   (interactive (list (ebdb-search-style)
-		     (ebdb-search-read "mail address")
+		     (ebdb-search-read ebdb-default-mail-class)
 		     (ebdb-formatter-prefix)))
   (ebdb-search-display style `((mail ,regexp)) fmt))
 
@@ -1958,7 +1958,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
 (defun ebdb-search-phone (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the phones field."
   (interactive (list (ebdb-search-style)
-		     (ebdb-search-read "phone")
+		     (ebdb-search-read ebdb-default-phone-class)
 		     (ebdb-formatter-prefix)))
   (ebdb-search-display style `((phone ,regexp)) fmt))
 
@@ -1966,7 +1966,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
 (defun ebdb-search-notes (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP in the phones field."
   (interactive (list (ebdb-search-style)
-		     (ebdb-search-read "notes")
+		     (ebdb-search-read ebdb-default-notes-class)
 		     (ebdb-formatter-prefix)))
   (ebdb-search-display style `((notes ,regexp)) fmt))
 
@@ -1996,9 +1996,9 @@ in either the name(s), organization, address, phone, mail, or xfields."
 	   (if (null field) '* field)
            (ebdb-search-read (if (null field)
 				 "any user field"
-			       (car field)))
+			       (cdr field)))
            (ebdb-formatter-prefix))))
-  (ebdb-search-display style `((user ,(cons field regexp))) fmt))
+  (ebdb-search-display style `((user ,(list field regexp))) fmt))
 
 ;;;###autoload
 (defun ebdb-search-changed (&optional fmt)

@@ -142,6 +142,21 @@ potential tags for completion.")
 	       (when obj (ebdb-string obj)))))
     (cl-call-next-method field (plist-put slots :tags val))))
 
+(cl-defmethod ebdb-search-read ((class (subclass ebdb-org-field-tags)))
+  (let ((crm-separator (cadr (assq 'ebdb-org-field-tags ebdb-separator-alist))))
+    (completing-read-multiple
+     "Search for tags: "
+     (append (org-global-tags-completion-table)
+	     (when ebdb-org-tags
+	       (mapcar #'list ebdb-org-tags)))
+     nil nil)))
+
+(cl-defmethod ebdb-field-search ((field ebdb-org-field-tags) (tag-list list))
+  (catch 'found
+    (dolist (tag (slot-value field 'tags) nil)
+      (when (member tag tag-list)
+	(throw 'found t)))))
+
 (cl-defmethod ebdb-init-field ((field ebdb-org-field-tags) _record)
   (let ((tags (slot-value field 'tags)))
     (dolist (tag tags)
