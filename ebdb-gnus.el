@@ -422,7 +422,7 @@ Note that `\( is the backquote, NOT the quote '\(."
     (list win nil 0.3)))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode gnus-article-mode))
-  (list (get-buffer-window) nil 0.3))
+  (list (get-buffer-window) 0.3))
 
 ;; It seems that `gnus-fetch-field' fetches decoded content of
 ;; `gnus-visible-headers', ignoring `gnus-ignored-headers'.

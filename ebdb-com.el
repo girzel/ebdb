@@ -647,9 +647,9 @@ buffer."
   "Display RECORDS using FMT.
 If APPEND is non-nil append RECORDS to the already displayed
 records.  Otherwise RECORDS overwrite the displayed records.
-SELECT and POP have the same meaning as in `ebdb-pop-up-window'.
-BUF indicates which *EBDB* buffer to use, or nil to generate a
-buffer name based on the current major mode."
+SELECT and POP are passed directly to `ebdb-pop-up-window'.  BUF
+indicates which *EBDB* buffer to use, or nil to generate a buffer
+name based on the current major mode."
 
   ;; All functions that call `ebdb-display-records' set the "fmt"
   ;; argument, but that's not guaranteed.
@@ -946,19 +946,21 @@ displayed records."
 (defun ebdb-pop-up-window (buf &optional select pop)
   "Display *EBDB* buffer BUF by popping up a new window.
 
-POP is typically a three-element list of (window horiz-p split),
-where WINDOW is the window to be split, HORIZ-P says whether to
-split it vertically or horizontally, and SPLIT says to split it
-by how much.  If HORIZ-P is nil, split the longest way.  If SPLIT
-is nil, split 0.5.
+POP is typically a three-element list of (window split
+horiz/vert), where WINDOW is the window to be split, SPLIT says
+to split it by how much, and HORIZ/VERT says whether to split it
+vertically or horizontally.  If HORIZ/VERT is nil, split the
+longest way.  If SPLIT is nil, split 0.5.
 
 If the whole POP argument is nil, just re-use the current
 buffer."
   (let* ((split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (horiz-p (or (cadr pop)
-		      (> (window-total-width split-window)
-			 (window-total-height split-window))))
+	 (horiz/vert (or (cadr pop)
+			 (if (> (window-total-width split-window)
+				(window-total-height split-window))
+			     'horiz
+			   'vert)))
 	 (size (cond ((null pop)
 		      nil)
 		     ((integerp (caddr pop)))
@@ -979,7 +981,10 @@ buffer."
 	   (setq buffer-window (get-buffer-window buf t)))
 	  (t
 	   ;; Otherwise split.
-	   (setq buffer-window (split-window split-window size (if horiz-p 'right 'below)))
+	   (setq buffer-window (split-window split-window size
+					     (if (eql horiz/vert 'vert)
+						 'below
+					       'right)))
 	   (set-window-buffer buffer-window buf)))
     (display-buffer-record-window 'window buffer-window buf)
     (when select

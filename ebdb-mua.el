@@ -1094,11 +1094,13 @@ Dispatches on the value of major-mode."
 
 This generic function dispatches on the current value of
 major-mode.  The return value should be a three-element list
-of (window horiz-p split), in which WINDOW is the window to
-split, HORIZ-P is t if the window should be split horizontally,
-else vertically, and SPLIT is either an integer, specifying
-number of rows/columns, or a float specifying what percentage of
-window real estate the pop-up should occupy.
+of (window split horiz/vert), in which WINDOW is the window to
+split, SPLIT is either an integer, specifying number of
+rows/columns, or a float specifying what percentage of window
+real estate the pop-up should occupy, and HORIZ-P is 'horiz if
+the window should be split horizontally, 'vert for vertically,
+and nil to split depending on the dimensions of the current
+window.
 
 Alternately, the return value can be nil, which means continue
 using the current window.")
@@ -1111,8 +1113,7 @@ Ie, don't pop up at all."
 
 (cl-defmethod ebdb-popup-window ()
   "When popping up from a random window, use half the window."
-  (let ((horiz-p (> (window-total-width) (window-total-height))))
-    (list (get-buffer-window) horiz-p 0.5)))
+  (list (get-buffer-window) 0.5))
 
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)

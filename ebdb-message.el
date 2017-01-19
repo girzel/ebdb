@@ -60,10 +60,10 @@
   (message-field-value header))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode message-mode))
-  (list (get-buffer-window) nil 0.4))
+  (list (get-buffer-window) 0.4))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
-  (list (get-buffer-window) nil 0.4))
+  (list (get-buffer-window) 0.4))
 
 (defun ebdb-insinuate-message ()
   (when ebdb-complete-mail
