@@ -31,7 +31,7 @@
   "Completion backend for EBDB."
   :group 'company)
 
-(defcustom company-ebdb-modes '(message-mode mail-mode)
+(defcustom company-ebdb-modes '(message-mode mail-mode notmuch-message-mode)
   "Major modes in which `company-ebdb' may complete."
   :type '(repeat (symbol :tag "Major mode"))
   :package-version '(company . "0.8.8"))
