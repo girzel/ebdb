@@ -1050,8 +1050,8 @@ Important variables:
 \t `ebdb-add-name'
 \t `ebdb-add-aka'
 \t `ebdb-add-mails'
-\t `ebdb-new-mails-primary'
 \t `ebdb-mua-pop-up'
+\t `ebdb-record-self'
 \t `ebdb-user-mail-address-re'
 
 There are numerous hooks.  M-x apropos ^ebdb.*hook RET

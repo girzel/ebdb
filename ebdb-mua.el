@@ -305,7 +305,7 @@ Allowed values are:
                It should return one of the above values.
  a regexp    If the new mail address matches this regexp ignore the new address.
                Otherwise query to add it.
-See also `ebdb-new-mails-primary' and `ebdb-ignore-redundant-mails'."
+See also `ebdb-ignore-redundant-mails'."
   :group 'ebdb-mua
   :type '(choice (const :tag "Automatically add new mail addresses" t)
                  (const :tag "Query before adding new mail addresses" query)
@@ -313,27 +313,6 @@ See also `ebdb-new-mails-primary' and `ebdb-ignore-redundant-mails'."
                  (number :tag "Number of seconds to display new addresses")
                  (function :tag "Function for analyzing name handling")
                  (regexp :tag "If the new address matches this regexp ignore it.")))
-
-(defcustom ebdb-new-mails-primary 'query
-  "Where to put new mail addresses for existing EBDB records.
-A new mail address may either become the new primary mail address,
-when it is put at the beginning of the list of mail addresses.
-Or the new mail address is added at the end of the list of mail addresses.
-Allowed values are:
- t           Make a new address automatically the primary address.
- query       Query whether to make it the primary address.
- nil         Add the new address to the end of the list.
- a function  This is called with two args, the record and the new mail address.
-               It should return one of the above values.
- a regexp    If the new mail address matches this regexp put it at the end.
-               Otherwise query to make it the primary address.
-See also `ebdb-add-mails'."
-  :group 'ebdb-mua
-  :type '(choice (const :tag "New address automatically made primary" t)
-                 (const :tag "Query before making a new address primary" query)
-                 (const :tag "Do not make new address primary" nil)
-                 (function :tag "Function for analyzing primary handling")
-                 (regexp :tag "If the new mail address matches this regexp put it at the end.")))
 
 (defcustom ebdb-canonicalize-mail-function nil
   "If non-nil, it should be a function of one arg: a mail address string.
