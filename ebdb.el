@@ -4508,7 +4508,8 @@ interpreted as t, ie the record passes."
 
 (cl-defmethod ebdb-field-search ((field ebdb-field) (regex string))
   (condition-case nil
-      (string-match-p regex (ebdb-string field))
+      (or (string-empty-p regex)
+	  (string-match-p regex (ebdb-string field)))
     (cl-no-applicable-method nil)))
 
 (cl-defmethod ebdb-field-search ((field ebdb-field-labeled) (pair cons))
@@ -4518,7 +4519,6 @@ interpreted as t, ie the record passes."
 	     (string-empty-p label)
 	     (string-match-p label (slot-value field 'object-name)))
 	 (or (null value)
-	     (string-empty-p value)
 	     (ebdb-field-search field value)))))
 
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
@@ -4583,20 +4583,20 @@ values, by default the search is not handed to the name field itself."
   (catch 'found
     (pcase search-clause
       (`(* ,(and regexp (pred stringp)))
-       ;; check all user fields
+       ;; Check all user fields.
        (dolist (f (ebdb-record-user-fields record))
 	 (when (ebdb-field-search f regexp)
-	   (throw 'found t)))
-       ;; so that "^$" can be used to find records that
-       ;; have no notes
-       (when (string-match-p regexp "")
-	 (throw 'found t)))
+	   (throw 'found t))))
+      ;; This is bad, we should not be hard-coding for specific
+      ;; classes.  Should just be composing the right kind of search
+      ;; criteria, then passing it on.
       (`((,(and label (pred stringp)) . ,'ebdb-field-user-simple) ,(and regexp (pred stringp)))
        (dolist (f (ebdb-record-user-fields record))
 	 (when (and (object-of-class-p f ebdb-field-user-simple)
 		    (ebdb-field-search f (cons label regexp)))
 	   (throw 'found t))))
-      (`((,(and field-string (pred stringp)) . ,(and class (pred symbolp))) ,criterion) ; check one field
+       ;; Check one field.
+      (`((,(and field-string (pred stringp)) . ,(and class (pred symbolp))) ,criterion)
        (dolist (f (ebdb-record-user-fields record))
 	 (when (and (object-of-class-p f class)
 		    (ebdb-field-search f criterion))
