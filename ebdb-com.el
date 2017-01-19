@@ -55,29 +55,6 @@ and redisplay it after the field is edited.")
   "Variables that affect the display of EBDB records"
   :group 'ebdb)
 
-(defcustom ebdb-pop-up-window-size 0.5
-  "Vertical size of EBDB window (vertical split).
-If it is an integer number, it is the number of lines used by EBDB.
-If it is a fraction between 0.0 and 1.0 (inclusive), it is the fraction
-of the tallest existing window that EBDB will take over.
-If it is t use `display-buffer'/`pop-to-buffer' to create the EBDB window.
-See also `ebdb-mua-pop-up-window-size'."
-  :group 'ebdb-record-display
-  :type '(choice (number :tag "EBDB window size")
-                 (const :tag "Use `pop-to-buffer'" t)))
-
-(defcustom ebdb-horiz-pop-up-window-size '(112 . 0.3)
-  "Horizontal size of a pop-up EBDB window (horizontal split).
-It is a cons pair (TOTAL . EBDB-SIZE).
-The window that will be considered for horizontal splitting must have
-at least TOTAL columns. EBDB-SIZE is the horizontal size of the EBDB window.
-If it is an integer number, it is the number of columns used by EBDB.
-If it is a fraction between 0 and 1, it is the fraction of the
-window width that EBDB will take over."
-  :group 'ebdb-mua
-  :type '(cons (number :tag "Total number of columns")
-               (number :tag "Horizontal size of EBDB window")))
-
 (defcustom ebdb-dedicated-window nil
   "Make *EBDB* window a dedicated window.
 Allowed values include nil (not dedicated) 'ebdb (weakly dedicated)
@@ -91,8 +68,6 @@ and t (strongly dedicated)."
   "If t, fill particularly long field values so that they fit
 within the *EBDB* buffer."
   :group 'ebdb-record-display
-  ;; TODO: When we have a 'pop-up and 'user buffer distinction, give
-  ;; this option more potential values.
   :type '(choice (const :tag "Always fill" nil)
                  (const :tag "Never fill" t)))
 
@@ -1071,7 +1046,6 @@ Important variables:
 \t `ebdb-completion-list'
 \t `ebdb-default-domain'
 \t `ebdb-sources'
-\t `ebdb-pop-up-window-size'
 \t `ebdb-mua-auto-update-p'
 \t `ebdb-add-name'
 \t `ebdb-add-aka'

@@ -221,6 +221,21 @@ The first and most important option governing this behavior is:
 
 
 *** Pop-up buffers
+Each MUA associated with EBDB will create its own pop-up buffer, with
+a name like \ast{}EBDB-Gnus\ast{} or \ast{}EBDB-Rmail\ast{}.  MUAs
+will re-use their own buffers, and not interfere with buffers the user
+has created using `ebdb', or by cloning or renaming existing buffers.
+
+- Variable: ebdb-mua-pop-up
+  If nil, MUAs will not create pop-up buffers.  It may still be
+  possible to manually create the buffer (and/or edit EBDB records)
+  using interactive commands (see [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in MUAs]]).
+
+At present, there are *no* user customization options controlling the
+size and location of MUA pop-up buffers: each MUA creates the pop-up
+according to hard-coded rules.  This will likely change in the future:
+please complain to the author.
+*** Annotation and Noticing
 ** EBDB and MUA summary buffers
 EBDB can affect the way message senders are displayed in your MUA's
 summary buffer.  It can do this in two ways: 1) by changing the way

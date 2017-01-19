@@ -552,39 +552,9 @@ See also `ebdb-auto-notes-ignore-messages'."
                   (regexp :tag "Regexp to match on header value"))))
 
 (defcustom ebdb-mua-pop-up t
-  "If non-nil, display an auto-updated EBDB window while using a MUA.
-If 'horiz, stack the window horizontally if there is room.
-If this is nil, EBDB is updated silently.
-
-See also `ebdb-mua-pop-up-window-size' and `ebdb-mua-horiz-pop-up-window-size'."
+  "If non-nil, display an auto-updated EBDB window while using a MUA."
   :group 'ebdb-mua
-  :type '(choice (const :tag "MUA EBDB window stacked vertically" t)
-                 (const :tag "MUA EBDB window stacked horizontally" horiz)
-                 (const :tag "No MUA EBDB window" nil)))
-(define-obsolete-variable-alias 'ebdb-message-pop-up 'ebdb-mua-pop-up)
-
-(defcustom ebdb-mua-pop-up-window-size ebdb-pop-up-window-size
-  "Vertical size of MUA pop-up EBDB window (vertical split).
-If it is an integer number, it is the number of lines used by EBDB.
-If it is a fraction between 0.0 and 1.0 (inclusive), it is the fraction
-of the tallest existing window that EBDB will take over.
-If it is t use `pop-to-buffer' to create the EBDB window.
-See also `ebdb-pop-up-window-size'."
-  :group 'ebdb-mua
-  :type '(choice (number :tag "EBDB window size")
-                 (const :tag "Use `pop-to-buffer'" t)))
-
-(defcustom ebdb-mua-horiz-pop-up-window-size '(112 . 0.3)
-  "Horizontal size of a MUA pop-up EBDB window (horizontal split).
-It is a cons pair (TOTAL . EBDB-SIZE).
-The window that will be considered for horizontal splitting must have
-at least TOTAL columns. EBDB-SIZE is the horizontal size of the EBDB window.
-If it is an integer number, it is the number of columns used by EBDB.
-If it is a fraction between 0 and 1, it is the fraction of the
-window width that EBDB will take over."
-  :group 'ebdb-mua
-  :type '(cons (number :tag "Total number of columns")
-               (number :tag "Horizontal size of EBDB window")))
+  :type 'boolean)
 
 
 
@@ -1178,8 +1148,7 @@ apply, however."
   (interactive)
   ;; Temporarily copy and paste from `ebdb-mua-display-records',
   ;; refactor later.
-  (let ((ebdb-pop-up-window-size ebdb-mua-pop-up-window-size)
-        (ebdb-message-all-addresses (or all ebdb-message-all-addresses))
+  (let ((ebdb-message-all-addresses (or all ebdb-message-all-addresses))
 	(fmt ebdb-default-multiline-formatter)
         records)
     (ebdb-mua-prepare-article)
@@ -1200,8 +1169,7 @@ HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'.  If ALL is non-nil,
 bind `ebdb-message-all-addresses' to ALL."
   (interactive)
-  (let ((ebdb-pop-up-window-size ebdb-mua-pop-up-window-size)
-        (ebdb-message-all-addresses (or all ebdb-message-all-addresses))
+  (let ((ebdb-message-all-addresses (or all ebdb-message-all-addresses))
 	(fmt ebdb-default-multiline-formatter)
         records)
     (ebdb-mua-prepare-article)
@@ -1328,7 +1296,6 @@ use all classes in `ebdb-message-headers'."
   (let ((records (ebdb-update-records
 		  (ebdb-get-address-components header-class)
 		  'existing))
-	(ebdb-pop-up-window-size ebdb-mua-pop-up-window-size)
 	field-instance slot)
     (when records
       (ebdb-display-records records nil nil nil (ebdb-popup-window))
@@ -1382,7 +1349,6 @@ Call `ebdb-mua-auto-update-init' in your init file to put this function
 into the respective MUA hooks.
 See `ebdb-mua-display-records' and friends for interactive commands."
   (let* ((ebdb-silent-internal t)
-         (ebdb-pop-up-window-size ebdb-mua-pop-up-window-size)
 	 records)
     (setq records (ebdb-update-records
 		   (ebdb-get-address-components header-class)
