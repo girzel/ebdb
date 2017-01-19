@@ -953,19 +953,20 @@ first one."
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
 	   (org (ebdb-gethash org-uuid 'uuid))
-	   (org-string (if org
-			   (ebdb-string (slot-value org 'name))
+	   (org-string (if org (ebdb-record-name org)
 			 "record not loaded"))
 	   ;; TODO: Guard against org-entry not being found.
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
 	   (record-uuid (ebdb-record-uuid record))
-	   (role-mail (slot-value role 'mail))
-	   new-org-entry exists-p)
-      ;; TODO: We shouldn't really be doing this here, because setting
-      ;; the slot value would mean the record/database should be set
-      ;; to dirty, which it isn't necessarily, at this point.
-      ;; Instead, `ebdb-read' should accept the record as an argument,
-      ;; and this should be done in that method instead.
+	   (role-mail (slot-value role 'mail)))
+      ;; Setting the 'record-uuid slot value when it wasn't set before
+      ;; technically means that the record is now "dirty".  That's
+      ;; okay in our current database implementation, because
+      ;; `ebdb-record-insert-field' first calls
+      ;; `ebdb-db-add-record-field', which sets the record "dirty",
+      ;; and then calls this `ebdb-init' method -- ie, record is
+      ;; "dirty" when we get here.  Theoretically, however, nothing in
+      ;; `ebdb-init-field' should change a record's slots.
       (unless (slot-value role 'record-uuid)
 	(setf (slot-value role 'record-uuid) record-uuid))
       (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
@@ -973,20 +974,9 @@ first one."
       (when (and role-mail (slot-value role-mail 'mail))
 	(ebdb-init-field role-mail record))
       ;; Make sure this role is in the `ebdb-org-hashtable'.
-      (unless (and org-entry
-		   (dolist (pair org-entry exists-p)
-		     (if (and (string= record-uuid (car pair))
-			      (string= (slot-value (cdr pair) 'object-name)
-				       (slot-value role 'object-name)))
-			 (setq exists-p t)
-		       (push pair new-org-entry))))
-	;; TODO: It's no longer necessary to record the record-uuid
-	;; along with the role, as the uuid is recorded in a slot on
-	;; the role.
-	(push (cons record-uuid role) new-org-entry))
-      (puthash org-uuid new-org-entry ebdb-org-hashtable)))
-  (when (slot-value role 'mail)
-    (ebdb-init-field (slot-value role 'mail) record))
+      (unless (member role org-entry)
+	(push role org-entry))
+      (puthash org-uuid org-entry ebdb-org-hashtable)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((role ebdb-field-role) &optional record unload)
@@ -995,22 +985,15 @@ first one."
 	   (org (ebdb-gethash org-uuid 'uuid))
 	   (org-string
 	    (if org
-		(slot-value org 'name)
+		(ebdb-record-name org)
 	      "bogus"))
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
-	   (record-uuid (ebdb-record-uuid record))
-	   record-entry new-org-entry)
-      (while (setq record-entry (pop org-entry))
-	;; The assumption being made here is that
-	;; record+organization+role-label combinations must be unique.
-	;; A record can have multiple roles at an organization, but
-	;; those roles must have different labels.
-	(unless (and (string= (car record-entry) record-uuid)
-		     (string= (slot-value role 'object-name)
-			      (slot-value (cdr record-entry) 'object-name)))
-	  (push record-entry new-org-entry)))
-      (puthash org-uuid new-org-entry ebdb-org-hashtable)      
-      (when (null (assoc-string record-uuid org-entry))
+	   (record-uuid (ebdb-record-uuid record)))
+      (setq org-entry (delete role org-entry))
+      (if org-entry
+	  (puthash org-uuid org-entry ebdb-org-hashtable)
+	(remhash org-uuid ebdb-org-hashtable))
+      (when (null (assoc-string record-uuid (object-assoc-list 'record-uuid org-entry)))
 	;; RECORD no long has any roles at ORG.
 	(object-remove-from-list (ebdb-record-cache record) 'organizations org-string))))
   (when (slot-value role 'mail)
@@ -2414,8 +2397,8 @@ priority."
     	       (yes-or-no-p (format "Delete all roles associated with %s"
     				    (ebdb-string org))))
       (dolist (r org-entry)
-    	(setq record (ebdb-gethash (car r) 'uuid))
-    	(ebdb-record-delete-field record 'organizations (cdr r))))
+    	(setq record (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
+    	(ebdb-record-delete-field record 'organizations r)))
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-string ((record ebdb-record-organization))
@@ -2516,7 +2499,7 @@ Currently only works for mail fields."
   (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
 	rec)
     (dolist (r roles)
-      (setq rec (ebdb-gethash (car r) 'uuid))
+      (setq rec (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
       (ebdb-record-adopt-role-fields rec org t))))
 
 (cl-defmethod ebdb-record-change-field ((_record ebdb-record-organization)
@@ -2552,7 +2535,9 @@ appropriate person record."
 				   (field ebdb-field-role))
   (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
 
-(defun ebdb-record-add-org-role (record org &optional mail fields)
+(defmethod ebdb-record-add-org-role ((record ebdb-record-person)
+				     (org ebdb-record-organization)
+				     &optional mail fields)
   "Convenience function for creating a role relationship between RECORD and ORG.
 
 MAIL and/or FIELDS, if present, should be a list of field

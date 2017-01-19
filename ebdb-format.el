@@ -305,7 +305,7 @@ which formats them appropriately."
 		     (memq 'ebdb-field-role include)
 		   (null (memq 'ebdb-field-role exclude))))
 	(dolist (r roles)
-	  (push (cdr r) field-list)))
+	  (push r field-list)))
       (cl-call-next-method fmt record field-list))))
 
 (cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter)
