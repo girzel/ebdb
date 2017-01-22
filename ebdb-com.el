@@ -964,16 +964,16 @@ If the whole POP argument is nil, just re-use the current
 buffer."
   (let* ((split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (horiz/vert (or (cadr pop)
+	 (horiz/vert (or (caddr pop)
 			 (if (> (window-total-width split-window)
 				(window-total-height split-window))
 			     'horiz
 			   'vert)))
 	 (size (cond ((null pop)
 		      nil)
-		     ((integerp (caddr pop)))
+		     ((integerp (cadr pop)))
 		     (t
-		      (let ((ratio (- 1 (or (caddr pop) 0.5)))
+		      (let ((ratio (- 1 (or (cadr pop) 0.5)))
 			    (dimension (max (window-total-width split-window)
 					    (window-total-height split-window))))
 			(round (* dimension ratio)))))))

@@ -419,7 +419,7 @@ Note that `\( is the backquote, NOT the quote '\(."
 	   (unless (gnus-buffer-live-p gnus-article-buffer)
 	     (gnus-summary-show-article))
 	   (get-buffer-window gnus-article-buffer))))
-    (list win nil 0.3)))
+    (list win 0.3)))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode gnus-article-mode))
   (list (get-buffer-window) 0.3))
