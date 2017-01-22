@@ -1099,6 +1099,20 @@ first one."
       (setq slots (plist-put slots :priority (slot-value obj 'priority))))
     (cl-call-next-method class slots obj)))
 
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-mail))
+			  (str string)
+			  &optional slots)
+  "Parse STR as though it were a mail field."
+  (pcase-let
+      ((`(,name ,mail) (ebdb-decompose-ebdb-address str)))
+    (unless mail
+      (signal 'ebdb-unparseable (list str)))
+    (unless (plist-get slots :mail)
+      (setq slots (plist-put slots :mail mail)))
+    (unless (plist-get slots :aka)
+      (setq slots (plist-put slots :aka name)))
+    (cl-call-next-method class str slots)))
+
 (defun ebdb-sort-mails (mails)
   "Sort MAILS (being instances of `ebdb-field-mail') by their
   priority slot.  Primary sorts before normal sorts before
