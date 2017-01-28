@@ -36,6 +36,18 @@
 ;; responsible for prompting the user to actually create or update
 ;; records, and for displaying the results.
 
+;; Right now all the code does is search for mail addresses.  A more
+;; generalized version might involve a defcustom called
+;; `ebdb-snarf-routines'.  This should be an alist whose elements look
+;; like (ebdb-field-class "regexp one" "regexp two" ...).  Or,
+;; construct this list from other field-class-specific lists.
+
+;; Anyway, the idea is that we blindly scan the snarf buffer for the
+;; regexps in that list, construct the appropriate record or field
+;; instances, group them using calls to `ebdb-string' and
+;; `ebdb-field-search'/`ebdb-search'.  With a little fancy footwork it
+;; should be possible to keep the code mostly field agnostic.
+
 ;;; Code:
 
 (require 'ebdb)
@@ -74,10 +86,10 @@ information, and do its best to either associate that information
 with existing records, or to organize it into likely groups.  If
 RECORDS is given, it should be a list of records that we think
 have something to do with the text in the buffer."
-  (let ((name-re "\\(\\(?:[[:upper:]][[:lower:]]+[[:blank:]]?\\)+\\)")
-	(mail-re "\\([^[:space:]]+@[^[:space:]>]+\\)")
-	(case-fold-search nil)
-	group name mail phone address sticker)
+  (let ((name-re "\\(?:From: \\|To: \\|Cc: \\)?\\(\\(?:[[:upper:]][[:lower:]]+[,[:space:]]*\\)\\{1,\\}\\)")
+	(mail-re "\\([^[:space:]:<[]+@[^]:[:space:]>]+\\)")
+	bundles
+	(case-fold-search nil))
 
     ;; The structure we'll return is a list of lists.  Each element is
     ;; a list of objects (records and fields) that we believe are
@@ -85,7 +97,7 @@ have something to do with the text in the buffer."
     ;; start with.
 
     (when records
-      (setq records (mapcar (lambda (r)
+      (setq bundles (mapcar (lambda (r)
 			      (list :record r))
 			    records)))
 
@@ -102,55 +114,77 @@ have something to do with the text in the buffer."
     ;; Nowhere, Massachusetts, 55555
 
     ;; Currently the definition of "name" is a series of capitalized
-    ;; words, which is dumb.
+    ;; words, which is dumb.  Also, the code only scans for mail
+    ;; addresses at the moment.
 
     (goto-char (point-min))
 
-    ;; Scan for mail addresses.  This is all we're going to do, until
-    ;; the basics are in place.
     (while (re-search-forward mail-re nil t)
-      (setq mail (match-string-no-properties 1)
-	    sticker (line-end-position)
-	    name (save-excursion
-		   (goto-char (progn (forward-line -1)
-				     (line-beginning-position)))
-		   ;; This allows for a name before the email address,
-		   ;; or on the line above it.  Probably this is too
-		   ;; permissive.
-		   (when (re-search-forward name-re sticker t)
-		     (match-string-no-properties 1))))
-      ;; See if any of this information fits what we've got in
-      ;; RECORDS.
-      (let* ((case-fold-search nil)
-	     (name (when name (string-trim name)))
-	     (mail-user
-	      (replace-regexp-in-string "[.-]" ""
-					(car (split-string mail "@")))))
+      (let* ((mail (match-string-no-properties 1))
+	     (sticker (line-end-position))
+	     (name (save-excursion
+		     (goto-char (progn (line-beginning-position)))
+		     (when (re-search-forward name-re sticker t)
+		       (string-trim (match-string-no-properties 1)))))
+	     ;; Make a regular expression that stands a chance of
+	     ;; matching an existing record.
+	     (mail-user-re
+	      (regexp-opt
+	       (append (split-string
+			(downcase (car (split-string mail "@")))
+			"[-_.]" t)
+		       (when name
+			 (split-string
+			  (downcase name)
+			  "[, ]" t)))))
+	     group)
+	;; See if any of this information fits what we've got in
+	;; RECORDS.
 	(unless (catch 'match
-		  (when name
-		    (setq mail-user (regexp-opt
-				     (list mail-user
-					   name))))
-		  (dolist (elt records)
-		    (dolist (thing elt)
+		  (dolist (elt bundles)
+		    (let ((r (plist-get elt :record))
+			  (n (plist-get elt :names))
+			  (m (plist-get elt :mail))
+			  (case-fold-search t))
 		      (when (cond
-			     ((and (object-of-class-p thing ebdb-record)
-				   (or (ebdb-search (list thing)
-						    `((name ,mail-user)
-						      (mail ,mail-user))))))
-			     ((and (object-of-class-p thing ebdb-field-name)
-				   (ebdb-field-search thing mail-user)))
+			     ((and r
+				   (ebdb-search (list r)
+						`((name ,mail-user-re)
+						  (mail ,mail-user-re)))))
+			     ((and m
+				   (ebdb-field-search m mail-user-re)))
+			     ((and n
+				   (seq-find
+				    (lambda (na)
+				      (ebdb-field-search na mail-user-re))
+				    n)))
 			     (t nil))
-			(plist-put elt :mail (ebdb-parse ebdb-default-mail-class mail))
-			(when name
-			  (plist-put elt :name (ebdb-parse ebdb-field-name name)))
+			(unless (and m	; mail is already in here.
+				     (string-match-p (ebdb-string m) mail))
+			  (plist-put
+			   elt
+			   :mail (ebdb-parse ebdb-default-mail-class mail)))
+			(when (and name
+				   (or (null n)
+				       (null (seq-find
+					      (lambda (na)
+						(string-match-p
+						 (ebdb-string na)
+						 name))
+					      n))))
+			  (plist-put
+			   elt
+			   :names (append (list (ebdb-parse ebdb-field-name name))
+					  n)))
 			(throw 'match t)))))
 	  (setq group
 		(plist-put group :mail (ebdb-parse ebdb-default-mail-class mail)))
 	  (when name
-	    (setq group (plist-put group :name (ebdb-parse ebdb-field-name name))))
-	  (push group records))))
-    records))
+	    (setq group (plist-put
+			 group
+			 :names (list (ebdb-parse ebdb-field-name name)))))
+	  (push group bundles))))
+    bundles))
 
 (defun ebdb-snarf-process (input)
   "Process INPUT, which is a list of bundled information
@@ -158,42 +192,68 @@ have something to do with the text in the buffer."
 
 Either find the matching records, update existing (but
 incomplete) records, or create new records.  Then display them."
-  (let (record name mail phone address slot records)
+  (let (record names name-alist name mail phone address slot records)
     (dolist (bundle input)
       (setq record (plist-get bundle :record)
-	    name (plist-get bundle :name)
+	    names (plist-get bundle :names)
 	    mail (plist-get bundle :mail)
 	    phone (plist-get bundle :phone)
 	    address (plist-get bundle :address))
+      ;; Either we were given a record...
       (unless record
+	;; ...we can find one in the database...
 	(unless (setq record (car-safe
 			      (ebdb-message-search
-			       (and name (ebdb-string name))
+			       (and names (regexp-opt (mapcar #'ebdb-string names)))
 			       (and mail (ebdb-string mail)))))
+	  ;; ...or we create a new one.
 	  (when (yes-or-no-p
 		 (format "Create new record%s? "
-			 (if name
-			     (format " for %s" (ebdb-string name))
-			   "")))
-	    (setq record (make-instance ebdb-default-record-class
-					:name (or name (ebdb-read ebdb-default-name-class))))
+			 (cond (names
+				(format " for %s"
+					(mapconcat #'ebdb-string
+						   names "/")))
+			       (mail
+				(format " for %s" (ebdb-string mail)))
+			       (t ""))))
+	    (setq record
+		  (make-instance
+		   ebdb-default-record-class
+		   :name (progn
+			   (setq name
+				 (cond ((= 1 (length names))
+					(car names))
+				       ((setq name-alist
+					      (mapcar (lambda (n)
+							(cons (ebdb-string n)
+							      n))
+						      names))
+					(cdr
+					 (assoc-string
+					  (completing-read
+					   "Use name: "
+					   name-alist)
+					  name-alist)))
+				       (t nil)))
+			   (ebdb-read ebdb-default-name-class nil name))))
 	    (ebdb-db-add-record (car ebdb-db-list) record)
-	    (ebdb-init-record record))))
-      (dolist (elt (list mail phone address))
-	(when elt
-	  (setq slot (car (ebdb-record-field-slot-query
-			   (eieio-object-class record)
-			   `(nil . ,(eieio-object-class elt)))))
-	  (when (and slot
-		     (null (or (equal elt (slot-value record slot))
-			       (member elt (slot-value record slot))))
-		     (yes-or-no-p (format "Add %s to %s? "
-					  (ebdb-string elt)
-					  (ebdb-string record))))
-	    (ebdb-record-insert-field
-	     record
-	     slot
-	     elt))))
+	    (ebdb-init-record record)
+	    (when mail
+	      (ebdb-record-insert-field record 'mail mail)))))
+      (dolist (elt (delq nil (list phone address)))
+	(setq slot (car (ebdb-record-field-slot-query
+			 (eieio-object-class record)
+			 `(nil . ,(eieio-object-class elt)))))
+	(when (and slot
+		   (null (or (equal elt (slot-value record slot))
+			     (member elt (slot-value record slot))))
+		   (yes-or-no-p (format "Add %s to %s? "
+					(ebdb-string elt)
+					(ebdb-string record))))
+	  (ebdb-record-insert-field
+	   record
+	   slot
+	   elt)))
       (push record records))
     (when records
       (ebdb-display-records records nil nil t (ebdb-popup-window)
