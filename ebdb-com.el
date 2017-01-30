@@ -1900,13 +1900,13 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read 'all)
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((name ,regexp)
+  (ebdb-search-display style `((ebdb-field-name ,regexp)
 			       (organization ,regexp)
-			       (mail ,regexp)
-			       (notes ,regexp)
-			       (user ,regexp)
-			       (phone ,regexp)
-			       (address ,regexp))
+			       (ebdb-field-mail ,regexp)
+			       (ebdb-field-notes ,regexp)
+			       (ebdb-field-user ,regexp)
+			       (ebdb-field-phone ,regexp)
+			       (ebdb-field-address ,regexp))
 		       fmt))
 
 ;;;###autoload
@@ -1916,7 +1916,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read "names")
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((name ,regexp)) fmt))
+  (ebdb-search-display style `((ebdb-field-name ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-organization (style regexp &optional fmt)
@@ -1932,7 +1932,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read ebdb-default-address-class)
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((address ,regexp)) fmt))
+  (ebdb-search-display style `((,ebdb-default-address-class ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-mail (style regexp &optional fmt)
@@ -1940,7 +1940,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read ebdb-default-mail-class)
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((mail ,regexp)) fmt))
+  (ebdb-search-display style `((,ebdb-default-mail-class ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-phone (style regexp &optional fmt)
@@ -1948,7 +1948,7 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read ebdb-default-phone-class)
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((phone ,regexp)) fmt))
+  (ebdb-search-display style `((,ebdb-default-phone-class ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-notes (style regexp &optional fmt)
@@ -1956,11 +1956,11 @@ in either the name(s), organization, address, phone, mail, or xfields."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read ebdb-default-notes-class)
 		     (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((notes ,regexp)) fmt))
+  (ebdb-search-display style `((,ebdb-default-notes-class ,regexp)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-user-fields (style field regexp &optional fmt)
-  "Display all EBDB records for which user field FIELD matches REGEXP."
+(defun ebdb-search-user-fields (style field criterion &optional fmt)
+  "Display all EBDB records for which user field FIELD matches CRITERION."
   (interactive
    ;; TODO: Refactor this with `ebdb-prompt-for-field-type'
    (let* ((style (ebdb-search-style))
@@ -1971,7 +1971,10 @@ in either the name(s), organization, address, phone, mail, or xfields."
 	       (cons
 		(ebdb-field-readable-name (intern (car f)))
 		(intern (car f))))
-	     (eieio-build-class-alist 'ebdb-field-user t))
+	     (cl-remove-if
+	      (lambda (f)
+		(string= "ebdb-field-user-simple" (car f)))
+	      (eieio-build-class-alist 'ebdb-field-user t)))
 	    (mapcar
 	     (lambda (l)
 	       (cons l 'ebdb-field-user-simple))
@@ -1979,14 +1982,31 @@ in either the name(s), organization, address, phone, mail, or xfields."
 	  (field (assoc (completing-read "Field to search (RET for all): "
 					 field-alist
 					 nil t)
-			field-alist)))
+			field-alist))
+	  (criterion (ebdb-search-read (cond ((null field)
+					      "any user field")
+					     ((eql (cdr field) ebdb-field-user-simple)
+					      (format "%s field" (car field)))
+					     (t (cdr field))))))
      (list style
-	   (if (null field) '* field)
-           (ebdb-search-read (if (null field)
-				 "any user field"
-			       (cdr field)))
+	   (or (cdr-safe field) ebdb-field-user)
+	   (if (child-of-class-p (cdr-safe field) ebdb-field-user-simple)
+	       (cons (car field) criterion)
+	     criterion)
            (ebdb-formatter-prefix))))
-  (ebdb-search-display style `((user ,(list field regexp))) fmt))
+  (ebdb-search-display
+   style
+   `((,field ,criterion))
+   fmt))
+
+;;;###autoload
+(defun ebdb-search-organization (style regexp &optional fmt)
+  (interactive
+   (list
+    (ebdb-search-style)
+    (read-string "Search for organizations: ")
+    (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((organization ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-changed (&optional fmt)

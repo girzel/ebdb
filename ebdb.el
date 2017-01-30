@@ -4487,15 +4487,17 @@ interpreted as t, ie the record passes."
      (lambda (r)
        (eql (null invert)
 	    (catch 'found
-	      (dolist (c clauses)
-		(pcase c
-		  (`(,(and type (pred symbolp)) ,criteria)
-		   (and (ebdb-record-search r type criteria)
-			(throw 'found t)))
-		  (`,(and func (pred functionp))
-		   (and (funcall func r)
-			(throw 'found t)))
-		  (_ t))))))
+	      (condition-case nil
+	       (dolist (c clauses)
+		 (pcase c
+		   (`(,(and type (pred class-p)) ,criteria)
+		    (and (ebdb-record-search r type criteria)
+			 (throw 'found t)))
+		   (`,(and func (pred functionp))
+		    (and (funcall func r)
+			 (throw 'found t)))
+		   (_ t)))
+	       (cl-no-applicable-method nil)))))
      records)))
 
 (cl-defgeneric ebdb-field-search (field criterion)
@@ -4520,6 +4522,12 @@ interpreted as t, ie the record passes."
 	 (or (null value)
 	     (ebdb-field-search field value)))))
 
+(cl-defmethod ebdb-field-search ((field ebdb-field-labeled)
+				 (regexp string))
+  (or (string-match-p regexp (ebdb-string field))
+      (string-match-p regexp (slot-value field 'object-name))
+      (cl-call-next-method)))
+
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
   "Short-circuit the plain field search for names.
 
@@ -4528,7 +4536,7 @@ values, by default the search is not handed to the name field itself."
   nil)
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
-				  (_type (eql name))
+				  (_type (subclass ebdb-field-name))
 				  (regexp string))
   (or (string-match-p regexp (or (ebdb-record-name record) ""))
       (seq-find
@@ -4538,69 +4546,65 @@ values, by default the search is not handed to the name field itself."
       (ebdb-field-search (slot-value record 'name) regexp)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
-				  (_type (eql notes))
+				  (_type (subclass ebdb-field-notes))
 				  (regexp string))
   (if-let (notes (slot-value record 'notes))
       (string-match-p regexp (ebdb-string notes))))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
-				  (_type (eql phone))
+				  (_type (subclass ebdb-field-phone))
 				  (regexp string))
   (let ((phones (ebdb-record-phone record)))
     (if phones
-	(catch 'found
-	  (dolist (ph phones)
-	    (when (ebdb-field-search ph regexp)
-	      (throw 'found t))))
-      (string-match-p regexp ""))))
+	(or (string-match-p regexp "")
+	    (catch 'found
+	      (dolist (ph phones)
+		(when (ebdb-field-search ph regexp)
+		  (throw 'found t))))))))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
-				  (_type (eql address))
+				  (_type (subclass ebdb-field-address))
 				  (regexp string))
   (let ((adds (ebdb-record-address record)))
     (if adds
-	(catch 'found
-	  (dolist (a adds)
-	    (when (ebdb-field-search a regexp)
-	      (throw 'found t))))
-      (string-match-p regexp ""))))
+	(or (string-match-p regexp "")
+	    (catch 'found
+	      (dolist (a adds)
+		(when (ebdb-field-search a regexp)
+		  (throw 'found t))))))))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
-				  (_type (eql mail))
+				  (_type (subclass ebdb-field-mail))
 				  (regexp string))
   (let ((mails (ebdb-record-mail record t nil t)))
     (if mails
-	(catch 'found
-	  (dolist (m mails)
-	    (when (ebdb-field-search m regexp)
-	      (throw 'found t))))
-      (string-match-p regexp ""))))
+	(or (string-match-p regexp "")
+	    (catch 'found
+	      (dolist (m mails)
+		(when (ebdb-field-search m regexp)
+		  (throw 'found t))))))))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record-person)
+				  (_type (eql organization))
+				  (regexp string))
+  (seq-find
+   (lambda (o)
+     (string-match-p regexp o))
+   (slot-value (ebdb-record-cache record) 'organizations)))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record-organization)
+				  (_type (eql organization))
+				  (regexp string))
+  (ebdb-record-search record ebdb-field-name regexp))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
-				  (_type (eql user))
-				  search-clause)
+				  (cls (subclass ebdb-field-user))
+				  criterion)
   (catch 'found
-    (pcase search-clause
-      (`(* ,(and regexp (pred stringp)))
-       ;; Check all user fields.
-       (dolist (f (ebdb-record-user-fields record))
-	 (when (ebdb-field-search f regexp)
-	   (throw 'found t))))
-      ;; This is bad, we should not be hard-coding for specific
-      ;; classes.  Should just be composing the right kind of search
-      ;; criteria, then passing it on.
-      (`((,(and label (pred stringp)) . ,'ebdb-field-user-simple) ,(and regexp (pred stringp)))
-       (dolist (f (ebdb-record-user-fields record))
-	 (when (and (object-of-class-p f ebdb-field-user-simple)
-		    (ebdb-field-search f (cons label regexp)))
-	   (throw 'found t))))
-       ;; Check one field.
-      (`((,(and field-string (pred stringp)) . ,(and class (pred symbolp))) ,criterion)
-       (dolist (f (ebdb-record-user-fields record))
-	 (when (and (object-of-class-p f class)
-		    (ebdb-field-search f criterion))
-	   (throw 'found t))))
-      (_ nil))))
+    (dolist (f (ebdb-record-user-fields record))
+      (when (and (object-of-class-p f cls)
+		 (ebdb-field-search f criterion))
+	(throw 'found t)))))
 
 (cl-defgeneric ebdb-search-read (field-class)
   "Prompt the user for a search string to match against instances
