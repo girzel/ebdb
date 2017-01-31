@@ -4194,6 +4194,9 @@ also be one of the special symbols below.
 	((eq field 'lastname) (ebdb-record-lastname record))
 	((eq field 'affix)    (slot-value (slot-value record 'name) 'affix))
 	((eq field 'mail-canon) (ebdb-record-mail-canon record)) ; derived (cached) field
+	;; Mail is special-cased, because mail addresses can come from
+	;; more than one slot.
+	((eq field 'mail) (ebdb-record-mail record t nil t))
 	((eq field 'mail-aka) (ebdb-record-mail-aka record)) ; derived (cached) field
 	((eq field 'aka-all)  (append (ebdb-record-aka record) ; derived field
 				      (ebdb-record-mail-aka record)))
