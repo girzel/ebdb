@@ -511,6 +511,10 @@ into SLOTS, provided that SLOTS does not already contain relevant
 values (ie, parsing should not override what's already in SLOTS).
 Then call `cl-call-next-method' with the new values.")
 
+(cl-defmethod ebdb-parse :around (_field-class _str &optional _slots)
+  (save-match-data
+    (cl-call-next-method)))
+
 (cl-defmethod ebdb-parse ((field-class (subclass ebdb-field)) _str &optional slots)
   "Create the actual field instance."
   (apply 'make-instance field-class slots))
