@@ -4217,12 +4217,7 @@ also be one of the special symbols below.
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
 				 (field string))
-  (let ((user-fields (ebdb-record-user-fields record)))
-    (catch 'found
-      (dolist (f user-fields)
-	(when (and (slot-exists-p f 'object-name)
-		   (string= field (slot-value f 'object-name)))
-	  (throw 'found f))))))
+  (ebdb-record-user-field record field))
 
 (defun ebdb-merge-concat (string1 string2 &optional separator)
   "Return the concatenation of STRING1 and STRING2.
