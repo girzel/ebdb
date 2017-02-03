@@ -3216,7 +3216,7 @@ in the second."
 If RECORDS is a list of records, offer choices from that list. If
 CLASS is given, only offer choices that are an instance of that
 class, or its subclasses."
-  (let* ((recs (or records ebdb-record-tracker))
+  (let* ((recs (or records (ebdb-records)))
 	 (pairs
 	  (mapcar
 	   (lambda (r)
