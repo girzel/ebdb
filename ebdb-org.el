@@ -57,7 +57,7 @@
 			     :complete (lambda ()
 					 (format
 					  "ebdb:uuid/%s"
-					  (ebdb-record-uuid (ebdb-completing-read-record "Record: "))))
+					  (ebdb-record-uuid (ebdb-prompt-for-record (ebdb-records)))))
 			     :store 'ebdb-org-store-link
 			     :export 'ebdb-org-export)
   (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
