@@ -87,7 +87,7 @@ Other database-related commands:
   between restarts.  To re-enable a database, edit it using
   `ebdb-customize-database', set 'disabled to nil, and then reload it
   with `ebdb-reload-database'.
-* Creating records
+* Creating Records
 
 Create a record using "c" (`ebdb-create') in the {{{ebuf}}} buffer.
 With no prefix arg, this command will create an instance of the
@@ -111,7 +111,7 @@ records have a simple name.  In addition, person records can have one
 or more "aka" names, and these akas can be either simple or complex.
 When adding fields to a record, the simple name class is labeled
 "nickname", and the complex class is labeled "alt name".
-* Record fields
+* Record Fields
 ** Inserting new fields
 Press "i" (`ebdb-insert-field') with point on a record will prompt for
 a field type, then field values, and add the field to the record.  See
@@ -404,3 +404,233 @@ removed entirely in EBDB.  It's probably best to put your BBDB
 customizations aside, and set new EBDB options as you come across
 them.  The most important options are detailed in this manual, you can
 also customize the "EBDB" group to see what's available.
+* Hacking EBDB
+EBDB is designed to be highly extensible.  In addition to the usual
+method of customizing options, it provides for subclassing of the
+three main classes -- database, record, and field.  The behavior of
+EBDB can be radically changed by creating new classes, or overriding
+the existing methods of classes, without touching the original source
+code.  This manual won't go into details about Emacs'
+object-orientation support: see [[info:eieio#Top][info:eieio#Top]] for information on
+defining classes, and [[info:elisp#Generic%20Functions][info:elisp#Generic Functions]] for information on
+writing generic functions and methods.
+
+The simplest customization involves changing the default classes used
+for basic record and field types:
+
+- Option ebdb-default-record-class
+  The default class used for creating records.  This class will be
+  used when creating records with "c" in ebdb-mode, or when
+  automatically creating records (ie, from snarfing).  It's always
+  possible to create a record of a different class by using "C" in
+  ebdb-mode.
+- Option ebdb-default-name-class
+  The default class for complex names.  Simple names (used for
+  organizations) are always plain strings -- this option only governs
+  the class used for articulated names of individuals, with separate
+  slots for surname, given names, suffixes, etc.
+- Option ebdb-default-mail-class
+  The default class for mail fields.
+- Option ebdb-default-phone-class
+  The default class for phone fields.
+- Option ebdb-default-address-class
+  The default class for address fields.
+- Option ebdb-default-notes-class
+  The default class for notes fields.
+
+If, for instance, you'd like to create a custom mail field and have
+all records use that instead of the built in one:
+
+#+BEGIN_SRC emacs-lisp
+  (defclass my-mail-field (ebdb-field-mail)
+    ;; custom slots
+    )
+
+  (setq ebdb-default-mail-class my-mail-field)
+#+END_SRC
+
+Note that there are currently no facilities for changing the class of
+existing objects.  This may be addressed in the future.
+** Field Classes
+It's fairly easy to create your own custom field classes in EBDB.  All
+such fields should subclass the `ebdb-field-user' class, which sets up
+basic behavior.  That base class provides for no slots at all, so your
+class must define the slots where the field data will be held.  It
+should also provide a class option holding a human-readable string for
+the class type.  As an example:
+
+#+BEGIN_SRC emacs-lisp
+  (defclass ebdb-field-gender (ebdb-field-user)
+    ((gender
+      :initarg :gender
+      :initform unknown
+      :type symbol
+      :custom (choice
+	       (const :tag "Female" female)
+	       (const :tag "Male" male)
+	       (const :tag "Other" other)
+	       (const :tag "Unknown" unknown)
+	       (const :tag "None/Not Applicable" none))))
+    :human-readable "gender"
+    :documentation "A field holding gender information about this record.")
+#+END_SRC
+
+Once the class itself is defined, there are three basic methods which
+must be provided: `ebdb-read', which prompts the user for values used
+to create a new field instance, `ebdb-parse', which accepts a string
+or other data and creates a new field instance from it, and
+`ebdb-string', which returns a string representation of the field
+instance.  The simplest field types only need to provide these three
+methods.
+
+The `ebdb-read' and `ebdb-parse' methods are static (class-level)
+methods.  Both take an optional "slots" argument, which a plist of
+slot values that will eventually be fed to `make-instance'.  If values
+are already present in the plist, these methods should /not/ override
+them.  In addition, `ebdb-read' takes an optional "obj" argument,
+which, if present, is an existing field instance that can be used to
+provide default values for the new object.
+
+#+BEGIN_SRC emacs-lisp
+  (cl-defmethod ebdb-read ((class (subclass ebdb-field-gender))
+			   &optional slots obj)
+    (unless (plist-get slots :gender)
+      (let ((gender (intern (completing-read
+			     "Gender: " '(female male other unknown none)
+			     nil t
+			     (when obj (symbol-name (slot-value obj :gender)))))))
+	(when gender
+	  (setq slots (plist-put :gender gender)))))
+    (cl-call-next-method class slots obj))
+
+  (cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
+			    str &optional slots)
+    (when (and (null (plist-get slots :gender))
+	       (member str '("female" "male" "other" "unknown" "none")))
+      (setq slots (plist-put slots :gender str)))
+    (cl-call-next-method class str slots))
+
+  (cl-defmethod ebdb-string ((field ebdb-field-gender))
+    (symbol-name (slot-value field 'gender)))
+#+END_SRC
+*** Init and Delete Methods
+It's also very common to define `ebdb-init-field' and
+`ebdb-delete-field' methods for classes.  These methods can be used to
+maintain secondary data structures, or set up extra hashing for
+records, or do any other supplemental work.  The one restriction is
+that they must not change the database: they may not edit records or
+their fields.  Both methods are called with the field instance as the
+first argument, and the record the instance belongs to as an optional
+second argument.  `ebdb-delete-field' also accepts an optional third
+argument, "unload", which is non-nil when the record is being
+unloaded, rather than deleted.
+
+`ebdb-init-field' is called:
+
+1. When loading for the first time (records call `ebdb-init-field' on
+   all of their fields after they're loaded).
+2. When adding a new field instance to a record.
+3. When editing an existing field instance (editing is a
+   delete-and-create operation).
+
+`ebdb-delete-field' is called:
+
+1. When deleting a field instance.
+2. When deleting the record owning the field instance.
+3. When editing an existing field instance (editing is a
+   delete-and-create operation).
+4. When unloading a record from the database (the optional third
+   "unload" argument will be non-nil).
+*** The Labeled Field Class
+Many field classes maintain their own list of labels: ie, anniversary
+fields can be labeled "birthday", "wedding", etc.  This functionality
+can be added to fields by additionally subclassing the
+`ebdb-field-labeled' class, and then defining a variable that will be
+used to hold labels, and pointing to it in the class-allocated
+"label-list" slot.  Everything else is taken care of automatically.
+
+#+BEGIN_SRC emacs-lisp
+  (defvar my-field-label-list '("default1" "default2")
+    "A list of labels for the my-labeled-field class.")
+
+  (defclass my-labeled-field (ebdb-field-user ebdb-field-labeled)
+    ((label-list :initform my-field-label-list)))
+#+END_SRC
+*** Actions
+All field classes have a class-allocated slot called "actions".  The
+value of this slot is a list of function symbols.  Users can trigger
+these actions by pressing "RET" while point is on the field in the
+{{{ebuf}}} buffer, using a numeric prefix arg to select from multiple
+possible actions, or the 0 prefix arg to be prompted for which action
+to take.
+
+The functions in this list should accept two arguments, the record and
+the field instance under point.
+*** Custom Field Searching
+In most cases, searching the EBDB database is a matter of prompting
+for a regular expression, then matching that regexp against the result
+of `ebdb-string' called on a field instance.
+
+However, it is possible for field classes to provide more
+sophisticated searching behavior, if desired.  When the user calls
+`ebdb-search-user-fields' in the {{{ebuf}}} buffer, he or she will be
+prompted for a field class to search on.  When a field class is
+chosen, it has the option to prompt for more complex search criteria.
+This is done by overriding two matching methods: `ebdb-search-read',
+and `ebdb-field-search'.
+
+`ebdb-search-read' is a static (class-level) method.  Its only
+argument is the field class being searched on.  It should prompt the
+user for whatever search criterion it wants, then return that
+criterion.  This can be nearly anything, so long as the matching
+`ebdb-field-search' can accept it.
+
+The `ebdb-field-search' method accepts a field instance as the first
+argument, and the search criterion as the second.  It should return
+non-nil if the criterion somehow matches the field.  Note that it's
+perfectly possible to write several `ebdb-field-search' methods,
+dispatching on different criterion types, if that makes things easier.
+
+In addition, fields that subclass `ebdb-field-labeled' can accept
+search criterion as a cons: ("label string . other-search-criteria).
+The label string will first be matched against the label of the
+instance, and then other-search-criteria will be passed to the
+`ebdb-field-search' method as usual.
+*** Formatting in the EBDB Buffer
+Most fields will be displayed in the {{{ebuf}}} buffer simply using
+`ebdb-string'.  It's possible to customize this display by overriding
+the `ebdb-fmt-field' method.  Without going into too much detail, this
+method dispatches on four arguments: the formatter, the field, a
+"style" symbol argument (typically 'normal, 'oneline, 'compact',
+'collapse or 'expanded), and the record being formatted.
+
+Specify an ebdb formatter for the first argument to target {{{ebuf}}}
+formatting.  Choices are `ebdb-formatter-ebdb' (for all cases), or one
+of `ebdb-formatter-ebdb-multiline' or `ebdb-formatter-ebdb-oneline'.
+Keep in mind that many field classes are not displayed at all in the
+oneline format.
+
+An example: most fields are output with style set to 'normal, meaning
+that it will use the value of `ebdb-string'.  By default, formatters
+display address fields in the 'collapse style, which is mapped to the
+'oneline style, which simply drops everything after the first newline.
+
+Say you still wanted addresses output on a single line, but you wanted
+to provide a little more information on that line: the first line of
+the street addresses, plus the city, plus the country.  You could
+achieve that by overriding the 'collapse style like so:
+
+#+BEGIN_SRC emacs-lisp
+  (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
+				(field ebdb-field-address)
+				(_style (eql collapse))
+				(_record ebdb-record))
+    "Give address fields a special 'collapse formatting."
+    (with-slots (streets locality country) field
+     (format "%s (%s, %s)" (car streets) locality country)))
+
+#+END_SRC
+
+The leading underscores on parameters are there to keep the compiler
+quiet: the arguments are necessary for dispatch, but aren't actually
+used in the body of the method.
