@@ -47,9 +47,8 @@
     :type list
     :initarg :include
     :initform nil
-    :documentation "A list of field classes to include.  If both
-    \"include\" and \"exclude\" are given, the \"exclude\" slot
-    will be ignored.")
+    :documentation "A list of field classes to include.  If
+    \"include\" and \"exclude\" conflict, \"exclude\" loses.")
    (exclude
     :type list
     :initarg :exclude
@@ -58,7 +57,10 @@
    (sort
     :type list
     :initarg :sort
-    :initform '(ebdb-field-mail ebdb-field-phone ebdb-field-address "_" ebdb-field-notes))
+    :initform '(ebdb-field-mail ebdb-field-phone ebdb-field-address "_" ebdb-field-notes)
+    :documentation "How field instances should be sorted.  Field
+    classes should be listed in their proper sort order.  A \"_\"
+    placeholder indicates where all other fields should go." )
    (primary
     :type boolean
     :initarg :primary
@@ -79,7 +81,7 @@
    (collapse
     :type list
     :initarg :collapse
-    :initform nil
+    :initform '(ebdb-field-address)
     :documentation "A list of field classes which should be
     \"collapsed\". What this means is up to the formatter, but it
     generally indicates that most of the field contents will
@@ -213,6 +215,13 @@ which formats them appropriately."
 			      (style (eql oneline))
 			      (record ebdb-record))
   (car (split-string (ebdb-string field) "\n")))
+
+(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
+			      (field ebdb-field)
+			      (style (eql collapse))
+			      (record ebdb-record))
+  "For now, treat collapse the same as oneline."
+  (ebdb-fmt-field fmt field 'oneline record))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
 			      (field ebdb-field)
@@ -368,7 +377,7 @@ grouped by field class."
 		      :style
 		      (cond
 		       ((ebdb-class-in-list-p cls collapse) 'collapse)
-		       (t 'oneline)))
+		       (t 'normal)))
 		outlist)))
       outlist)))
 
