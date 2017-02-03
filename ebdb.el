@@ -4449,7 +4449,96 @@ The formatting rules are defined in `ebdb-address-format-list'."
       (error "No match of `ebdb-address-format-list'"))
     string))
 
-;; Loading and saving EBDB
+
+;;; Citing EBDB records
+
+;; "Citation" means inserting some sort of string representing the
+;; record(s) into the current buffer.
+
+(defun ebdb-cite-records-mail (&optional records arg)
+  (interactive (list (ebdb-prompt-for-record)
+		     current-prefix-arg))
+  (let ((recs (ebdb-record-list records))
+	(style (if arg 'list 'inline))
+	usable)
+    (dolist (r recs)
+      (if-let ((m (ebdb-record-mail r t)))
+	  (push (cons r (or (object-assoc 'primary 'priority m)
+			    (car m)))
+		usable)))
+    (insert (ebdb-records-cite-mail style usable))))
+
+(cl-defgeneric ebdb-records-cite-mail (style records)
+  "Insert mode-appropriate mail strings for RECORDS.
+
+STYLE is a symbol, one of 'inline or 'list.  This is interpreted
+differently by different major modes.
+
+This is a generic function that dispatches on the value of
+`major-mode'.  It only inserts names and mail addresses.")
+
+(cl-defmethod ebdb-records-cite-mail (style records)
+  "The fallback catch-all method."
+  (when records
+    (mapconcat (lambda (pair)
+		 (format "%s <%s>"
+			 (ebdb-string (car pair))
+			 (ebdb-string (cdr pair))))
+	       records
+	       (if (eql style 'inline)
+		   " "
+		 "\n"))))
+
+(cl-defmethod ebdb-records-cite-mail :around ((style (eql list))
+					      (records list)
+					      &context (major-mode org-mode))
+  (let ((list (cl-call-next-method)))
+    (mapconcat (lambda (elt)
+		 (format "- %s" elt))
+	       list "\n")))
+
+(cl-defmethod ebdb-records-cite-mail :around ((style (eql inline))
+					      (records list)
+					      &context (major-mode org-mode))
+  (let ((list (cl-call-next-method)))
+    (mapconcat #'identity list " ")))
+
+(cl-defmethod ebdb-records-cite-mail
+    (_style records &context (major-mode org-mode))
+  "Insert RECORDS as a list of org links."
+  (when records
+    (mapcar (lambda (pair)
+		 (format "[[mailto:%s][%s]]"
+			 (slot-value (cdr pair) 'mail)
+			 (ebdb-string (car pair))))
+	       records)))
+
+(cl-defmethod ebdb-records-cite-mail :around ((style (eql list))
+					      (records list)
+					      &context (major-mode html-mode))
+  (let ((list (cl-call-next-method)))
+    (mapconcat (lambda (l)
+		 (format "<li>%s</li>" l))
+	       list "\n")))
+
+(cl-defmethod ebdb-records-cite-mail :around ((style (eql inline))
+					      (records list)
+					      &context (major-mode html-mode))
+  (let ((list (cl-call-next-method)))
+    (mapconcat #'identity list " ")))
+
+(cl-defmethod ebdb-records-cite-mail
+    (style records &context (major-mode html-mode))
+  (when records
+    (mapcar
+     (lambda (pair)
+       (format "<a href=\"mailto:%s>%s</a>"
+	       (slot-value (cdr pair) 'mail)
+	       (ebdb-string (car pair))))
+     records)))
+
+
+;;; Loading and saving EBDB
 
 (defun ebdb-save (&optional prompt)
   "Save the EBDB if it is modified.
