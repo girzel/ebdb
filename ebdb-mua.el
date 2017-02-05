@@ -669,7 +669,7 @@ variables `ebdb-user-mail-address-re',
 		 (throw 'done (if invert nil t))))
 	      ((or (eq h-type header-type)
 		   (and (eq h-type 'any)
-			(memq header-type '(sender recipient))))
+			(memq header-type '(sender recipients))))
 	       (when (string-match-p (cdr elt) (second address-parts))
 		 (throw 'done (if invert nil t))))))
       (throw 'done t))))
