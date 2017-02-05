@@ -3602,31 +3602,13 @@ Whether this is used at all depends on the variable `ebdb-check-postcode'."
 
 
 
-(defcustom ebdb-mail-name-format 'first-last
-  "Format for names when sending mail.
-If first-last format names as \"Firstname Lastname\".
-If last-first format names as \"Lastname, Firstname\".
-If `ebdb-mail-name' returns the full name as a single string, this takes
-precedence over `ebdb-mail-name-format'.  Likewise, if the mail address itself
-includes a name, this is not reformatted."
-  :group 'ebdb-sendmail
-  :type '(choice (const :tag "Firstname Lastname" first-last)
-                 (const :tag "Lastname, Firstname" last-first)))
-
-(defcustom ebdb-mail-name 'mail-name
-  "Xfield holding the full name for a record when sending mail.
-This may also be a function taking one argument, a record.
-If it returns the full mail name as a single string, this is used \"as is\".
-If it returns a cons pair (FIRST . LAST) with the first and last name
-for this record, these are formatted obeying `ebdb-mail-name-format'."
-  :group 'ebdb-sendmail
-  :type '(choice (symbol :tag "xfield")
-                 (function :tag "mail name function")))
-
 (defcustom ebdb-mail-avoid-redundancy nil
-  "Mail address to use for EBDB records when sending mail.
-If non-nil do not use full name in mail address when same as mail.
-If value is mail-only never use full name."
+  "How to handle the name part of `ebdb-dwim-mail'.
+
+If nil, always return both name and mail.  If value is mail-only
+never use full name.  Other non-nil values mean do not use full
+name in mail address when same as mail.
+"
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Allow redundancy" nil)
                  (const :tag "Never use full name" mail-only)

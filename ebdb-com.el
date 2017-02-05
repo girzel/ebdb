@@ -2107,71 +2107,49 @@ the record to be displayed or nil otherwise."
 (defun ebdb-dwim-mail (record &optional mail)
   ;; Do What I Mean!
   "Return a string to use as the mail address of RECORD.
-The name in the mail address is formatted obeying `ebdb-mail-name-format'
-and `ebdb-mail-name'.  However, if both the first name and last name
-are constituents of the address as in John.Doe@Some.Host,
-and `ebdb-mail-avoid-redundancy' is non-nil, then the address is used as is
-and `ebdb-mail-name-format' and `ebdb-mail-name' are ignored.
-If `ebdb-mail-avoid-redundancy' is 'mail-only the name is never included.
-MAIL may be a mail address to be used for RECORD.
-If MAIL is an integer, use the MAILth mail address of RECORD.
-If MAIL is nil use RECORD's primary mail address."
+
+However, if both the first name and last name are constituents of
+the address as in John.Doe@Some.Host, and
+`ebdb-mail-avoid-redundancy' is non-nil, then the address is used
+as is.  If `ebdb-mail-avoid-redundancy' is 'mail-only the name
+is never included.  MAIL may be a mail address to be used for
+RECORD.  If MAIL is an integer, use the MAILth mail address of
+RECORD.  If MAIL is nil use RECORD's primary mail address."
   (unless mail
     (let ((mails (ebdb-record-mail record t)))
       (setq mail (or (and (integerp mail) (nth mail mails))
                      (object-assoc 'primary 'priority mails)
 		     (car mails)))))
   (unless mail (error "Record has no mail addresses"))
-  (let ((mail-aka (slot-value mail 'aka))
-	name fn ln)
-    (setq mail (slot-value mail 'mail))
-    (cond (mail-aka
-	   (setq name mail-aka))
-          ((functionp ebdb-mail-name)
-           (setq name (funcall ebdb-mail-name record))
-           (if (consp name)
-               (setq fn (car name) ln (cdr name)
-                     name (if (eq ebdb-mail-name-format 'first-last)
-                              (ebdb-concat 'name-first-last fn ln)
-                            (ebdb-concat 'name-last-first ln fn)))
-             (let ((pair (ebdb-divide-name name)))
-               (setq fn (car pair) ln (cdr pair)))))
-          ((setq name (ebdb-record-user-field record ebdb-mail-name))
-           (let ((pair (ebdb-divide-name name)))
-             (setq fn (car pair) ln (cdr pair))))
-          (t
-           (setq name (if (eq ebdb-mail-name-format 'first-last)
-                          (ebdb-record-name record)
-                        (ebdb-name-lf (slot-value record 'name)))
-                 fn (ebdb-record-firstname record)
-                 ln (ebdb-record-lastname  record))))
-    (if (or (not name) (equal "" name)
-            (eq 'mail-only ebdb-mail-avoid-redundancy)
-            (and ebdb-mail-avoid-redundancy
-                 (cond ((and fn ln)
-                        (let ((fnq (regexp-quote fn))
-                              (lnq (regexp-quote ln)))
-                          (or (string-match (concat "\\`[^!@%]*\\b" fnq
-                                                    "\\b[^!%@]+\\b" lnq "\\b")
-                                            mail)
-                            (string-match (concat "\\`[^!@%]*\\b" lnq
-                                                  "\\b[^!%@]+\\b" fnq "\\b")
-                                          mail))))
-                       ((or fn ln)
-                        (string-match (concat "\\`[^!@%]*\\b"
-                                              (regexp-quote (or fn ln)) "\\b")
-                                      mail)))))
-        mail
-      ;; If the name contains backslashes or double-quotes, backslash them.
-      (setq name (replace-regexp-in-string "[\\\"]" "\\\\\\&" name))
-      ;; If the name contains control chars or RFC822 specials, it needs
-      ;; to be enclosed in quotes.  This quotes a few extra characters as
-      ;; well (!,%, and $) just for common sense.
-      ;; `define-mail-alias' uses regexp "[^- !#$%&'*+/0-9=?A-Za-z^_`{|}~]".
-      (format (if (string-match "[][[:cntrl:]\177()<>@,;:.!$%[:nonascii:]]" name)
-                  "\"%s\" <%s>"
-                "%s <%s>")
-              name mail))))
+  (let* ((name-base (or (slot-value mail 'aka) (ebdb-record-name record)))
+	 (mail (slot-value mail 'mail))
+	 (name
+	  (cond
+	   ((or (eq 'mail-only ebdb-mail-avoid-redundancy)
+		(and ebdb-mail-avoid-redundancy
+		     (string-match-p
+		      (regexp-quote
+		       (replace-regexp-in-string
+			"\s" "" name-base))
+		      (replace-regexp-in-string
+		       "[-._]" "" (car (split-string mail "@"))))))
+	    nil)
+	   (name-base)
+	   (t nil))))
+    (if name
+	(progn
+	  ;; If the name contains backslashes or double-quotes, backslash them.
+	  (setq name (replace-regexp-in-string "[\\\"]" "\\\\\\&" name))
+	  ;; If the name contains control chars or RFC822 specials, it needs
+	  ;; to be enclosed in quotes.  This quotes a few extra characters as
+	  ;; well (!,%, and $) just for common sense.
+	  ;; `define-mail-alias' uses regexp "[^- !#$%&'*+/0-9=?A-Za-z^_`{|}~]".
+
+	  (format (if (string-match "[][[:cntrl:]\177()<>@,;:.!$%[:nonascii:]]" name)
+		      "\"%s\" <%s>"
+		    "%s <%s>")
+		  name mail))
+      mail)))
 
 (defun ebdb-compose-mail (&rest args)
   "Start composing a mail message to send."
