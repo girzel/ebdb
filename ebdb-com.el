@@ -864,8 +864,7 @@ displayed records."
 	       (put-text-property start end
 				  'ebdb-record-number record-number)
 	       (setq start end
-		     record-number (1+ record-number))))
-	   (setq first-record nil)))
+		     record-number (1+ record-number))))))
 	(run-hooks 'ebdb-display-hook)))))
 
 (easy-menu-define
@@ -1985,12 +1984,12 @@ in either the name(s), organization, address, phone, mail, or xfields."
 			field-alist))
 	  (criterion (ebdb-search-read (cond ((null field)
 					      "any user field")
-					     ((eql (cdr field) ebdb-field-user-simple)
+					     ((eql (cdr field) 'ebdb-field-user-simple)
 					      (format "%s field" (car field)))
 					     (t (cdr field))))))
      (list style
-	   (or (cdr-safe field) ebdb-field-user)
-	   (if (child-of-class-p (cdr-safe field) ebdb-field-user-simple)
+	   (or (cdr-safe field) 'ebdb-field-user)
+	   (if (child-of-class-p (cdr-safe field) 'ebdb-field-user-simple)
 	       (cons (car field) criterion)
 	     criterion)
            (ebdb-formatter-prefix))))
@@ -1998,15 +1997,6 @@ in either the name(s), organization, address, phone, mail, or xfields."
    style
    `((,field ,criterion))
    fmt))
-
-;;;###autoload
-(defun ebdb-search-organization (style regexp &optional fmt)
-  (interactive
-   (list
-    (ebdb-search-style)
-    (read-string "Search for organizations: ")
-    (ebdb-formatter-prefix)))
-  (ebdb-search-display style `((organization ,regexp)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-changed (&optional fmt)
