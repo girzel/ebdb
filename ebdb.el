@@ -747,7 +747,7 @@ process."
 ;;; The name fields.  One abstract base class, and two instantiable
 ;;; subclasses.
 
-(defclass ebdb-field-name (ebdb-field-user)
+(defclass ebdb-field-name (ebdb-field)
   nil
   :abstract t
   :documentation "Abstract base class for creating record
@@ -2157,13 +2157,9 @@ priority."
 ;; TODO: There's no reason why the aka slot can't belong to
 ;; `ebdb-record-entity'.  In fact, what we ought to do is put both the
 ;; 'name and the 'aka slots on `ebdb-record-entity', and have both
-;; slot types set to `ebdb-field-name'.  Then provide a fairly simple
-;; mechanism for letting the user choose whether a name/aka should be
-;; simple or complex.  Or, when creating or parsing name fields, we
-;; could always start out with the `ebdb-parse' and `ebdb-read'
-;; methods of `ebdb-field-name', which could then dispatch to the
-;; simple/complex methods depending on the initial string values.  Or
-;; something like that.
+;; slot types set to `ebdb-field-name'.  Or why not just get rid of
+;; the 'aka slot altogether, and put extra name instances in 'fields?
+;; What's the point of keeping them in an extra slot?
 
 (defclass ebdb-record-person (ebdb-record-entity)
   ((name
@@ -2258,6 +2254,7 @@ priority."
    query
    (append
     '((aka . ebdb-field-name-complex)
+      (aka . ebdb-field-name-simple)
       (relations . ebdb-field-relation)
       (organizations . ebdb-field-role))
     alist)))
