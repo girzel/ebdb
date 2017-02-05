@@ -1919,7 +1919,7 @@ either case is a cons with both slot and fieldclass filled in.")
     (pcase query
       (`(nil . ,cls)
        (or (rassq cls alist)
-	   (rassq (ebdb-class-in-list-p class (mapcar #'cdr alist))
+	   (rassq (ebdb-class-in-list-p cls (mapcar #'cdr alist))
 		  alist)
 	   (signal 'ebdb-unacceptable-field (list cls))))
       (`(,slot . nil)
