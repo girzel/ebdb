@@ -865,6 +865,7 @@ Type q  to quit updating records.  No more search or annotation is done.")
 
 
 
+;; I wonder if this could be somehow folded into snarfing.
 (defun ebdb-annotate-message (address &optional update-p)
   "Fill the records for message ADDRESS with as much info as possible.
 If a record for ADDRESS does not yet exist, UPDATE-P controls whether
@@ -878,7 +879,7 @@ Return the records matching ADDRESS or nil."
   (let* ((mail (nth 1 address))		; possibly nil
          (name (unless (or (equal mail (car address))
 			   (null (car address)))
-                 (ebdb-string (ebdb-parse ebdb-default-name-class (car address)))))
+                 (car address)))
          (records (ebdb-message-search name mail))
          created-p new-records)
     (if (and (not records) (functionp update-p))
@@ -909,28 +910,27 @@ Return the records matching ADDRESS or nil."
 
     (dolist (record records)
       (let* ((old-name (ebdb-record-name record))
-             (fullname (ebdb-divide-name (or name "")))
-             (fname (car fullname))
-             (lname (cdr fullname))
              (mail mail) ;; possibly changed below
              (created-p created-p)
              (update-p update-p)
+	     (name-slot (ignore-errors
+			  (car
+			   (ebdb-record-field-slot-query
+			    record
+			    `(nil . ,(eieio-object-class
+				      (ebdb-parse 'ebdb-field-name name)))))))
              change-p add-mails add-name ignore-redundant)
 
         ;; Analyze the name part of the record.
         (cond ((or (not name)
                    ;; The following tests can differ for more complicated names
                    (ebdb-string= name old-name)
-                   (and (equal fname (ebdb-record-firstname record)) ; possibly
-                        (equal lname (ebdb-record-lastname record))) ; nil
-                   (member-ignore-case name (ebdb-record-aka record)))) ; do nothing
+                   (ebdb-record-search record 'ebdb-field-name name)) ; do nothing
 
               (created-p ; new record
                (ebdb-record-change-name
 		record
-		(make-instance ebdb-default-name-class
-			       :surname lname
-			       :given-names (when fname (list fname)))))
+		(ebdb-parse 'ebdb-field-name name)))
 
               ((not (setq add-name (ebdb-add-job ebdb-add-name record name)))) ; do nothing
 
@@ -948,24 +948,25 @@ Return the records matching ADDRESS or nil."
                                          name (car (ebdb-record-mail record)))))
                ;; Keep old-name as AKA?
                (when (and old-name
-                          (not (member-ignore-case old-name (ebdb-record-aka record))))
+			  name-slot
+                          (not (member-ignore-case old-name (ebdb-record-alt-names record))))
                  (if (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record old-name)
                                      (format "Keep name \"%s\" as an AKA? " old-name))
-                     (ebdb-record-set-field
-                      record 'aka (cons old-name (ebdb-record-aka record)))
-                   (ebdb-remhash old-name record)))
-               (ebdb-record-set-field record 'name (cons fname lname))
+                     (ebdb-record-insert-field
+                      record name-slot (slot-value record 'name))))
+               (ebdb-record-change-name record (ebdb-parse 'ebdb-field-name name))
                (setq change-p 'name))
 
               ;; make new name an AKA?
               ((and old-name
-                    (not (member-ignore-case name (ebdb-record-aka record)))
+		    name-slot
+                    (not (member-ignore-case name (ebdb-record-alt-names record)))
                     (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record name)
                                     (format "Make \"%s\" an alternate for \"%s\"? "
                                             name old-name)))
-               (ebdb-record-set-field
-                record 'aka (cons name (ebdb-record-aka record)))
-               (setq change-p 'name)))
+               (ebdb-record-insert-field
+                record name-slot (ebdb-parse 'ebdb-field-name name))
+               (setq change-p 'name))))
 
         ;; Is MAIL redundant compared with the mail addresses
         ;; that are already known for RECORD?
@@ -1020,9 +1021,7 @@ Return the records matching ADDRESS or nil."
 			  (ebdb-db-add-record (car ebdb-db-list) record)
                           (ebdb-record-change-name
 			   record
-			   (make-instance ebdb-default-name-class
-					  :given-names (list fname)
-					  :surname lname))
+			   (ebdb-parse 'ebdb-field-name name))
                           (setq created-p t))))
 
                (let ((mails (ebdb-record-mail record)))
@@ -1207,22 +1206,6 @@ If ANNOTATION is an empty string and REPLACE is non-nil, delete FIELD."
          (setq annotation (list annotation)))
         ((not field) (setq field ebdb-annotate-field)))
   (ebdb-record-change-field record field annotation))
-
-;; FIXME: For interactive calls of the following commands, the arg UPDATE-P
-;; should have the same meaning as for `ebdb-mua-display-records',
-;; that is, it should use `ebdb-mua-update-interactive-p'.
-;; But here the prefix arg is already used in a different way.
-;; We could possibly solve this problem if all `ebdb-mua-*' commands
-;; used another prefix arg that is consistently used only for
-;; `ebdb-mua-update-interactive-p'.
-;; Yet this prefix arg must be defined within the key space of the MUA(s).
-;; This results in lots of conflicts...
-;;
-;; Current workaround:
-;; These commands use merely the car of `ebdb-mua-update-interactive-p'.
-;; If one day someone proposes a smart solution to this problem (suggestions
-;; welcome!), this solution will hopefully include the current workaround
-;; as a subset of all its features.
 
 (defun ebdb-mua-annotate-field-interactive ()
   "Interactive specification for `ebdb-mua-annotate-sender' and friends."
