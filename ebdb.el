@@ -4497,21 +4497,14 @@ This is a generic function that dispatches on the value of
 		 (format "- %s" elt))
 	       list "\n")))
 
-(cl-defmethod ebdb-records-cite-mail :around ((style (eql inline))
-					      (records list)
-					      &context (major-mode org-mode))
-  (let ((list (cl-call-next-method)))
-    (mapconcat #'identity list " ")))
-
 (cl-defmethod ebdb-records-cite-mail
-    (_style records &context (major-mode org-mode))
+    (_style (records list) &context (major-mode org-mode))
   "Insert RECORDS as a list of org links."
-  (when records
-    (mapcar (lambda (pair)
-		 (format "[[mailto:%s][%s]]"
-			 (slot-value (cdr pair) 'mail)
-			 (ebdb-string (car pair))))
-	       records)))
+  (mapcar (lambda (pair)
+	    (format "[[mailto:%s][%s]]"
+		    (slot-value (cdr pair) 'mail)
+		    (ebdb-string (car pair))))
+	  records))
 
 (cl-defmethod ebdb-records-cite-mail :around ((style (eql list))
 					      (records list)
@@ -4522,20 +4515,18 @@ This is a generic function that dispatches on the value of
 	       list "\n")))
 
 (cl-defmethod ebdb-records-cite-mail :around ((style (eql inline))
-					      (records list)
-					      &context (major-mode html-mode))
+					      (records list))
   (let ((list (cl-call-next-method)))
     (mapconcat #'identity list " ")))
 
 (cl-defmethod ebdb-records-cite-mail
-    (style records &context (major-mode html-mode))
-  (when records
-    (mapcar
-     (lambda (pair)
-       (format "<a href=\"mailto:%s>%s</a>"
-	       (slot-value (cdr pair) 'mail)
-	       (ebdb-string (car pair))))
-     records)))
+    (_style (records list) &context (major-mode html-mode))
+  (mapcar
+   (lambda (pair)
+     (format "<a href=\"mailto:%s>%s</a>"
+	     (slot-value (cdr pair) 'mail)
+	     (ebdb-string (car pair))))
+   records))
 
 
 ;;; Loading and saving EBDB
