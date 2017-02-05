@@ -4572,7 +4572,7 @@ interpreted as t, ie the record passes."
 	      (condition-case nil
 	       (dolist (c clauses)
 		 (pcase c
-		   (`(,(and type (pred class-p)) ,criteria)
+		   (`(,type ,criteria)
 		    (and (ebdb-record-search r type criteria)
 			 (throw 'found t)))
 		   (`,(and func (pred functionp))
