@@ -122,7 +122,8 @@ whether the records in question are actually displayed or not."
 
 (defcustom ebdb-message-headers
   '((sender     "From" "Resent-From" "Reply-To" "Sender")
-    (recipients "Resent-To" "Resent-CC" "To" "CC" "BCC"))
+    (recipients "Resent-To" "Resent-CC" "To" "CC" "BCC")
+    (organization "Organization"))
   "Alist of headers to search for sender and recipients mail addresses.
 Each element is of the form
 
@@ -880,6 +881,9 @@ Return the records matching ADDRESS or nil."
          (name (unless (or (equal mail (car address))
 			   (null (car address)))
                  (car address)))
+	 (record-class (if (eql (nth 4 address) 'organization)
+			   'ebdb-record-organization
+			 ebdb-default-record-class))
          (records (ebdb-message-search name mail))
          created-p new-records)
     (if (and (not records) (functionp update-p))
@@ -905,7 +909,7 @@ Return the records matching ADDRESS or nil."
           (setq records (list (ebdb-db-add-record
 			       (car ebdb-db-list)
 			       (make-instance
-				(slot-value (car ebdb-db-list) 'record-class))))
+				record-class)))
                 created-p t)))
 
     (dolist (record records)
