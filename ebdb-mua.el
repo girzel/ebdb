@@ -878,10 +878,9 @@ a new record is created for ADDRESS.  UPDATE-P may take the values:
                   It should return one of the above values.
 Return the records matching ADDRESS or nil."
   (let* ((mail (nth 1 address))		; possibly nil
-         (name (unless (or (equal mail (car address))
-			   (null (car address)))
+         (name (unless (equal mail (car address))
                  (car address)))
-	 (record-class (if (eql (nth 4 address) 'organization)
+	 (record-class (if (eql (nth 3 address) 'organization)
 			   'ebdb-record-organization
 			 ebdb-default-record-class))
          (records (ebdb-message-search name mail))
@@ -920,23 +919,24 @@ Return the records matching ADDRESS or nil."
 	     (name-slot (ignore-errors
 			  (car
 			   (ebdb-record-field-slot-query
-			    record
+			    (eieio-object-class record)
 			    `(nil . ,(eieio-object-class
 				      (ebdb-parse 'ebdb-field-name name)))))))
              change-p add-mails add-name ignore-redundant)
 
         ;; Analyze the name part of the record.
-        (cond ((or (not name)
-                   ;; The following tests can differ for more complicated names
-                   (ebdb-string= name old-name)
-                   (ebdb-record-search record 'ebdb-field-name name)) ; do nothing
-
-              (created-p ; new record
+        (cond (created-p ; new record
                (ebdb-record-change-name
 		record
 		(ebdb-parse 'ebdb-field-name name)))
 
-              ((not (setq add-name (ebdb-add-job ebdb-add-name record name)))) ; do nothing
+              ((or (not name)
+                   ;; The following tests can differ for more complicated names
+                   (ebdb-string= name old-name)
+                   (ebdb-record-search record 'ebdb-field-name name)))
+
+              ((null (setq add-name (ebdb-add-job ebdb-add-name record name)))) ; do nothing
+
 
               ((numberp add-name)
                (unless ebdb-silent
@@ -970,7 +970,7 @@ Return the records matching ADDRESS or nil."
                                             name old-name)))
                (ebdb-record-insert-field
                 record name-slot (ebdb-parse 'ebdb-field-name name))
-               (setq change-p 'name))))
+               (setq change-p 'name)))
 
         ;; Is MAIL redundant compared with the mail addresses
         ;; that are already known for RECORD?
