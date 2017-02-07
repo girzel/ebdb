@@ -70,7 +70,7 @@ with other field types."
   :type 'list)
 
 ;;;###autoload
-(defun ebdb-snarf (&optional string start end records)
+(defun ebdb-snarf (&optional string start end recs)
   "Snarf text and attempt to display/update/create a record from it.
 
 If STRING is given, snarf the string.  If START and END are given
@@ -99,7 +99,7 @@ be relevant to snarfed field data."
       (insert (string-trim str))
       (setq records (ebdb-snarf-query
 		     (ebdb-snarf-collapse
-		      (ebdb-snarf-collect records)))))
+		      (ebdb-snarf-collect recs)))))
     (when records
       (ebdb-display-records records nil nil t (ebdb-popup-window)
 			    (format "*%s-Snarf*" ebdb-buffer-name)))))
@@ -160,24 +160,29 @@ have something to do with the text in the buffer."
 				     ;; likely to see email headers in
 				     ;; the message body, for instance
 				     ;; in quoted replies.
-				     "\\(?:From: \\|To: \\|Cc: \\)?"
+				     "\\(?:From: \\|To: \\|Cc: \\)?\\("
 				     (mapconcat #'identity
-						ebdb-snarf-name-re "\\|"))
+						ebdb-snarf-name-re "\\|")
+				     "\\)")
 				    (match-beginning 0) t)
 			       ;; If something goes wrong with the
 			       ;; name, don't worry about it.
 			       (ignore-errors
 				 (ebdb-parse
 				  'ebdb-field-name
-				  (string-trim (match-string-no-properties 0)))))))
+				  (string-trim (match-string-no-properties 1)))))))
 		     ;; Make a regular expression that stands a chance
 		     ;; of matching an existing record or record
 		     ;; fields.  This is likely *too* permissive.
 		     (generic-re
 		      (regexp-opt
 		       (append (split-string
-				(downcase (ebdb-string found))
-				"[-_.@)(]" t)
+				(downcase
+				 (car (split-string
+				       ;; Sneaky special-casing of email addresses.
+				       (ebdb-string found)
+				       "@")))
+				"[-_.)(]" t)
 			       (when name
 				 (split-string
 				  (downcase (ebdb-string name))
@@ -195,7 +200,9 @@ have something to do with the text in the buffer."
 			      (when (or (and record
 					     (ebdb-search (list record)
 							  `((ebdb-field-name ,generic-re)
-							    (,(car class) ,generic-re))))
+							    ;; This catches too much.
+					;(,(car class) ,generic-re)
+							    )))
 					(and (or fields names)
 					     (seq-some
 					      (lambda (elt)
@@ -363,11 +370,11 @@ automatically."
       (when-let ((record
 		  (cond ((yes-or-no-p
 			  (format "Add %s to existing record? "
-				  (ebdb-string (cdr f))))
+				  (ebdb-string f)))
 			 (ebdb-prompt-for-record))
 			((yes-or-no-p
 			  (format "Add %s to new record? "
-				  (ebdb-string (cdr f))))
+				  (ebdb-string f)))
 			 (ebdb-init-record
 			  (ebdb-db-add-record
 			   (car ebdb-db-list)
