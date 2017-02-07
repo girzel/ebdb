@@ -70,14 +70,17 @@ with other field types."
   :type 'list)
 
 ;;;###autoload
-(defun ebdb-snarf (&optional string start end)
+(defun ebdb-snarf (&optional string start end records)
   "Snarf text and attempt to display/update/create a record from it.
 
 If STRING is given, snarf the string.  If START and END are given
 in addition to STRING, assume they are 0-based indices into it.
 If STRING is nil but START and END are given, assume they are
 buffer positions, and snarf the region between.  If all three
-arguments are nil, snarf the entire current buffer."
+arguments are nil, snarf the entire current buffer.
+
+If RECORDS is present, it is a list of records that we assume may
+be relevant to snarfed field data."
   (interactive)
   (let ((str
 	 (cond ((use-region-p)
@@ -96,7 +99,7 @@ arguments are nil, snarf the entire current buffer."
       (insert (string-trim str))
       (setq records (ebdb-snarf-query
 		     (ebdb-snarf-collapse
-		      (ebdb-snarf-collect)))))
+		      (ebdb-snarf-collect records)))))
     (when records
       (ebdb-display-records records nil nil t (ebdb-popup-window)
 			    (format "*%s-Snarf*" ebdb-buffer-name)))))
