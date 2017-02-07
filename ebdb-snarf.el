@@ -26,27 +26,16 @@
 
 ;; The main entry point is the interactive command `ebdb-snarf'.  It
 ;; figures out what text we're dealing with, puts the text in a temp
-;; buffer, calls `ebdb-snarf-collect', and passes the results of that
-;; to `ebdb-snarf-process'.
+;; buffer, and calls three nested functions: `ebdb-snarf-collect',
+;; which finds likely field-related strings in the buffer and groups
+;; them, then `ebdb-snarf-collapse', which tries to match that
+;; information to existing records, and finally `ebdb-snarf-query',
+;; which queries the user about how to handle leftover
+;; information. Any resulting records are then displayed.
 
-;; `ebdb-snarf-collect' is responsible for collecting everything in
-;; the buffer that looks like information that could represent a
-;; record, or a field.  It creates actual field instances if possible,
-;; and puts them into likely groups.  `ebdb-snarf-process' is
-;; responsible for prompting the user to actually create or update
-;; records, and for displaying the results.
-
-;; Right now all the code does is search for mail addresses.  A more
-;; generalized version might involve a defcustom called
-;; `ebdb-snarf-routines'.  This should be an alist whose elements look
-;; like (ebdb-field-class "regexp one" "regexp two" ...).  Or,
-;; construct this list from other field-class-specific lists.
-
-;; Anyway, the idea is that we blindly scan the snarf buffer for the
-;; regexps in that list, construct the appropriate record or field
-;; instances, group them using calls to `ebdb-string' and
-;; `ebdb-field-search'/`ebdb-search'.  With a little fancy footwork it
-;; should be possible to keep the code mostly field agnostic.
+;; The option `ebdb-snarf-routines' contains regexps that can be used
+;; to construct field instances.  `ebdb-snarf-collect' uses the
+;; elements of this list to search for relevant strings.
 
 ;;; Code:
 
@@ -57,7 +46,7 @@
   :group 'ebdb)
 
 (defcustom ebdb-snarf-routines
-  '((ebdb-field-mail "\\([^[:space:]:<[]+@[^]:[:space:]>]+\\)"))
+  '((ebdb-field-mail "\\([^[:space:]\":\n<[]+@[^]:[:space:]>\"\n]+\\)"))
 
   "An alist of EBDB field classes and related regexps.
 
@@ -89,42 +78,48 @@ in addition to STRING, assume they are 0-based indices into it.
 If STRING is nil but START and END are given, assume they are
 buffer positions, and snarf the region between.  If all three
 arguments are nil, snarf the entire current buffer."
-  (interactive
-   (list nil
-	 (region-beginning)
-	 (region-end)))
-  (let (str)
-    (cond ((and (or start end) string)
-	   (setq str (substring string start end)))
-	  ((and start end (null string))
-	   (setq str (buffer-substring-no-properties start end)))
-	  (string
-	   (setq str string))
-	  (t
-	   (setq str (buffer-string))))
+  (interactive)
+  (let ((str
+	 (cond ((use-region-p)
+		(buffer-substring-no-properties
+		 (region-beginning) (region-end)))
+	       ((and (or start end) string)
+		(substring string start end))
+	       ((and start end (null string))
+		(buffer-substring-no-properties start end))
+	       (string
+		string)
+	       (t
+		(buffer-string))))
+	records)
     (with-temp-buffer
       (insert (string-trim str))
-      (ebdb-snarf-process (ebdb-snarf-collect)))))
+      (setq records (ebdb-snarf-query
+		     (ebdb-snarf-collapse
+		      (ebdb-snarf-collect)))))
+    (when records
+      (ebdb-display-records records nil nil t (ebdb-popup-window)
+			    (format "*%s-Snarf*" ebdb-buffer-name)))))
 
 (defun ebdb-snarf-collect (&optional records)
   "Collect EBDB record information from the text of the current buffer.
 
 This function will find everything that looks like field
-information, and do its best to either associate that information
-with existing records, or to organize it into likely groups.  If
-RECORDS is given, it should be a list of records that we think
+information, and do its best to organize it into likely groups.
+If RECORDS is given, it should be a list of records that we think
 have something to do with the text in the buffer."
   (let ((case-fold-search nil)
 	bundles)
 
-    ;; The structure we'll return is a list of lists.  Each element is
-    ;; a list of objects (records and fields) that we believe are
-    ;; associated.  If RECORDS is given, then we have something to
-    ;; start with.
+    ;; The structure we'll return is a list of vectors, containing
+    ;; records and fields we believe are associated.  Each vector has
+    ;; three elements: a record, a list of name instances, and a list
+    ;; of all other fields.  If RECORDS is given, then we have
+    ;; something to start with.
 
     (when records
       (setq bundles (mapcar (lambda (r)
-			      (list r))
+			      (vector r nil nil))
 			    records)))
 
     ;; We don't explicitly search for names, because how would you
@@ -151,64 +146,75 @@ have something to do with the text in the buffer."
 	      (let* ((found (ebdb-parse
 			     (car class)
 			     (match-string-no-properties 1)))
-		     (sticker (line-end-position))
 		     (name (save-excursion
-			     (goto-char (progn (line-beginning-position)))
+			     (goto-char (progn (when (= (point-at-bol)
+							(match-beginning 0))
+						 (forward-line -1))
+					       (line-beginning-position)))
 			     (when (re-search-forward
 				    (concat
 				     ;; When snarfing messages, we're
-				     ;; likely to see email headers in the
-				     ;; message body.
+				     ;; likely to see email headers in
+				     ;; the message body, for instance
+				     ;; in quoted replies.
 				     "\\(?:From: \\|To: \\|Cc: \\)?"
-				     (regexp-opt ebdb-snarf-name-re))
-				    sticker t)
+				     (mapconcat #'identity
+						ebdb-snarf-name-re "\\|"))
+				    (match-beginning 0) t)
 			       ;; If something goes wrong with the
 			       ;; name, don't worry about it.
 			       (ignore-errors
 				 (ebdb-parse
-				  ebdb-field-name
-				  (string-trim (match-string-no-properties 1)))))))
+				  'ebdb-field-name
+				  (string-trim (match-string-no-properties 0)))))))
 		     ;; Make a regular expression that stands a chance
 		     ;; of matching an existing record or record
-		     ;; fields.
+		     ;; fields.  This is likely *too* permissive.
 		     (generic-re
 		      (regexp-opt
 		       (append (split-string
 				(downcase (ebdb-string found))
-				"[-_.@]" t)
+				"[-_.@)(]" t)
 			       (when name
 				 (split-string
 				  (downcase (ebdb-string name))
-				  "[, ]" t)))))
-		     group)
+				  "[, ]" t))))))
 		;; See if any of this information fits what we've got in
-		;; RECORDS.
+		;; BUNDLES.
 		(unless (catch 'match
 			  (dolist (b bundles)
-			    (dolist (elt b)
-			      (when (cond
-				     ((and (object-of-class-p elt ebdb-record)
-					   (ebdb-search (list elt)
-							`((name ,generic-re)
-							  (mail ,generic-re)))))
-				     ((and (object-of-class-p elt ebdb-field)
-					   (ebdb-field-search elt generic-re)))
-				     (t nil))
-				(unless (assoc-string
-					 (ebdb-string found)
-					 (mapcar #'ebdb-string b))
-				  (push found b))
-				(when (and name
-					   (null (assoc-string
-						  (ebdb-string name)
-						  (mapcar #'ebdb-string b))))
-				  (push name b))
+			    ;; Can't directly use `pcase-dolist'
+			    ;; because the bound variables are not
+			    ;; generalized variables: you can't assign
+			    ;; to them.  It would be nice to have a
+			    ;; `pcase-letf'!
+			    (pcase-let ((`[,record ,names ,fields] b))
+			      (when (or (and record
+					     (ebdb-search (list record)
+							  `((ebdb-field-name ,generic-re)
+							    (,(car class) ,generic-re))))
+					(and (or fields names)
+					     (seq-some
+					      (lambda (elt)
+						(ebdb-field-search elt generic-re))
+					      (append fields names))))
+				;; It seems to match, check if the field
+				;; or name are already in the bundle.
+				(unless (and fields
+					     (assoc-string
+					      (ebdb-string found)
+					      (mapcar #'ebdb-string fields)))
+				  (push found (aref b 2)))
+				(unless (or (null name)
+					    (and names
+						 (null (assoc-string
+							(ebdb-string name)
+							(mapcar #'ebdb-string names)))))
+				  (push name (aref b 1)))
 				(throw 'match t)))))
-		  ;; If it doesn't, make a new grouping.
-		  (push found group)
-		  (when name
-		    (push name group))
-		  (push group bundles)))
+		  ;; If it doesn't, add a new grouping to BUNDLES.
+		  (push (vector nil (when name (list name)) (list found))
+			bundles)))
 	    ;; If a regular expression matches but the result is
 	    ;; unparseable, that means the regexp is bad and should be
 	    ;; changed.  Later, report these errors if `ebdb-debug' is
@@ -216,91 +222,163 @@ have something to do with the text in the buffer."
 	    (ebdb-unparseable nil)))))
     bundles))
 
-(defun ebdb-snarf-process (input)
-  "Process INPUT, which is a list of bundled information
-  representing records.
+(defun ebdb-snarf-collapse (input)
+  "Process INPUT, which is a list of bundled field information.
 
-Either find the matching records, update existing (but
-incomplete) records, or create new records.  Then display them."
-  (dolist (bundle input)
-    (let (record names name-alist mails fields records)
-      ;; Record instances, name-class instances, and mail-class
-      ;; instances need to be treated specially.
-      (dolist (elt bundle)
-	(cond ((object-of-class-p elt ebdb-record)
-	       (setq record elt))
-	      ((object-of-class-p elt ebdb-field-name)
-	       (push elt names))
-	      ((object-of-class-p elt ebdb-field-mail)
-	       (push elt mails))
-	      ((object-of-class-p elt ebdb-field)
-	       (push elt fields))
-	      (t nil)))
-      ;; Either we were given a record...
+INPUT is probably produced by `ebdb-snarf-collect'.  It should be
+a list of vectors, each with three elements: a single record, a
+list of name field instances, and a list of other field
+instances.  Any of the three elements can be nil.
+
+Compare each bundle against the database, and where possible find
+existing records that match information in the bundle.  Discard
+redundant fields, or fields that are incompatible with the record
+they're grouped with.  Return the same list of (possibly altered)
+vectors, usually to `ebdb-snarf-query'."
+  (let (output)
+    (pcase-dolist (`[,record ,names ,fields] input)
+      (let (out-fields out-names)
+	(unless record
+	  (if-let ((rec (car-safe
+			 (ebdb-search
+			  (ebdb-records)
+			  (mapcar
+			   (lambda (f)
+			     (list (eieio-object-class-name f)
+				   (ebdb-string f)))
+			   (append fields names))))))
+	      (setq record rec)))
+	(if record
+	    (let (slot)
+	      (dolist (f fields)
+		(condition-case nil
+		    (progn
+		      (setq slot (car (ebdb-record-field-slot-query
+				       (eieio-object-class record)
+				       `(nil . ,(eieio-object-class f)))))
+		      ;; Make sure that record can accept field, and doesn't
+		      ;; already have it.
+		      (unless (if-let ((slot-val (ignore-errors
+						   (ebdb-record-field record slot))))
+				  (member (ebdb-string f)
+					  (mapcar #'ebdb-string
+						  (if (listp slot-val)
+						      slot-val
+						    (list slot-val)))))
+			(push f out-fields)))
+		  (ebdb-unacceptable-field nil)))
+	      (dolist (name names)
+		(unless (ebdb-record-search
+			 record 'ebdb-field-name (ebdb-string name))
+		  (push name out-names))))
+	  (setq out-names names
+		out-fields fields))
+	(push (vector record out-names out-fields) output)))
+    output))
+
+(defun ebdb-snarf-query (input)
+  "Query the user about INPUT, which is a list of vectors of
+  bundled information representing records.
+
+Ask about field instances that we haven't been able to handle
+automatically."
+  (let (leftovers records)
+    (pcase-dolist (`[,record ,names ,fields] input)
       (unless record
-	;; ...we can find one in the database...
-	(unless (setq record (car-safe
-			      (ebdb-search
-			       (ebdb-records)
-			       (append
-				(when names
-				  `(name ,(regexp-opt
-					   (mapcar #'ebdb-string names))))
-				(when mails
-				  `(mail ,(regexp-opt
-					   (mapcar #'ebdb-string mails))))))))
-	  ;; ...or we create a new one.
-	  (when (yes-or-no-p
-		 (format "Create new record%s? "
-			 (if (or names mails)
-			     (format " for %s"
-				     (mapconcat #'ebdb-string
-						(append names mails)
-						"/"))
-			   "")))
+	;; There's no record, query-create a new one.
+	(when (yes-or-no-p
+	       (format "Create new record%s? "
+		       (if (or fields names)
+			   (format " for %s"
+				   (mapconcat #'ebdb-string
+					      (append fields names)
+					      "/"))
+			 "")))
+	  ;; Which name do we use?
+	  (let* ((name-alist
+		  (when names
+		    (mapcar (lambda (n)
+			      (cons (ebdb-string n)
+				    n))
+			    names)))
+		 (name
+		  ;; I hate completing read.
+		  (cond ((= 1 (length name-alist))
+			 (cdar name-alist))
+			(name-alist
+			 (cdr
+			  (assoc-string
+			   (completing-read
+			    "Use name: "
+			    name-alist)
+			   name-alist)))
+			(t nil))))
 	    (setq record
 		  (make-instance
 		   ebdb-default-record-class
 		   :name (ebdb-read
 			  ebdb-default-name-class nil
-			  (progn
-			    ;; I hate completing read.
-			    (cond ((= 1 (length names))
-				   (car names))
-				  ((setq name-alist
-					 (mapcar (lambda (n)
-						   (cons (ebdb-string n)
-							 n))
-						 names))
-				   (cdr
-				    (assoc-string
-				     (completing-read
-				      "Use name: "
-				      name-alist)
-				     name-alist)))
-				  (t nil))))))
+			  name)))
+	    (when name
+	      (setq names (delq name names)))
 	    (ebdb-db-add-record (car ebdb-db-list) record)
-	    (ebdb-init-record record)))))
-    (dolist (elt (append mails fields))
-      ;; What if user said no to creating a new record above?
-      (setq slot (car (ebdb-record-field-slot-query
-		       (eieio-object-class record)
-		       `(nil . ,(eieio-object-class elt)))))
-      (when (and slot
-		 (null (or (equal elt (slot-value record slot))
-			   (member elt (slot-value record slot))))
-		 (yes-or-no-p (format "Add %s to %s? "
-				      (ebdb-string elt)
-				      (ebdb-string record))))
-	(ebdb-record-insert-field
-	 record
-	 slot
-	 elt)
-	(ebdb-init-field elt record)))
-    (push record records))
-  (when records
-    (ebdb-display-records records nil nil t (ebdb-popup-window)
-			  (format "*%s-Snarf*" ebdb-buffer-name))))
+	    (ebdb-init-record record))))
+      (if record
+	  ;; We have a record, which of the fields and names should we
+	  ;; add to it?
+	  (progn (dolist (elt fields)
+		   (if (yes-or-no-p (format "Add %s to %s? "
+					    (ebdb-string elt)
+					    (ebdb-string record)))
+		       (condition-case nil
+			   (let ((slot (car (ebdb-record-field-slot-query
+					     (eieio-object-class record)
+					     `(nil . ,(eieio-object-class elt))))))
+			     (ebdb-record-insert-field
+			      record
+			      slot
+			      elt)
+			     (ebdb-init-field elt record))
+			 (ebdb-unacceptable-field nil))
+		     (push elt leftovers)))
+		 (dolist (n names)
+		   (if (yes-or-no-p (format "Add %s as an aka for %s? "
+					    (ebdb-string n)
+					    (ebdb-string record)))
+		       (progn (ebdb-record-insert-field
+			       record 'aka name)
+			      (ebdb-init-field name record))
+		     (push name leftovers))))
+	;; We have no record, dump all the fields into LEFTOVERS.
+	(setq leftovers (append fields names leftovers)
+	      fields nil
+	      names nil))
+      (when record
+	(push record records)))
+    ;; Handle fields in LEFTOVERS.
+    (dolist (f leftovers)
+      (when-let ((record
+		  (cond ((yes-or-no-p
+			  (format "Add %s to existing record? "
+				  (ebdb-string (cdr f))))
+			 (ebdb-prompt-for-record))
+			((yes-or-no-p
+			  (format "Add %s to new record? "
+				  (ebdb-string (cdr f))))
+			 (ebdb-init-record
+			  (ebdb-db-add-record
+			   (car ebdb-db-list)
+			   (ebdb-read ebdb-default-record-class))))
+			(t nil))))
+	(condition-case nil
+	    (let ((slot (car (ebdb-record-field-slot-query
+			      (eieio-object-class record)
+			      `(nil . ,(eieio-object-class f))))))
+	      (ebdb-record-insert-field record slot f)
+	      (ebdb-init-field f record)
+	      (add-to-list records record))
+	  (ebdb-unacceptable-field nil))))
+    records))
 
 (provide 'ebdb-snarf)
 ;;; ebdb-snarf.el ends here
