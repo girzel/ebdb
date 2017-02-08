@@ -95,7 +95,7 @@
       (cond
 	((eql records 'unknown) (message "Unknown field prefix: %s" (nth 1 bits)))
 	((null records) (message "No records found"))
-	(t (ebdb-display-records records))))))
+	(t (ebdb-display-records records nil nil nil (ebdb-popup-window)))))))
 
 (defun ebdb-org-export (path desc format)
   "Create the export version of a EBDB link specified by PATH or DESC.
@@ -161,6 +161,10 @@ potential tags for completion.")
   (let ((tags (slot-value field 'tags)))
     (dolist (tag tags)
       (add-to-list 'ebdb-org-tags tag))))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode org-mode))
+  "Use a separate EBDB buffer for Org-related contacts."
+  (format "*%s-Org*" ebdb-buffer-name))
 
 (provide 'ebdb-org)
 ;;; ebdb-org.el ends here
