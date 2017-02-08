@@ -4338,13 +4338,13 @@ important work is done by the `ebdb-db-load' method."
 ;; If we wanted to make it seem like EBDB was loading faster, we could
 ;; defer calls to `ebdb-initialize' until the first time the database
 ;; is searched.
-(defun ebdb-initialize ()
+(defun ebdb-initialize (&optional records)
   "After all databases are loaded, initialize the records.
 
 This results in the creation of all the secondary data
 structures: label lists, `ebdb-org-hashtable', record caches,
 etc."
-  (mapcar #'ebdb-init-record ebdb-record-tracker))
+  (mapcar #'ebdb-init-record (or records ebdb-record-tracker)))
 
 (defun ebdb-address-continental-p (address)
   "Return non-nil if ADDRESS is a continental address.
