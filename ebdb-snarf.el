@@ -182,7 +182,7 @@ have something to do with the text in the buffer."
 				       ;; Sneaky special-casing of email addresses.
 				       (ebdb-string found)
 				       "@")))
-				"[-_.)(]" t)
+				"[-_.)(,']" t)
 			       (when name
 				 (split-string
 				  (downcase (ebdb-string name))
