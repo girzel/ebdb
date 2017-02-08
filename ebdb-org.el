@@ -24,16 +24,19 @@
 ;; type; at some point we'll reproduce the Agenda anniversary
 ;; mechanisms from org-bbdb.el.
 
-;; EBDB links can come in several varieties.  A plain string is simply
-;; fed directly to `bbdb-search'.  Otherwise, the string can be
-;; prefixed with a field type, to search only on those field values.
-;; The prefix is separated with a forward slash.  Examples:
+;; EBDB links can come in several varieties.  A plain string is
+;; matched against record names in the database.  Otherwise, the
+;; string can be prefixed with a field type, to search only on those
+;; field values.  The prefix is separated with a forward slash.
+;; Examples:
 
 ;; 1. "ebdb:uuid/af1373d6-4ba1-46a7-aa4b-845db01bc2ab" (link to unique
 ;; record)
 
 ;; 2. "ebdb:mail/google.com" (all records with google.com email
-;; addresses)
+;; addresses).  These field name "shorthands" include "uuid", "mail",
+;; "phone", "address", "notes", and "tags" (this last for the
+;; `ebdb-org-field-tags' class defined in this file).
 
 ;; 3. "ebdb:ebdb-field-foobar/baz" (search on a particular field
 ;; class)
@@ -80,22 +83,21 @@
 
 (defun ebdb-org-open (link)
   "Follow a EBDB link."
-  (let ((bits (split-string link "/" t))
-	records)
-    (if (string-match-p "^ebdb-field-" (car bits))
-	(message "Following field type links not implemented yet.")
-      (setq records
-	    (pcase bits
-	      (`("uuid" ,key) (list (ebdb-gethash key 'uuid)))
-	      (`(,key) (ebdb-search (ebdb-records) key))
-	      (`("mail" ,key) (ebdb-search (ebdb-records) nil nil key))
-	      (`("phone" ,key) (ebdb-search (ebdb-records) nil nil nil nil key))
-	      (`("address" ,key) (ebdb-search (ebdb-records) nil nil nil nil nil key))
-	      (_ 'unknown)))
-      (cond
-	((eql records 'unknown) (message "Unknown field prefix: %s" (nth 1 bits)))
-	((null records) (message "No records found"))
-	(t (ebdb-display-records records nil nil nil (ebdb-popup-window)))))))
+  (let ((records
+	 (pcase (split-string link "/" t)
+	   (`("uuid" ,key) (list (ebdb-gethash key 'uuid)))
+	   (`(,key) (ebdb-search (ebdb-records) `((ebdb-field-name ,key))))
+	   (`("mail" ,key) (ebdb-search (ebdb-records) `((ebdb-field-mail ,key))))
+	   (`("phone" ,key) (ebdb-search (ebdb-records) `((ebdb-field-phone ,key))))
+	   (`("address" ,key) (ebdb-search (ebdb-records) `((ebdb-field-address ,key))))
+	   (`("notes" ,key) (ebdb-search (ebdb-records) `((ebdb-field-notes ,key))))
+	   (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
+	   (`(,(and field (guard (child-of-class-p (intern-soft field) 'ebdb-field))) ,key)
+	    (ebdb-search (ebdb-records) `((,(intern-soft field) ,key))))
+	   (`(,other ,key) (error "Unknown field search prefix: %s" other)))))
+    (if records
+	(ebdb-display-records records nil nil nil (ebdb-popup-window))
+      (message "No records found"))))
 
 (defun ebdb-org-export (path desc format)
   "Create the export version of a EBDB link specified by PATH or DESC.
