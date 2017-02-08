@@ -154,8 +154,9 @@ potential tags for completion.")
 (cl-defmethod ebdb-field-search ((field ebdb-org-field-tags) (tag-list list))
   (catch 'found
     (dolist (tag (slot-value field 'tags) nil)
-      (when (member tag tag-list)
-	(throw 'found t)))))
+      (dolist (tt tag-list)
+       (when (string-match-p tt tag)
+	 (throw 'found t))))))
 
 (cl-defmethod ebdb-init-field ((field ebdb-org-field-tags) _record)
   (let ((tags (slot-value field 'tags)))
