@@ -2887,7 +2887,8 @@ records."
     (setq db (eieio-persistent-read (slot-value db 'file) 'ebdb-db t))
     ;; Stick DB back where it came from.
     (setcar (nthcdr elt ebdb-db-list) db)
-    (ebdb-db-load db)))
+    (ebdb-db-load db)
+    (ebdb-initialize (slot-value db 'records))))
 
 (cl-defmethod ebdb-record-compare ((left ebdb-record)
 				   (right ebdb-record)
