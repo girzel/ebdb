@@ -1118,6 +1118,12 @@ Ie, don't pop up at all."
   "When popping up from a random window, use half the window."
   (list (get-buffer-window) 0.5))
 
+(cl-defgeneric ebdb-mua-article-body (major-mode)
+  "Return the text of the current MUA article, as a string.
+
+This method should NOT return the message headers, only the
+article text.  This is typically used for snarfing.")
+
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)
   "Update all records associated with the message under point.
@@ -1287,6 +1293,21 @@ FIELD defaults to value of variable `ebdb-mua-edit-field'."
   "Edit FIELD of record corresponding to recipient of this message."
   (interactive)
   (ebdb-mua-edit-field field 'recipients))
+
+;;;###autoload
+(defun ebdb-mua-snarf-article ()
+  "Snarf the body of the current article."
+  (interactive)
+  (condition-case nil
+      ;; If the MUA has already popped up a buffer, assume the records
+      ;; displayed there are relevant to the article snarf.
+      (let* ((buf (get-buffer (ebdb-make-buffer-name)))
+	     (recs (when (buffer-live-p buf)
+		     (mapcar #'car (buffer-local-value 'ebdb-records buf)))))
+	(ebdb-mua-prepare-article)
+	(ebdb-snarf (ebdb-mua-article-body) recs))
+    (cl-no-applicable-method
+     (message "Article snarfing doesn't work in this context."))))
 
 ;; Functions for noninteractive use in MUA hooks
 

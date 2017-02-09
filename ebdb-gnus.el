@@ -456,6 +456,22 @@ Note that `\( is the backquote, NOT the quote '\(."
 (cl-defmethod ebdb-mua-prepare-article (&context (major-mode gnus-article-mode))
   (gnus-summary-select-article))
 
+(cl-defmethod ebdb-mua-article-body (&context (major-mode gnus-summary-mode))
+  "Return the current article body as a string.
+
+Must not include article headers, though can include headers in
+quoted replies."
+  (gnus-with-article-buffer
+    ;; This pretends that there's no such thing as mime parts, and
+    ;; will probably fail horribly.
+    (article-goto-body)
+    (buffer-substring-no-properties (point) (point-max))))
+
+(cl-defmethod ebdb-mua-article-body (&context (major-mode gnus-article-mode))
+   (gnus-with-article-buffer
+    (article-goto-body)
+    (buffer-substring-no-properties (point) (point-max))))
+
 (defun ebdb-insinuate-gnus ()
   "Hook EBDB into Gnus."
   ;; `ebdb-mua-display-sender' fails in *Article* buffers, where
