@@ -389,7 +389,21 @@ contact, or prompt to create a new contact, and display it.
   otherwise it snarfs the entire current buffer.  Called as a
   function, it can accept a string as the first argument and snarfs
   that.
+* Diary Integration
+Some EBDB fields hold dates or anniversaries (most notably the
+`ebdb-field-anniversary' field).  It's possible to integrate this
+information with Emacs' diary package (and from there to Org, via the
+`org-agenda-include-diary' option).
 
+- Option ebdb-use-diary
+  If non-nil, EBDB fields with date information will attempt to add
+  that information to the diary.
+
+When viewing the calendar, you can use the "d" key to see diary
+information for that day.
+
+Support for this feature is rudimentary.  More customization options
+are forthcoming.
 * Migration from BBDB
 ** Record Migration
 It's possible to migrate records from a BBDB file.  With your BBDB

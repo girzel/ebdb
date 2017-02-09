@@ -60,7 +60,10 @@
   (autoload 'ebdb-dwim-mail "ebdb-com")
   (autoload 'ebdb-spec-prefix "ebdb-com")
   (autoload 'ebdb-completing-read-records "ebdb-com")
-  (autoload 'eieio-customize-object "eieio-custom"))
+  (autoload 'eieio-customize-object "eieio-custom")
+  (autoload 'calendar-gregorian-from-absolute "calendar")
+  (autoload 'calendar-read-date "calendar")
+  (autoload 'diary-sexp-entry "diary-lib"))
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -199,7 +202,6 @@ Organization names are currently hard-coded to use
 (defgroup ebdb-utilities-anniv nil
   "Customizations for EBDB Anniversaries"
   :group 'ebdb-utilities)
-(put 'ebdb-utilities-anniv 'custom-loads '(ebdb-anniv))
 
 (defgroup ebdb-utilities-ispell nil
   "Customizations for EBDB ispell interface"
@@ -283,7 +285,33 @@ automatically.  If nil or the database has been changed inside
 Emacs, always query before reverting."  :group 'ebdb :type
 '(choice (const :tag "Revert unchanged database without querying"
 t)
-                 (const :tag "Ask before reverting database" nil)))
+	 (const :tag "Ask before reverting database" nil)))
+
+(defcustom ebdb-use-diary t
+  "If non-nil add anniversary field values to the diary."
+  :group 'ebdb-utilities-anniv
+  :type 'boolean)
+
+(defvar ebdb-diary-entries nil
+  "A list of all anniversary diary entries.
+
+Entries are added and removed in the `ebdb-init-field' and
+`ebdb-delete-field' methods of the `ebdb-field-anniversary'
+class, and added with the `ebdb-diary-add-entries' function.
+
+Each entry is a two-element list: a string representation of the
+anniversary date, and the sexp (as a string):
+
+(diary-anniversary MM DD YYYY)")
+
+;; Dynamic var needed by `diary-sexp-entry'.
+(defvar original-date)
+
+(defun ebdb-diary-add-entries ()
+  "Add anniversaries from the EBDB to the diary."
+  (pcase-dolist (`(,entry ,sexp) ebdb-diary-entries)
+    (when-let ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
+      (diary-add-to-list original-date parsed sexp))))
 
 (defcustom ebdb-before-load-hook nil
   "Hook run before loading databases."
@@ -1472,6 +1500,23 @@ first one."
    (calendar-gregorian-from-absolute (slot-value ann 'date))
    nil t))
 
+;; `ebdb-field-anniv-diary-entry' is defined below.
+(cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) &optional record)
+  (when (and ebdb-use-diary
+	     record)
+    (add-to-list
+     'ebdb-diary-entries
+     (ebdb-field-anniv-diary-entry anniv record))))
+
+(cl-defmethod ebdb-delete-field ((anniv ebdb-field-anniversary)
+				 &optional record unload)
+  (when (and ebdb-use-diary
+	     record)
+    (setq
+     ebdb-diary-entries
+     (delete (ebdb-field-anniv-diary-entry anniv record)
+	     ebdb-diary-entries))))
+
 ;;; Id field
 
 ;; Used for recording an ID or tax id number.  Ie, national
@@ -1664,8 +1709,6 @@ record uuids.")
     :initarg :number
     :custom string
     :initform "")
-   ;; TODO: issue-date and expiration-date should just be plain
-   ;; strings, this is stupid.
    (issue-date
     :initarg :issue-date
     :type (or nil number))
@@ -2030,6 +2073,17 @@ or actual image data."
 					     (_field ebdb-field-anniversary))
   (require 'calendar)
   (message "This isn't done yet."))
+
+(cl-defmethod ebdb-field-anniv-diary-entry ((anniv ebdb-field-anniversary)
+					    (record ebdb-record))
+  (let ((cal-date (calendar-gregorian-from-absolute
+		   (slot-value anniv 'date))))
+    (list (concat (format "%s's "
+			  (ebdb-string record))
+		  "%d%s "
+		  (slot-value anniv 'object-name))
+	  (apply #'format "(diary-anniversary %s %s %s)"
+		 cal-date))))
 
 ;;; `ebdb-record' subclasses
 
@@ -4334,6 +4388,8 @@ important work is done by the `ebdb-db-load' method."
     ;; Users will expect the same ordering as `ebdb-sources'
     (setq ebdb-db-list (nreverse ebdb-db-list))
     (run-hooks 'ebdb-after-load-hook)
+    (when ebdb-use-diary
+      (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
     (length ebdb-record-tracker)))
 
 ;; If we wanted to make it seem like EBDB was loading faster, we could
