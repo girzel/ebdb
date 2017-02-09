@@ -1426,7 +1426,7 @@ RECORD is returned if (COMPARE VALUE CMPVAL) is t, where VALUE
 is the value of xfield LABEL of RECORD."
   `(lambda (record)
      (let ((val (ebdb-record-field record ,label)))
-       (if (and val (,compare val ,cmpval))
+       (if (and val (funcall ,compare val ,cmpval))
            record))))
 
 (defsubst ebdb-string> (a b)
@@ -1439,7 +1439,7 @@ is the value of xfield LABEL of RECORD."
 DATE must be in yyyy-mm-dd format."
   (interactive (list (read-string "Older than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
-  (ebdb-search-prog (ebdb-compare-records date 'timestamp 'time-less-p) fmt))
+  (ebdb-search-prog (ebdb-compare-records date 'timestamp #'time-less-p) fmt))
 
 ;;;###autoload
 (defun ebdb-timestamp-newer (date &optional fmt)
@@ -1457,7 +1457,7 @@ DATE must be in yyyy-mm-dd format."
 DATE must be in yyyy-mm-dd format."
   (interactive (list (read-string "Older than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
-  (ebdb-search-prog (ebdb-compare-records date 'creation-date string<) fmt))
+  (ebdb-search-prog (ebdb-compare-records date 'creation-date #'string<) fmt))
 
 ;;;###autoload
 (defun ebdb-creation-newer (date &optional fmt)
@@ -1465,7 +1465,7 @@ DATE must be in yyyy-mm-dd format."
 DATE must be in yyyy-mm-dd format."
   (interactive (list (read-string "Newer than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
-  (ebdb-search-prog (ebdb-compare-records date 'creation-date ebdb-string>) fmt))
+  (ebdb-search-prog (ebdb-compare-records date 'creation-date #'ebdb-string>) fmt))
 
 ;;;###autoload
 (defun ebdb-creation-no-change (&optional fmt)
