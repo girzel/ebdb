@@ -1110,9 +1110,10 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
      (if (cdr mails)
          ;; Submenu for multiple mail addresses
          (cons "Send mail to..."
-               (mapcar (lambda (address)
-                         (vector address `(ebdb-compose-mail
-                                           ,(ebdb-dwim-mail record address))
+               (mapcar (lambda (m)
+                         (vector (ebdb-string m)
+				 `(ebdb-compose-mail
+				   ,(ebdb-dwim-mail record m))
                                  t))
                        mails))
        ;; Single entry for single mail address
@@ -1120,34 +1121,20 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
                `(ebdb-compose-mail ,(ebdb-dwim-mail record (car mails)))
                t)))))
 
-;; (defun ebdb-field-menu (record field)
-;;   "Menu items specifically for FIELD of RECORD."
-;;   (let ((type (car field)))
-;;     (append
-;;      (list
-;;       (format "Commands for %s Field:"
-;;               (cond ((eq type 'xfields)
-;;                      (format "\"%s\"" (symbol-name (car (nth 1 field)))))
-;;                     ((eq type 'name) "Name")
-;;                     ((eq type 'affix) "Affix")
-;;                     ((eq type 'organization) "Organization")
-;;                     ((eq type 'aka) "Alternate Names")
-;;                     ((eq type 'mail) "Mail Addresses")
-;;                     ((memq type '(address phone))
-;;                      (format "\"%s\" %s" (aref (nth 1 field) 0)
-;;                              (capitalize (symbol-name type)))))))
-;;      (cond ((eq type 'phone)
-;;             (list (vector (concat "Dial " (ebdb-string (nth 1 field)))
-;;                           `(ebdb-dial ',field nil) t)))
-;;            ((eq type 'xfields)
-;;             (let* ((field (cadr field))
-;;                    (type (car field)))
-;;               (cond ((eq type 'url )
-;;                      (list (vector (format "Browse \"%s\"" (cdr field))
-;;                                    `(ebdb-browse-url ,record) t)))))))
-;;      '(["Edit Field" ebdb-edit-field t])
-;;      (unless (eq type 'name)
-;;        '(["Delete Field" ebdb-delete-field-or-record t])))))
+(defun ebdb-field-menu (record field)
+  "Menu items specifically for FIELD of RECORD."
+  (append
+   (list (format "Commands for %s Field:"
+		 (capitalize (ebdb-field-readable-name field))))
+   (mapcar
+    (lambda (a)
+      ;; Yuck.  Guess I'll have to give action functions a string
+      ;; name.
+      (vector (symbol-name a) a t))
+    (slot-value field 'actions))
+   '(["Edit Field" ebdb-edit-field t]
+     ["Edit Field Customize" ebdb-edit-field-customize t]
+     ["Delete Field" ebdb-delete-field-or-record t])))
 
 (defun ebdb-insert-field-menu (record)
   "Submenu for inserting a new field for RECORD."
