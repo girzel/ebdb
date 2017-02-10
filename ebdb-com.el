@@ -1121,7 +1121,7 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
                `(ebdb-compose-mail ,(ebdb-dwim-mail record (car mails)))
                t)))))
 
-(defun ebdb-field-menu (record field)
+(defun ebdb-field-menu (_record field)
   "Menu items specifically for FIELD of RECORD."
   (append
    (list (format "Commands for %s Field:"
