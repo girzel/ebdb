@@ -368,6 +368,11 @@ Search commands that currently only work with the "/" prefix are:
 - "/ d": Search duplicate records
 - "/ D": Prompt for a database and display all records belonging to
   that database
+
+User-created {{{ebuf}}} buffers keep track of search history in that
+buffer.  To pop back to previous searches, use:
+
+- "^": ebdb-search-pop
 ** Marking
 Records can be marked and acted on in bulk.  The "#" key will toggle
 the mark of the record under point.  "M-#" will toggle the marks of

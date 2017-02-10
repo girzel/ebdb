@@ -160,6 +160,14 @@ Used by `ebdb-mouse-menu'."
 In the *EBDB* buffers it includes the records that are actually displayed
 and its elements are (RECORD DISPLAY-FORMAT MARKER-POS MARK).")
 
+(defvar-local ebdb-search-history nil
+  "A list of lists of previously-displayed EBDB records in this buffer.
+
+For each search in a user-initiated EBDB buffer, the
+previously-displayed EBDB records are pushed here, as a list of
+UUIDs.  ebdb-mode keybindings make it possible to pop back to
+previous records.")
+
 (defvar ebdb-modeline-info (make-vector 2 nil)
   "Precalculated mode line info for EBDB commands.
 This is a vector [INVERT-M INVERT].
@@ -316,6 +324,7 @@ display information."
     (define-key km (kbd "/ D")		'ebdb-search-database)
     (define-key km (kbd "C-x n w")	'ebdb-display-all-records)
     (define-key km (kbd "C-x n d")	'ebdb-display-current-record)
+    (define-key km (kbd "^")	        'ebdb-search-pop)
 
     (define-key km [mouse-3]    'ebdb-mouse-menu)
     (define-key km [mouse-2]    (lambda (event)
@@ -676,7 +685,8 @@ name based on the current major mode."
                   (sort (delete-dups (append records existing))
                         (lambda (x y) (ebdb-record-lessp x y))))))
 
-      (ebdb-mode)
+      (unless (derived-mode-p 'ebdb-mode)
+	(ebdb-mode))
 
       (setq ebdb-records
 	    (mapcar (lambda (r)
@@ -903,7 +913,8 @@ displayed records."
      ["New creation date" ebdb-creation-newer t]
      ["Creation date = time stamp" ebdb-creation-no-change t]
      "--"
-     ["Invert search" ebdb-search-invert t])
+     ["Invert search" ebdb-search-invert t]
+     ["Pop search history" ebdb-search-pop t])
     ("Mail"
      ["Send mail" ebdb-mail t]
      "--"
@@ -1883,13 +1894,17 @@ appended to existing records, or filtered from existing records.
 TYPE is the type of search being conducted (ie, 'name, 'mail,
 'address, etc).  CRIT is the search criteria; often a regexp, but
 not necessarily.  FMT is the optional formatter to use."
-  (let* ((pool (if (eql style 'filter)
-		   (mapcar #'car ebdb-records)
+  (let* ((prev (mapcar #'car ebdb-records))
+	 (pool (if (eql style 'filter)
+		   prev
 		 (ebdb-records)))
 	 (invert (ebdb-search-invert-p))
 	 (recs (ebdb-search pool clauses invert)))
     (if recs
-	(ebdb-display-records recs fmt (eql style 'append))
+	(progn
+	  (when prev
+	    (push (mapcar #'ebdb-record-uuid prev) ebdb-search-history))
+	  (ebdb-display-records recs fmt (eql style 'append)))
       (message "No matching records"))))
 
 ;;;###autoload
@@ -2090,6 +2105,16 @@ The search results are displayed in the EBDB buffer."
 FUNCTION is called with one argument, the record, and should return
 the record to be displayed or nil otherwise."
   (ebdb-display-records (seq-filter function (ebdb-records)) fmt))
+
+(defun ebdb-search-pop ()
+  "Pop to the last set of EBDB search results."
+  (interactive)
+  (if ebdb-search-history
+      (ebdb-display-records
+       (mapcar (lambda (r)
+		 (ebdb-gethash r 'uuid))
+	       (pop ebdb-search-history)))
+    (message "No further search history in this buffer.")))
 
 ;;; Send-Mail interface
 
