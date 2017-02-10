@@ -1364,14 +1364,12 @@ In particular, ignore addresses \"Joe Smith <foo@baz.com>\"."
     (if (and name host)
         (concat (regexp-quote name) "@.*\\." (regexp-quote host)))))
 
-(defun ebdb-delete-redundant-mails (records &optional query update)
+(defun ebdb-delete-redundant-mails (records &optional query)
   "Delete redundant or duplicate mails from RECORDS.
 For example, \"foo@bar.baz.com\" is redundant w.r.t. \"foo@baz.com\".
 Duplicates may (but should not) occur if we feed EBDB automatically.
 If QUERY is non-nil (as in interactive calls, unless we use a prefix arg)
 query before deleting the redundant mail addresses.
-If UPDATE is non-nil (as in interactive calls) update the database.
-Otherwise, this is the caller's responsiblity.
 
 Noninteractively, this may be used as an element of `ebdb-notice-record-hook'
 or `ebdb-change-hook'.  However, see also `ebdb-ignore-redundant-mails',
@@ -1406,9 +1404,10 @@ which is probably more suited for your needs."
                    (or (not query)
                        (y-or-n-p (format "Delete %s: " form))))
           (unless query (message "Deleting %s" form))
-          (ebdb-record-set-field record 'mail okay)
-          (when update
-            (ebdb-change-record record)))))))
+	  (dolist (m okay)
+	    (ebdb-record-insert-field record 'mail m))
+	  (dolist (m redundant)
+	    (ebdb-record-delete-field record 'mail m)))))))
 
 (defun ebdb-touch-records (records)
   "Touch RECORDS by calling `ebdb-change-hook' unconditionally."
