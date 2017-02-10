@@ -249,7 +249,7 @@ display information."
 (defvar ebdb-mode-map
   (let ((km (make-sparse-keymap)))
     (define-key km (kbd "!")		'ebdb-search-invert)
-    (define-key km (kbd "a")		'ebdb-record-action)
+    (define-key km (kbd "RET")		'ebdb-record-action)
     (define-key km (kbd "A")		'ebdb-mail-aliases)
     (define-key km (kbd "c")		'ebdb-create-record)
     (define-key km (kbd "C")		'ebdb-create-record-extended)
@@ -273,7 +273,6 @@ display information."
     (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
-    (define-key km (kbd "RET")		'ebdb-follow-related)
     (define-key km (kbd "s")		'ebdb-save)
     (define-key km (kbd "C-x C-s")	'ebdb-save)
     (define-key km (kbd "t")		'ebdb-toggle-records-format)
@@ -1121,16 +1120,14 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
                `(ebdb-compose-mail ,(ebdb-dwim-mail record (car mails)))
                t)))))
 
-(defun ebdb-field-menu (_record field)
+(defun ebdb-field-menu (record field)
   "Menu items specifically for FIELD of RECORD."
   (append
    (list (format "Commands for %s Field:"
 		 (capitalize (ebdb-field-readable-name field))))
    (mapcar
     (lambda (a)
-      ;; Yuck.  Guess I'll have to give action functions a string
-      ;; name.
-      (vector (symbol-name a) a t))
+      (vector (car a) `(funcall ,(symbol-function (cdr a)) ,record ,field) t))
     (slot-value field 'actions))
    '(["Edit Field" ebdb-edit-field t]
      ["Edit Field Customize" ebdb-edit-field-customize t]
@@ -1140,19 +1137,14 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
   "Submenu for inserting a new field for RECORD."
   (cons "Insert New Field..."
         (mapcar
-         (lambda (field)
-           (if (stringp field) field
-             (vector (symbol-name field)
-                     `(ebdb-insert-field
-                       ,record ',field (ebdb-read-field ,record ',field
-                                                        ,current-prefix-arg))
-                     (not (or (and (eq field 'organization)
-                                   (ebdb-record-organizations record))
-                              (and (eq field 'mail) (ebdb-record-mail record))
-                              (and (eq field 'aka) (ebdb-record-aka record))
-                              (assq field (ebdb-record-user-fields record)))))))
-         (append '(affix organization aka phone address mail)
-                 '("--") ebdb-user-label-list))))
+         (lambda (pair)
+	   (vector (ebdb-field-readable-name (cdr pair))
+		   `(ebdb-record-insert-field
+		    ,record ',(car pair)
+		    (ebdb-read ,(cdr pair)))
+		   t))
+	 (ebdb-record-field-slot-query
+	  (eieio-object-class record)))))
 
 (defun ebdb-mouse-menu (event)
   "EBDB mouse menu for EVENT,"
@@ -2688,14 +2680,33 @@ of all of these people."
 
 ;;; Actions
 
-(defun ebdb-record-action (arg record field)
+(defun ebdb-record-action (record field action)
   "Ask FIELD of RECORD to perform an action.
 
-With ARG, use ARG an an index into FIELD's list of actions."
-  (interactive (list current-prefix-arg
-		     (ebdb-current-record)
-		     (ebdb-current-field)))
-  (ebdb-action field record arg))
+With the prefix arg, use it an an index into FIELD's list of
+actions."
+  (interactive
+   (let* ((rec (ebdb-current-record))
+	  (field (ebdb-current-field))
+	  (actions (slot-value field 'actions))
+	  (action
+	   (when actions
+	     (if (= 1 (length actions))
+		 (cdar actions)
+	       (if current-prefix-arg
+		   (or (cdr-safe (nth current-prefix-arg actions))
+		       (cdar actions))
+		 (let ((alst (mapcar
+			      (lambda (a)
+				(cons (first a) (cdr a)))
+			      actions)))
+		   (cdr
+		    (assoc (completing-read "Action: " alst)
+			   alst))))))))
+     (list rec field action)))
+  (if action
+      (funcall action record field)
+    (message "No action for field")))
 
 
 ;;; Dialing numbers from EBDB

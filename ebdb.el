@@ -63,7 +63,8 @@
   (autoload 'eieio-customize-object "eieio-custom")
   (autoload 'calendar-gregorian-from-absolute "calendar")
   (autoload 'calendar-read-date "calendar")
-  (autoload 'diary-sexp-entry "diary-lib"))
+  (autoload 'diary-sexp-entry "diary-lib")
+  (autoload 'org-agenda-list "org-agenda"))
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -491,14 +492,14 @@ You really should not disable debugging.  But it will speed things up."
 
 (defclass ebdb-field ()
   ((actions
-    :type (list-of function)
+    :type (list-of cons)
     :allocation :class
     :initform nil
     :documentation
-    "A list of actions which this field can perform."))
-  :abstract t
-  :documentation "Abstract class for EBDB fields.  Subclass this
-to produce real field types.")
+    "A list of actions which this field can perform.  Each list
+  element is a cons of string name and function name."))
+  :abstract t :documentation "Abstract class for EBDB fields.
+  Subclass this to produce real field types.")
 
 (cl-defgeneric ebdb-init-field (field record)
   "Initialize FIELD.
@@ -623,10 +624,10 @@ it, and if this process is successful it will get deleted."
 If IDX is provided, it is an index indicating which of the action
 functions to call. Otherwise, call the car of the list."
   (let* ((actions (slot-value field 'actions))
-	 (func (when actions
+	 (pair (when actions
 		 (if idx (or (nth idx actions) (last actions)) (car actions)))))
-    (when func
-      (funcall func record field))))
+    (when pair
+      (funcall (cdr pair) record field))))
 
 (cl-defmethod ebdb-notice ((_field ebdb-field) &optional _type _message-headers _record)
   "Ask FIELD of RECORD to react to RECORD being \"noticed\".
@@ -1085,7 +1086,7 @@ first one."
     offered for completion, and 'primary means this address will
     be used as the default.  Only one of a record's addresses can
     be set to 'primary.")
-   (actions :initform '(ebdb-field-mail-compose)))
+   (actions :initform '(("Compose mail" . ebdb-field-mail-compose))))
   :documentation "A field representing a single email address.
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
@@ -1304,7 +1305,7 @@ first one."
 		    (integer :tag "Extension"))
     :initform nil)
    (actions
-    :initform '(ebdb-field-phone-dial)))
+    :initform '(("Dial phone number" . ebdb-field-phone-dial))))
   :human-readable "phone")
 
 (cl-defmethod ebdb-string ((phone ebdb-field-phone))
@@ -1482,7 +1483,8 @@ first one."
     :initform gregorian
     :documentation "The calendar to which this date applies.")
    (actions
-    :initform '(ebdb-field-anniversary-browse)))
+    :initform '(("Browse date in calendar" . ebdb-field-anniversary-calendar)
+		("Browse date in Org agenda" . ebdb-field-anniversary-agenda))))
   :human-readable "anniversary")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-anniversary)) &optional slots obj)
@@ -1565,7 +1567,9 @@ first one."
     :custom string
     :initform ""
     :documentation "The label on the \"other side\" of the
-    relation, pointing at this record."))
+    relation, pointing at this record.")
+   (actions
+    :initform '(("Follow relationship" . ebdb-follow-related))))
   :human-readable "relationship")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-relation)) &optional slots obj)
@@ -1625,7 +1629,7 @@ first one."
     :custom string
     :initform "")
    (actions
-    :initform '(ebdb-field-url-browse)))
+    :initform '(("Browse URL" . ebdb-field-url-browse))))
   :human-readable "URL")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-url)) &optional slots obj)
@@ -2069,10 +2073,16 @@ or actual image data."
 				     (field ebdb-field-url))
   (browse-url (slot-value field 'url)))
 
-(cl-defmethod ebdb-field-anniversary-browse ((_record ebdb-record)
-					     (_field ebdb-field-anniversary))
-  (require 'calendar)
-  (message "This isn't done yet."))
+(cl-defmethod ebdb-field-anniversary-calendar ((_record ebdb-record)
+					       (field ebdb-field-anniversary))
+  (calendar)
+  (calendar-goto-date
+   (calendar-gregorian-from-absolute
+    (slot-value field 'date))))
+
+(cl-defmethod ebdb-field-anniversary-agenda ((_record ebdb-record)
+					     (field ebdb-field-anniversary))
+  (org-agenda-list nil (slot-value field 'date)))
 
 (cl-defmethod ebdb-field-anniv-diary-entry ((anniv ebdb-field-anniversary)
 					    (record ebdb-record))
