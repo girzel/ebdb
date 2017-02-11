@@ -71,7 +71,7 @@ This may take the values:
  all-fields      Read the field to edit using a completion table
                    that includes all fields currently known to EBDB.
 
-Any other symbol is interpreted as the label of an xfield."
+Any other symbol is interpreted as the name of a field class."
   :group 'ebdb-mua
   :type '(symbol :tag "Field to annotate"))
 
@@ -86,7 +86,7 @@ This may take the values:
  all-fields      Read the field to edit using a completion table
                    that includes all fields currently known to EBDB.
 
-Any other symbol is interpreted as the label of an xfield."
+Any other symbol is interpreted as the name of a field class."
   :group 'ebdb-mua
   :type '(symbol :tag "Field to edit"))
 
@@ -433,7 +433,7 @@ However, if the value of HEADER also matches an element of
 `ebdb-auto-notes-ignore-headers' no annotation is generated.
 
 The annotation will be added to FIELD of the respective record.
-FIELD defaults to `ebdb-default-xfield'.
+FIELD defaults to `ebdb-default-user-field'.
 
 STRING defines a replacement for the match of REGEXP in the value of HEADER.
 It may contain \\& or \\N specials used by `replace-match'.
@@ -484,9 +484,9 @@ will be re-evaluated."
                     (list :tag "Replacement list"
                           (regexp :tag "Regexp to match on header value")
                           (choice :tag "Record field"
-                                  (const notes :tag "xfields")
+                                  (const notes :tag "Notes")
                                   (const organization :tag "Organization")
-                                  (symbol :tag "Other"))
+                                  (symbol :tag "Other field class"))
                           (choice :tag "Regexp match"
                                   (string :tag "Replacement string")
                                   (integer :tag "Subexpression match")
@@ -1399,7 +1399,7 @@ For use as an element of `ebdb-notice-record-hook'."
                           replace (nth 2 string) ; perhaps nil
                           string (nth 1 string))
                   ;; else it's simple (REGEXP . STRING)
-                  (setq field ebdb-default-xfield
+                  (setq field ebdb-default-user-field
                         replace nil))
                 (push (list (car elt) field string replace) elt-e))
               (push (append (list mua from-to header) (nreverse elt-e)) expanded)))
@@ -1478,8 +1478,7 @@ of these MUAs.  Also, the MUA Summary format string must use
   "In the MUA Summary buffer mark messages matching a EBDB record.
 ADDRESS typically refers to the value of the From header of a message.
 If ADDRESS matches a record in EBDB return a mark, \" \" otherwise.
-The mark itself is the value of the xfield `ebdb-mua-summary-mark-field'
-if this xfield is in the poster's record, and `ebdb-mua-summary-mark' otherwise."
+The mark itself is the value of `ebdb-mua-summary-mark'."
   (if (not ebdb-mua-summary-mark)
       "" ; for consistency
     ;; ADDRESS is analyzed as in `ebdb-get-address-components'.

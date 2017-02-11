@@ -63,8 +63,9 @@
 					  (ebdb-record-uuid (ebdb-prompt-for-record (ebdb-records)))))
 			     :store 'ebdb-org-store-link
 			     :export 'ebdb-org-export)
-  (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
-  (add-hook 'org-store-link-functions 'ebdb-org-store-link))
+  (with-no-warnings ;; I know it's obsolete.
+   (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
+   (add-hook 'org-store-link-functions 'ebdb-org-store-link)))
 
 ;; TODO: Put a custom keymap on the links (or else expand
 ;; `ebdb-org-open') so that users can choose what to do with the
@@ -94,7 +95,7 @@
 	   (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
 	   (`(,(and field (guard (child-of-class-p (intern-soft field) 'ebdb-field))) ,key)
 	    (ebdb-search (ebdb-records) `((,(intern-soft field) ,key))))
-	   (`(,other ,key) (error "Unknown field search prefix: %s" other)))))
+	   (`(,other _) (error "Unknown field search prefix: %s" other)))))
     (if records
 	(ebdb-display-records records nil nil nil (ebdb-popup-window))
       (message "No records found"))))
@@ -144,7 +145,7 @@ potential tags for completion.")
 	       (when obj (ebdb-string obj)))))
     (cl-call-next-method field (plist-put slots :tags val))))
 
-(cl-defmethod ebdb-search-read ((class (subclass ebdb-org-field-tags)))
+(cl-defmethod ebdb-search-read ((_class (subclass ebdb-org-field-tags)))
   (let ((crm-separator (cadr (assq 'ebdb-org-field-tags ebdb-separator-alist))))
     (completing-read-multiple
      "Search for tags: "

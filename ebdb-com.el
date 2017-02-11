@@ -1412,7 +1412,7 @@ which is probably more suited for your needs."
 (defmacro ebdb-compare-records (cmpval label compare)
   "Builds a lambda comparison function that takes one argument, RECORD.
 RECORD is returned if (COMPARE VALUE CMPVAL) is t, where VALUE
-is the value of xfield LABEL of RECORD."
+is the value of field LABEL of RECORD."
   `(lambda (record)
      (let ((val (ebdb-record-field record ,label)))
        (if (and val (funcall ,compare val ,cmpval))
@@ -1888,7 +1888,7 @@ not necessarily.  FMT is the optional formatter to use."
 ;;;###autoload
 (defun ebdb (style regexp &optional fmt)
   "Display all records in the EBDB matching REGEXP
-in either the name(s), organization, address, phone, mail, or xfields."
+in any field."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read 'all)
 		     (ebdb-formatter-prefix)))

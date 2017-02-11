@@ -1511,7 +1511,7 @@ first one."
      (ebdb-field-anniv-diary-entry anniv record))))
 
 (cl-defmethod ebdb-delete-field ((anniv ebdb-field-anniversary)
-				 &optional record unload)
+				 &optional record _unload)
   (when (and ebdb-use-diary
 	     record)
     (setq
@@ -1950,7 +1950,7 @@ either \"which slot can accept this field class\", or \"which
 fieldclass is appropriate for this slot\".  The return value in
 either case is a cons with both slot and fieldclass filled in.")
 
-(cl-defmethod ebdb-record-field-slot-query ((class (subclass ebdb-record))
+(cl-defmethod ebdb-record-field-slot-query ((_class (subclass ebdb-record))
 					    &optional query alist)
   (let ((alist (append
 		'((notes . ebdb-field-notes)
@@ -2614,7 +2614,7 @@ appropriate person record."
 				   (field ebdb-field-role))
   (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
 
-(defmethod ebdb-record-add-org-role ((record ebdb-record-person)
+(cl-defmethod ebdb-record-add-org-role ((record ebdb-record-person)
 				     (org ebdb-record-organization)
 				     &optional mail fields)
   "Convenience function for creating a role relationship between RECORD and ORG.
@@ -4189,31 +4189,6 @@ Set and store it if necessary."
    (slot-value (ebdb-record-cache record) 'sortkey)
    (downcase (ebdb-string (slot-value record 'name)))))
 
-;; The values of xfields are normally strings.  The following function
-;; comes handy if we want to treat these values as symbols.
-;; (defun ebdb-record-xfield-intern (record label)
-;;   "For RECORD return interned value of xfield LABEL.
-;; Return nil if xfield LABEL does not exist."
-;;   (let ((value (ebdb-record-xfield record label)))
-;;     ;; If VALUE is not a string, return whatever it is.
-;;     (if (stringp value) (intern value) value)))
-
-;; (defun ebdb-record-xfield-string (record label)
-;;   "For RECORD return value of xfield LABEL as string.
-;; Return nil if xfield LABEL does not exist."
-;;   (let ((value (ebdb-record-xfield record label)))
-;;     (if (string-or-null-p value)
-;;         value
-;;       (let ((print-escape-newlines t))
-;;         (prin1-to-string value)))))
-
-;; (defsubst ebdb-record-xfield-split (record label)
-;;   "For RECORD return value of xfield LABEL split as a list.
-;; Splitting is based on `ebdb-separator-alist'."
-;;   (let ((val (ebdb-record-xfield record label)))
-;;     (cond ((stringp val) (ebdb-split label val))
-;;           (val (error "Cannot split `%s'" val)))))
-
 (cl-defgeneric ebdb-record-field (record field)
   "For RECORD return the value of FIELD.
 
@@ -4535,8 +4510,8 @@ This is a generic function that dispatches on the value of
 		   " "
 		 "\n"))))
 
-(cl-defmethod ebdb-records-cite-mail :around ((style (eql list))
-					      (records list)
+(cl-defmethod ebdb-records-cite-mail :around ((_style (eql list))
+					      (_records list)
 					      &context (major-mode org-mode))
   (let ((list (cl-call-next-method)))
     (mapconcat (lambda (elt)
@@ -4552,16 +4527,16 @@ This is a generic function that dispatches on the value of
 		    (ebdb-string (car pair))))
 	  records))
 
-(cl-defmethod ebdb-records-cite-mail :around ((style (eql list))
-					      (records list)
+(cl-defmethod ebdb-records-cite-mail :around ((_style (eql list))
+					      (_records list)
 					      &context (major-mode html-mode))
   (let ((list (cl-call-next-method)))
     (mapconcat (lambda (l)
 		 (format "<li>%s</li>" l))
 	       list "\n")))
 
-(cl-defmethod ebdb-records-cite-mail :around ((style (eql inline))
-					      (records list))
+(cl-defmethod ebdb-records-cite-mail :around ((_style (eql inline))
+					      (_records list))
   (let ((list (cl-call-next-method)))
     (mapconcat #'identity list " ")))
 
@@ -4723,7 +4698,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record-organization)
 				  (_type (eql organization))
 				  (regexp string))
-  (ebdb-record-search record ebdb-field-name regexp))
+  (ebdb-record-search record 'ebdb-field-name regexp))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (cls (subclass ebdb-field-user))
