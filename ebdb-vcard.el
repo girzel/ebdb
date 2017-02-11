@@ -21,7 +21,9 @@
 
 ;; This file contains formatting and parsing functions used to export
 ;; EBDB contacts to vcard format, and to create contacts from vcard
-;; files.
+;; files.  It only supports VCard versions 3.0 and 4.0.
+
+;; https://tools.ietf.org/html/rfc6350
 
 ;;; Code:
 
@@ -49,39 +51,101 @@
   "Customization options for EBDB Vcard support."
   :group 'ebdb)
 
-(defcustom ebdb-vcard-default-formatter
+(defcustom ebdb-vcard-default-40-formatter
   (make-instance 'ebdb-formatter-vcard-40
-		 :object-name "VCard 4.0"
+		 :object-name "VCard 4.0 (default)"
 		 :combine nil
 		 :collapse nil
 		 :include '(ebdb-field-uuid
 			    ebdb-field-timestamp
 			    ebdb-field-mail
+			    ebdb-field-name
 			    ebdb-field-url
+			    ebdb-field-role
 			    ebdb-field-anniversary
 			    ebdb-field-relation
 			    ebdb-field-phone
-			    ebdb-field-notes)
+			    ebdb-field-notes
+			    ebdb-org-field-tags)
 		 :header nil)
-  "The default formatter for vcard exportation."
+  "The default formatter for VCard 4.0 exportation."
   :group 'ebdb-vcard
   :type 'ebdb-formatter-vcard)
 
+(defcustom ebdb-vcard-default-30-formatter
+  (make-instance 'ebdb-formatter-vcard-30
+		 :object-name "VCard 3.0 (default)"
+		 :combine nil
+		 :collapse nil
+		 :include '(ebdb-field-uuid
+			    ebdb-field-timestamp
+			    ebdb-field-mail
+			    ebdb-field-name
+			    ebdb-field-url
+			    ebdb-field-role
+			    ebdb-field-anniversary
+			    ebdb-field-relation
+			    ebdb-field-phone
+			    ebdb-field-notes
+			    ebdb-org-field-tags)
+		 :header nil)
+  "The default formatter for VCard 3.0 exportation."
+  :group 'ebdb-vcard
+  :type 'ebdb-formatter-vcard)
+
+(cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter-vcard)
+				       (record ebdb-record)
+				       field-list)
+  "Process fields in FIELD-LIST.
+
+All this does is split role instances into multiple fields."
+  (let (org out-list)
+    (dolist (f field-list)
+      (if (object-of-class-p f 'ebdb-field-role)
+	  ;; Split it apart.
+	  (with-slots (org-uuid mail fields defunct) f
+	    (unless defunct
+	      (setq org (ebdb-gethash org-uuid 'uuid))
+	      ;; Store the name of the organization in the TYPE
+	      ;; parameter of the various properties.  I'd rather
+	      ;; stick a UUID somewhere, but haven't immediately
+	      ;; figured out how that would be done.
+	      (push (cons "ORG"
+			  (ebdb-record-name org))
+		    out-list)
+	      (push (cons (format "TITLE;TYPE=\"%s\"" (ebdb-record-name org))
+			  (slot-value f 'object-name))
+		    out-list)
+	      (when (or mail fields)
+		(dolist (elt (cons mail fields))
+		  (push (cons
+			 (format "%s;%s"
+				 (ebdb-fmt-field-label fmt elt 'normal record)
+				 (format "TYPE=\"%s\"" (ebdb-record-name org)))
+			 (ebdb-fmt-field fmt elt 'normal record))
+			out-list)))))
+	(push f out-list)))
+    out-list))
 
 (cl-defmethod ebdb-fmt-record ((f ebdb-formatter-vcard)
 			       (r ebdb-record))
   "Format a single record R in VCARD format."
   ;; Because of the simplicity of the VCARD format, we only collect
   ;; the fields, there's no need to sort or "process" them.
-  (let ((fields (ebdb-fmt-collect-fields f r))
+  (let ((fields (ebdb-fmt-process-fields
+		 f r
+		 (ebdb-fmt-collect-fields f r)))
 	header-fields body-fields)
     (setq header-fields
 	  (list (slot-value r 'name))
 	  body-fields
 	  (mapcar
 	   (lambda (fld)
-	     (cons (ebdb-fmt-field-label f fld 'normal r)
-		   (ebdb-fmt-field f fld 'normal r)))
+	     ;; This is a silly hack, but...
+	     (if (consp fld)
+		 fld
+	       (cons (ebdb-fmt-field-label f fld 'normal r)
+		     (ebdb-fmt-field f fld 'normal r))))
 	   fields))
     (concat
      (format "BEGIN:VCARD\nVERSION:%s\n"
@@ -100,11 +164,12 @@ method is just responsible for formatting the record name."
   (let ((name (car fields)))
    (concat
     (format "FN:%s\n" (ebdb-string name))
-    (format "N:%s\n"
+    (format "N;SORT-AS=\"%s\":%s\n"
+	    (ebdb-record-sortkey r)
 	    (ebdb-fmt-field f name 'normal r)))))
 
 (cl-defmethod ebdb-fmt-record-body ((f ebdb-formatter-vcard)
-				    (r ebdb-record)
+				    (_r ebdb-record)
 				    (fields list))
   (mapconcat
    (lambda (f)
@@ -132,12 +197,6 @@ method is just responsible for formatting the record name."
   (ebdb-string field))
 
 (cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
-				    (field ebdb-field)
-				    style
-				    record)
-  (upcase (cl-call-next-method f field style record)))
-
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
 				    (field ebdb-field-timestamp)
 				    _style
 				    _record)
@@ -160,11 +219,12 @@ method is just responsible for formatting the record name."
 			      _style
 			      _record)
   (slot-value mail 'mail))
+
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (ts ebdb-field-timestamp)
 			      _style
 			      _record)
-  (format-time-string ":%Y%m%dT%H%M%S%z" (slot-value ts 'timestamp) t))
+  (format-time-string "%Y%m%dT%H%M%S%z" (slot-value ts 'timestamp) t))
 
 (cl-defmethod ebdb-fmt-field ((f ebdb-formatter-vcard)
 			      (name ebdb-field-name-complex)
@@ -190,10 +250,12 @@ method is just responsible for formatting the record name."
 				    _record)
   (with-slots (priority) mail
     (format
-     "EMAIL;INTERNET%s"
-     (if (eql priority 'primary)
-  	 ";PREF=1"
-       ""))))
+     "EMAIL%s"
+     (cl-case priority
+       ('primary ";PREF=1")
+       ('normal ";PREF=10")
+       ('defunct ";PREF=100")
+       (t "")))))
 
 (cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
 			 	    (phone ebdb-field-phone)
@@ -218,6 +280,18 @@ method is just responsible for formatting the record name."
 			      _style
 			      _record)
   (format "urn:uuid:%s" (slot-value rel 'rel-uuid)))
+
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
+				    (_tags ebdb-org-field-tags)
+				    _style
+				    _record)
+  "CATEGORIES")
+
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
+			      (tags ebdb-org-field-tags)
+			      _style
+			      _record)
+  (ebdb-concat "," (slot-value tags 'tags)))
 
 (cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
 				    (ann ebdb-field-anniversary)

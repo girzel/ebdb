@@ -379,6 +379,24 @@ the mark of the record under point.  "M-#" will toggle the marks of
 all the records in the buffer, and "C-#" will unmark all records in
 the buffer.  Many editing commands can act on multiple marked
 records.
+** Exporting/Formatting
+It is possible to export (referred to as "formatting") records in
+various ways.  The most common is simply the format of the {{{ebuf}}}
+buffers themselves, but other formats are possible.
+
+At present, the only other supported format is VCard, and support is
+imperfect: not all fields can be exported correctly.  VCard version
+2.1 is unsupported: the only options are version 3.0 and 4.0.
+
+- "f" ebdb-format-to-tmp-buffer
+  This command prompts for a formatter, and formats the record under
+  point to a temporary buffer.  Use marking to format multiple
+  records.
+- "F" ebdb-format-all-records
+  Export all records in the database (not only those displayed) to a
+  different format.
+
+Formatters for HTML and LaTeX are planned.
 * Snarfing
 "Snarfing" refers to scanning free-form text and extracting
 information related to EBDB records from it.  Snarfing is a work in
