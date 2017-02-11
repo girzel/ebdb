@@ -271,6 +271,7 @@ display information."
 
     (define-key km (kbd "r")		'ebdb-reformat-records)
     (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
+    (define-key km (kbd "F")		'ebdb-format-all-records)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
     (define-key km (kbd "s")		'ebdb-save)
