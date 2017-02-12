@@ -1305,7 +1305,7 @@ FIELD defaults to value of variable `ebdb-mua-edit-field'."
 	     (recs (when (buffer-live-p buf)
 		     (mapcar #'car (buffer-local-value 'ebdb-records buf)))))
 	(ebdb-mua-prepare-article)
-	(ebdb-snarf (ebdb-mua-article-body) recs))
+	(ebdb-snarf (ebdb-mua-article-body) nil nil recs))
     (cl-no-applicable-method
      (message "Article snarfing doesn't work in this context."))))
 
