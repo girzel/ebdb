@@ -356,9 +356,9 @@ automatically."
 					    (ebdb-string n)
 					    (ebdb-string record)))
 		       (progn (ebdb-record-insert-field
-			       record 'aka name)
-			      (ebdb-init-field name record))
-		     (push name leftovers))))
+			       record 'aka n)
+			      (ebdb-init-field n record))
+		     (push n leftovers))))
 	;; We have no record, dump all the fields into LEFTOVERS.
 	(setq leftovers (append fields names leftovers)
 	      fields nil
