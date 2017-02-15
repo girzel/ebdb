@@ -51,20 +51,14 @@
 (require 'eieio-base)
 (require 'eieio-opt)
 
-(eval-when-compile              ; pacify the compiler.
-  (autoload 'widget-group-match "wid-edit")
-  (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
-  (autoload 'ebdb-do-records "ebdb-com")
-  (autoload 'ebdb-append-display-p "ebdb-com")
-  (autoload 'ebdb-toggle-records-layout "ebdb-com")
-  (autoload 'ebdb-dwim-mail "ebdb-com")
-  (autoload 'ebdb-spec-prefix "ebdb-com")
-  (autoload 'ebdb-completing-read-records "ebdb-com")
-  (autoload 'eieio-customize-object "eieio-custom")
-  (autoload 'calendar-gregorian-from-absolute "calendar")
-  (autoload 'calendar-read-date "calendar")
-  (autoload 'diary-sexp-entry "diary-lib")
-  (autoload 'org-agenda-list "org-agenda"))
+; pacify the compiler.
+(autoload 'widget-group-match "wid-edit")
+(autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
+(autoload 'eieio-customize-object "eieio-custom")
+(autoload 'calendar-gregorian-from-absolute "calendar")
+(autoload 'calendar-read-date "calendar")
+(autoload 'diary-sexp-entry "diary-lib")
+(autoload 'org-agenda-list "org-agenda")
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -3729,6 +3723,53 @@ of corresponding mail addresses."
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Update the EBDB buffer" t)
                  (const :tag "Do not update the EBDB buffer" nil)))
+
+(defun ebdb-dwim-mail (record &optional mail)
+  ;; Do What I Mean!
+  "Return a string to use as the mail address of RECORD.
+
+However, if both the first name and last name are constituents of
+the address as in John.Doe@Some.Host, and
+`ebdb-mail-avoid-redundancy' is non-nil, then the address is used
+as is.  If `ebdb-mail-avoid-redundancy' is 'mail-only the name
+is never included.  MAIL may be a mail address to be used for
+RECORD.  If MAIL is an integer, use the MAILth mail address of
+RECORD.  If MAIL is nil use RECORD's primary mail address."
+  (unless mail
+    (let ((mails (ebdb-record-mail record t)))
+      (setq mail (or (and (integerp mail) (nth mail mails))
+                     (object-assoc 'primary 'priority mails)
+		     (car mails)))))
+  (unless mail (error "Record has no mail addresses"))
+  (let* ((name-base (or (slot-value mail 'aka) (ebdb-record-name record)))
+	 (mail (slot-value mail 'mail))
+	 (name
+	  (cond
+	   ((or (eq 'mail-only ebdb-mail-avoid-redundancy)
+		(and ebdb-mail-avoid-redundancy
+		     (string-match-p
+		      (regexp-quote
+		       (replace-regexp-in-string
+			"\s" "" name-base))
+		      (replace-regexp-in-string
+		       "[-._]" "" (car (split-string mail "@"))))))
+	    nil)
+	   (name-base)
+	   (t nil))))
+    (if name
+	(progn
+	  ;; If the name contains backslashes or double-quotes, backslash them.
+	  (setq name (replace-regexp-in-string "[\\\"]" "\\\\\\&" name))
+	  ;; If the name contains control chars or RFC822 specials, it needs
+	  ;; to be enclosed in quotes.  This quotes a few extra characters as
+	  ;; well (!,%, and $) just for common sense.
+	  ;; `define-mail-alias' uses regexp "[^- !#$%&'*+/0-9=?A-Za-z^_`{|}~]".
+
+	  (format (if (string-match "[][[:cntrl:]\177()<>@,;:.!$%[:nonascii:]]" name)
+		      "\"%s\" <%s>"
+		    "%s <%s>")
+		  name mail))
+      mail)))
 
 
 ;;;Dialing
