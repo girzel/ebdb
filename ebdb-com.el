@@ -973,15 +973,16 @@ If the whole POP argument is nil, just re-use the current
 buffer."
   (let* ((split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (horiz/vert (if (> (window-total-width split-window)
-			    (window-total-height split-window))
+	 (horiz/vert (if (and split-window
+			      (> (window-total-width split-window)
+				 (window-total-height split-window)))
 			 'horiz
 		       'vert)))
 
     (cond (buffer-window
 	   ;; It's already visible, re-use it.
 	   nil)
-	  ((and (null split-window) (null size))
+	  ((null pop)
 	   ;; Not splitting, but buffer isn't visible, just take up
 	   ;; the whole window.
 	   (set-window-buffer (selected-window) buf)
