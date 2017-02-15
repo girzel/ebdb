@@ -1096,14 +1096,12 @@ Dispatches on the value of major-mode."
   "Return a spec for how to pop up a window on an *EBDB* buffer.
 
 This generic function dispatches on the current value of
-major-mode.  The return value should be a three-element list
-of (window split horiz/vert), in which WINDOW is the window to
-split, SPLIT is either an integer, specifying number of
-rows/columns, or a float specifying what percentage of window
-real estate the pop-up should occupy, and HORIZ-P is 'horiz if
-the window should be split horizontally, 'vert for vertically,
-and nil to split depending on the dimensions of the current
-window.
+major-mode.  The return value should be a two-element list
+of (window split), in which WINDOW is the window to split, and
+SPLIT is either an integer, specifying number of rows/columns, or
+a float specifying what percentage of window real estate the
+pop-up should occupy.  SPLIT can also be nil, in which case the
+window will probably take up half the available space.
 
 Alternately, the return value can be nil, which means continue
 using the current window.")

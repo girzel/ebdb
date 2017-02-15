@@ -964,47 +964,38 @@ displayed records."
 (defun ebdb-pop-up-window (buf &optional select pop)
   "Display *EBDB* buffer BUF by popping up a new window.
 
-POP is typically a three-element list of (window split
-horiz/vert), where WINDOW is the window to be split, SPLIT says
-to split it by how much, and HORIZ/VERT says whether to split it
-vertically or horizontally.  If HORIZ/VERT is nil, split the
-longest way.  If SPLIT is nil, split 0.5.
+POP is typically a two-element list of (window split), where
+WINDOW is the window to be split, and SPLIT says to split it by
+how much.  SPLIT can be an integer number of lines/columns, or a
+float between 0 and 1.  If SPLIT is nil, split 0.5.
 
 If the whole POP argument is nil, just re-use the current
 buffer."
   (let* ((split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (horiz/vert (or (caddr pop)
-			 (if (> (window-total-width split-window)
-				(window-total-height split-window))
-			     'horiz
-			   'vert)))
-	 (size (cond ((null pop)
-		      nil)
-		     ((integerp (cadr pop)))
-		     (t
-		      (let ((ratio (- 1 (or (cadr pop) 0.5)))
-			    (dimension (max (window-total-width split-window)
-					    (window-total-height split-window))))
-			(round (* dimension ratio)))))))
+	 (horiz/vert (if (> (window-total-width split-window)
+			    (window-total-height split-window))
+			 'horiz
+		       'vert)))
 
     (cond (buffer-window
 	   ;; It's already visible, re-use it.
-	   (or (null select)
-	       (select-window buffer-window)))
+	   nil)
 	  ((and (null split-window) (null size))
 	   ;; Not splitting, but buffer isn't visible, just take up
 	   ;; the whole window.
 	   (set-window-buffer (selected-window) buf)
-	   (setq buffer-window (get-buffer-window buf t)))
+	   (setq buffer-window (get-buffer-window buf t))
+	   (display-buffer-record-window 'reuse buffer-window buf))
 	  (t
 	   ;; Otherwise split.
-	   (setq buffer-window (split-window split-window size
-					     (if (eql horiz/vert 'vert)
-						 'below
-					       'right)))
-	   (set-window-buffer buffer-window buf)))
-    (display-buffer-record-window 'window buffer-window buf)
+	   (setq buffer-window
+		 (display-buffer buf
+				 `(display-buffer-pop-up-window
+				   . ((,(if (eql horiz/vert 'vert)
+					    'window-height
+					  'window-width)
+				       . ,(nth 1 pop))))))))
     (when select
       (select-window buffer-window))))
 
