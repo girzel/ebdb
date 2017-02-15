@@ -99,6 +99,15 @@ default record class, in the database at the head of `ebdb-sources'.
 Alternately create a record using "C" (`ebdb-create-extended'), which
 will prompt for a record class to use, as well as a database to store
 the record in, if there is more than one.
+
+You can also tell EBDB which record represents you:
+
+- Variable: ebdb-record-self
+  The value of this option should be the UUID of your own record.  You
+  can find this by pressing "T" (to show all fields) on your record.
+
+Currently this option's only use is to serve as a source for
+`ebdb-user-mail-address-re'.
 ** Record classes
 EBDB comes with two record classes, representing individuals and
 organizations.
@@ -146,21 +155,8 @@ and UUID.  Others are "built-in" fields: basic fields that get special
 treatment.  These include the name, mail, phone, address, and notes
 fields.  EBDB comes with default classes for these fields: if you
 would like to use different defaults, you can create new classes
-(inheriting from the existing ones), then set these user options to
-your custom class name:
-
-- Variable: ebdb-default-name-class
-  Defaults to `ebdb-field-name-complex'.  In fact, person records are
-  created with name fields of `ebdb-field-name-complex', and
-  organization records are created with `ebdb-field-name-simple'.
-- Variable: ebdb-default-mail-class
-  Defaults to `ebdb-field-mail'.
-- Variable: ebdb-default-phone-class
-  Defaults to `ebdb-field-phone'.
-- Variable: ebdb-default-address-class
-  Defaults to `ebdb-field-address'.
-- Variable: ebdb-default-notes-class
-  Defaults to `ebdb-field-notes'.
+(inheriting from the existing ones) and use those instead.  See
+[[id:a58993a8-0631-459f-8bd6-7155bb6df605][Hacking EBDB]] for more information.
 
 Besides the "plumbing" and "built-in" fields, all other fields are
 "user" fields, and belong to one of two types: `ebdb-field-user' and
@@ -405,18 +401,29 @@ upon.  For example, calling `ebdb-snarf' while the region contains the
 text "John Doe <j.doe@email.com>" will find an existing matching
 contact, or prompt to create a new contact, and display it.
 
-- Command: ebdb-snarf &optional string start end
+- Command: ebdb-snarf &optional string start end recs
   Extract record-related information from a piece of text.  Find,
   update, or create records as necessary, and then display them.  When
   the region is active, this command snarfs the current region,
   otherwise it snarfs the entire current buffer.  Called as a
   function, it can accept a string as the first argument and snarfs
-  that.
+  that.  The RECS argument, which cannot be passed interactively, is a
+  list of records that are assumed to be related to snarfable data in
+  STRING.
+
+In MUAs, EBDB can also snarf the body of the article being displayed.
+This is separate from the updating process, which only examines the
+article headers.  At present this is only implemented for Gnus.
+
+- Command: ebdb-mua-snarf-article
+  Snarf the body of the current article.
 * Diary Integration
 Some EBDB fields hold dates or anniversaries (most notably the
 `ebdb-field-anniversary' field).  It's possible to integrate this
 information with Emacs' diary package (and from there to Org, via the
-`org-agenda-include-diary' option).
+`org-agenda-include-diary' option).  At present, you'll need to have
+an actual diary file present at the location indicated by
+`diary-file', though the file can be blank.
 
 - Option ebdb-use-diary
   If non-nil, EBDB fields with date information will attempt to add
@@ -442,6 +449,9 @@ customizations aside, and set new EBDB options as you come across
 them.  The most important options are detailed in this manual, you can
 also customize the "EBDB" group to see what's available.
 * Hacking EBDB
+:PROPERTIES:
+:ID:       a58993a8-0631-459f-8bd6-7155bb6df605
+:END:
 EBDB is designed to be highly extensible.  In addition to the usual
 method of customizing options, it provides for subclassing of the
 three main classes -- database, record, and field.  The behavior of
@@ -453,7 +463,7 @@ defining classes, and [[info:elisp#Generic%20Functions][info:elisp#Generic Funct
 writing generic functions and methods.
 
 The simplest customization involves changing the default classes used
-for basic record and field types:
+for basic record and field types.
 
 - Option ebdb-default-record-class
   The default class used for creating records.  This class will be
@@ -536,8 +546,7 @@ provide default values for the new object.
 			     "Gender: " '(female male other unknown none)
 			     nil t
 			     (when obj (symbol-name (slot-value obj :gender)))))))
-	(when gender
-	  (setq slots (plist-put :gender gender)))))
+	(setq slots (plist-put :gender gender))))
     (cl-call-next-method class slots obj))
 
   (cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
@@ -561,6 +570,8 @@ first argument, and the record the instance belongs to as an optional
 second argument.  `ebdb-delete-field' also accepts an optional third
 argument, "unload", which is non-nil when the record is being
 unloaded, rather than deleted.
+
+Both methods should always end with a call to `cl-call-next-method'.
 
 `ebdb-init-field' is called:
 
@@ -595,11 +606,11 @@ used to hold labels, and pointing to it in the class-allocated
 #+END_SRC
 *** Actions
 All field classes have a class-allocated slot called "actions".  The
-value of this slot is a list of function symbols.  Users can trigger
-these actions by pressing "RET" while point is on the field in the
-{{{ebuf}}} buffer, using a numeric prefix arg to select from multiple
-possible actions, or the 0 prefix arg to be prompted for which action
-to take.
+value of this slot is a list of conses, for instance: '("Browse URL"
+. ebdb-field-url-browse).  Users can trigger these actions by
+pressing "RET" while point is on the field in the {{{ebuf}}} buffer,
+using a numeric prefix arg to select from multiple possible actions,
+or the 0 prefix arg to be prompted for which action to take.
 
 The functions in this list should accept two arguments, the record and
 the field instance under point.
