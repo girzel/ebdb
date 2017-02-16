@@ -2517,11 +2517,6 @@ priority."
   (cl-call-next-method record f-list all))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-organization)
-				  (_type (eql name))
-				  (regex string))
-  (string-match-p regex (ebdb-record-name record)))
-
-(cl-defmethod ebdb-record-search ((record ebdb-record-organization)
 				  (_type (eql organization))
 				  (regex string))
   (or (string-match-p regex (ebdb-record-name record))
