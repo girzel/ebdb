@@ -843,7 +843,7 @@ simple or complex name class."
     :initarg :suffix
     :type (or null string)
     :custom (choice (const :tag "No suffix" nil)
-		    (string :tag "Suffic"))
+		    (string :tag "Suffix"))
     :initform nil)
    ;; What is an affix, actually?
    (affix
@@ -927,15 +927,17 @@ first one."
     (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))) slots)))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
-  (let ((bits (ebdb-divide-name str)))
+  (pcase-let ((`(,surname ,given-names ,suffix)
+	       (ebdb-divide-name str)))
     (unless (plist-get slots :given-names)
       (setq slots (plist-put slots :given-names
-			     (when (car bits)
-			       (list (car bits))))))
+			     (when given-names
+			       (split-string given-names nil t)))))
     (unless (plist-get slots :surname)
       (setq slots (plist-put slots :surname
-			     (when (cdr bits)
-			       (cdr bits)))))
+			     (or surname ""))))
+    (unless (plist-get slots :suffix)
+      (setq slots (plist-put slots :suffix suffix)))
     (cl-call-next-method class str slots)))
 
 ;;; Role fields.
@@ -4277,14 +4279,15 @@ also be one of the special symbols below.
 ;;; Parsing other things
 
 (defun ebdb-divide-name (string)
-  "Divide STRING into a first name and a last name.
-Case is ignored.  Return name as (FIRST . LAST).
-LAST is always a string (possibly empty).  FIRST may be nil."
+  "Divide STRING into its component parts.
+Case is ignored.  Return name as a list of (LAST FIRST SUFFIX).
+LAST is always a string (possibly empty).  FIRST and SUFFIX may
+be nil."
   (let ((case-fold-search t)
         first suffix)
     ;; Separate a suffix.
     (if (string-match ebdb-lastname-suffix-re string)
-        (setq suffix (concat " " (match-string 1 string))
+        (setq suffix (match-string 1 string)
               string (substring string 0 (match-beginning 0))))
     (cond ((string-match "\\`\\(.+\\),[ \t\n]*\\(.+\\)\\'" string)
            ;; If STRING contains a comma, this probably means that STRING
@@ -4295,8 +4298,10 @@ LAST is always a string (possibly empty).  FIRST may be nil."
            (setq first (and (not (zerop (match-beginning 0)))
                             (substring string 0 (match-beginning 0)))
                  string (match-string 1 string))))
-    (cons (and first (ebdb-string-trim first))
-          (ebdb-string-trim (concat string suffix)))))
+    (delq nil
+	  (list (ebdb-string-trim string)
+		(and first (ebdb-string-trim first))
+		suffix))))
 
 (defun ebdb-parse-postcode (string)
   "Check whether STRING is a legal postcode.
