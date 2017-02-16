@@ -696,7 +696,7 @@ name based on the current major mode."
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
       (let ((record-number 0)
-	    buffer-read-only)
+	    buffer-read-only start)
         (erase-buffer)
 	(insert (ebdb-fmt-header fmt records))
         (dolist (record ebdb-records)
