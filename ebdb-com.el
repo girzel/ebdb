@@ -715,18 +715,18 @@ name based on the current major mode."
       (goto-char (point-min))
       (set-window-start (get-buffer-window (current-buffer)) (point)))))
 
-(defun ebdb-undisplay-records (&optional all-buffers)
-  "Undisplay records in *EBDB* buffer, leaving this buffer empty.
-If ALL-BUFFERS is non-nil undisplay records in all EBDB buffers."
-  (dolist (buffer (cond (all-buffers (buffer-list))
-                        ((let ((buffer (get-buffer ebdb-buffer-name)))
-                           (and (buffer-live-p buffer) (list buffer))))))
-    (with-current-buffer buffer
+(defun ebdb-undisplay-records (&optional buffer)
+  "Undisplay records in *EBDB* BUFFER, leaving the buffer empty.
+
+If BUFFER is nil, use the *EBDB* buffer associated with the
+current buffer."
+  (let ((buf (or buffer (ebdb-make-buffer-name))))
+    (with-current-buffer (get-buffer buf)
       (when (eq major-mode 'ebdb-mode)
-        (let (buffer-read-only)
-          (erase-buffer))
-        (setq ebdb-records nil)
-        (set-buffer-modified-p nil)))))
+	(let (buffer-read-only)
+	  (erase-buffer))
+	(setq ebdb-records nil)
+	(set-buffer-modified-p nil)))))
 
 (defun ebdb-redisplay-all-records (_ignore-auto _noconfirm)
   "Used as the value of `revert-buffer-function' in *EBDB* buffers."
