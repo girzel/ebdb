@@ -4279,45 +4279,6 @@ also be one of the special symbols below.
 				 (field string))
   (ebdb-record-user-field record field))
 
-(defun ebdb-merge-concat (string1 string2 &optional separator)
-  "Return the concatenation of STRING1 and STRING2.
-SEPARATOR defaults to \"\\n\"."
-  (concat string1 (or separator "\n") string2))
-
-(defun ebdb-merge-concat-remove-duplicates (string1 string2)
-  "Concatenate STRING1 and STRING2, but remove duplicate lines."
-  (let ((lines (split-string string1 "\n")))
-    (dolist (line (split-string string2 "\n"))
-      (cl-pushnew line lines))
-    (ebdb-concat "\n" lines)))
-
-(defun ebdb-merge-string-least (string1 string2)
-  "Return the string out of STRING1 and STRING2 that is `string-lessp'."
-  (if (string-lessp string1 string2)
-      string1
-    string2))
-
-(defun ebdb-merge-string-most (string1 string2)
-  "Return the string out of STRING1 and STRING2 that is not `string-lessp'."
-  (if (string-lessp string1 string2)
-      string2
-    string1))
-
-(defun ebdb-merge-lists (l1 l2 cmp)
-  "Merge two lists L1 and L2 based on comparison CMP.
-An element from L2 is added to L1 if CMP returns nil for all elements of L1.
-If L1 or L2 are not lists, they are replaced by (list L1) and (list L2)."
-  (let (merge)
-    (unless (listp l1) (setq l1 (list l1)))
-    (dolist (e2 (if (listp l2) l2 (list l2)))
-      (let ((ll1 l1) e1 fail)
-        (while (setq e1 (pop ll1))
-          (if (funcall cmp e1 e2)
-              (setq ll1 nil
-                    fail t)))
-        (unless fail (push e2 merge))))
-    (append l1 (nreverse merge))))
-
 ;;; Parsing other things
 
 (defun ebdb-divide-name (string)
