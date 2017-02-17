@@ -720,13 +720,14 @@ name based on the current major mode."
 
 If BUFFER is nil, use the *EBDB* buffer associated with the
 current buffer."
-  (let ((buf (or buffer (ebdb-make-buffer-name))))
-    (with-current-buffer (get-buffer buf)
-      (when (eq major-mode 'ebdb-mode)
-	(let (buffer-read-only)
-	  (erase-buffer))
-	(setq ebdb-records nil)
-	(set-buffer-modified-p nil)))))
+  (let ((buf (get-buffer (or buffer (ebdb-make-buffer-name)))))
+    (when buf
+      (with-current-buffer buf
+	(when (eq major-mode 'ebdb-mode)
+	  (let (buffer-read-only)
+	    (erase-buffer))
+	  (setq ebdb-records nil)
+	  (set-buffer-modified-p nil))))))
 
 (defun ebdb-redisplay-all-records (_ignore-auto _noconfirm)
   "Used as the value of `revert-buffer-function' in *EBDB* buffers."
