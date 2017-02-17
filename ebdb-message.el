@@ -65,12 +65,21 @@
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
   (list (get-buffer-window) 0.4))
 
+;;   There's a bit more work to do here: *EBDB-Message* buffer should
+;; be displayed immediately when replying to messages, for instance.
+
 (defun ebdb-insinuate-message ()
   (when ebdb-complete-mail
     (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
 		message-completion-alist
 		:test #'equal)
-    (define-key mail-mode-map (kbd "TAB") 'ebdb-complete-mail)))
+    (define-key message-mode-map (kbd "TAB") 'ebdb-complete-mail))
+  ;; Other MUAs clear the EBDB buffer before displaying (in
+  ;; `ebdb-mua-auto-update', the call to `ebdb-display-records' does
+  ;; not pass the "append" flag).  Displaying in message-mode does
+  ;; pass the "append" flag (in `ebdb-complete-mail-cleanup'), so we
+  ;; do the undisplay manually.
+  (ebdb-undisplay-records))
 
 (defun ebdb-insinuate-mail ()
   "Hook EBDB into Mail Mode."
@@ -80,7 +89,8 @@
   ;; (define-key mail-mode-map ";" 'ebdb-mua-edit-field-recipients)
   ;; (define-key mail-mode-map "/" 'ebdb)
   (if ebdb-complete-mail
-      (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
+      (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail))
+  (ebdb-undisplay-records))
 
 (add-hook 'message-mode-hook 'ebdb-insinuate-message)
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
