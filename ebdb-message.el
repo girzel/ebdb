@@ -68,9 +68,6 @@
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
   (list (get-buffer-window) 0.4))
 
-;;   There's a bit more work to do here: *EBDB-Message* buffer should
-;; be displayed immediately when replying to messages, for instance.
-
 (defun ebdb-insinuate-message ()
   (when ebdb-complete-mail
     (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
@@ -99,5 +96,26 @@
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
 (add-hook 'message-send-hook 'ebdb-mua-auto-update)
 (add-hook 'mail-send-hook 'ebdb-mua-auto-update)
+
+;; Slightly convoluted, but does it the "right way".  The
+;; `message-header-setup-hook' creates and populates the
+;; *EBDB-Message* buffer after the message-mode buffer is created.
+;; The gnus window configuration stanza makes sure it's displayed
+;; after the message buffer is set up.
+(add-to-list 'gnus-window-to-buffer `(ebdb . ,(ebdb-message-buffer-name)))
+(add-hook 'message-header-setup-hook 'ebdb-mua-auto-update)
+
+(gnus-add-configuration
+ '(reply
+   (horizontal 1.0
+	       (message 1.0 point)
+	       (ebdb 0.4))))
+
+(gnus-add-configuration
+ '(reply-yank
+   (horizontal 1.0
+	       (message 1.0 point)
+	       (ebdb 0.4))))
+
 (provide 'ebdb-message)
 ;;; ebdb-message.el ends here
