@@ -2839,10 +2839,14 @@ somehow out of sync.
 DB has unsaved changes.  Unsynced means that saving those
 changes (or re-loading the database from its source) would
 overwrite data somewhere."
-  (let ((file-mod-time
-	 (file-attribute-modification-time
+  (let* ((file-attrs
 	  (file-attributes
-	   (expand-file-name (slot-value db 'file))))))
+	   (expand-file-name (slot-value db 'file))))
+	 (file-mod-time
+	  ;; This accessor was added in 26.1, we support Emacs 25.
+	  (if (fboundp 'file-attribute-modification-time)
+	      (file-attribute-modification-time file-attrs)
+	    (nth 5 file-attrs))))
     (and file-mod-time
 	 (time-less-p (slot-value db 'sync-time) file-mod-time))))
 
