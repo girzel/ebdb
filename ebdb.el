@@ -883,7 +883,7 @@ first one."
     (with-slots (prefix surname suffix) name
       (ebdb-string-trim
        (concat (when given
-		 (concat "%s " given))
+		 (format "%s " given))
 	       (when prefix
 		 (format "%s " prefix))
 	       (slot-value name 'surname)
