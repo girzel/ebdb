@@ -878,8 +878,8 @@ first one."
 	    (when prefix prefix)
 	    (when given-string (format ", %s" given-string)))))
 
-(cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional _full)
-  (let ((given (ebdb-name-given name)))
+(cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional full)
+  (let ((given (ebdb-name-given name full)))
     (with-slots (prefix surname suffix) name
       (ebdb-string-trim
        (concat (when given
@@ -896,13 +896,17 @@ first one."
   ;; produces the name you'll see in the *EBDB* buffer, so this is the
   ;; bit that should be most customizable, and most flexible.  This
   ;; value also gets stored in the cache.
-  (ebdb-name-fl name))
+  (ebdb-name-fl name t))
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) &optional record)
   (when record
-    (let ((lf (ebdb-name-lf name))
+    (let ((lf-full (ebdb-name-lf name t))
+	  (fl-full (ebdb-name-fl name t))
 	  (fl (ebdb-name-fl name)))
-	(ebdb-puthash lf record)
+	(ebdb-puthash lf-full record)
+	(ebdb-puthash fl-full record)
+	;; Also hash against "first last", as an alternate search
+	;; strategy.
 	(ebdb-puthash fl record)
 	(object-add-to-list (ebdb-record-cache record) 'alt-names lf)
 	(object-add-to-list (ebdb-record-cache record) 'alt-names fl)))
