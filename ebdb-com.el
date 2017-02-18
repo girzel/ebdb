@@ -931,7 +931,7 @@ displayed records."
      "--"
      ["Print records" ebdb-print t])
     ("Manipulate database"
-     ["Create new record" ebdb-create t]
+     ["Create new record" ebdb-create-record t]
      ["Edit current field" ebdb-edit-field t]
      ["Insert new field" ebdb-insert-field t]
      ["Edit some field" ebdb-edit-foo t]
