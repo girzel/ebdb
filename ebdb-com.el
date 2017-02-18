@@ -1360,7 +1360,7 @@ query before deleting the redundant mail addresses.
 Noninteractively, this may be used as an element of `ebdb-notice-record-hook'
 or `ebdb-change-hook'.  However, see also `ebdb-ignore-redundant-mails',
 which is probably more suited for your needs."
-  (interactive (list (ebdb-do-records) (not current-prefix-arg) t))
+  (interactive (list (ebdb-do-records) (not current-prefix-arg)))
   (dolist (record (ebdb-record-list records))
     (let (mails redundant okay)
       ;; We do not look at the canonicalized mail addresses of RECORD.
@@ -1370,22 +1370,24 @@ which is probably more suited for your needs."
       ;; foo@baz.com, "Joe Smith <foo@baz.com>", "Jonathan Smith <foo@baz.com>"
       ;; we do not know which address to keep and which ones to throw.
       (dolist (mail (ebdb-record-mail record))
-        (if (assoc-string mail mails t) ; duplicate mail address
+        (if (member mail mails) ; duplicate mail address
             (push mail redundant)
           (push mail mails)))
-      (let ((mail-re (delq nil (mapcar 'ebdb-mail-redundant-re mails)))
+      (let ((mail-re (delq nil (mapcar (lambda (m)
+					 (ebdb-mail-redundant-re
+					  (ebdb-string m)))
+				       mails)))
             (case-fold-search t))
         (if (not (cdr mail-re)) ; at most one mail-re address to consider
             (setq okay (nreverse mails))
-          (setq mail-re (concat "\\`\\(?:" (mapconcat 'identity mail-re "\\|")
-                                "\\)\\'"))
+          (setq mail-re (regexp-opt mail-re))
           (dolist (mail mails)
-            (if (string-match mail-re mail) ; redundant mail address
+            (if (string-match mail-re (ebdb-string mail)) ; redundant mail address
                 (push mail redundant)
               (push mail okay)))))
       (let ((form (format "redundant mail%s %s"
                           (if (< 1 (length redundant)) "s" "")
-                          (ebdb-concat 'mail (nreverse redundant)))))
+                          (mapconcat #'ebdb-string (nreverse redundant) ", "))))
         (when (and redundant
                    (or (not query)
                        (y-or-n-p (format "Delete %s: " form))))
