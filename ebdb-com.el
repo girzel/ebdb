@@ -534,7 +534,7 @@ This happens in addition to any pre-defined indentation of STRING."
 				     (string-width (car f)))
 				   field-list))
 	    0))
-	 (label-fmt (format " %%%ds" indent))
+	 (label-fmt (format "   %%%ds" indent))
 	 ;; `window-text-width' doesn't work for pop-up buffers,
 	 ;; they're not displayed yet!  How do we resolve this...?
 	 (fill-column (window-text-width))
