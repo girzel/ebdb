@@ -866,9 +866,10 @@ simple or complex name class."
 If FULL is t, return all the given names, otherwise just the
 first one."
   (let ((given (slot-value name 'given-names)))
-    (if full
-	(mapconcat #'identity given " ")
-      (car given))))
+    (when given
+      (if full
+	  (mapconcat #'identity given " ")
+	(car given)))))
 
 (cl-defmethod ebdb-name-lf ((name ebdb-field-name-complex) &optional full)
   (let ((given-string (ebdb-name-given name full))
@@ -878,14 +879,16 @@ first one."
 	    (when given-string (format ", %s" given-string)))))
 
 (cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional _full)
-  (with-slots (prefix surname suffix) name
-    (concat (ebdb-name-given name t)
-	    " "
-	    (when prefix
-	      (format "%s " prefix))
-	    (slot-value name 'surname)
-	    (when suffix
-	      (format ", %s" suffix)))))
+  (let ((given (ebdb-name-given name)))
+    (with-slots (prefix surname suffix) name
+      (ebdb-string-trim
+       (concat (when given
+		 (concat "%s " given))
+	       (when prefix
+		 (format "%s " prefix))
+	       (slot-value name 'surname)
+	       (when suffix
+		 (format ", %s" suffix)))))))
 
 (cl-defmethod ebdb-string ((name ebdb-field-name-complex))
   "Produce a canonical string for NAME."
