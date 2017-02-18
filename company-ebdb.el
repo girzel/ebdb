@@ -43,6 +43,13 @@
              (eval '(ebdb-search (ebdb-records) `((ebdb-field-name ,arg)
 						  (ebdb-field-mail ,arg))))))
 
+(defun company-ebdb--post-complete (arg)
+  (when (memq major-mode company-ebdb-modes)
+   (let* ((bits (ebdb-decompose-ebdb-address arg))
+	  (recs (ebdb-message-search (car bits) (nth 1 bits))))
+     (when recs
+       (ebdb-display-records recs nil nil nil (ebdb-popup-window))))))
+
 ;;;###autoload
 (defun company-ebdb (command &optional arg &rest ignore)
   "`company-mode' completion backend for EBDB."
@@ -55,6 +62,7 @@
                                (line-beginning-position))
                  (match-string-no-properties 2)))
     (candidates (company-ebdb--candidates arg))
+    (post-completion (company-ebdb--post-complete arg))
     (sorted t)
     (no-cache t)))
 
