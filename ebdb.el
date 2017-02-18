@@ -908,18 +908,20 @@ first one."
 	;; Also hash against "first last", as an alternate search
 	;; strategy.
 	(ebdb-puthash fl record)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names lf)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names fl)))
+	(object-add-to-list (ebdb-record-cache record) 'alt-names lf-full)
+	(object-add-to-list (ebdb-record-cache record) 'alt-names fl-full)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) &optional record _unload)
   (when record
-    (let ((lf (ebdb-name-lf name))
+    (let ((lf-full (ebdb-name-lf name t))
+	  (fl-full (ebdb-name-fl name t))
 	  (fl (ebdb-name-fl name)))
-      (ebdb-remhash lf record)
+      (ebdb-remhash lf-full record)
+      (ebdb-remhash fl-full record)
       (ebdb-remhash fl record)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names lf)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names fl)))
+      (object-remove-from-list (ebdb-record-cache record) 'alt-names lf-full)
+      (object-remove-from-list (ebdb-record-cache record) 'alt-names fl-full)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
