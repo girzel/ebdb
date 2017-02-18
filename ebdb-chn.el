@@ -59,7 +59,8 @@ This should only run once, at init time, or any time a record's
 name is changed.  The value ends up in the 'name-string slot of
 the record cache."
   (with-slots (surname given-names) field
-    (format "%s%s" surname (car given-names))))
+    (concat (when surname surname)
+	    (when given-names (car given-names)))))
 
 (cl-defmethod ebdb-china-handle-name ((field ebdb-field-name-complex)
 				      (record ebdb-record)
