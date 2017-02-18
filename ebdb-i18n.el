@@ -77,6 +77,11 @@ This method should return a new instance of CLASS.")
 (cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
   "An internationalized version of `ebdb-delete-field'.")
 
+(cl-defmethod ebdb-parse-i18n :around (_class _string _spec)
+  "Don't clobber match data when testing names."
+  (save-match-data
+    (cl-call-next-method)))
+
 ;;;###autoload
 (defun ebdb-internationalize-addresses ()
   "Go through all the EBDB contacts and \"internationalize\"
