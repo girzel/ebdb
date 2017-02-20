@@ -24,9 +24,81 @@
 ;;; Code:
 
 (require 'ert)
-(require 'pcase)
 (require 'ebdb)
 (require 'ebdb-snarf)
+(eval-when-compile
+  (require 'cl-macs))
+
+;; Testing macros.
+
+(defmacro ebdb-test-with-database (db-and-filename &rest body)
+  "Macro providing a temporary database to work with."
+  (declare (indent 1) (debug t))
+  `(let ((,(car db-and-filename) (make-instance 'ebdb-db-file
+						 :file ,(nth 1 db-and-filename)
+						 :dirty t)))
+     (ebdb-db-save ,(car db-and-filename))
+     (unwind-protect
+	 (progn
+	   ,@body)
+       (delete-file ,(nth 1 db-and-filename))
+       (setq ebdb-db-list (remove ,(car db-and-filename)
+				  ebdb-db-list)))))
+
+(defmacro ebdb-test-save-vars (&rest body)
+  "Don't let EBDB tests pollute `ebdb-record-tracker'."
+  (declare (indent 0) (debug t))
+  (let ((old-record-tracker (cl-gensym)))
+    `(let ((,old-record-tracker ebdb-record-tracker)
+	   (ebdb-record-tracker nil))
+       (unwind-protect
+	   (progn
+	     ,@body)
+	 (setq ebdb-record-tracker ,old-record-tracker)))))
+
+;; Test database file name.
+(defvar ebdb-test-database-1 (make-temp-name
+			      (expand-file-name
+			       "ebdb-test-db-1-"
+			       temporary-file-directory)))
+
+(ert-deftest ebdb-make-database ()
+  "Make a database and save it to disk."
+  (ebdb-test-with-database (db ebdb-test-database-1)
+    (should (file-exists-p ebdb-test-database-1))
+    (should (null (slot-value db 'dirty)))))
+
+(ert-deftest ebdb-read-database ()
+  "Read a database from file."
+  (ebdb-test-with-database (db ebdb-test-database-1)
+    (let ((reloaded
+	   (eieio-persistent-read ebdb-test-database-1 'ebdb-db t)))
+      (should (object-of-class-p reloaded 'ebdb-db-file)))))
+
+(ert-deftest ebdb-database-unsynced ()
+  "Make sure database knows it's unsynced."
+  (ebdb-test-with-database (db ebdb-test-database-1)
+    ;; Sync-time doesn't get updated until we load it.
+    (ebdb-db-load db)
+    ;; Apparently the two calls are too close together to register a
+    ;; difference in time, which I find weird.
+    (sit-for 0.1)
+    (append-to-file "\n;; Junk string" nil (slot-value db 'file))
+    (should (ebdb-db-unsynced db))))
+
+(ert-deftest ebdb-make-record ()
+  (ebdb-test-save-vars
+   (let ((rec (make-instance ebdb-default-record-class)))
+     (should (object-of-class-p rec 'ebdb-record)))))
+
+(ert-deftest ebdb-add-record ()
+  "Create a record, add it to DB, and make sure it has a UUID."
+  (ebdb-test-save-vars
+    (ebdb-test-with-database (db ebdb-test-database-1)
+      (let ((rec (make-instance 'ebdb-record-person)))
+	(should (null (ebdb-record-uuid rec)))
+	(ebdb-db-add-record db rec)
+	(should (stringp (ebdb-record-uuid rec)))))))
 
 ;; Very basic sanity tests for field instances.
 
