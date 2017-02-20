@@ -4664,6 +4664,20 @@ values, by default the search is not handed to the name field itself."
        (ebdb-record-alt-names record))
       (ebdb-field-search (slot-value record 'name) regexp)))
 
+(cl-defmethod ebdb-record-search ((record ebdb-record-person)
+				  (_type (subclass ebdb-field-name))
+				  (regexp string))
+  ;; First pass the search to the more general method, and only really
+  ;; search the names if we don't find anything.
+
+  ;; This is done to allow overrides of `ebdb-field-search' for names
+  ;; to kick in.  It makes the exhaustive search slower, though.
+  (or (cl-call-next-method)
+      (cl-some
+       (lambda (name)
+	 (ebdb-field-search name regexp))
+       (slot-value record 'aka))))
+
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (subclass ebdb-field-notes))
 				  (regexp string))
