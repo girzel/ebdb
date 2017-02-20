@@ -1820,7 +1820,8 @@ If UNLOAD is non-nil, we should only unload RECORD, not delete it
 altogether.")
 
 (cl-defmethod ebdb-record-uuid ((record ebdb-record))
-  (slot-value (slot-value record 'uuid) 'uuid))
+  (if-let ((uuid-field (slot-value record 'uuid)))
+   (slot-value uuid-field 'uuid)))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record)) &optional slots)
   "Create a new record from the values collected into SLOTS."
