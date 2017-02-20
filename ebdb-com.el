@@ -261,7 +261,7 @@ display information."
     (define-key km (kbd "N")		'ebdb-next-field)
     (define-key km (kbd "TAB")		'ebdb-next-field)
     (define-key km (kbd "P")		'ebdb-prev-field)
-    (define-key km (kbd "DEL")		'ebdb-prev-field)
+    (define-key km (kbd "<backtab>")    'ebdb-prev-field)
     ;; Database-related commands
     (define-key km (kbd "d c")          'ebdb-copy-records)
     (define-key km (kbd "d m")          'ebdb-move-records)
