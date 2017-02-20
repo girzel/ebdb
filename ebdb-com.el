@@ -292,7 +292,6 @@ display information."
     (define-key km (kbd "w r")		'ebdb-copy-records-as-kill)
     (define-key km (kbd "w f")		'ebdb-copy-fields-as-kill)
     (define-key km (kbd "w m")		'ebdb-copy-mail-as-kill)
-    ;; (define-key km (kbd "P"		'ebdb-print)
     (define-key km (kbd "=")		'delete-other-windows)
     ;; Buffer manipulation
     (define-key km (kbd "b c")		'ebdb-clone-buffer)
@@ -927,9 +926,7 @@ displayed records."
      ["Copy fields as kill" ebdb-copy-fields-as-kill t]
      ["Copy mail as kill" ebdb-copy-mail-as-kill t]
      ["Follow relation" ebdb-follow-related t]
-     ["Export records in other format" ebdb-format-to-tmp-buffer t]
-     "--"
-     ["Print records" ebdb-print t])
+     ["Export records in other format" ebdb-format-to-tmp-buffer t])
     ("Manipulate database"
      ["Create new record" ebdb-create-record t]
      ["Edit current field" ebdb-edit-field t]
@@ -1047,8 +1044,6 @@ was saved.
 \\[ebdb-mail]\t Compose mail to the person represented by the \
 current record.
 \\[ebdb-save]\t Save the EBDB file to disk.
-\\[ebdb-print]\t Create a TeX file containing a pretty-printed version \
-of all the\n\t records in the database.
 \\[ebdb-info]\t Read the Info documentation for EBDB.
 \\[ebdb-help]\t Display a one line command summary in the echo area.
 
