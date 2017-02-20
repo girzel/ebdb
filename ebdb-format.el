@@ -404,15 +404,33 @@ grouped by field class."
    (list (ebdb-prompt-for-formatter)
 	 (ebdb-do-records)))
   (let ((buf (get-buffer-create ebdb-format-buffer-name))
-	(fmt-coding (slot-value formatter 'coding-system)))
-    (with-current-buffer buf
-      (erase-buffer)
-      (insert (ebdb-fmt-header formatter records))
-      (dolist (r records)
-	(insert (ebdb-fmt-record formatter r)))
-      (insert (ebdb-fmt-footer formatter records))
-      (set-buffer-file-coding-system fmt-coding))
-    (pop-to-buffer buf)))
+	(fmt-coding (slot-value formatter 'coding-system))
+	(ebdb-p (object-of-class-p formatter 'ebdb-formatter-ebdb)))
+    ;; If the user has chosen an ebdb formatter, we need to
+    ;; special-case it.  First because the ebdb formatters handle
+    ;; insertion themselves and the other formatters don't, which was
+    ;; arguably a bad choice.  Second because ebdb formatting should
+    ;; behave differently here -- we assume that what the user
+    ;; actually wants is a text-mode buffer containing the text that
+    ;; *would have been* displayed in an *EBDB* buffer, but with all
+    ;; properties removed.
+    (if ebdb-p
+	(save-window-excursion
+	  (ebdb-display-records records formatter nil nil nil " *EBDB Fake Output*")
+	  (let ((str (buffer-substring-no-properties
+		      (point-min) (point-max))))
+	    (with-current-buffer buf
+	      (erase-buffer)
+	      (insert str))))
+      (with-current-buffer buf
+	(erase-buffer)
+	(insert (ebdb-fmt-header formatter records))
+	(dolist (r records)
+	  (insert (ebdb-fmt-record formatter r)))
+	(insert (ebdb-fmt-footer formatter records))
+	(set-buffer-file-coding-system fmt-coding)))
+    (pop-to-buffer buf)
+    (text-mode)))
 
 ;;;###autoload
 (defun ebdb-format-all-records (&optional formatter)
