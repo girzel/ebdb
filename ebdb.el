@@ -4668,7 +4668,7 @@ values, by default the search is not handed to the name field itself."
 				  (_type (subclass ebdb-field-notes))
 				  (regexp string))
   (if-let (notes (slot-value record 'notes))
-      (string-match-p regexp (ebdb-string notes))))
+      (ebdb-field-search notes regexp)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
 				  (_type (subclass ebdb-field-phone))
