@@ -1730,8 +1730,9 @@ confirm deletion."
       (ebdb-delete-records records noprompt)
     (ebdb-with-record-edits (record records)
       (when (or noprompt
-		(y-or-n-p (format "Delete this `%s' field (of %s)? "
+		(y-or-n-p (format "Delete \"%s\" %s (of %s)? "
 				  (ebdb-field-readable-name field)
+				  (car (split-string (ebdb-string field) "\n"))
 				  (ebdb-record-name record))))
 	(ebdb-record-delete-field
 	 record (car (ebdb-record-field-slot-query
