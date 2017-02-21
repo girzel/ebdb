@@ -59,12 +59,13 @@ country code, or a country symbol, or a script symbol.
 
 This method should return a plist of slots for object creation.")
 
-(cl-defgeneric ebdb-parse-i18n (class string spec)
+(cl-defgeneric ebdb-parse-i18n (class string spec slots)
   "An internationalized version of `ebdb-parse'.
 
 This works the same as `ebdb-read', plus an additional argument
 SPEC.  What SPEC is depends on CLASS, but might be a phone
-country code, or a country symbol, or a script symbol.
+country code, or a country symbol, or a script symbol.  SLOTS is
+a plist of existing slot values.
 
 This method should return a new instance of CLASS.")
 
@@ -77,7 +78,7 @@ This method should return a new instance of CLASS.")
 (cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
   "An internationalized version of `ebdb-delete-field'.")
 
-(cl-defmethod ebdb-parse-i18n :around (_class _string _spec)
+(cl-defmethod ebdb-parse-i18n :around (_class _string _spec _slots)
   "Don't clobber match data when testing names."
   (save-match-data
     (cl-call-next-method)))
