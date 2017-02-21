@@ -29,6 +29,40 @@
 
 (require 'chinese-pyim-dictools)
 
+(cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+				(_cc (eql 86)))
+  (with-slots (area-code number extension) phone
+    (concat
+     "+86 "
+     (if area-code
+	 (format "%d-%s" area-code number)
+       number)
+     (if extension
+	 (format "X%d" extension)
+       ""))))
+
+(cl-defmethod ebdb-parse-i18n ((class (subclass ebdb-field-phone))
+			       (str string)
+			       (cc (eql 86))
+			       &optional slots)
+  ;; First remove everything but the numbers.
+  (let ((num-str (string-trim
+		  (replace-regexp-in-string "[^0-9Xx]+" "" str)))
+	a-code number extension)
+    ;; In China, basically everything that starts with a 1 is a cell
+    ;; number, unless it starts with a 10, in which case it's the
+    ;; Beijing area code.  Sometimes the area codes are written with a
+    ;; leading zero, but they shouldn't be saved that way.
+    (when (string-match "\\`0?\\(10\\|[2-9][0-9]\\{1,2\\}\\)?\\([0-9]+\\)" num-str)
+      (setq a-code (match-string 1 num-str)
+	    slots (plist-put slots :number (match-string 2 num-str)))
+      (when a-code
+	(setq slots (plist-put slots :area-code (string-to-number a-code)))))
+    (when (string-match "X\\([0-9]+\\)\\'" num-str)
+      (setq slots (plist-put slots :extension
+			     (string-to-number (match-string 1 num-str)))))
+    (apply #'make-instance 'ebdb-field-phone slots)))
+
 ;; This isn't all of them, but it seems like a reasonable subset.  See
 ;; https://en.wikipedia.org/wiki/Chinese_compound_surname for a fuller
 ;; list.

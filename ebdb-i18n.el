@@ -149,6 +149,24 @@ for their symbol representations.")
 	     slots)))
     (cl-call-next-method class slots obj)))
 
+(cl-defmethod ebdb-string :extra "i18n" ((phone ebdb-field-phone))
+  "Internationally-aware version of `ebdb-string' for phones."
+  (let ((cc (slot-value phone 'country-code)))
+    (or (and cc
+	     (condition-case nil
+		 (ebdb-string-i18n phone cc)
+	       (cl-no-applicable-method nil)))
+	(cl-call-next-method))))
+
+(cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-phone))
+			  (str string)
+			  &optional slots)
+  (let ((cc (plist-get slots :country-code)))
+    (or (and cc
+	     (condition-case nil
+		 (ebdb-parse-i18n class str cc slots)
+	       (cl-no-applicable-method nil)))
+	(cl-call-next-method))))
 
 ;; We don't need to override the `ebdb-read' method for names.  It
 ;; only matters what script the name is in if the user has set
