@@ -73,7 +73,8 @@
 
 (cl-defmethod ebdb-parse-i18n ((class (subclass ebdb-field-name-complex))
 			       (string string)
-			       (script (eql han)))
+			       (script (eql han))
+			       &optional slots)
   (let (surname given-names)
     (if (string-match (format "\\`\\(%s\\)\\(.*\\)\\'" (regexp-opt ebdb-china-compound-surnames)) string)
 	(setq surname (match-string 1 string)

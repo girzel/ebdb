@@ -182,7 +182,7 @@ for their symbol representations.")
     (or (and script
 	     (null (memq script ebdb-i18n-ignorable-scripts))
 	     (condition-case nil
-		 (ebdb-parse-i18n class string script)
+		 (ebdb-parse-i18n class string script slots)
 	       (cl-no-applicable-method
 		nil)))
 	(cl-call-next-method))))
