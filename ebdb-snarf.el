@@ -101,8 +101,7 @@ be relevant to snarfed field data."
 		     (ebdb-snarf-collapse
 		      (ebdb-snarf-collect recs)))))
     (when records
-      (ebdb-display-records records nil nil t (ebdb-popup-window)
-			    (format "*%s-Snarf*" ebdb-buffer-name)))))
+      (ebdb-display-records records nil t nil (list (selected-window))))))
 
 (defun ebdb-snarf-collect (&optional records)
   "Collect EBDB record information from the text of the current buffer.
