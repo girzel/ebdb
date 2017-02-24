@@ -383,6 +383,24 @@ Lisp Hackers: See also `ebdb-silent-internal'."
   :type '(choice (const :tag "Run silently" t)
                  (const :tag "Disable silent running" nil)))
 
+(defcustom ebdb-search-transform-functions nil
+  "A list of functions used to transform strings during
+  searching.
+
+Each time the user enters a search search string during
+interactive search, that string will be passed through each of
+the functions in this list, which have a chance to modify the
+string somehow before it is actually matched against field
+values.
+
+Each function should accept a single argument, a string, and
+return the transformed string.  If the criteria for any given
+search is not a string, it will not be passed through these
+functions."
+
+  :group 'ebdb
+  :type 'list)
+
 (defcustom ebdb-info-file nil
   "Location of the ebdb info file, if it's not in the standard place."
   :group 'ebdb
@@ -4749,6 +4767,16 @@ values, by default the search is not handed to the name field itself."
 
 In most cases this is a simple regexp, but field classes can
 prompt users for more complex search criteria, if necessary.")
+
+(cl-defmethod ebdb-search-read :around ((cls (subclass ebdb-field)))
+  "Give the functions in `ebdb-search-transform-functions' a
+chance to transform the search string."
+  (let ((criterion (cl-call-next-method)))
+    (if (and ebdb-search-transform-functions
+	     (stringp criterion))
+	(dolist (f ebdb-search-transform-functions criterion)
+	  (setq criterion (funcall f criterion)))
+      criterion)))
 
 (cl-defmethod ebdb-search-read ((cls (subclass ebdb-field)))
   (read-string (format "Search records with %s %smatching regexp: "
