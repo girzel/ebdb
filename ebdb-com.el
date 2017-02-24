@@ -975,8 +975,19 @@ buffer."
 			      (> (window-total-width split-window)
 				 (window-total-height split-window)))
 			 'horiz
-		       'vert)))
-
+		       'vert))
+	 ;; This is a hack, necessitated by my ignorance about window
+	 ;; splitting.  We were originally using `split-window'
+	 ;; directly; I changed that because it seemed better to be
+	 ;; using a higher-level function, and because
+	 ;; `display-buffer-pop-up-window' sets the `quit-restore'
+	 ;; window parameter correctly.  But it's also too clever, and
+	 ;; won't split windows on small screens, and we essentially
+	 ;; don't ever want *EBDB* to reuse an existing window.
+	 ;; Probably I should just go back to using `split-window',
+	 ;; and figure out how to manually set `quit-restore'.
+	 (split-width-threshold (/ split-width-threshold 2))
+	 (split-height-threshold (/ split-height-threshold 2)))
     (cond (buffer-window
 	   ;; It's already visible, re-use it.
 	   nil)
