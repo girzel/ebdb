@@ -75,7 +75,7 @@
 
 (cl-defmethod ebdb-read ((field (subclass ebdb-gnus-private-field)) &optional slots obj)
   (let ((group (ebdb-read-string "Group name: " (when obj (slot-value obj 'group)))))
-    (cl-call-next-method)))
+    (cl-call-next-method field (plist-put slots :group group) obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-gnus-private-field))
   (slot-value field 'group))
@@ -108,7 +108,7 @@ record which contains a gnus-score field.")
   "This function is called through `ebdb-after-change-hook',
 and sets `ebdb/gnus-score-rebuild-alist' to t if the changed
 record contains a gnus-score field."
-  (if (ebdb-record-user-field record ebdb-gnus-score-field)
+  (if (ebdb-record-user-field record 'ebdb-gnus-score-field)
       (setq ebdb/gnus-score-rebuild-alist t)))
 
 ;;;###autoload
@@ -126,7 +126,7 @@ addresses better than the traditionally static global scorefile."
                   (ding) (sit-for 2)
                   nil)))))
 
-(defun ebdb/gnus-score-as-text (group)
+(defun ebdb/gnus-score-as-text (_group)
   "Returns a SCORE file format string built from the EBDB."
   (cond ((or (cond ((/= (or ebdb/gnus-score-default 0)
                         (or ebdb/gnus-score-default-internal 0))
@@ -140,7 +140,7 @@ addresses better than the traditionally static global scorefile."
                (concat "((touched nil) (\"from\"\n"
                        (mapconcat
                         (lambda (record)
-                          (let ((score (or (ebdb-record-user-field record ebdb-gnus-score-field)
+                          (let ((score (or (ebdb-record-user-field record 'ebdb-gnus-score-field)
                                            ebdb/gnus-score-default))
                                 (mail (ebdb-record-mail record)))
                             (when (and score mail)
@@ -300,9 +300,9 @@ determine the group and spooling priority for a single address."
              (record (car (ebdb-message-search (car tmp) mail)))
              public private rgx)
         (when record
-          (setq private (ebdb-record-user-field record  ebdb-gnus-private-field)
+          (setq private (ebdb-record-user-field record  'ebdb-gnus-private-field)
 		;; TODO: Fix this, there's no longer a public field.
-                public (ebdb-record-user-field record ebdb/gnus-split-public-field))
+                public (ebdb-record-user-field record 'ebdb/gnus-split-public-field))
           (if (and public (not source) (string-match "^\\([^ ]+\\) \\(.*\\)$" public))
               (setq rgx (substring public (match-beginning 2) (match-end 2))
                     public (substring public (match-beginning 1) (match-end 1)))

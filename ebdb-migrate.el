@@ -25,7 +25,7 @@
 ;;; Code:
 
 (require 'ebdb)
-
+(autoload 'calendar-absolute-from-gregorian "calendar")
 ;;; Migrating the EBDB
 
 ;; Unused
@@ -535,7 +535,6 @@ holding valid contacts in a previous BBDB format."
 	 ((eq lab 'anniversary)
 	  (let* ((bits (split-string val " "))
 		 (date-bits (split-string (car bits) "-")))
-	    (require 'calendar)
 	    (push (make-instance 'ebdb-field-anniversary
 				 :date (calendar-absolute-from-gregorian
 					(mapcar #'string-to-number

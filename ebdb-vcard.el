@@ -168,7 +168,7 @@ method is just responsible for formatting the record name."
 	    (ebdb-record-sortkey r)
 	    (ebdb-fmt-field f name 'normal r)))))
 
-(cl-defmethod ebdb-fmt-record-body ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-record-body ((_f ebdb-formatter-vcard)
 				    (_r ebdb-record)
 				    (fields list))
   (mapconcat
@@ -178,43 +178,43 @@ method is just responsible for formatting the record name."
    fields
    "\n"))
 
-(cl-defmethod ebdb-fmt-record-body :around ((f ebdb-formatter-vcard-40)
-					    (r ebdb-record-person)
+(cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
+					    (_r ebdb-record-person)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
     (concat str "\nKIND:individual")))
 
-(cl-defmethod ebdb-fmt-record-body :around ((f ebdb-formatter-vcard-40)
-					    (r ebdb-record-organization)
+(cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
+					    (_r ebdb-record-organization)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
     (concat str "\nKIND:org")))
 
-(cl-defmethod ebdb-fmt-field ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (field ebdb-field)
 			      _style
 			      _record)
   (ebdb-string field))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
-				    (field ebdb-field-timestamp)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
+				    (_field ebdb-field-timestamp)
 				    _style
 				    _record)
   "REV")
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
-				    (field ebdb-field-notes)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
+				    (_field ebdb-field-notes)
 				    _style
 				    _record)
   "NOTE")
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
-				    (field ebdb-field-creation-date)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
+				    (_field ebdb-field-creation-date)
 				    _style
 				    _record)
   "X-CREATION-DATE")
 
-(cl-defmethod ebdb-fmt-field ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (mail ebdb-field-mail)
 			      _style
 			      _record)
@@ -226,7 +226,7 @@ method is just responsible for formatting the record name."
 			      _record)
   (format-time-string "%Y%m%dT%H%M%S%z" (slot-value ts 'timestamp) t))
 
-(cl-defmethod ebdb-fmt-field ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (name ebdb-field-name-complex)
 			      _style
 			      _record)
@@ -238,13 +238,13 @@ method is just responsible for formatting the record name."
      (or prefix "")
      (or suffix ""))))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
-				    (field ebdb-field-uuid)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
+				    (_field ebdb-field-uuid)
 				    _style
 				    _record)
   "UID:urn:uuid")
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (mail ebdb-field-mail)
 				    _style
 				    _record)
@@ -257,25 +257,25 @@ method is just responsible for formatting the record name."
        ('defunct ";PREF=100")
        (t "")))))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 			 	    (phone ebdb-field-phone)
 				    _style
 				    _record)
   (format "TEL;TYPE=%s" (slot-value phone 'object-name)))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (rel ebdb-field-relation)
 				    _style
 				    _record)
   (format "RELATED;TYPE=%s" (slot-value rel 'object-name)))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (url ebdb-field-url)
 				    _style
 				    _record)
   (format "URL;TYPE=%s" (slot-value url 'object-name)))
 
-(cl-defmethod ebdb-fmt-field ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (rel ebdb-field-relation)
 			      _style
 			      _record)
@@ -293,7 +293,7 @@ method is just responsible for formatting the record name."
 			      _record)
   (ebdb-concat "," (slot-value tags 'tags)))
 
-(cl-defmethod ebdb-fmt-field-label ((f ebdb-formatter-vcard)
+(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (ann ebdb-field-anniversary)
 				    _style
 				    _record)

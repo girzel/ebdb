@@ -58,7 +58,9 @@
 (autoload 'calendar-gregorian-from-absolute "calendar")
 (autoload 'calendar-read-date "calendar")
 (autoload 'diary-sexp-entry "diary-lib")
+(autoload 'diary-add-to-list "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
+(defvar ebdb-i18n-countries)
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -2298,7 +2300,7 @@ priority."
 	left
 
       (if auto
-	  (object-add-to-list left 'aka name)
+	  (object-add-to-list left 'aka rname)
 
 	(unless (equal rname lname)
 	  (let ((prefix (format "Merging %s with %s:"
@@ -2306,11 +2308,11 @@ priority."
 				(ebdb-record-name left))))
 	   (if (yes-or-no-p (format "%s Use %s as primary name? " prefix (ebdb-record-name right)))
 	       (progn
-		 (ebdb-record-change-name left name)
+		 (ebdb-record-change-name left rname)
 		 (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name left)))
 		   (object-add-to-list left 'aka lname)))
 	     (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name right)))
-	       (object-add-to-list left 'aka name))))))
+	       (object-add-to-list left 'aka rname))))))
 
       (setf (slot-value left 'relations)
 	    (delete-dups (append rrelations lrelations)))
@@ -4430,6 +4432,7 @@ This function is a possible formatting function for
   (let ((country (ebdb-address-country address))
         (streets (ebdb-address-streets address)))
     (when (symbolp country)
+      (require 'ebdb-i18n)
       (setq country (car (rassq country ebdb-i18n-countries))))
     (concat (if streets
                 (concat (mapconcat 'identity streets "\n") "\n"))
@@ -4477,6 +4480,7 @@ The formatting rules are defined in `ebdb-address-format-list'."
                             (setq string (concat string (format (replace-regexp-in-string "%r" "%s" form t) str)))))
                          ((string-match "%c" form) ; country
 			  (when (symbolp country)
+			    (require 'ebdb-i18n)
 			    (setq country (car (rassq country ebdb-i18n-countries))))
                           (unless (or (not country) (string= "" country))
                             (setq string (concat string (format (replace-regexp-in-string "%c" "%s" form t) country)))))

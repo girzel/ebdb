@@ -28,33 +28,6 @@
 (require 'message)
 (require 'ebdb-com)
 
-(defclass ebdb-field-pgp (ebdb-field-user)
-  ((action
-    :initarg :action
-    :type symbol
-    :custom (choice
-	     (const :tag "Encrypt" encrypt)
-	     (const :tag "Query encryption" encrypt-query)
-	     (const :tag "Sign" sign)
-	     (const :tag "Query signing" sign-query))
-    :documentation
-    "A symbol indicating what action to take when sending a
-    message to this contact."))
-  :documentation "A field defining a default signing/encryption
-  action for a record.  This action is taken by calling
-  `ebdb-pgp' in a message/mail composition buffer, or by adding
-  that function to the message/mail-send-hook."
-    :human-readable "pgp action")
-
-(cl-defmethod ebdb-string ((field ebdb-field-pgp))
-  (symbol-name (slot-value field 'action)))
-
-(cl-defmethod ebdb-read ((class (subclass ebdb-field-pgp)) &optional slots obj)
-  (let ((val (intern (ebdb-read-string
-		      "PGP action: " (when obj (slot-value obj 'action))
-		      ebdb-pgp-ranked-actions t))))
-    (cl-call-next-method class (plist-put slots :action val) obj)))
-
 (defcustom ebdb-pgp-default-action nil
   "Default action when sending a message and the recipients are not in EBDB.
 This should be one of the following symbols:
@@ -132,6 +105,33 @@ See info node `(message)security'."
                        (symbol :tag "Encrypt method")))
   :group 'ebdb-utilities-pgp)
 
+(defclass ebdb-field-pgp (ebdb-field-user)
+  ((action
+    :initarg :action
+    :type symbol
+    :custom (choice
+	     (const :tag "Encrypt" encrypt)
+	     (const :tag "Query encryption" encrypt-query)
+	     (const :tag "Sign" sign)
+	     (const :tag "Query signing" sign-query))
+    :documentation
+    "A symbol indicating what action to take when sending a
+    message to this contact."))
+  :documentation "A field defining a default signing/encryption
+  action for a record.  This action is taken by calling
+  `ebdb-pgp' in a message/mail composition buffer, or by adding
+  that function to the message/mail-send-hook."
+    :human-readable "pgp action")
+
+(cl-defmethod ebdb-string ((field ebdb-field-pgp))
+  (symbol-name (slot-value field 'action)))
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-pgp)) &optional slots obj)
+  (let ((val (intern (ebdb-read-string
+		      "PGP action: " (when obj (slot-value obj 'action))
+		      ebdb-pgp-ranked-actions t))))
+    (cl-call-next-method class (plist-put slots :action val) obj)))
+
 ;;;###autoload
 (defun ebdb-pgp ()
   "Add PGP MML tags to a message according to the recipients' EBDB records.
@@ -173,7 +173,7 @@ use one of the following, as appropriate:
                        (delete-dups
                         (mapcar
                          (lambda (record)
-                           (if-let ((field (car-safe (ebdb-record-field record ebdb-field-pgp))))
+                           (if-let ((field (car-safe (ebdb-record-field record 'ebdb-field-pgp))))
 			       (slot-value field 'action)))
                          (delete-dups
                           (apply 'nconc

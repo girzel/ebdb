@@ -676,8 +676,8 @@ variables `ebdb-user-mail-address-re',
       (throw 'done t))))
 
 ;; How are you supposed to do the &context arglist for a defgeneric?
-;; (cl-defgeneric ebdb-message-header (header)
-;;   "Get value of HEADER for the mua keyed to major-mode.")
+(cl-defgeneric ebdb-message-header (header)
+  "Get value of HEADER for the mua keyed to major-mode.")
 
 (defun ebdb-get-address-components (&optional header-class ignore-address)
   "Process mail addresses extracted from a message.
@@ -1091,30 +1091,6 @@ Return the records matching ADDRESS or nil."
 Dispatches on the value of major-mode."
   ;; Doesn't need to do anything by default.
   t)
-
-(cl-defgeneric ebdb-popup-window (major-mode)
-  "Return a spec for how to pop up a window on an *EBDB* buffer.
-
-This generic function dispatches on the current value of
-major-mode.  The return value should be a two-element list
-of (window split), in which WINDOW is the window to split, and
-SPLIT is either an integer, specifying number of rows/columns, or
-a float specifying what percentage of window real estate the
-pop-up should occupy.  SPLIT can also be nil, in which case the
-window will probably take up half the available space.
-
-Alternately, the return value can be nil, which means continue
-using the current window.")
-
-(cl-defmethod ebdb-popup-window (&context (major-mode ebdb-mode))
-  "When popping up from an existing *EBDB* buffer, just reuse the window.
-
-Ie, don't pop up at all."
-  nil)
-
-(cl-defmethod ebdb-popup-window ()
-  "When popping up from a random window, use half the window."
-  (list (get-buffer-window) 0.5))
 
 (cl-defgeneric ebdb-mua-article-body (major-mode)
   "Return the text of the current MUA article, as a string.

@@ -658,6 +658,30 @@ buffer."
   `ebdb-buffer-name'."
   (format "*%s*" ebdb-buffer-name))
 
+(cl-defgeneric ebdb-popup-window (major-mode)
+  "Return a spec for how to pop up a window on an *EBDB* buffer.
+
+This generic function dispatches on the current value of
+major-mode.  The return value should be a two-element list
+of (window split), in which WINDOW is the window to split, and
+SPLIT is either an integer, specifying number of rows/columns, or
+a float specifying what percentage of window real estate the
+pop-up should occupy.  SPLIT can also be nil, in which case the
+window will probably take up half the available space.
+
+Alternately, the return value can be nil, which means continue
+using the current window.")
+
+(cl-defmethod ebdb-popup-window (&context (major-mode ebdb-mode))
+  "When popping up from an existing *EBDB* buffer, just reuse the window.
+
+Ie, don't pop up at all."
+  nil)
+
+(cl-defmethod ebdb-popup-window ()
+  "When popping up from a random window, use half the window."
+  (list (get-buffer-window) 0.5))
+
 (defun ebdb-display-records (records &optional fmt append
                                      select pop buf)
   "Display RECORDS using FMT.

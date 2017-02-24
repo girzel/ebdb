@@ -41,14 +41,14 @@
 	 (format "X%d" extension)
        ""))))
 
-(cl-defmethod ebdb-parse-i18n ((class (subclass ebdb-field-phone))
+(cl-defmethod ebdb-parse-i18n ((_class (subclass ebdb-field-phone))
 			       (str string)
-			       (cc (eql 86))
+			       (_cc (eql 86))
 			       &optional slots)
   ;; First remove everything but the numbers.
   (let ((num-str (string-trim
 		  (replace-regexp-in-string "[^0-9Xx]+" "" str)))
-	a-code number extension)
+	a-code)
     ;; In China, basically everything that starts with a 1 is a cell
     ;; number, unless it starts with a 10, in which case it's the
     ;; Beijing area code.  Sometimes the area codes are written with a
@@ -73,8 +73,8 @@
 
 (cl-defmethod ebdb-parse-i18n ((class (subclass ebdb-field-name-complex))
 			       (string string)
-			       (script (eql han))
-			       &optional slots)
+			       (_script (eql han))
+			       &optional _slots)
   (let (surname given-names)
     (if (string-match (format "\\`\\(%s\\)\\(.*\\)\\'" (regexp-opt ebdb-china-compound-surnames)) string)
 	(setq surname (match-string 1 string)
@@ -82,12 +82,12 @@
       (setq surname (substring string 0 1)
 	    given-names (substring string 1)))
 
-    (make-instance 'ebdb-field-name-complex
+    (make-instance class
 		   :surname surname
 		   :given-names (list given-names))))
 
 (cl-defmethod ebdb-string-i18n ((field ebdb-field-name-complex)
-				(script (eql han)))
+				(_script (eql han)))
   "Properly format names in Chinese characters.
 
 This should only run once, at init time, or any time a record's
@@ -153,12 +153,12 @@ searchs via pinyin will find the record."
 
 (cl-defmethod ebdb-init-field-i18n ((field ebdb-field-name)
 				    record
-				    (script (eql han)))
+				    (_script (eql han)))
   (ebdb-china-handle-name field record 'add))
 
 (cl-defmethod ebdb-delete-field-i18n ((field ebdb-field-name)
 				      record
-				      (script (eql han))
+				      (_script (eql han))
 				      _unload)
   (ebdb-china-handle-name field record 'del))
 

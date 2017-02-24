@@ -96,13 +96,13 @@
 (cl-defmethod ebdb-string ((fmt ebdb-formatter))
   (slot-value fmt 'object-name))
 
-(defgeneric ebdb-fmt-header (fmt records)
+(cl-defgeneric ebdb-fmt-header (fmt records)
   "Insert a string at the beginning of the list of records.")
 
-(defgeneric ebdb-fmt-footer (fmt records)
+(cl-defgeneric ebdb-fmt-footer (fmt records)
   "Insert a string at the end of the list of records.")
 
-(defgeneric ebdb-fmt-record (fmt record)
+(cl-defgeneric ebdb-fmt-record (fmt record)
   "Handle the insertion of formatted RECORD.
 
 This method collects all the fields to be output for RECORD,
@@ -110,13 +110,13 @@ groups them into header fields and body fields, and then calls
 `ebdb-fmt-record-header' and `ebdb-fmt-record-body' with the two
 lists, respectively.")
 
-(defgeneric ebdb-fmt-record-header (fmt record fields)
+(cl-defgeneric ebdb-fmt-record-header (fmt record fields)
   "Format a header for RECORD, using the fields in FIELDS.")
 
-(defgeneric ebdb-fmt-record-body (fmt record fields)
+(cl-defgeneric ebdb-fmt-record-body (fmt record fields)
   "Format the body of RECORD, using the fields in FIELDS.")
 
-(defgeneric ebdb-fmt-collect-fields (fmt record &optional fields)
+(cl-defgeneric ebdb-fmt-collect-fields (fmt record &optional fields)
   "Return a list of RECORD's FIELDS to be formatted.
 
 Each element of FIELDS is either a single field instance, or a
@@ -124,20 +124,20 @@ list of field instances.  Which fields are present, how they're
 sorted, and how they're combined into lists is determined by the
 \"exclude\" and \"sort\" slots of FMT.")
 
-(defgeneric ebdb-fmt-process-fields (fmt record &optional fields))
+(cl-defgeneric ebdb-fmt-process-fields (fmt record &optional fields))
 
-(defgeneric ebdb-fmt-sort-fields (fmt record &optional fields))
+(cl-defgeneric ebdb-fmt-sort-fields (fmt record &optional fields))
 
 ;; Do we still need this now that formatters and specs are collapsed?
-(defgeneric ebdb-fmt-compose-field (fmt field-cons record))
+(cl-defgeneric ebdb-fmt-compose-field (fmt field-cons record))
 
-(defgeneric ebdb-fmt-field (fmt field style record)
+(cl-defgeneric ebdb-fmt-field (fmt field style record)
   "Format FIELD value of RECORD.
 
 This method only returns the string value of FIELD itself,
 possibly with text properties attached.")
 
-(defgeneric ebdb-fmt-field-label (fmt field-or-class style record)
+(cl-defgeneric ebdb-fmt-field-label (fmt field-or-class style record)
   "Format a field label, using formatter FMT.
 
 FIELD-OR-CLASS is a field class or a field instance, and STYLE is
@@ -178,55 +178,55 @@ which formats them appropriately."
 	   inst
 	   ", "))))
 
-(cl-defmethod ebdb-fmt-field-label ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (cls (subclass ebdb-field))
 				    _style
-				    (record ebdb-record))
+				    (_record ebdb-record))
   (ebdb-field-readable-name cls))
 
-(cl-defmethod ebdb-fmt-field-label ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field)
 				    _style
-				    (record ebdb-record))
+				    (_record ebdb-record))
   (ebdb-field-readable-name field))
 
-(cl-defmethod ebdb-fmt-field-label ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
 				    _style
-				    (record ebdb-record))
+				    (_record ebdb-record))
   (eieio-object-name-string field))
 
-(cl-defmethod ebdb-fmt-field-label ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
-				    (style (eql compact))
-				    (record ebdb-record))
+				    (_style (eql compact))
+				    (_record ebdb-record))
   (ebdb-field-readable-name field))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
 			      (field ebdb-field-labeled)
-			      (style (eql compact))
+			      (_style (eql compact))
 			      (record ebdb-record))
   (format "(%s) %s"
 	  (eieio-object-name-string field)
 	  (ebdb-fmt-field fmt field 'oneline record)))
 
-(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
 			      (field ebdb-field)
-			      (style (eql oneline))
-			      (record ebdb-record))
+			      (_style (eql oneline))
+			      (_record ebdb-record))
   (car (split-string (ebdb-string field) "\n")))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
 			      (field ebdb-field)
-			      (style (eql collapse))
+			      (_style (eql collapse))
 			      (record ebdb-record))
   "For now, treat collapse the same as oneline."
   (ebdb-fmt-field fmt field 'oneline record))
 
-(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
 			      (field ebdb-field)
 			      _style
-			      (record ebdb-record))
+			      (_record ebdb-record))
   "The base implementation for FIELD simply returns the value of
   `ebdb-string'."
   (ebdb-string field))
@@ -318,10 +318,10 @@ which formats them appropriately."
       (cl-call-next-method fmt record field-list))))
 
 (cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter)
-				    (record ebdb-record)
+				    (_record ebdb-record)
 				    field-list)
   (let ((sort (slot-value fmt 'sort))
-	f acc outlist)
+	f acc outlist class)
     (when sort
       (dolist (s sort)
 	(if (symbolp s)
@@ -345,7 +345,7 @@ which formats them appropriately."
     field-list))
 
 (cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter)
-				       (record ebdb-record)
+				       (_record ebdb-record)
 				       field-list)
   "Process FIELD-LIST for FMT.
 
