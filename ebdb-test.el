@@ -26,35 +26,37 @@
 (require 'ert)
 (require 'ebdb)
 (require 'ebdb-snarf)
-(eval-when-compile
-  (require 'cl-macs))
 
 ;; Testing macros.
 
 (defmacro ebdb-test-with-database (db-and-filename &rest body)
   "Macro providing a temporary database to work with."
   (declare (indent 1) (debug t))
-  `(let ((,(car db-and-filename) (make-instance 'ebdb-db-file
-						 :file ,(nth 1 db-and-filename)
-						 :dirty t)))
-     (ebdb-db-save ,(car db-and-filename))
-     (unwind-protect
-	 (progn
-	   ,@body)
-       (delete-file ,(nth 1 db-and-filename))
-       (setq ebdb-db-list (remove ,(car db-and-filename)
-				  ebdb-db-list)))))
-
-(defmacro ebdb-test-save-vars (&rest body)
-  "Don't let EBDB tests pollute `ebdb-record-tracker'."
-  (declare (indent 0) (debug t))
-  (let ((old-record-tracker (cl-gensym)))
-    `(let ((,old-record-tracker ebdb-record-tracker)
-	   (ebdb-record-tracker nil))
+  `(ebdb-test-save-vars
+     (let ((,(car db-and-filename) (make-instance 'ebdb-db-file
+						  :file ,(nth 1 db-and-filename)
+						  :dirty t)))
+       (ebdb-db-save ,(car db-and-filename))
        (unwind-protect
 	   (progn
 	     ,@body)
-	 (setq ebdb-record-tracker ,old-record-tracker)))))
+	 (delete-file ,(nth 1 db-and-filename))))))
+
+(defmacro ebdb-test-save-vars (&rest body)
+  "Don't let EBDB tests pollute `ebdb-record-tracker' and
+`ebdb-db-list'."
+  (declare (indent 0) (debug t))
+  (let ((old-record-tracker (cl-gensym))
+	(old-db-list (cl-gensym)))
+    `(let ((,old-record-tracker ebdb-record-tracker)
+	   (,old-db-list ebdb-db-list)
+	   (ebdb-record-tracker nil)
+	   (ebdb-db-list nil))
+       (unwind-protect
+	   (progn
+	     ,@body)
+	 (setq ebdb-record-tracker ,old-record-tracker
+	       ebdb-db-list ,old-db-list)))))
 
 ;; Test database file name.
 (defvar ebdb-test-database-1 (make-temp-name
