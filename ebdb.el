@@ -3051,6 +3051,12 @@ the persistent save, or allow them to propagate."
     (when (file-exists-p auto-save-file)
       (delete-file auto-save-file))))
 
+(cl-defgeneric ebdb-db-add-record (db record)
+  "Associate RECORD with DB.")
+
+(cl-defgeneric ebdb-db-remove-record (db record)
+  "Disassociate RECORD from DB.")
+
 (cl-defmethod ebdb-db-add-record :before ((db ebdb-db) _record)
   (ebdb-db-editable db))
 
@@ -3058,7 +3064,6 @@ the persistent save, or allow them to propagate."
   (ebdb-db-editable db))
 
 (cl-defmethod ebdb-db-add-record ((db ebdb-db) record)
-  "Associate RECORD with DB."
   ;; This function gets called when creating a new record, and also
   ;; when "adopting" an existing record.  In the first case, it
   ;; won't have a UUID slot.
@@ -3076,7 +3081,6 @@ the persistent save, or allow them to propagate."
   record)
 
 (cl-defmethod ebdb-db-remove-record ((db ebdb-db) record)
-  "Disassociate RECORD from DB."
   (object-remove-from-list db 'records record)
   (object-remove-from-list (ebdb-record-cache record)
 			   'database db)
