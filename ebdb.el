@@ -1330,7 +1330,8 @@ first one."
 		    (integer :tag "Extension"))
     :initform nil)
    (actions
-    :initform '(("Dial phone number" . ebdb-field-phone-dial))))
+    :initform '(("Dial phone number" . ebdb-field-phone-dial)
+		("Send text via Signal" . ebdb-field-phone-signal-text))))
   :human-readable "phone")
 
 (cl-defmethod ebdb-string ((phone ebdb-field-phone))
@@ -3812,7 +3813,8 @@ RECORD.  If MAIL is nil use RECORD's primary mail address."
       mail)))
 
 
-;;;Dialing
+;;; Dialing and texting.
+
 (defcustom ebdb-dial-local-prefix-alist
   '(((if (integerp ebdb-default-area-code)
          (format "(%03d)" ebdb-default-area-code)
@@ -3856,6 +3858,121 @@ If nil then `ebdb-dial-number' uses the tel URI syntax passed to `browse-url'
 to make the call."
   :group 'ebdb-utilities-dialing
   :type 'function)
+
+;; Signal integration.
+
+(defcustom ebdb-signal-program (executable-find "signal-cli")
+  "The name of the signal-cli program, if installed.
+
+This program must be present in order to send text messages
+through the Signal service."
+  :group 'ebdb-utilities-dialing
+  :type 'string)
+
+(defun ebdb-signal-get-number (record &optional no-prompt)
+  "Extract a usable Signal number from RECORD.
+
+If any of RECORD's phone numbers have \"signal\" label, use that.
+Alternately, if there is only one phone labeled \"cell\" or
+\"mobile\", use that.  Alternately, if NO-PROMPT is nil, prompt
+for a number.
+
+The number is returned as a properly-formatted string, with
+leading \"+\"."
+
+  (if-let* ((all-phones (slot-value record 'phone))
+	    (phone
+	     (car-safe
+	      (or (object-assoc "signal" 'object-name all-phones)
+		  (seq-filter
+		   (lambda (p)
+		     (member (slot-value p 'object-name)
+			     '("cell" "mobile")))
+		   all-phones))))
+	    (number
+	     (and phone
+		  (with-slots (country-code area-code number) phone
+		    (concat (format "+%d" country-code)
+			    (and area-code
+				 (number-to-string area-code))
+			    number)))))
+      number
+    (and (null no-prompt)
+	 (ebdb-read-string "Use phone number: "))))
+
+(cl-defmethod ebdb-field-phone-signal-text ((record ebdb-record-entity)
+					    (phone-field ebdb-field-phone))
+  "Use the Signal protocol to compose a text message to RECORD.
+
+PHONE-FIELD will be the number used as the recipient.
+
+This is a field action version of `ebdb-signal-text', see that
+command's docstring for more details."
+  (let ((sender
+	 (or (and ebdb-record-self
+		  (ebdb-signal-get-number
+		   (ebdb-gethash ebdb-record-self 'uuid)
+		   t))
+	     (ebdb-read-string
+	      "Number to send from (or set `ebdb-record-self'): ")))
+	(recipients
+	 (list (with-slots (country-code area-code number) phone-field
+		 (concat (format "+%d" country-code)
+			 (and area-code
+			      (number-to-string area-code))
+			 number))))
+	(message (ebdb-read-string "Message contents: "))
+	(attachments
+	 (ebdb-loop-with-exit
+	  (expand-file-name
+	   (read-file-name "Attach file (C-g when done): "
+			   nil nil nil)))))
+    (if ebdb-signal-program
+	(ebdb--signal-text sender message recipients attachments)
+      (message "Please set `ebdb-signal-program'"))))
+
+(defun ebdb-signal-text (sender records message attachments)
+  "Compose and send a text message using the Signal protocol.
+
+SENDER should be a phone number (with leading \"+\") to send
+from.  If `ebdb-record-self' is set, this record will be used as
+the sender, while RECORDS will be used as the list of recipients.
+In both cases, `ebdb-signal-get-number' will be used to find a
+usable number from the record.
+
+MESSAGE is the string to send as the body of the text message.
+ATTACHMENTS is a list of filenames to send as attachments on the
+message."
+  (interactive
+   (list (or (and ebdb-record-self
+		  (ebdb-signal-get-number
+		   (ebdb-gethash ebdb-record-self 'uuid)
+		   t))
+	     (ebdb-read-string
+	      "Number to send from (or set `ebdb-record-self'): "))
+	 (ebdb-do-records)
+	 (ebdb-read-string "Message contents: ")
+	 (ebdb-loop-with-exit
+	  (expand-file-name
+	   (read-file-name "Attach file (C-g when done): "
+			   nil nil nil)))))
+  (let ((recipients
+	 (delq nil (mapcar #'ebdb-signal-get-number records))))
+    (if ebdb-signal-program
+	(ebdb--signal-text sender message recipients attachments)
+      (message "Please set `ebdb-signal-program'"))))
+
+(defun ebdb--signal-text (sender message recipients &optional attachments)
+  "Internal function for actually sending the SMS."
+  (let ((command
+	 (concat ebdb-signal-program
+		 (format " -u %s -m %s" sender message)
+		 (when attachments
+		   (concat " -a "
+			   (mapconcat #'identity attachments " ")
+			   " "))
+		 (mapconcat #'identity recipients " "))))
+    (shell-command command nil " *EBDB Signal Errors*")))
 
 
 
