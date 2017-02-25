@@ -4423,6 +4423,15 @@ important work is done by the `ebdb-db-load' method."
     (message "Initializing EBDB records... done")
     ;; Users will expect the same ordering as `ebdb-sources'
     (setq ebdb-db-list (nreverse ebdb-db-list))
+    ;; If users look at the database files, they should be read as
+    ;; utf-8-emacs.
+    (push
+     (cons
+      (regexp-opt (mapcar (lambda (db)
+			    (slot-value db 'file))
+			  ebdb-db-list))
+      'utf-8-emacs)
+     auto-coding-alist)
     (run-hooks 'ebdb-after-load-hook)
     (when ebdb-use-diary
       (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
