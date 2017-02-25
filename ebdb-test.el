@@ -31,37 +31,31 @@
 
 (defmacro ebdb-test-with-database (db-and-filename &rest body)
   "Macro providing a temporary database to work with."
-  (declare (indent 1) (debug t))
-  `(ebdb-test-save-vars
-     (let ((,(car db-and-filename) (make-instance 'ebdb-db-file
-						  :file ,(nth 1 db-and-filename)
-						  :dirty t)))
-       (ebdb-db-save ,(car db-and-filename))
-       (unwind-protect
-	   (progn
-	     ,@body)
-	 (delete-file ,(nth 1 db-and-filename))))))
+  (declare (indent 1) (debug ((symbolp symbolp) body)))
+  `(let ((,(car db-and-filename) (make-instance 'ebdb-db-file
+						:file ,(nth 1 db-and-filename)
+						:dirty t))
+	 ebdb-db-list)
+     ;; Save sets sync-time.
+     (ebdb-db-save ,(car db-and-filename))
+     ;; Load adds to `ebdb-db-list'.
+     (ebdb-db-load db)
+     (unwind-protect
+	 (progn
+	   ,@body)
+       (delete-file ,(nth 1 db-and-filename)))))
 
-(defmacro ebdb-test-save-vars (&rest body)
-  "Don't let EBDB tests pollute `ebdb-record-tracker' and
-`ebdb-db-list'."
+(defmacro ebdb-test-with-records (&rest body)
+  "Don't let EBDB tests pollute `ebdb-record-tracker'."
   (declare (indent 0) (debug t))
-  (let ((old-record-tracker (cl-gensym))
-	(old-db-list (cl-gensym)))
-    `(let ((,old-record-tracker ebdb-record-tracker)
-	   (,old-db-list ebdb-db-list)
-	   (ebdb-record-tracker nil)
-	   (ebdb-db-list nil))
-       (unwind-protect
-	   (progn
-	     ,@body)
-	 (setq ebdb-record-tracker ,old-record-tracker
-	       ebdb-db-list ,old-db-list)))))
+  `(let ((ebdb-hashtable (make-hash-table :test 'equal))
+	 ebdb-record-tracker)
+     ,@body))
 
 ;; Test database file name.
 (defvar ebdb-test-database-1 (make-temp-name
 			      (expand-file-name
-			       "ebdb-test-db-1-"
+			       "emacs-ebdb-test-db-1-"
 			       temporary-file-directory)))
 
 (ert-deftest ebdb-make-database ()
@@ -89,32 +83,89 @@
     (should (ebdb-db-unsynced db))))
 
 (ert-deftest ebdb-make-record ()
-  (ebdb-test-save-vars
+  (ebdb-test-with-records
    (let ((rec (make-instance ebdb-default-record-class)))
      (should (object-of-class-p rec 'ebdb-record)))))
 
 (ert-deftest ebdb-add-record ()
   "Create a record, add it to DB, and make sure it has a UUID."
-  (ebdb-test-save-vars
+  (ebdb-test-with-records
     (ebdb-test-with-database (db ebdb-test-database-1)
       (let ((rec (make-instance 'ebdb-record-person)))
 	(should (null (ebdb-record-uuid rec)))
 	(ebdb-db-add-record db rec)
 	(should (stringp (ebdb-record-uuid rec)))))))
 
-;; Very basic sanity tests for field instances.
+;; Field instance parse tests.
 
-(ert-deftest ebdb-parse-mail-and-name ()
-  "Go through some basic field classes and ensure that a string
-  run through `ebdb-parse' and `ebdb-string' remains the same."
-  (let ((pairs
-	 '((ebdb-field-mail "eric@ericabrahamsen.net")
-	   (ebdb-field-mail "Eric Abrahamsen <eric@ericabrahamsen.net>")
-	   (ebdb-field-name "Eric Abrahamsen")
-	   (ebdb-field-name "Eric P. Abrahamsen, III"))))
-    (dolist (p pairs)
-      (should (equal (ebdb-string (ebdb-parse (car p) (nth 1 p)))
-		     (nth 1 p))))))
+;; Test `ebdb-decompose-ebdb-address'
+
+(ert-deftest ebdb-address-decompose ()
+  "Test `ebdb-decompose-ebdb-address'."
+  (should (equal '("Charles Lamb" "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "Charles Lamb <charlie@lamb.com>")))
+
+  (should (equal '("Charles Lamb" "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "Charles Lamb mailto:charlie@lamb.com")))
+
+  (should (equal '("Charles Lamb" "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "\"Charles Lamb\" charlie@lamb.com")))
+
+  (should (equal '("Charles Lamb" "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "charlie@lamb.com (Charles Lamb)")))
+
+  (should (equal '(nil "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "\"charlie@lamb.com\" charlie@lamb.com")))
+
+  (should (equal '(nil "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "<charlie@lamb.com>")))
+
+  (should (equal '(nil "charlie@lamb.com")
+		 (ebdb-decompose-ebdb-address
+		  "charlie@lamb.com <charlie@lamb.com>")))
+
+  (should (equal '("Charles Lamb" nil)
+		 (ebdb-decompose-ebdb-address
+		  "Charles Lamb"))))
+
+(ert-deftest ebdb-parse-mail ()
+  "Parse various strings as mail fields."
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-mail "William Hazlitt <bill@theexaminer.com>")
+	    'aka)
+	   "William Hazlitt"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-mail "William Hazlitt <bill@theexaminer.com>")
+	    'mail)
+	   "bill@theexaminer.com"))
+  (should-error (ebdb-parse 'ebdb-field-mail "William Hazlitt")
+		:type 'ebdb-unparseable))
+
+(ert-deftest ebdb-parse-name ()
+  "Parse various strings as name fields."
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Eric Abrahamsen")
+	    'surname)
+	   "Abrahamsen"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Eric P. Abrahamsen")
+	    'given-names)
+	   '("Eric" "P.")))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Eric Abrahamsen, III")
+	    'suffix)
+	   "III")))
 
 ;; Snarf testing.
 
@@ -139,6 +190,79 @@
 				     text (ebdb-string mail))))))
 	  (_ (ert-fail (list (format "Parsing \"%s\" resulted in %s"
 				     text result)))))))))
+
+;; Search testing.
+
+(ert-deftest ebdb-message-search ()
+  "Test the `ebdb-message-search' function."
+  (ebdb-test-with-records
+   (ebdb-test-with-database (db ebdb-test-database-1)
+     (let ((rec (make-instance
+		 'ebdb-record-person
+		 :name (ebdb-parse 'ebdb-field-name-complex "Spongebob Squarepants")
+		 :mail (list (ebdb-parse 'ebdb-field-mail "spob@thepants.com")))))
+       (ebdb-db-add-record db rec)
+       ;; Must init in order to get the record hashed,
+       ;; `ebdb-message-search' relies on that.
+       (ebdb-init-record rec)
+       (should (equal (car (ebdb-message-search "Spongebob Squarepants" nil))
+		      rec))
+       (should (equal (car (ebdb-message-search nil "spob@thepants.com"))
+		      rec))
+       (should (null (ebdb-message-search "Spongebob" nil)))
+       (should (null (ebdb-message-search nil "thepants.com")))
+       (ebdb-delete-record rec)))))
+
+(ert-deftest ebdb-general-search ()
+  "Test some of the general search functions."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db ebdb-test-database-1)
+      (let ((rec (make-instance
+		  'ebdb-record-person
+		  :name (ebdb-parse 'ebdb-field-name-complex
+				    "Spongebob Squarepants")
+		  :mail (list (ebdb-parse 'ebdb-field-mail
+					  "spob@thepants.com"))
+		  :notes (ebdb-parse 'ebdb-field-notes
+				     "World's greatest cartoon."))))
+	(ebdb-db-add-record db rec)
+	(ebdb-init-record rec)
+	;; Name is name.
+	(should (equal (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-name "Squarepants"))))
+		       rec))
+	;; Mail is mail.
+	(should (equal (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-mail "thepants.com"))))
+		       rec))
+	;; Mail is not notes.
+	(should (null (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-notes "thepants.com"))))))
+	;; Notes are notes.
+	(should (equal (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-notes "cartoon"))))
+		       rec))
+	;; Notes inverted are not notes.
+	(should (null (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-notes "cartoon"))
+			 t))))
+	;; Not notes inverted are.
+	(should (equal (car
+			(ebdb-search
+			 (ebdb-records)
+			 '((ebdb-field-notes "carton"))
+			 t))
+		       rec))))))
 
 (provide 'ebdb-test)
 ;;; ebdb-test.el ends here

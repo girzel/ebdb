@@ -1454,6 +1454,11 @@ first one."
 			 (plist-put slots :notes (ebdb-read-string "Notes: " default))
 			 obj)))
 
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-notes))
+			  (str string)
+			  &optional slots)
+  (cl-call-next-method class str (plist-put slots :notes str)))
+
 ;;; Timestamp field
 
 ;; For both these fields, I'd actually prefer to store
@@ -4018,12 +4023,12 @@ and canonical addresses in the mail field of EBDB records."
 	   ;; correctly.
 	   (string-match "<\\([^@ \t<>]+[!@][^@ \t<>]+\\)>" mail)
 	   (setq address (match-string 1 mail)))
-	  ((string-match "\\b[^@ \t<>]+[!@][^@ \t<>]+\\b" mail)
+	  ((string-match "\\b[^@\" \t<>]+[!@][^@\" \t<>]+\\b" mail)
 	   (setq address (match-string 0 mail))))
     ;; Then check whether the `name <address>' format is used.
     (and address
 	 ;; Linear white space is not required.
-	 (string-match (concat "[ \t]*<?" (regexp-quote address) ">?") mail)
+	 (string-match (concat "[ \t]*<?" (regexp-quote address) ">?\\'") mail)
 	 (setq name (substring mail 0 (match-beginning 0)))
          ;; Strip any quotes mail the name.
          (string-match "^\".*\"$" name)
@@ -4032,7 +4037,13 @@ and canonical addresses in the mail field of EBDB records."
     (or name
 	(and (string-match "(\\([^)]+\\))" mail)
 	     (setq name (match-string 1 mail))))
-    (list (if (equal name "") nil name) (or address mail))))
+    (list (if (null address)
+	      mail
+	    (unless
+		(or (equal name "")
+		    (equal name address))
+	      name))
+	  address)))
 
 ;;; Massage of mail addresses
 
