@@ -1501,35 +1501,6 @@ DATE must be in yyyy-mm-dd format."
   "Used for parsing phone numbers."
   (string-to-number (match-string num string)))
 
-(defun ebdb-message-search (name mail)
-  "Return list of EBDB records matching NAME and/or MAIL.
-First try to find a record matching both NAME and MAIL.
-If this fails try to find a record matching MAIL.
-If this fails try to find a record matching NAME.
-NAME may match FIRST_LAST, LAST_FIRST or AKA.
-
-This function performs a fast search using `ebdb-hashtable'.
-NAME and MAIL must be strings or nil.
-See `ebdb-search' for searching records with regexps."
-  (when (or name mail)
-    (unless ebdb-db-list
-      (ebdb-load))
-    (let ((mrecords (if mail (ebdb-gethash mail '(mail))))
-          (nrecords (if name (ebdb-gethash name '(fl-name lf-name aka)))))
-      ;; (1) records matching NAME and MAIL
-      (or (and mrecords nrecords
-               (let (records)
-                 (dolist (record nrecords)
-                   (mapc (lambda (mr) (if (and (eq record mr)
-                                               (not (memq record records)))
-                                          (push record records)))
-                         mrecords))
-                 records))
-          ;; (2) records matching MAIL
-          mrecords
-          ;; (3) records matching NAME
-          nrecords))))
-
 (defmacro ebdb-with-record-edits (spec &rest body)
   "Run BODY on all records listed in the cdr of SPEC.
 
