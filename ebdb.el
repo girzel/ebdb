@@ -56,6 +56,7 @@
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")
 (autoload 'calendar-gregorian-from-absolute "calendar")
+(autoload 'calendar-absolute-from-gregorian "calendar")
 (autoload 'calendar-read-date "calendar")
 (autoload 'diary-sexp-entry "diary-lib")
 (autoload 'diary-add-to-list "diary-lib")
