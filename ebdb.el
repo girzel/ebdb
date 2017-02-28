@@ -2703,11 +2703,37 @@ executable.  When a symbol, assume an Elisp function."
 	   (shell-command-to-string
 	    (executable-find ebdb-uuid-function)))
 	  ((functionp ebdb-uuid-function)
-	   (funcall ebdb-uuid-function)))))
+	   (funcall ebdb-uuid-function))
+	  (t (ebdb--make-uuid)))))
     (concat prefix-string
 	    (replace-regexp-in-string
 	     "[\n\t ]+" ""
 	     uid))))
+
+;; Stolen directly and with no shame from Org.
+(defun ebdb--make-uuid ()
+  "Return string with random (version 4) UUID."
+  (let ((rnd (md5 (format "%s%s%s%s%s%s%s"
+			  (random)
+			  (current-time)
+			  (user-uid)
+			  (emacs-pid)
+			  (user-full-name)
+			  user-mail-address
+			  (recent-keys)))))
+    (format "%s-%s-4%s-%s%s-%s"
+	    (substring rnd 0 8)
+	    (substring rnd 8 12)
+	    (substring rnd 13 16)
+	    (format "%x"
+		    (logior
+		     #b10000000
+		     (logand
+		      #b10111111
+		      (string-to-number
+		       (substring rnd 16 18) 16))))
+	    (substring rnd 18 20)
+	    (substring rnd 20 32))))
 
 ;;; The database class(es)
 
