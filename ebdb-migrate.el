@@ -516,12 +516,22 @@ holding valid contacts in a previous BBDB format."
 	  (setq ts (make-instance 'ebdb-field-timestamp
 				  :timestamp
 				  (apply #'encode-time
-					 (parse-time-string val)))))
+					 (mapcar
+					  (lambda (el)
+					    (if (null el)
+						0
+					      el))
+					  (parse-time-string val))))))
 	 ((eq lab 'creation-date)
 	  (setq c-date (make-instance 'ebdb-field-creation-date
 				      :timestamp
 				      (apply #'encode-time
-					     (parse-time-string val)))))
+					     (mapcar
+					      (lambda (el)
+						(if (null el)
+						    0
+						  el))
+					      (parse-time-string val))))))
 	 ((eq lab 'mail-alias)
 	  (push (make-instance 'ebdb-field-mail-alias
 			       :alias val
