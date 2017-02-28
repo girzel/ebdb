@@ -494,7 +494,30 @@ quoted replies."
       (fset (intern (concat "gnus-user-format-function-"
                             ebdb-mua-summary-unify-format-letter))
             (lambda (header)
-              (ebdb-mua-summary-unify (mail-header-from header)))))
+	      (let ((from (mail-header-from header)))
+		(or
+		 (and gnus-ignored-from-addresses
+		      (cond ((functionp gnus-ignored-from-addresses)
+			     (funcall gnus-ignored-from-addresses
+				      (mail-strip-quoted-names from)))
+			    (t (string-match (gnus-ignored-from-addresses) from)))
+		      (let ((extra-headers (mail-header-extra header))
+			    to
+			    newsgroups)
+			(cond
+			 ((setq to (cdr (assq 'To extra-headers)))
+			  (concat gnus-summary-to-prefix
+				  (ebdb-mua-summary-unify to)))
+			 ((setq newsgroups
+				(or
+				 (cdr (assq 'Newsgroups extra-headers))
+				 (and
+				  (memq 'Newsgroups gnus-extra-headers)
+				  (eq (car (gnus-find-method-for-group
+					    gnus-newsgroup-name)) 'nntp)
+				  (gnus-group-real-name gnus-newsgroup-name))))
+			  (concat gnus-summary-newsgroup-prefix newsgroups)))))
+		 (ebdb-mua-summary-unify (mail-header-from header)))))))
 
   ;; (2) Small solution: a mark for messages whos sender is in EBDB.
   (if ebdb-mua-summary-mark-format-letter
