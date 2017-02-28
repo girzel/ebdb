@@ -921,14 +921,22 @@ Return the records matching ADDRESS or nil."
 			   (ebdb-record-field-slot-query
 			    (eieio-object-class record)
 			    `(nil . ,(eieio-object-class
-				      (ebdb-parse 'ebdb-field-name name)))))))
+				      (ebdb-parse
+				       (if (eql record-class 'ebdb-record-organization)
+					   'ebdb-field-name-simple
+					 'ebdb-field-name-complex)
+				       name)))))))
              change-p add-mails add-name ignore-redundant)
 
         ;; Analyze the name part of the record.
-        (cond (created-p ; new record
+        (cond (created-p		; new record
                (ebdb-record-change-name
 		record
-		(ebdb-parse 'ebdb-field-name name)))
+		(ebdb-parse
+		 (if (eql record-class 'ebdb-record-organization)
+		     'ebdb-field-name-simple
+		   'ebdb-field-name-complex)
+		 name)))
 
               ((or (not name)
                    ;; The following tests can differ for more complicated names
