@@ -627,10 +627,9 @@ holding valid contacts in a previous BBDB format."
             (error "EBDB version %s understands file format %s but not %s."
                    ebdb-version ebdb-file-format file-format)
           (setq migrate (< file-format ebdb-file-format)))
-	(forward-char)
-        (or (eobp) (looking-at "\\[")
-            (error "BBDB corrupted: no following bracket"))
-
+	(unless (re-search-forward "^\\[" nil t)
+	  (error "Unreadabe BBDB file: no contacts found"))
+	(goto-char (point-at-bol))
         ;; narrow the buffer to skip over the rubbish before the first record.
         (narrow-to-region (point) (point-max))
         (let ((modp (buffer-modified-p))
