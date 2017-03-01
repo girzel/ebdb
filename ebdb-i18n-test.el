@@ -55,5 +55,29 @@ Uses `ebdb-parse-i18n' method from ebdb-chn.el."
     (should (string= (ebdb-name-last compound-surname-1) "司马"))
     (should (string= (ebdb-name-last compound-surname-2) "慕容"))))
 
+(ert-deftest ebdb-i18n-parse-unhandled-name ()
+  "Parse a name for which there is no `ebdb-i18n-parse' method
+  defined.
+
+This should fall back to the regular `ebdb-parse' method."
+  ;; At present there's nothing defined for Arabic, update as
+  ;; necessary.  I think this is only a surname, anyhow, I just copied
+  ;; something off the internet.
+  (let ((arabic-name "عامر"))
+    (should (eieio-object-p
+	     (ebdb-parse 'ebdb-field-name-complex arabic-name)))))
+
+;; Sanity tests for other fields.
+(ert-deftest ebdb-i18n-parse-unhandled-phone ()
+  "Parse a phone number for which no `ebdb-i18n-parse' method is
+defined."
+  ;; There is currently no USA-specific phone parsing method, so this
+  ;; should fall back to the default.
+  (let ((phone-str "+1 (206) 555-5555"))
+    (should (equal (slot-value
+		    (ebdb-parse 'ebdb-field-phone phone-str)
+		    'area-code)
+		   206))))
+
 (provide 'ebdb-i18n-test)
 ;;; ebdb-i18n-test.el ends here

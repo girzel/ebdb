@@ -21,17 +21,24 @@
 
 ;; This file contains extensions to EBDB, making it more
 ;; internationally aware.  It works by hijacking many of the common
-;; methods for field manipulation, and dispatching to new methods that
-;; allow for specialization on country codes, area codes, character
-;; scripts, etc.  The new methods are generally named the same as the
-;; old methods, plus a "-i18n" suffix.
+;; methods for field manipulation, by attaching :extra methods to
+;; them, and dispatching to new methods that allow for specialization
+;; on country codes, area codes, character scripts, etc.  The new
+;; methods are generally named the same as the old methods, plus a
+;; "-i18n" suffix.
 
 ;; The methods in this file are only responsible for doing the
 ;; hijacking, and calling the i18n versions of the original methods --
 ;; the i18n versions themselves live in other, country-specific,
 ;; libraries.  If no methods have specialized on the arguments in
-;; question, `cl-no-applicable-method' is raised, and the hijacker
-;; methods return control to the original methods.
+;; question, an error inheriting from `cl-no-method' is signalled, and
+;; the hijacker methods return control to the original methods.
+
+;; Note to self: `ebdb-string-i18n' and `ebdb-parse-i18n' signal
+;; different errors when no usable method is found.  The former raises
+;; `cl-no-applicable-method', which is what I expected it to do.  The
+;; latter raises `cl-no-primary-method', apparently because it has an
+;; :around method.  Anyway, that's why we catch `cl-no-method'.
 
 ;;; Code:
 
@@ -59,7 +66,7 @@ country code, or a country symbol, or a script symbol.
 
 This method should return a plist of slots for object creation.")
 
-(cl-defgeneric ebdb-parse-i18n (class string spec slots)
+(cl-defgeneric ebdb-parse-i18n (class string spec &optional slots)
   "An internationalized version of `ebdb-parse'.
 
 This works the same as `ebdb-read', plus an additional argument
@@ -78,7 +85,7 @@ This method should return a new instance of CLASS.")
 (cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
   "An internationalized version of `ebdb-delete-field'.")
 
-(cl-defmethod ebdb-parse-i18n :around (_class _string _spec _slots)
+(cl-defmethod ebdb-parse-i18n :around (_class _string _spec &optional _slots)
   "Don't clobber match data when testing names."
   (save-match-data
     (cl-call-next-method)))
@@ -104,7 +111,7 @@ for their symbol representations.")
 	  (condition-case nil
 	      (ebdb-read-i18n class
 			      (plist-put slots :country country) obj country)
-	    (cl-no-applicable-method
+	    (cl-no-method
 	     (plist-put slots :country country))))
     (cl-call-next-method class slots obj)))
 
@@ -145,7 +152,7 @@ for their symbol representations.")
     (setq slots
 	  (condition-case nil
 	      (ebdb-read-i18n class slots obj country)
-	    (cl-no-applicable-method
+	    (cl-no-method
 	     slots)))
     (cl-call-next-method class slots obj)))
 
@@ -155,17 +162,19 @@ for their symbol representations.")
     (or (and cc
 	     (condition-case nil
 		 (ebdb-string-i18n phone cc)
-	       (cl-no-applicable-method nil)))
+	       (cl-no-method nil)))
 	(cl-call-next-method))))
 
 (cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-phone))
-			  (str string)
-			  &optional slots)
-  (let ((cc (plist-get slots :country-code)))
+					(str string)
+					&optional slots)
+  (let ((cc (or (plist-get slots :country-code)
+		(and (string-match "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+" str)
+		     (string-to-number (match-string 1 str))))))
     (or (and cc
 	     (condition-case nil
 		 (ebdb-parse-i18n class str cc slots)
-	       (cl-no-applicable-method nil)))
+	       (cl-no-method nil)))
 	(cl-call-next-method))))
 
 ;; We don't need to override the `ebdb-read' method for names.  It
@@ -183,7 +192,7 @@ for their symbol representations.")
 	     (null (memq script ebdb-i18n-ignorable-scripts))
 	     (condition-case nil
 		 (ebdb-parse-i18n class string script slots)
-	       (cl-no-applicable-method
+	       (cl-no-method
 		nil)))
 	(cl-call-next-method))))
 
@@ -193,7 +202,7 @@ for their symbol representations.")
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
 	  (setq str (ebdb-string-i18n name script))
-	(cl-no-applicable-method nil)))
+	(cl-no-primary-method nil)))
     str))
 
 (cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
@@ -204,7 +213,7 @@ for their symbol representations.")
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
 	  (ebdb-init-field-i18n name record script)
-	(cl-no-applicable-method nil)))
+	(cl-no-method nil)))
     res))
 
 (cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) &optional record unload)
@@ -214,7 +223,7 @@ for their symbol representations.")
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
 	  (ebdb-delete-field-i18n name record script unload)
-	(cl-no-applicable-method nil))))
+	(cl-no-method nil))))
   (cl-call-next-method))
 
 (defvar ebdb-i18n-countries
