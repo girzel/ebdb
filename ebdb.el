@@ -4966,7 +4966,7 @@ values, by default the search is not handed to the name field itself."
 In most cases this is a simple regexp, but field classes can
 prompt users for more complex search criteria, if necessary.")
 
-(cl-defmethod ebdb-search-read :around ((cls (subclass ebdb-field)))
+(cl-defmethod ebdb-search-read :around (_key)
   "Give the functions in `ebdb-search-transform-functions' a
 chance to transform the search string."
   (let ((criterion (cl-call-next-method)))
