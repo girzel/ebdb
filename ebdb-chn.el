@@ -41,7 +41,7 @@
 	 (format "X%d" extension)
        ""))))
 
-(cl-defmethod ebdb-parse-i18n ((_class (subclass ebdb-field-phone))
+(cl-defmethod ebdb-parse-i18n ((class (subclass ebdb-field-phone))
 			       (str string)
 			       (_cc (eql 86))
 			       &optional slots)
@@ -61,7 +61,7 @@
     (when (string-match "X\\([0-9]+\\)\\'" num-str)
       (setq slots (plist-put slots :extension
 			     (string-to-number (match-string 1 num-str)))))
-    (apply #'make-instance 'ebdb-field-phone slots)))
+    (apply #'make-instance class slots)))
 
 ;; This isn't all of them, but it seems like a reasonable subset.  See
 ;; https://en.wikipedia.org/wiki/Chinese_compound_surname for a fuller
