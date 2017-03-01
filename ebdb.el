@@ -2699,7 +2699,8 @@ executable.  When a symbol, assume an Elisp function."
 			 (concat prefix "-")))
 	(uid
 	 (cond
-	  ((stringp ebdb-uuid-function)
+	  ((and (stringp ebdb-uuid-function)
+		(executable-find ebdb-uuid-function))
 	   (shell-command-to-string
 	    (executable-find ebdb-uuid-function)))
 	  ((functionp ebdb-uuid-function)
