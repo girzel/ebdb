@@ -93,6 +93,31 @@
   :group 'ebdb-vcard
   :type 'ebdb-formatter-vcard)
 
+(defcustom ebdb-vcard-label-alist
+  '(("REV" . ebdb-field-timestamp)
+    ("NOTE" . ebdb-field-notes)
+    ("X-CREATION-DATE" . ebdb-field-creation-date)
+    ("UID" . ebdb-field-uuid)
+    ("EMAIL" . ebdb-field-mail)
+    ("TEL" . ebdb-field-phone)
+    ("RELATED" . ebdb-field-relation)
+    ("CATEGORIES" . ebdb-org-field-tags)
+    ("BDAY" . ebdb-field-anniversary)
+    ("ANNIVERSARY" . ebdb-field-anniversary)
+    ("URL" . ebdb-field-url)
+    ("ADR" . ebdb-field-address)
+    ("NICKNAME" . ebdb-field-name-complex))
+  "Correspondences between VCard properties and EBDB field classes.
+
+This alist is neither exhaustive nor authoritative.  It's purpose
+is to simplify property labeling during the export process, and
+to classify properties during import.  The import process does
+not always respect these headings."
+
+  :group 'ebdb-vcard
+  :type '(repeat
+	  (cons string symbol)))
+
 (cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter-vcard)
 				       (record ebdb-record)
 				       field-list)
@@ -197,22 +222,12 @@ method is just responsible for formatting the record name."
   (ebdb-string field))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (_field ebdb-field-timestamp)
+				    (field ebdb-field)
 				    _style
 				    _record)
-  "REV")
-
-(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (_field ebdb-field-notes)
-				    _style
-				    _record)
-  "NOTE")
-
-(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (_field ebdb-field-creation-date)
-				    _style
-				    _record)
-  "X-CREATION-DATE")
+  (car (rassoc (eieio-class-name
+		(eieio-object-class field))
+	       ebdb-vcard-label-alist)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (mail ebdb-field-mail)
@@ -242,15 +257,15 @@ method is just responsible for formatting the record name."
 				    (_field ebdb-field-uuid)
 				    _style
 				    _record)
-  "UID:urn:uuid")
+  (concat (cl-call-next-method) ":urn:uuid"))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (mail ebdb-field-mail)
 				    _style
 				    _record)
   (with-slots (priority) mail
-    (format
-     "EMAIL%s"
+    (concat
+     (cl-call-next-method)
      (cl-case priority
        ('primary ";PREF=1")
        ('normal ";PREF=10")
@@ -261,31 +276,28 @@ method is just responsible for formatting the record name."
 			 	    (phone ebdb-field-phone)
 				    _style
 				    _record)
-  (format "TEL;TYPE=%s" (slot-value phone 'object-name)))
+  (concat (cl-call-next-method)
+	  ";TYPE=" (slot-value phone 'object-name)))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (rel ebdb-field-relation)
 				    _style
 				    _record)
-  (format "RELATED;TYPE=%s" (slot-value rel 'object-name)))
+  (concat (cl-call-next-method)
+	  ";TYPE=" (slot-value rel 'object-name)))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (url ebdb-field-url)
 				    _style
 				    _record)
-  (format "URL;TYPE=%s" (slot-value url 'object-name)))
+  (concat (cl-call-next-method)
+	  ";TYPE=" (slot-value url 'object-name)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (rel ebdb-field-relation)
 			      _style
 			      _record)
-  (format "urn:uuid:%s" (slot-value rel 'rel-uuid)))
-
-(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (_tags ebdb-org-field-tags)
-				    _style
-				    _record)
-  "CATEGORIES")
+  (concat ":urn:uuid:" (slot-value rel 'rel-uuid)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (tags ebdb-org-field-tags)
@@ -301,8 +313,8 @@ method is just responsible for formatting the record name."
 	 (label-string
 	  (if (string= label "birthday")
 	      "BDAY"
-	    (format "ANNIVERSARY;TYPE=%s" label))))
-    (format "%s;CALSCALE=%s" label-string (slot-value ann 'calendar))))
+	    (concat "ANNIVERSARY;TYPE=" label))))
+    (concat label-string ";CALSCALE=" (slot-value ann 'calendar))))
 
 (provide 'ebdb-vcard)
 ;;; ebdb-vcard.el ends here
