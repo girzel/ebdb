@@ -3957,7 +3957,7 @@ leading \"+\"."
     (and (null no-prompt)
 	 (ebdb-read-string "Use phone number: "))))
 
-(cl-defmethod ebdb-field-phone-signal-text ((record ebdb-record-entity)
+(cl-defmethod ebdb-field-phone-signal-text ((_record ebdb-record-entity)
 					    (phone-field ebdb-field-phone))
   "Use the Signal protocol to compose a text message to RECORD.
 
@@ -4850,31 +4850,30 @@ criteria), which will be used to make a call to
 `ebdb-record-search', or it is a callable, which will be called
 with a record as the argument.  All other values will be
 interpreted as t, ie the record passes."
-  (let ((case-fold-search ebdb-case-fold-search)
-	criterion)
+  (let ((case-fold-search ebdb-case-fold-search))
     ;; Handle transformations of search strings.
     (when ebdb-search-transform-functions
       (dolist (c clauses)
 	(when (and (consp c)
 		   (stringp (cadr c)))
 	  (dolist (func ebdb-search-transform-functions)
-	    (setf (cadr c) (funcall func (cadr c))))))
-      (seq-filter
-       (lambda (r)
-	 (eql (null invert)
-	      (catch 'found
-		(condition-case nil
-		    (dolist (c clauses)
-		      (pcase c
-			(`(,type ,criteria)
-			 (and (ebdb-record-search r type criteria)
-			      (throw 'found t)))
-			(`,(and func (pred functionp))
-			 (and (funcall func r)
-			      (throw 'found t)))
-			(_ t)))
-		  (cl-no-applicable-method nil)))))
-       records))))
+	    (setf (cadr c) (funcall func (cadr c)))))))
+    (seq-filter
+     (lambda (r)
+       (eql (null invert)
+	    (catch 'found
+	      (condition-case nil
+		  (dolist (c clauses)
+		    (pcase c
+		      (`(,type ,criteria)
+		       (and (ebdb-record-search r type criteria)
+			    (throw 'found t)))
+		      (`,(and func (pred functionp))
+		       (and (funcall func r)
+			    (throw 'found t)))
+		      (_ t)))
+		(cl-no-applicable-method nil)))))
+     records)))
 
 (cl-defgeneric ebdb-field-search (field criterion)
   "Return t if search CRITERION somehow matches the value of
