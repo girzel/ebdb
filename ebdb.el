@@ -4821,23 +4821,31 @@ criteria), which will be used to make a call to
 `ebdb-record-search', or it is a callable, which will be called
 with a record as the argument.  All other values will be
 interpreted as t, ie the record passes."
-  (let ((case-fold-search ebdb-case-fold-search))
-    (seq-filter
-     (lambda (r)
-       (eql (null invert)
-	    (catch 'found
-	      (condition-case nil
-	       (dolist (c clauses)
-		 (pcase c
-		   (`(,type ,criteria)
-		    (and (ebdb-record-search r type criteria)
-			 (throw 'found t)))
-		   (`,(and func (pred functionp))
-		    (and (funcall func r)
-			 (throw 'found t)))
-		   (_ t)))
-	       (cl-no-applicable-method nil)))))
-     records)))
+  (let ((case-fold-search ebdb-case-fold-search)
+	criterion)
+    ;; Handle transformations of search strings.
+    (when ebdb-search-transform-functions
+      (dolist (c clauses)
+	(when (and (consp c)
+		   (stringp (cadr c)))
+	  (dolist (func ebdb-search-transform-functions)
+	    (setf (cadr c) (funcall func (cadr c))))))
+      (seq-filter
+       (lambda (r)
+	 (eql (null invert)
+	      (catch 'found
+		(condition-case nil
+		    (dolist (c clauses)
+		      (pcase c
+			(`(,type ,criteria)
+			 (and (ebdb-record-search r type criteria)
+			      (throw 'found t)))
+			(`,(and func (pred functionp))
+			 (and (funcall func r)
+			      (throw 'found t)))
+			(_ t)))
+		  (cl-no-applicable-method nil)))))
+       records))))
 
 (cl-defgeneric ebdb-field-search (field criterion)
   "Return t if search CRITERION somehow matches the value of
@@ -4965,16 +4973,6 @@ values, by default the search is not handed to the name field itself."
 
 In most cases this is a simple regexp, but field classes can
 prompt users for more complex search criteria, if necessary.")
-
-(cl-defmethod ebdb-search-read :around (_key)
-  "Give the functions in `ebdb-search-transform-functions' a
-chance to transform the search string."
-  (let ((criterion (cl-call-next-method)))
-    (if (and ebdb-search-transform-functions
-	     (stringp criterion))
-	(dolist (f ebdb-search-transform-functions criterion)
-	  (setq criterion (funcall f criterion)))
-      criterion)))
 
 (cl-defmethod ebdb-search-read ((cls (subclass ebdb-field)))
   (read-string (format "Search records with %s %smatching regexp: "
