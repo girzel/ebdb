@@ -814,6 +814,14 @@ simple or complex name class."
 	  (t
 	   (ebdb-parse 'ebdb-field-name-simple input slots)))))
 
+(eval-when-compile
+  (when (fboundp 'cl-print-object)
+    (cl-defmethod cl-print-object ((name ebdb-field-name) stream)
+      (princ (format "#<%S %s>"
+		     (eieio-object-class-name name)
+		     (ebdb-string name))
+	     stream))))
+
 (defclass ebdb-field-name-simple (ebdb-field-name)
   ((name
     :type string
@@ -1186,6 +1194,14 @@ first one."
 	   (and (eq l-p 'normal)
 		(eq r-p 'defunct)))))))
 
+(eval-when-compile
+  (when (fboundp 'cl-print-object)
+    (cl-defmethod cl-print-object ((mail ebdb-field-mail) stream)
+      (princ (format "#<%S %s>"
+		     (eieio-object-class-name mail)
+		     (slot-value mail 'mail))
+	     stream))))
+
 ;;; Address fields
 
 (defclass ebdb-field-address (ebdb-field-labeled ebdb-field)
@@ -1436,6 +1452,14 @@ first one."
     (setq slots
 	  (plist-put slots :number acc))
     (cl-call-next-method class string slots)))
+
+(eval-when-compile
+  (when (fboundp 'cl-print-object)
+    (cl-defmethod cl-print-object ((phone ebdb-field-phone) stream)
+      (princ (format "#<%S %s>"
+		     (eieio-object-class-name phone)
+		     (ebdb-string phone))
+	     stream))))
 
 ;;; Notes field
 
@@ -2055,12 +2079,13 @@ only return fields that are suitable for user editing.")
   "Provide a base method that does nothing."
   nil)
 
-(cl-defmethod object-print ((record ebdb-record) &optional strings)
-  (cl-call-next-method
-   record
-   (append strings (format " %s" (if (ebdb-record-cache record)
-				     (ebdb-record-name record)
-				   (ebdb-string (slot-value record 'name)))))))
+(eval-when-compile
+  (when (fboundp 'cl-print-object)
+    (cl-defmethod cl-print-object ((record ebdb-record) stream)
+      (princ (format "#<%S %s>"
+		     (eieio-object-class-name record)
+		     (ebdb-string record))
+	     stream))))
 
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
@@ -3214,10 +3239,14 @@ the persistent save, or allow them to propagate."
   :documentation "A `ebdb-db' subclass that saves records
   directly in its persistence file.")
 
-(cl-defmethod object-print ((db ebdb-db-file) &optional strings)
-  (cl-call-next-method
-   db
-   (append strings (format " %d records" (length (slot-value db 'records))))))
+(eval-when-compile
+  (when (fboundp 'cl-print-object)
+    (cl-defmethod cl-print-object ((db ebdb-db) stream)
+      (princ (format "#<%S %s %d records>"
+		     (eieio-object-class-name db)
+		     (slot-value db 'file)
+		     (length (slot-value db 'records)))
+	     stream))))
 
 ;; `ebdb-db-file' doesn't need a `ebdb-db-load' method.  Its records
 ;; are stored in its persistence file, directly in the :records slot,
