@@ -994,7 +994,8 @@ longest way.  If SPLIT is nil, split 0.5.
 
 If the whole POP argument is nil, just re-use the current
 buffer."
-  (let* ((split-window (car-safe pop))
+  (let* ((buf (get-buffer buf))
+	 (split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
 	 (horiz/vert (or (caddr pop)
 			 (if (> (window-total-width split-window)
@@ -1027,6 +1028,7 @@ buffer."
 					       'right)))
 	   (set-window-buffer buffer-window buf)))
     (display-buffer-record-window 'window buffer-window buf)
+    (set-window-prev-buffers buffer-window nil)
     (when select
       (select-window buffer-window))))
 
