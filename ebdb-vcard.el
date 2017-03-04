@@ -123,8 +123,15 @@ not always respect these headings."
 (defsubst ebdb-vcard-escape (str)
   "Escape commas, semi-colons and newlines in STR."
   (replace-regexp-in-string
-   "\\(\n\\)" "\\\\n"
-   (replace-regexp-in-string "\\([,;]\\)" "\\\\\\1" str)))
+   "\\([^\\]\\)\n" "\\1\\\\n"
+   (replace-regexp-in-string "\\([^\\]\\)\\([,;]\\)" "\\1\\\\\\2" str)))
+
+(defun ebdb-vcard-unescape (str)
+  "Unescape escaped commas, semicolons and newlines in STR."
+  (replace-regexp-in-string
+   "\\\\n" "\n"
+   (replace-regexp-in-string
+    "\\\\\\([,;]\\)" "\\1" str)))
 
 (cl-defmethod ebdb-fmt-process-fields ((_f ebdb-formatter-vcard)
 				       (_record ebdb-record)
@@ -289,9 +296,11 @@ method is just responsible for formatting the record name."
 			 	    (field ebdb-field-labeled)
 				    _style
 				    _record)
-  (concat (cl-call-next-method)
-	  ";TYPE=" (ebdb-vcard-escape
-		    (slot-value field 'object-name))))
+  (let ((ret (cl-call-next-method)))
+    (if-let ((lab (slot-value field 'object-name)))
+	(concat ret
+		";TYPE=" (ebdb-vcard-escape lab))
+      ret)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (addr ebdb-field-address)

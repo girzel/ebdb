@@ -19,13 +19,16 @@
 
 ;;; Commentary:
 
-;; Tests for EBDB.
+;; Tests for EBDB.  Tests for EBDB's internationalization support are
+;; in a separate file, since loading ebdb-i18n.el overloads a bunch of
+;; methods, and un-overloading them is difficult.
 
 ;;; Code:
 
 (require 'ert)
 (require 'ebdb)
 (require 'ebdb-snarf)
+(require 'ebdb-vcard)
 
 ;; Testing macros.
 
@@ -263,6 +266,84 @@
 			 '((ebdb-field-notes "carton"))
 			 t))
 		       rec))))))
+
+;; Vcard testing.
+
+(ert-deftest ebdb-vcard-escape/unescape ()
+  "Test the escaping and unescaping routines."
+  (should (equal (ebdb-vcard-escape "Nothing.to \"escape\"!")
+		 "Nothing.to \"escape\"!"))
+
+  (should (equal (ebdb-vcard-escape "Marry, nuncle")
+		 "Marry\\, nuncle"))
+
+  (should (equal (ebdb-vcard-escape "Mine uncle; nay!")
+		 "Mine uncle\\; nay!"))
+
+  ;; Don't double-escape
+  (should (equal (ebdb-vcard-escape "Marry\\, uncle")
+		 "Marry\\, uncle"))
+
+  ;; Don't double-escape, part II
+  (should (equal (ebdb-vcard-escape "Marry\n uncle!")
+		 "Marry\\n uncle!"))
+
+  (should (equal (ebdb-vcard-escape "Mine 
+uncle")
+		 "Mine \\nuncle"))
+
+  (should (equal (ebdb-vcard-unescape "Marry\\, nuncle!")
+		 "Marry, nuncle!"))
+
+  (should (equal (ebdb-vcard-unescape "Marry \\nuncle")
+		 "Marry 
+uncle"))
+
+  (should (equal (ebdb-vcard-unescape
+		  (ebdb-vcard-escape
+		   "Look, a bog; dogs."))
+		 "Look, a bog; dogs.")))
+
+(ert-deftest ebdb-vcard-export-dont-explode ()
+  "Can we export a record to Vcard without immediate disaster?"
+  (ebdb-test-with-records
+    (let ((rec (make-instance ebdb-default-record-class
+			      :name (ebdb-field-name-complex
+				     :surname "Barleycorn"
+				     :given-names '("John"))
+			      :uuid (ebdb-field-uuid
+				     :uuid "asdfasdfadsf")
+			      :mail (list (ebdb-field-mail
+					   :mail "jb@barleycorn.com"))
+			      :phone (list (ebdb-field-phone
+					    :object-name "home"
+					    :country-code 1
+					    :area-code 555
+					    :number "5555555"))
+			      :notes (ebdb-field-notes
+				      :notes "He's in the fields")))
+	  (fmt-4
+	   (ebdb-formatter-vcard-40
+	    :combine nil
+	    :collapse nil
+	    :include '(ebdb-field-uuid
+		       ebdb-field-name
+		       ebdb-field-mail
+		       ebdb-field-phone
+		       ebdb-field-mail)))
+	  (fmt-3
+	   (ebdb-formatter-vcard-30
+	    :combine nil
+	    :collapse nil
+	    :include '(ebdb-field-uuid
+		       ebdb-field-name
+		       ebdb-field-mail
+		       ebdb-field-phone
+		       ebdb-field-mail))))
+
+      (should (ebdb-fmt-record fmt-4 rec))
+
+      (should (ebdb-fmt-record fmt-3 rec)))))
 
 (provide 'ebdb-test)
 ;;; ebdb-test.el ends here
