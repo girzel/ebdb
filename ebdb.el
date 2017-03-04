@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
 
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
