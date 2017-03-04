@@ -2423,14 +2423,6 @@ priority."
   "Return a list of organization string names from RECORD's cache."
   (slot-value (ebdb-record-cache record) 'organizations))
 
-(cl-defmethod ebdb-record-search ((record ebdb-record-person)
-				  (_type (eql organization))
-				  (regex string))
-  (or (seq-find (lambda (org)
-		  (string-match-p regex org))
-		(ebdb-record-organizations record))
-      (string-match-p regex "")))
-
 ;;; This needs some more thought.
 ;; (cl-defmethod ebdb-mail-set-priority ((mail ebdb-field-mail)
 ;; 				      (record ebdb-record-person)
@@ -4994,6 +4986,31 @@ values, by default the search is not handed to the name field itself."
       (when (and (object-of-class-p f cls)
 		 (ebdb-field-search f criterion))
 	(throw 'found t)))))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record-person)
+				  (_type (eql organization))
+				  (regex string))
+  (or (seq-find (lambda (org)
+		  (string-match-p regex org))
+		(ebdb-record-organizations record))
+      (string-match-p regex "")))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record)
+				  (_type (eql dirty))
+				  _criterion)
+  (slot-value record 'dirty))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record)
+				  (_type (eql database))
+				  (db ebdb-db))
+  (member (slot-value (ebdb-record-cache record) 'database)
+	  db))
+
+(cl-defmethod ebdb-record-search ((record ebdb-record)
+				  (_type (eql record-class))
+				  (class symbol))
+  (object-of-class-p record class))
+
 
 (cl-defgeneric ebdb-search-read (field-class)
   "Prompt the user for a search string to match against instances

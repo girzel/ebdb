@@ -317,10 +317,16 @@ display information."
     (define-key km (kbd "/ x")		'ebdb-search-user-fields)
     (define-key km (kbd "| x")		'ebdb-search-user-fields)
     (define-key km (kbd "+ x")		'ebdb-search-user-fields)
-    (define-key km (kbd "/ c")		'ebdb-search-changed)
+    (define-key km (kbd "/ c")		'ebdb-search-modified)
+    (define-key km (kbd "| c")		'ebdb-search-modified)
+    (define-key km (kbd "+ c")		'ebdb-search-modified)
     (define-key km (kbd "/ C")		'ebdb-search-record-class)
-    (define-key km (kbd "/ d")		'ebdb-search-duplicates)
+    (define-key km (kbd "/ C")		'ebdb-search-record-class)
+    (define-key km (kbd "| C")		'ebdb-search-record-class)
+    (define-key km (kbd "+ d")		'ebdb-search-duplicates)
     (define-key km (kbd "/ D")		'ebdb-search-database)
+    (define-key km (kbd "| D")		'ebdb-search-database)
+    (define-key km (kbd "+ D")		'ebdb-search-database)
     (define-key km (kbd "C-x n w")	'ebdb-display-all-records)
     (define-key km (kbd "C-x n d")	'ebdb-display-current-record)
     (define-key km (kbd "^")	        'ebdb-search-pop)
@@ -928,7 +934,7 @@ displayed records."
      ["Search address" ebdb-search-address t]
      ["Search mail" ebdb-search-mail t]
      ["Search user fields" ebdb-search-user-fields t]
-     ["Search changed records" ebdb-search-changed t]
+     ["Search modified records" ebdb-search-modified t]
      ["Search duplicates" ebdb-search-duplicates t]
      "--"
      ["Old time stamps" ebdb-timestamp-older t]
@@ -1989,19 +1995,11 @@ in any field."
    fmt))
 
 ;;;###autoload
-(defun ebdb-search-changed (&optional fmt)
-  ;; FIXME: "changes" in EBDB lingo are often called "modifications"
-  ;; in Emacs lingo
-  "Display records which have been changed since EBDB was last saved."
-  (interactive (list (ebdb-formatter-prefix)))
-  (let ((dirty (ebdb-dirty-records)))
-    (if (ebdb-search-invert-p)
-	(let (unchanged-records)
-	  (dolist (record (ebdb-records))
-	    (unless (memq record dirty)
-	      (push record unchanged-records)))
-	  (ebdb-display-records unchanged-records fmt))
-      (ebdb-display-records dirty fmt))))
+(defun ebdb-search-modified (style &optional fmt)
+  "Display records with unsaved modifications."
+  (interactive (list (ebdb-search-style)
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((dirty t)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-duplicates (&optional fields fmt)
@@ -2053,20 +2051,22 @@ The search results are displayed in the EBDB buffer."
 			  fmt)))
 
 ;;;###autoload
-(defun ebdb-search-database (db &optional fmt)
+(defun ebdb-search-database (style db &optional fmt)
   "Select a database and show all records from that database."
   (interactive
-   (list (ebdb-prompt-for-db)
+   (list (ebdb-search-style)
+	 (ebdb-prompt-for-db)
 	 (ebdb-formatter-prefix)))
-  (ebdb-display-records (slot-value db 'records) fmt))
+  (ebdb-search-display style `((database ,db)) fmt))
 
 ;;;###autoload
-(defun ebdb-search-record-class (class &optional fmt)
+(defun ebdb-search-record-class (style class &optional fmt)
   "Prompt for a record class and display all records of that class."
-  (interactive (list (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)
+  (interactive (list (ebdb-search-style)
+		     (eieio-read-subclass
+		      "Use which record class? " 'ebdb-record nil t)
 		     (ebdb-formatter-prefix)))
-  (let ((recs (ebdb-records class t)))
-    (ebdb-display-records recs fmt)))
+  (ebdb-search-display style `((record-class ,class)) fmt))
 
 ;;;###autoload
 (defun ebdb-search-single-record (record &optional fmt)
