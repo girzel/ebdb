@@ -1,4 +1,4 @@
-;;; ebdb-vcard.el --- Vcard export and import routine for EBDB  -*- lexical-binding: t; -*-
+;;; ebdb-vcard.el --- vCard export and import routine for EBDB  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
 
@@ -34,21 +34,21 @@
     :documentation "The string to insert for this formatter's
     version."))
   :abstract t
-  :documentation "Base formatter for VCard export.")
+  :documentation "Base formatter for vCard export.")
 
 (defclass ebdb-formatter-vcard-30 (ebdb-formatter-vcard)
   ((version-string
     :initform "3.0"))
-  :documentation "Formatter for VCard format 3.0.")
+  :documentation "Formatter for vCard format 3.0.")
 
 (defclass ebdb-formatter-vcard-40 (ebdb-formatter-vcard)
   ((version-string
     :initform "4.0")
    (coding-system :initform 'utf-8-emacs))
-  :documentation "Formatter for VCard format 4.0.")
+  :documentation "Formatter for vCard format 4.0.")
 
 (defgroup ebdb-vcard nil
-  "Customization options for EBDB Vcard support."
+  "Customization options for EBDB vCard support."
   :group 'ebdb)
 
 (defcustom ebdb-vcard-default-40-formatter
