@@ -60,6 +60,7 @@
 			    ebdb-field-timestamp
 			    ebdb-field-mail
 			    ebdb-field-name
+			    ebdb-field-address
 			    ebdb-field-url
 			    ebdb-field-role
 			    ebdb-field-anniversary
@@ -81,6 +82,7 @@
 			    ebdb-field-timestamp
 			    ebdb-field-mail
 			    ebdb-field-name
+			    ebdb-field-address
 			    ebdb-field-url
 			    ebdb-field-role
 			    ebdb-field-anniversary
@@ -118,8 +120,19 @@ not always respect these headings."
   :type '(repeat
 	  (cons string symbol)))
 
+(defsubst ebdb-vcard-escape (str)
+  "Escape commas, semi-colons and newlines in STR."
+  (replace-regexp-in-string
+   "\\(\n\\)" "\\\\n"
+   (replace-regexp-in-string "\\([,;]\\)" "\\\\\\1" str)))
+
+(cl-defmethod ebdb-fmt-process-fields ((_f ebdb-formatter-vcard)
+				       (_record ebdb-record)
+				       field-list)
+  field-list)
+
 (cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter-vcard)
-				       (record ebdb-record)
+				       (record ebdb-record-person)
 				       field-list)
   "Process fields in FIELD-LIST.
 
@@ -219,7 +232,7 @@ method is just responsible for formatting the record name."
 			      (field ebdb-field)
 			      _style
 			      _record)
-  (ebdb-string field))
+  (ebdb-vcard-escape (ebdb-string field)))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 				    (field ebdb-field)
@@ -273,31 +286,34 @@ method is just responsible for formatting the record name."
        (t "")))))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-			 	    (phone ebdb-field-phone)
+			 	    (field ebdb-field-labeled)
 				    _style
 				    _record)
   (concat (cl-call-next-method)
-	  ";TYPE=" (slot-value phone 'object-name)))
+	  ";TYPE=" (ebdb-vcard-escape
+		    (slot-value field 'object-name))))
 
-(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (rel ebdb-field-relation)
-				    _style
-				    _record)
-  (concat (cl-call-next-method)
-	  ";TYPE=" (slot-value rel 'object-name)))
-
-(cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
-				    (url ebdb-field-url)
-				    _style
-				    _record)
-  (concat (cl-call-next-method)
-	  ";TYPE=" (slot-value url 'object-name)))
+(cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
+			      (addr ebdb-field-address)
+			      _style
+			      _record)
+  (with-slots (streets locality region postcode country) addr
+    (concat ";;"
+	    (mapconcat
+	     #'ebdb-vcard-escape
+	     streets ",")
+	    (format
+	     ";%s;%s;%s;%s"
+	     (or locality "")
+	     (or region "")
+	     (or postcode "")
+	     (or country "")))))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (rel ebdb-field-relation)
 			      _style
 			      _record)
-  (concat ":urn:uuid:" (slot-value rel 'rel-uuid)))
+  (concat "urn:uuid:" (slot-value rel 'rel-uuid)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (tags ebdb-org-field-tags)
@@ -314,7 +330,8 @@ method is just responsible for formatting the record name."
 	  (if (string= label "birthday")
 	      "BDAY"
 	    (concat "ANNIVERSARY;TYPE=" label))))
-    (concat label-string ";CALSCALE=" (slot-value ann 'calendar))))
+    (concat label-string (format ";CALSCALE=%s"
+				 (slot-value ann 'calendar)))))
 
 (provide 'ebdb-vcard)
 ;;; ebdb-vcard.el ends here
