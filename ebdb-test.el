@@ -176,6 +176,7 @@
   (let ((test-texts
 	 '("Eric Abrahamsen <eric@ericabrahamsen.net>"
 	   "Eric Abrahamsen eric@ericabrahamsen.net"
+	   "Eric Abrahamsen (eric@ericabrahamsen.net)"
 	   "Eric Abrahamsen \n <eric@ericabrahamsen.net>"
 	   "Eric Abrahamsen can't hold his drink\n<eric@ericabrahamsen.net> is where you can write and tell him so."))
 	result)

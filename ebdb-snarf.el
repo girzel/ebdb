@@ -46,7 +46,7 @@
   :group 'ebdb)
 
 (defcustom ebdb-snarf-routines
-  '((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:]>\"\n]+\\)"))
+  '((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)"))
 
   "An alist of EBDB field classes and related regexps.
 
