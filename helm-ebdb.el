@@ -33,7 +33,18 @@
 (defun helm-ebdb-candidates ()
   "Return a list of all records in the database."
   (mapcar (lambda (rec)
-	    (cons (ebdb-string rec) rec))
+	    (let* ((rec-string (ebdb-string rec))
+		   (mails (ebdb-record-mail-canon rec))
+		   (mail-list (when mails
+				(mapconcat #'identity
+					   mails
+					   " "))))
+	      (cons (if mail-list
+			(concat rec-string
+				" => "
+				mail-list)
+		      rec-string)
+		    rec)))
 	  (ebdb-records)))
 
 (defun helm-ebdb-display-records (candidate)
@@ -45,7 +56,7 @@
 (defun helm-ebdb-compose-mail (candidate)
   "Compose mail to CANDIDATE or marked candidates."
   (let ((recs (or (helm-marked-candidates) (list candidate))))
-    (ebdb-mail recs)))
+    (ebdb-mail recs nil t)))
 
 (defun helm-ebdb-cite-records (candidate)
   "Insert Name <email> string for CANDIDATE or marked candidate."
