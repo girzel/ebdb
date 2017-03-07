@@ -355,15 +355,15 @@ use "/ n", "| n", or "+ n".  Search keys that work this way are:
 - "a": Search addresses
 - "m": Search mails
 - "x": Search user fields (prompts for which field to search on)
+- "c": Search records that have been modified since last save
+- "C": Search by record class
+- "D": Prompt for a database and display all records belonging to
+  that database
 
 Search commands that currently only work with the "/" prefix are:
 
 - "/ 1": Prompt for a single record, and display it
-- "/ c": Search records that have been modified since last save
-- "/ C": Search by record class
 - "/ d": Search duplicate records
-- "/ D": Prompt for a database and display all records belonging to
-  that database
 
 User-created {{{ebuf}}} buffers keep track of search history in that
 buffer.  To pop back to previous searches, use:
