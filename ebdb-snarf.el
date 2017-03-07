@@ -41,10 +41,6 @@
 
 (require 'ebdb)
 
-(defgroup ebdb-snarf nil
-  "Options for EBDB snarfing."
-  :group 'ebdb)
-
 (defcustom ebdb-snarf-routines
   '((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)"))
 

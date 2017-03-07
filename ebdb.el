@@ -184,6 +184,11 @@ Organization names are currently hard-coded to use
   "Variables that affect sending mail."
   :group 'ebdb)
 
+(defgroup ebdb-snarf nil
+  "Customizations for EBDB snarf"
+  :group 'ebdb)
+(put 'ebdb-snarf-snarf 'custom-loads '(ebdb-snarf))
+
 (defgroup ebdb-utilities nil
   "Customizations for EBDB Utilities"
   :group 'ebdb)
@@ -205,11 +210,6 @@ Organization names are currently hard-coded to use
   "Customizations for EBDB ispell interface"
   :group 'ebdb-utilities)
 (put 'ebdb-utilities-ispell 'custom-loads '(ebdb-ispell))
-
-(defgroup ebdb-utilities-snarf nil
-  "Customizations for EBDB snarf"
-  :group 'ebdb-utilities)
-(put 'ebdb-utilities-snarf 'custom-loads '(ebdb-snarf))
 
 (defgroup ebdb-utilities-pgp nil
   "Customizations for EBDB pgp"
