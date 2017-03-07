@@ -189,6 +189,10 @@ Organization names are currently hard-coded to use
   :group 'ebdb)
 (put 'ebdb-snarf-snarf 'custom-loads '(ebdb-snarf))
 
+(defgroup ebdb-search nil
+  "Customizations for EBDB searching."
+  :group 'ebdb)
+
 (defgroup ebdb-utilities nil
   "Customizations for EBDB Utilities"
   :group 'ebdb)
@@ -399,8 +403,23 @@ return the transformed string.  If the criteria for any given
 search is not a string, it will not be passed through these
 functions."
 
-  :group 'ebdb
+  :group 'ebdb-search
   :type 'list)
+
+(defcustom ebdb-case-fold-search (default-value 'case-fold-search)
+  "Value of `case-fold-search' used when searching EBDB records."
+
+  :group 'ebdb-search
+  :type 'boolean)
+
+(defcustom ebdb-char-fold-search nil
+  "If t, record searches will use character folding.
+
+Character folding means that, for instance, searches for \"i\"
+will match \"ì\", and so on.  This may slow searching down."
+
+  :group 'ebdb-search
+  :type 'boolean)
 
 (defcustom ebdb-info-file nil
   "Location of the ebdb info file, if it's not in the standard place."
@@ -3501,13 +3520,6 @@ addresses."
 
 ;;; Record editing
 
-(defcustom ebdb-case-fold-search (default-value 'case-fold-search)
-  "Value of `case-fold-search' used by EBDB and friends.
-This variable lets the case-sensitivity of the EBDB commands
-be different from standard commands like command `isearch-forward'."
-  :group 'ebdb-record-edit
-  :type 'boolean)
-
 ;; The following two options should be obviated by ebdb-i18n.el
 ;; See http://en.wikipedia.org/wiki/Postal_address
 ;; http://www.upu.int/en/activities/addressing/postal-addressing-systems-in-member-countstateries.html
@@ -4850,6 +4862,11 @@ interpreted as t, ie the record passes."
 		   (stringp (cadr c)))
 	  (dolist (func ebdb-search-transform-functions)
 	    (setf (cadr c) (funcall func (cadr c)))))))
+    (when ebdb-char-fold-search
+      (dolist (c clauses)
+	(when (and (consp c)
+		   (stringp (cadr c))))
+	(setf (cadr c) (char-fold-to-regexp (cadr c)))))
     (seq-filter
      (lambda (r)
        (eql (null invert)

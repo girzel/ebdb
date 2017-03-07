@@ -369,6 +369,28 @@ User-created {{{ebuf}}} buffers keep track of search history in that
 buffer.  To pop back to previous searches, use:
 
 - "^": ebdb-search-pop
+*** Changing Search Behavior
+There are three ways to alter the behavior of EBDB searches.
+
+- Variable ebdb-case-fold-search
+  An equivalent to the regular `case-fold-search' variable, which
+  see.  Defaults to the value of that variable.
+- Variable ebdb-char-fold-search
+  Controls whether character folding is used when matching search
+  strings against record values.
+- Variable ebdb-search-transform-functions
+  A list of functions that can be used to arbitrarily transform search
+  strings.  Each function should accept a single string argument, and
+  return the transformed string.  If the search criterion is not a
+  string (some fields produce sexp search criteria) these functions
+  will not be used.
+
+Be careful of potential interaction between character folding and
+transform functions.  Character folding works by calling
+`char-fold-to-regexp' on the search string, effectively replacing
+foldable characters within the string using regular expressions.  This
+process happens /after/ the transform functions have run, so there is
+a possibility for unexpected search behavior.
 ** Marking
 Records can be marked and acted on in bulk.  The "#" key will toggle
 the mark of the record under point.  "M-#" will toggle the marks of

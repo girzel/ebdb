@@ -268,6 +268,85 @@
 			 t))
 		       rec))))))
 
+;; Test search folding and transform functions.
+
+(ert-deftest ebdb-search-transform-and-fold ()
+  (ebdb-test-with-records
+    (let ((recs
+	   (list (make-instance
+		  'ebdb-record-person
+		  :name (ebdb-parse 'ebdb-field-name-complex "Björk Jónsdóttir")))))
+
+      (let ((ebdb-case-fold-search nil)
+	    (ebdb-char-fold-search nil)
+	    (ebdb-search-transform-functions nil))
+	(should-not (ebdb-search
+		     recs
+		     '((ebdb-field-name "Bjork"))))
+	(should-not (ebdb-search
+		     recs
+		     '((ebdb-field-name "björk"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Björk")))))
+
+      (let ((ebdb-case-fold-search t)
+	    (ebdb-char-fold-search nil)
+	    (ebdb-search-transform-functions nil))
+	(should-not (ebdb-search
+		     recs
+		     '((ebdb-field-name "Bjork"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "björk"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Björk")))))
+
+      (let ((ebdb-case-fold-search nil)
+	    (ebdb-char-fold-search t)
+	    (ebdb-search-transform-functions nil))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Bjork"))))
+	(should-not (ebdb-search
+		     recs
+		     '((ebdb-field-name "björk"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Björk")))))
+
+      (let ((ebdb-case-fold-search t)
+	    (ebdb-char-fold-search t)
+	    (ebdb-search-transform-functions nil))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Bjork"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "björk"))))
+	(should (ebdb-search
+		 recs
+		 '((ebdb-field-name "Björk"))))
+
+	(let ((ebdb-case-fold-search nil)
+	      (ebdb-char-fold-search nil)
+	      (ebdb-search-transform-functions
+	       (list (lambda (str)
+		       (concat str " Jonsdottir")))))
+	  (should-not (ebdb-search
+		       recs
+		       '((ebdb-field-name "Björk")))))
+
+	(let ((ebdb-case-fold-search nil)
+	      (ebdb-char-fold-search t)
+	      (ebdb-search-transform-functions
+	       (list (lambda (str)
+		       (concat str " Jonsdottir")))))
+	  (should (ebdb-search
+		   recs
+		   '((ebdb-field-name "Björk")))))))))
+
 ;; Vcard testing.
 
 (ert-deftest ebdb-vcard-escape/unescape ()
