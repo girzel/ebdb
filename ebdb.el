@@ -199,15 +199,6 @@ Organization names are currently hard-coded to use
 
 (defgroup ebdb-utilities-dialing nil
   "EBDB Customizations for phone number dialing"
-  :group 'ebdb)
-
-(defgroup ebdb-utilities-print nil
-  "Customizations for printing the EBDB."
-  :group 'ebdb)
-(put 'ebdb-utilities-print 'custom-loads '(ebdb-print))
-
-(defgroup ebdb-utilities-anniv nil
-  "Customizations for EBDB Anniversaries"
   :group 'ebdb-utilities)
 
 (defgroup ebdb-utilities-ispell nil
@@ -219,12 +210,6 @@ Organization names are currently hard-coded to use
   "Customizations for EBDB pgp"
   :group 'ebdb-utilities)
 (put 'ebdb-utilities-pgp 'custom-loads '(ebdb-pgp))
-
-(defgroup ebdb-utilities-sc nil
-  "Customizations for using Supercite with the EBDB."
-  :group 'ebdb-utilities
-  :prefix "ebdb-sc")
-(put 'ebdb-utilities-sc 'custom-loads '(ebdb-sc))
 
 ;;; Customizable variables
 (defcustom ebdb-image nil
@@ -284,10 +269,13 @@ case this variable will be ignored."
 If t and a database file has changed on disk, while the database
 has not been modified inside Emacs, revert the database
 automatically.  If nil or the database has been changed inside
-Emacs, always query before reverting."  :group 'ebdb :type
-'(choice (const :tag "Revert unchanged database without querying"
-t)
-	 (const :tag "Ask before reverting database" nil)))
+Emacs, always query before reverting."
+
+  :group 'ebdb
+  :type
+  '(choice (const :tag "Revert unchanged database without querying"
+		  t)
+	   (const :tag "Ask before reverting database" nil)))
 
 (defcustom ebdb-use-diary t
   "If non-nil add anniversary field values to the diary."
