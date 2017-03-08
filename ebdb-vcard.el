@@ -126,12 +126,53 @@ not always respect these headings."
    "\\([^\\]\\)\\([\n\r]+\\)" "\\1\\\\\\2"
    (replace-regexp-in-string "\\([^\\]\\)\\([,;]\\)" "\\1\\\\\\2" str)))
 
-(defun ebdb-vcard-unescape (str)
+(defsubst ebdb-vcard-unescape (str)
   "Unescape escaped commas, semicolons and newlines in STR."
   (replace-regexp-in-string
    "\\\\n" "\n"
    (replace-regexp-in-string
     "\\\\\\([,;]\\)" "\\1" str)))
+
+;; The RFC says fold any lines longer than 75 octets, excluding the
+;; line break.  Folded lines are delineated by a CRLF plus a space or
+;; tab.  Multibyte characters must not be broken.
+
+;; TODO: This implementation assumes that Emacs' internal coding
+;; system is similar enough to the utf-8 that the file will eventually
+;; be written in that `string-bytes' (which returns a length according
+;; to Emacs' own coding) will map accurately to what eventually goes
+;; in the file.  Eli notes this is not really true, and could result
+;; in unexpected behavior, and he recommends using
+;; `filepos-to-bufferpos' instead.  Presumably that would involve
+;; /first/ writing the vcf file, then backtracking and checking for
+;; correctness.
+(defun ebdb-vcard-fold-lines (text)
+  "Fold lines in TEXT, which represents a vCard contact."
+  (let ((lines (split-string text "\r\n"))
+	outlines)
+    (dolist (l lines)
+      (while (> (string-bytes l) 75)	; Line is too long.
+	(if (> (string-bytes l) (length l))
+	    ;; Multibyte characters.
+	    (let ((acc (string-to-vector l)))
+	      (setq l nil)
+	      (while (> (string-bytes (concat acc)) 75)
+		;; Pop characters off the end of acc and stick them
+		;; back in l, until acc is short enough to go in
+		;; outlines.  Probably hideously inefficient.
+		(push (aref acc (1- (length acc))) l)
+		(setq acc (substring acc 0 -1)))
+	      (push acc outlines)
+	      (setq l (concat " " l)))
+	  ;; No multibyte characters.
+	  (push (substring l 0 75) outlines)
+	  (setq l (concat " " (substring l 75)))))
+      (push l outlines))
+    (mapconcat #'identity (nreverse outlines) "\r\n")))
+
+(defun ebdb-vcard-unfold-lines (text)
+  "Unfold lines in TEXT, which represents a vCard contact."
+  (replace-regexp-in-string "\r\n[\s\t]" "" text))
 
 (cl-defmethod ebdb-fmt-process-fields ((_f ebdb-formatter-vcard)
 				       (_record ebdb-record)
@@ -176,7 +217,8 @@ All this does is split role instances into multiple fields."
 			       (r ebdb-record))
   "Format a single record R in VCARD format."
   ;; Because of the simplicity of the VCARD format, we only collect
-  ;; the fields, there's no need to sort or "process" them.
+  ;; the fields, there's no need to sort them, and the only processing
+  ;; that happens is for role fields.
   (let ((fields (ebdb-fmt-process-fields
 		 f r
 		 (ebdb-fmt-collect-fields f r)))

@@ -384,6 +384,40 @@ uncle"))
 		   "Look, a bog; dogs."))
 		 "Look, a bog; dogs.")))
 
+(ert-deftest ebdb-vcard-fold/unfold ()
+  "Test line-length folding/unfolding."
+  (let ((short-lines "For sale:\r\nBaby shoes,\r\nNever used.")
+	(long-lines
+	 "Turns out seventy five bytes is a lot of bytes when you just have to keep typing and typing\r\nand typing.")
+	(multibyte-lines
+	 "然后还要用中文写一行没完没了的话。\r\n其实先要来一个短的，然后一行特别长的，那就是现在这行，\r\n然后可以再有一个短的"))
+    (should (equal (ebdb-vcard-fold-lines short-lines)
+		   "For sale:
+Baby shoes,
+Never used."))
+    (should (equal (ebdb-vcard-unfold-lines
+		    (ebdb-vcard-fold-lines short-lines))
+		   short-lines))
+    (should
+     (equal (ebdb-vcard-fold-lines long-lines)
+	    "Turns out seventy five bytes is a lot of bytes when you just have to keep t
+ yping and typing
+and typing."))
+    (should
+     (equal (ebdb-vcard-unfold-lines
+	     (ebdb-vcard-fold-lines long-lines))
+	    long-lines))
+    (should
+     (equal (ebdb-vcard-fold-lines multibyte-lines)
+	    "然后还要用中文写一行没完没了的话。
+其实先要来一个短的，然后一行特别长的，那就是现在这
+ 行，
+然后可以再有一个短的"))
+    (should
+     (equal (ebdb-vcard-unfold-lines
+	     (ebdb-vcard-fold-lines multibyte-lines))
+	    multibyte-lines))))
+
 (ert-deftest ebdb-vcard-export-dont-explode ()
   "Can we export a record to Vcard without immediate disaster?"
   (ebdb-test-with-records
