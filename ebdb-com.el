@@ -421,14 +421,12 @@ This list is also used for toggling layouts."
 (cl-defmethod ebdb-record-db-char-string ((record ebdb-record))
   (let* ((dbs (slot-value (ebdb-record-cache record) 'database))
 	 (char-string
-	  (copy-sequence
-	   (mapconcat
-	    (lambda (d)
-	      (when (slot-value d 'buffer-char)
-		(slot-value d 'buffer-char)))
-	    dbs ""))))
-    (add-face-text-property 0 (length char-string) 'ebdb-db-char nil char-string)
-    char-string))
+	  (mapconcat
+	   (lambda (d)
+	     (when (slot-value d 'buffer-char)
+	       (slot-value d 'buffer-char)))
+	   dbs "")))
+    (propertize char-string 'face 'ebdb-db-char)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-phone)
@@ -442,36 +440,26 @@ This list is also used for toggling layouts."
 				    (_record ebdb-record))
   (format "address (%s)" (eieio-object-name-string field)))
 
-;; In these methods, `copy-sequence' is used because otherwise the
-;; text property is actually set on the field's slot value itself
-;; (which leads to it getting written to the database, ugh).
-
 (cl-defmethod ebdb-fmt-field :around ((_fmt ebdb-formatter-ebdb)
 				      (field ebdb-field)
 				      _style
 				      (_record ebdb-record))
   "Put the 'ebdb-field text property on FIELD.  The value of the
 property is the field instance itself."
-  (let ((val-string (copy-sequence (cl-call-next-method))))
-    (put-text-property 0 (length val-string) 'ebdb-field field val-string)
-    val-string))
+  (propertize (cl-call-next-method) 'ebdb-field field))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-url)
 			      _style
 			      (_record ebdb-record))
   "Add an appropriate face to url fields."
-  (let ((value (copy-sequence (ebdb-string field))))
-    (add-face-text-property 0 (length value) 'ebdb-field-url nil value)
-    value))
+  (propertize (ebdb-string field) 'face 'ebdb-field-url))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (_field ebdb-field-obfuscated)
 			      _style
 			      (_record ebdb-record))
-  (let ((str "HIDDEN"))
-    (add-face-text-property 0 (length str) 'ebdb-field-hidden nil str)
-    str))
+  (propertize "HIDDEN" 'face 'ebdb-field-hidden))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-mail)
@@ -479,13 +467,13 @@ property is the field instance itself."
 			      (_record ebdb-record))
   "Add an appropriate face to primary and defunct mails."
   (let* ((priority (slot-value field 'priority))
-	 (value (copy-sequence (ebdb-string field)))
+	 (value (ebdb-string field))
 	 (face (cond
 		((eq priority 'primary) 'ebdb-mail-primary)
 		((eq priority 'defunct) 'ebdb-defunct)
 		(t nil))))
-    (when face
-      (add-face-text-property 0 (length value) face nil value))
+    (if face
+      (propertize value 'face face))
     value))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
@@ -494,14 +482,13 @@ property is the field instance itself."
 			      (record ebdb-record-organization))
   (let* ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
 	 (mail (slot-value field 'mail))
-	 (value (copy-sequence
-		 (if mail
-		     (format "%s (%s)"
-			     (ebdb-string person)
-			     (ebdb-fmt-field fmt mail 'oneline record))
-		   (ebdb-string person)))))
-    (when (slot-value field 'defunct)
-      (add-face-text-property 0 (length value) 'ebdb-defunct nil value))
+	 (value (if mail
+		    (format "%s (%s)"
+			    (ebdb-string person)
+			    (ebdb-fmt-field fmt mail 'oneline record))
+		  (ebdb-string person))))
+    (if (slot-value field 'defunct)
+	(propertize value 'face 'ebdb-defunct))
     value))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
@@ -510,14 +497,13 @@ property is the field instance itself."
 			      (record ebdb-record-person))
   (let* ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid))
 	 (mail (slot-value field 'mail))
-	 (value (copy-sequence
-		 (if mail
-		     (format "%s (%s)"
-			     (ebdb-string org)
-			     (ebdb-fmt-field fmt mail 'oneline record))
-		   (ebdb-string org)))))
-    (when (slot-value field 'defunct)
-      (add-face-text-property 0 (length value) 'ebdb-defunct nil value))
+	 (value (if mail
+		    (format "%s (%s)"
+			    (ebdb-string org)
+			    (ebdb-fmt-field fmt mail 'oneline record))
+		  (ebdb-string org))))
+    (if (slot-value field 'defunct)
+      (propertize value 'face 'ebdb-defunct))
     value))
 
 (defsubst ebdb-indent-string (string column)
