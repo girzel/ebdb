@@ -123,7 +123,7 @@ not always respect these headings."
 (defsubst ebdb-vcard-escape (str)
   "Escape commas, semi-colons and newlines in STR."
   (replace-regexp-in-string
-   "\\([^\\]\\)\n" "\\1\\\\n"
+   "\\([^\\]\\)\\([\n\r]+\\)" "\\1\\\\\\2"
    (replace-regexp-in-string "\\([^\\]\\)\\([,;]\\)" "\\1\\\\\\2" str)))
 
 (defun ebdb-vcard-unescape (str)
@@ -193,11 +193,11 @@ All this does is split role instances into multiple fields."
 		     (ebdb-fmt-field f fld 'normal r))))
 	   fields))
     (concat
-     (format "BEGIN:VCARD\nVERSION:%s\n"
+     (format "BEGIN:VCARD\r\nVERSION:%s\r\n"
 	     (slot-value f 'version-string))
      (ebdb-fmt-record-header f r header-fields)
      (ebdb-fmt-record-body f r body-fields)
-     "\nEND:VCARD\n")))
+     "\r\nEND:VCARD\r\n")))
 
 (cl-defmethod ebdb-fmt-record-header ((f ebdb-formatter-vcard)
 				      (r ebdb-record)
@@ -208,8 +208,8 @@ VCARDs don't really have the concept of a \"header\", so this
 method is just responsible for formatting the record name."
   (let ((name (car fields)))
    (concat
-    (format "FN:%s\n" (ebdb-string name))
-    (format "N;SORT-AS=\"%s\":%s\n"
+    (format "FN:%s\r\n" (ebdb-string name))
+    (format "N;SORT-AS=\"%s\":%s\r\n"
 	    (ebdb-record-sortkey r)
 	    (ebdb-fmt-field f name 'normal r)))))
 
@@ -221,19 +221,19 @@ method is just responsible for formatting the record name."
      (format "%s:%s"
 	     (car f) (cdr f)))
    fields
-   "\n"))
+   "\r\n"))
 
 (cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
 					    (_r ebdb-record-person)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
-    (concat str "\nKIND:individual")))
+    (concat str "\r\nKIND:individual")))
 
 (cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
 					    (_r ebdb-record-organization)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
-    (concat str "\nKIND:org")))
+    (concat str "\r\nKIND:org")))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (field ebdb-field)
