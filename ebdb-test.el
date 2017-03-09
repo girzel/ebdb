@@ -365,7 +365,7 @@
 		 "Marry\\, uncle"))
 
   ;; Don't double-escape, part II
-  (should (equal (ebdb-vcard-escape "Marry\n uncle!")
+  (should (equal (ebdb-vcard-escape "Marry\\n uncle!")
 		 "Marry\\n uncle!"))
 
   (should (equal (ebdb-vcard-escape "Mine 
@@ -386,11 +386,16 @@ uncle"))
 
 (ert-deftest ebdb-vcard-fold/unfold ()
   "Test line-length folding/unfolding."
-  (let ((short-lines "For sale:\r\nBaby shoes,\r\nNever used.")
+  (let ((short-lines "For sale:
+Baby shoes,
+Never used.")
 	(long-lines
-	 "Turns out seventy five bytes is a lot of bytes when you just have to keep typing and typing\r\nand typing.")
+	 "Turns out seventy five bytes is a lot of bytes when you just have to keep typing and typing
+and typing.")
 	(multibyte-lines
-	 "然后还要用中文写一行没完没了的话。\r\n其实先要来一个短的，然后一行特别长的，那就是现在这行，\r\n然后可以再有一个短的"))
+	 "然后还要用中文写一行没完没了的话。
+其实先要来一个短的，然后一行特别长的，那就是现在这行，
+然后可以再有一个短的"))
     (should (equal (ebdb-vcard-fold-lines short-lines)
 		   "For sale:
 Baby shoes,

@@ -28,7 +28,8 @@
 ;;; Code:
 
 (defclass ebdb-formatter-vcard (ebdb-formatter)
-  ((version-string
+  ((coding-system :initform 'utf-8-dos)
+   (version-string
     :type string
     :allocation :class
     :documentation "The string to insert for this formatter's
@@ -43,8 +44,7 @@
 
 (defclass ebdb-formatter-vcard-40 (ebdb-formatter-vcard)
   ((version-string
-    :initform "4.0")
-   (coding-system :initform 'utf-8-emacs))
+    :initform "4.0"))
   :documentation "Formatter for vCard format 4.0.")
 
 (defgroup ebdb-vcard nil
@@ -123,7 +123,7 @@ not always respect these headings."
 (defsubst ebdb-vcard-escape (str)
   "Escape commas, semi-colons and newlines in STR."
   (replace-regexp-in-string
-   "\\([^\\]\\)\\([\n\r]+\\)" "\\1\\\\\\2"
+   "\\([^\\]\\)\\([\n]+\\)" "\\1\\\\n"
    (replace-regexp-in-string "\\([^\\]\\)\\([,;]\\)" "\\1\\\\\\2" str)))
 
 (defsubst ebdb-vcard-unescape (str)
@@ -148,7 +148,7 @@ not always respect these headings."
 ;; correctness.
 (defun ebdb-vcard-fold-lines (text)
   "Fold lines in TEXT, which represents a vCard contact."
-  (let ((lines (split-string text "\r\n"))
+  (let ((lines (split-string text "\n"))
 	outlines)
     (dolist (l lines)
       (while (> (string-bytes l) 75)	; Line is too long.
@@ -168,11 +168,11 @@ not always respect these headings."
 	  (push (substring l 0 75) outlines)
 	  (setq l (concat " " (substring l 75)))))
       (push l outlines))
-    (mapconcat #'identity (nreverse outlines) "\r\n")))
+    (mapconcat #'identity (nreverse outlines) "\n")))
 
 (defun ebdb-vcard-unfold-lines (text)
   "Unfold lines in TEXT, which represents a vCard contact."
-  (replace-regexp-in-string "\r\n[\s\t]" "" text))
+  (replace-regexp-in-string "\n[\s\t]" "" text))
 
 (cl-defmethod ebdb-fmt-process-fields ((_f ebdb-formatter-vcard)
 				       (_record ebdb-record)
@@ -235,11 +235,11 @@ All this does is split role instances into multiple fields."
 		     (ebdb-fmt-field f fld 'normal r))))
 	   fields))
     (concat
-     (format "BEGIN:VCARD\r\nVERSION:%s\r\n"
+     (format "BEGIN:VCARD\nVERSION:%s\n"
 	     (slot-value f 'version-string))
      (ebdb-fmt-record-header f r header-fields)
      (ebdb-fmt-record-body f r body-fields)
-     "\r\nEND:VCARD\r\n")))
+     "\nEND:VCARD\n")))
 
 (cl-defmethod ebdb-fmt-record-header ((f ebdb-formatter-vcard)
 				      (r ebdb-record)
@@ -250,8 +250,8 @@ VCARDs don't really have the concept of a \"header\", so this
 method is just responsible for formatting the record name."
   (let ((name (car fields)))
    (concat
-    (format "FN:%s\r\n" (ebdb-string name))
-    (format "N;SORT-AS=\"%s\":%s\r\n"
+    (format "FN:%s\n" (ebdb-string name))
+    (format "N;SORT-AS=\"%s\":%s\n"
 	    (ebdb-record-sortkey r)
 	    (ebdb-fmt-field f name 'normal r)))))
 
@@ -263,19 +263,19 @@ method is just responsible for formatting the record name."
      (format "%s:%s"
 	     (car f) (cdr f)))
    fields
-   "\r\n"))
+   "\n"))
 
 (cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
 					    (_r ebdb-record-person)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
-    (concat str "\r\nKIND:individual")))
+    (concat str "\nKIND:individual")))
 
 (cl-defmethod ebdb-fmt-record-body :around ((_f ebdb-formatter-vcard-40)
 					    (_r ebdb-record-organization)
 					    (_fields list))
   (let ((str (cl-call-next-method)))
-    (concat str "\r\nKIND:org")))
+    (concat str "\nKIND:org")))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
 			      (field ebdb-field)
