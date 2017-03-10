@@ -4704,7 +4704,7 @@ The formatting rules are defined in `ebdb-address-format-list'."
 ;; "Citation" means inserting some sort of string representing the
 ;; record(s) into the current buffer.
 
-(defun ebdb-cite-records-mail (&optional records arg)
+(defun ebdb-cite-records (&optional records arg)
   (interactive (list (ebdb-prompt-for-record)
 		     current-prefix-arg))
   (let ((recs (ebdb-record-list records))
@@ -4715,9 +4715,9 @@ The formatting rules are defined in `ebdb-address-format-list'."
 	  (push (cons r (or (object-assoc 'primary 'priority m)
 			    (car m)))
 		usable)))
-    (insert (ebdb-records-cite-mail style usable))))
+    (insert (ebdb-records-cite style usable))))
 
-(cl-defgeneric ebdb-records-cite-mail (style records)
+(cl-defgeneric ebdb-records-cite (style records)
   "Insert mode-appropriate mail strings for RECORDS.
 
 STYLE is a symbol, one of 'inline or 'list.  This is interpreted
@@ -4726,19 +4726,16 @@ differently by different major modes.
 This is a generic function that dispatches on the value of
 `major-mode'.  It only inserts names and mail addresses.")
 
-(cl-defmethod ebdb-records-cite-mail (style records)
+(cl-defmethod ebdb-records-cite (style records)
   "The fallback catch-all method."
   (when records
-    (mapconcat (lambda (pair)
-		 (format "%s <%s>"
-			 (ebdb-string (car pair))
-			 (ebdb-string (cdr pair))))
-	       records
-	       (if (eql style 'inline)
-		   " "
-		 "\n"))))
+    (mapcar (lambda (pair)
+	      (format "%s <%s>"
+		      (ebdb-string (car pair))
+		      (ebdb-string (cdr pair))))
+	    records)))
 
-(cl-defmethod ebdb-records-cite-mail :around ((_style (eql list))
+(cl-defmethod ebdb-records-cite :around ((_style (eql list))
 					      (_records list)
 					      &context (major-mode org-mode))
   (let ((list (cl-call-next-method)))
@@ -4746,7 +4743,7 @@ This is a generic function that dispatches on the value of
 		 (format "- %s" elt))
 	       list "\n")))
 
-(cl-defmethod ebdb-records-cite-mail
+(cl-defmethod ebdb-records-cite
     (_style (records list) &context (major-mode org-mode))
   "Insert RECORDS as a list of org links."
   (mapcar (lambda (pair)
@@ -4755,7 +4752,7 @@ This is a generic function that dispatches on the value of
 		    (ebdb-string (car pair))))
 	  records))
 
-(cl-defmethod ebdb-records-cite-mail :around ((_style (eql list))
+(cl-defmethod ebdb-records-cite :around ((_style (eql list))
 					      (_records list)
 					      &context (major-mode html-mode))
   (let ((list (cl-call-next-method)))
@@ -4763,12 +4760,12 @@ This is a generic function that dispatches on the value of
 		 (format "<li>%s</li>" l))
 	       list "\n")))
 
-(cl-defmethod ebdb-records-cite-mail :around ((_style (eql inline))
+(cl-defmethod ebdb-records-cite :around ((_style (eql inline))
 					      (_records list))
   (let ((list (cl-call-next-method)))
     (mapconcat #'identity list " ")))
 
-(cl-defmethod ebdb-records-cite-mail
+(cl-defmethod ebdb-records-cite
     (_style (records list) &context (major-mode html-mode))
   (mapcar
    (lambda (pair)
