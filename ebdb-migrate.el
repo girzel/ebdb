@@ -502,11 +502,13 @@ holding valid contacts in a previous BBDB format."
     (when mail
       (dolist (m mail)
 	(let ((bits (ebdb-decompose-ebdb-address m)))
-	  (push (make-instance ebdb-default-mail-class
-			       :aka (car bits)
-			       :mail (cadr bits))
-		mails)))
-      (oset (car (last mails)) priority 'primary))
+	  (when (cadr bits)
+	    (push (make-instance ebdb-default-mail-class
+				 :aka (car bits)
+				 :mail (cadr bits))
+		  mails))))
+      (when mails
+       (oset (car (last mails)) priority 'primary)))
     (when xfields
       (dolist (x xfields)
 	(setq lab (car x)
