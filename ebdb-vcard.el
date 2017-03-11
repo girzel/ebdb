@@ -27,6 +27,8 @@
 
 ;;; Code:
 
+(require 'ebdb-format)
+
 (defclass ebdb-formatter-vcard (ebdb-formatter)
   ((coding-system :initform 'utf-8-dos)
    (version-string
