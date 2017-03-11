@@ -39,7 +39,7 @@
 
 ;;; Code:
 
-(require 'ebdb)
+(require 'ebdb-com)
 
 (defcustom ebdb-snarf-routines
   '((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)"))

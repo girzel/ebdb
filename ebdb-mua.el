@@ -45,8 +45,12 @@
 (require 'ebdb)
 (require 'ebdb-com)
 
+(autoload 'ebdb-snarf "ebdb-snarf")
+
 (eval-and-compile
   (autoload 'mail-decode-encoded-word-string "mail-parse"))
+
+(defvar message-alternative-emails)
 
 ;;; MUA interface
 
@@ -244,7 +248,8 @@ accordingly."
 		 (regexp-opt (slot-value
 			      (ebdb-record-cache self-rec)
 			      'mail-canon)))))
-	((eq ebdb-user-mail-address-re 'message)
+	((and (eq ebdb-user-mail-address-re 'message)
+	      (boundp 'message-alternative-emails))
 	 (setq ebdb-user-mail-address-re
 	       message-alternative-emails))
 	(t ebdb-user-mail-address-re)))
@@ -315,18 +320,6 @@ See also `ebdb-ignore-redundant-mails'."
                  (function :tag "Function for analyzing name handling")
                  (regexp :tag "If the new address matches this regexp ignore it.")))
 
-(defcustom ebdb-canonicalize-mail-function nil
-  "If non-nil, it should be a function of one arg: a mail address string.
-When EBDB \"notices\" a message, the corresponding mail addresses are passed
-to this function first.  It acts as a kind of \"filter\" to transform
-the mail addresses before they are compared against or added to the database.
-See `ebdb-canonicalize-mail-1' for a more complete example.
-If this function returns nil, EBDB assumes that there is no mail address.
-
-See also `ebdb-ignore-redundant-mails'."
-  :group 'ebdb-mua
-  :type 'function)
-
 (defcustom ebdb-ignore-redundant-mails 'query
   "How to handle redundant mail addresses for existing EBDB records.
 For example, \"foo@bar.baz.com\" is redundant w.r.t. \"foo@baz.com\".
@@ -352,15 +345,6 @@ See also `ebdb-add-mails' and `ebdb-canonicalize-mail-function'."
                  (number :tag "Number of seconds to display redundant addresses")
                  (function :tag "Function for handling redundant mail addresses")
                  (regexp :tag "If the new address matches this regexp never ignore it.")))
-(define-obsolete-variable-alias 'ebdb-canonicalize-redundant-mails
-  'ebdb-ignore-redundant-mails)
-
-(defcustom ebdb-message-clean-name-function 'ebdb-message-clean-name-default
-  "Function to clean up the name in the header of a message.
-It takes one argument, the name as extracted by
-`mail-extract-address-components'."
-  :group 'ebdb-mua
-  :type 'function)
 
 (defcustom ebdb-message-mail-as-name t
   "If non-nil use mail address of message as fallback for name of new records."
@@ -627,6 +611,25 @@ Currently no other MUAs support this EBDB feature."
     (when (and val (string-match regexp val))
       (throw 'done t))))
 
+(defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
+  (let ((rest (if invert
+		  ebdb-ignore-header-alist
+		ebdb-accept-header-alist))
+	h-type)
+    (catch 'done
+      (dolist (elt rest)
+	(setq h-type (car elt))
+	(cond ((and (eq h-type 'subject)
+		    (eq header-type 'subject))
+	       (when (ebdb-message-header-re "Subject" (cdr elt))
+		 (throw 'done (if invert nil t))))
+	      ((or (eq h-type header-type)
+		   (and (eq h-type 'any)
+			(memq header-type '(sender recipients))))
+	       (when (string-match-p (cdr elt) (cl-second address-parts))
+		 (throw 'done (if invert nil t))))))
+      (throw 'done t))))
+
 (defun ebdb-mua-test-headers (header-type address-parts &optional ignore-address)
   "Decide if the address in ADDRESS-PARTS should be ignored or
   acted upon.  Return t if the header \"passes\".
@@ -655,25 +658,6 @@ variables `ebdb-user-mail-address-re',
 		     ebdb-ignore-header-alist)
 		(and (ebdb-mua-check-header header-type address-parts)
 		     (ebdb-mua-check-header header-type address-parts t)))))))
-
-(defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
-  (let ((rest (if invert
-		  ebdb-ignore-header-alist
-		ebdb-accept-header-alist))
-	h-type)
-    (catch 'done
-      (dolist (elt rest)
-	(setq h-type (car elt))
-	(cond ((and (eq h-type 'subject)
-		    (eq header-type 'subject))
-	       (when (ebdb-message-header-re "Subject" (cdr elt))
-		 (throw 'done (if invert nil t))))
-	      ((or (eq h-type header-type)
-		   (and (eq h-type 'any)
-			(memq header-type '(sender recipients))))
-	       (when (string-match-p (cdr elt) (second address-parts))
-		 (throw 'done (if invert nil t))))))
-      (throw 'done t))))
 
 ;; How are you supposed to do the &context arglist for a defgeneric?
 (cl-defgeneric ebdb-message-header (header)

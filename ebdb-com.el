@@ -27,7 +27,6 @@
 
 (require 'ebdb)
 (require 'ebdb-format)
-(require 'ebdb-snarf)
 (require 'mailabbrev)
 
 (eval-and-compile
@@ -2575,7 +2574,7 @@ of all of these people."
 	       (ebdb-dwim-mail (if (stringp (car e))
 				   (ebdb-gethash e 'uuid)
 				 (car e))
-			       (second e)))
+			       (cl-second e)))
 	     (cdr entry) ", "))
 	   f-alias)
 
@@ -2633,7 +2632,7 @@ actions."
 		       (cdar actions))
 		 (let ((alst (mapcar
 			      (lambda (a)
-				(cons (first a) (cdr a)))
+				(cons (cl-first a) (cdr a)))
 			      actions)))
 		   (cdr
 		    (assoc (completing-read "Action: " alst)

@@ -4221,8 +4221,29 @@ If the domain part of a mail address matches this regexp, the domain
 is replaced by the substring that actually matched this address.
 
 Used by  `ebdb-canonicalize-mail-1'.  See also `ebdb-ignore-redundant-mails'."
-  :group 'ebdb-mua
+  :group 'ebdb-utilities
   :type '(regexp :tag "Regexp matching sites"))
+
+
+(defcustom ebdb-canonicalize-mail-function nil
+  "If non-nil, it should be a function of one arg: a mail address string.
+When EBDB is parsing mail addresses, the corresponding mail
+addresses are passed to this function first.  It acts as a kind
+of \"filter\" to transform the mail addresses before they are
+compared against or added to the database.  See
+`ebdb-canonicalize-mail-1' for a more complete example.  If this
+function returns nil, EBDB assumes that there is no mail address.
+
+See also `ebdb-ignore-redundant-mails'."
+  :group 'ebdb-utilities
+  :type 'function)
+
+(defcustom ebdb-message-clean-name-function 'ebdb-message-clean-name-default
+  "Function to clean up the name in the header of a message.
+It takes one argument, the name as extracted by
+`mail-extract-address-components'."
+  :group 'ebdb-utilities
+  :type 'function)
 
 (defun ebdb-canonicalize-mail-1 (address)
   "Example of `ebdb-canonicalize-mail-function'.
