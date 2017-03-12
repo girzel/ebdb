@@ -2940,9 +2940,21 @@ overwrite data somewhere."
       (ebdb-dirty-records (slot-value db 'records))))
 
 (cl-defmethod ebdb-db-load ((db ebdb-db))
-  "Complete the loading procedure for DB."
-  ;; By this point, all the DB's records are in its record slot.
-  (dolist (rec (slot-value db 'records) t)
+  ;; By this stage, all of DB's records should be in the 'records
+  ;; slot.  This happens automatically with `ebdb-db-file'; other
+  ;; subclasses should overload this method to load their records.
+  (ebdb-db-load-records db (slot-value db 'records)))
+
+(cl-defgeneric ebdb-db-load-records (db records)
+  "Load RECORDS into DB.
+
+This method is responsible for adding DB to records' caches,
+checking their uuid, and hashing the uuid.  It happens at two
+different points: after loading DB, and when adding a record to
+DB.")
+
+(cl-defmethod ebdb-db-load-records ((db ebdb-db) records)
+  (dolist (rec records t)
 
     ;; Cycle over each loaded record.
     (condition-case err
@@ -3125,13 +3137,12 @@ the persistent save, or allow them to propagate."
     (setf (slot-value record 'uuid)
 	  (make-instance
 	   'ebdb-field-uuid
-	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
-    (ebdb-puthash (ebdb-record-uuid record) record))
+	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix)))))
   (object-add-to-list db 'records record)
+  (ebdb-db-load-records db (list record))
+  (setf (slot-value db 'dirty) t)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
-  (object-add-to-list (ebdb-record-cache record)
-		      'database db)
   record)
 
 (cl-defmethod ebdb-db-remove-record ((db ebdb-db) record)
