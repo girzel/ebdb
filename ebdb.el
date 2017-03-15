@@ -2803,9 +2803,9 @@ executable.  When a symbol, assume an Elisp function."
     records created in this database.")
    (buffer-char
     :initarg :buffer-char
-    :type string
-    :initform ""
-    :custom string
+    :type (or null character)
+    :initform nil
+    :custom character
     :documentation
     "A single character used in the *EBDB* buffer to indicate the
     database(s) to which a record belongs.")

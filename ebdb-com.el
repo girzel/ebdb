@@ -420,11 +420,13 @@ This list is also used for toggling layouts."
 (cl-defmethod ebdb-record-db-char-string ((record ebdb-record))
   (let* ((dbs (slot-value (ebdb-record-cache record) 'database))
 	 (char-string
-	  (mapconcat
-	   (lambda (d)
-	     (when (slot-value d 'buffer-char)
-	       (slot-value d 'buffer-char)))
-	   dbs "")))
+	  (concat
+	   (delq nil
+	    (mapcar
+	     (lambda (d)
+	       (when (slot-value d 'buffer-char)
+		 (slot-value d 'buffer-char)))
+	     dbs)))))
     (propertize char-string 'face 'ebdb-db-char)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
