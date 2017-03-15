@@ -785,7 +785,7 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
         (setq records (list (car records))))
 
     (dolist (record records)
-      (ebdb-notice record))
+      (ebdb-notice-record record))
 
     records))
 

@@ -651,7 +651,8 @@ functions to call. Otherwise, call the car of the list."
     (when pair
       (funcall (cdr pair) record field))))
 
-(cl-defmethod ebdb-notice ((_field ebdb-field) &optional _type _message-headers _record)
+(cl-defmethod ebdb-notice-field ((_field ebdb-field)
+				&optional _type _message-headers _record)
   "Ask FIELD of RECORD to react to RECORD being \"noticed\".
 
 When the user receives an email from or cc'd to RECORD, that
@@ -1522,8 +1523,8 @@ first one."
 
 ;;; Anniversary field
 
-;; The `ebdb-notice' method could let you know when you get an email
-;; from someone and it happens to be their birthday.  The
+;; The `ebdb-notice-field' method could let you know when you get an
+;; email from someone and it happens to be their birthday.  The
 ;; `ebdb-action' method could open a calendar with point on the
 ;; upcoming anniversary, etc.
 
@@ -2062,7 +2063,7 @@ only return fields that are suitable for user editing.")
       (push (cons 'notes notes) f-list)))
   f-list)
 
-(cl-defmethod ebdb-notice ((_rec ebdb-record))
+(cl-defmethod ebdb-notice-record ((_rec ebdb-record))
   ;; Implement this later.
   t)
 
