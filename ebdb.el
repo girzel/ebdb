@@ -651,17 +651,26 @@ functions to call. Otherwise, call the car of the list."
     (when pair
       (funcall (cdr pair) record field))))
 
+(cl-defgeneric ebdb-notice-field (field &optional type record)
+  "\"Notice\" FIELD.
+
+This means that a message involving RECORD has been viewed, or
+that a MUA has otherwise decided that something significant to
+RECORD has taken place.  It is up to the class of FIELD to decide
+what, if anything, to do about this.
+
+TYPE is a further indicator of how RECORD was noticed: in normal
+MUAs it is one of the symbols 'sender or 'recipient.")
+
 (cl-defmethod ebdb-notice-field ((_field ebdb-field)
-				&optional _type _message-headers _record)
+				 &optional _type _record)
   "Ask FIELD of RECORD to react to RECORD being \"noticed\".
 
 When the user receives an email from or cc'd to RECORD, that
 record will call `ebdb-notice' on all its fields, and give them a
-chance to react somehow.  TYPE is one of the symbols to, from, or
-cc, indicating which message header the record was found in.
-MESSAGE-HEADERS is a list of all the headers of the incoming
-message."
-  nil)
+chance to react somehow.  TYPE is one of the symbols 'sender or
+'recipient, indicating which message header the record was found
+in."  nil)
 
 ;;; The UUID field.
 
@@ -2063,9 +2072,22 @@ only return fields that are suitable for user editing.")
       (push (cons 'notes notes) f-list)))
   f-list)
 
-(cl-defmethod ebdb-notice-record ((_rec ebdb-record))
-  ;; Implement this later.
-  t)
+(cl-defgeneric ebdb-notice-record (record type)
+  "Inform RECORD that it's been \"noticed\".
+
+TYPE is one of the symbols 'sender or 'recipient, indicating
+RECORD's location in the message headers.")
+
+(cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
+  "Notice REC.
+
+Currently this just means passing on the notice message to all
+REC's `ebdb-field-user' instances, and its notes fields.  Other
+built in fields (mail, phone, address) are not \"noticed\", nor
+is the timestamp updated."
+  (with-slots (fields notes) rec
+    (dolist (f (delq nil (cons notes fields)))
+      (ebdb-notice-field f type rec))))
 
 ;; TODO: rename this to `ebdb-record-name-string', it's confusing.
 (cl-defmethod ebdb-record-name ((record ebdb-record))

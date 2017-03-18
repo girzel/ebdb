@@ -63,7 +63,19 @@ this record will not push a link to the message into the field."
   :type '(choice (const :tag "Most recently seen" 'seen)
                  (const :tag "Most recently received" 'received)))
 
-(defcustom gnorb-ebdb-message-format "%:count. %:lapsed: %:subject"
+(defcustom gnorb-ebdb-collect-by-thread t
+  "When collecting links to messages, only collect one link per thread.
+
+This option won't work correctly unless `gnus-show-thread' is set
+to t; if it is nil, this option will be ignored.
+
+This also affects how links are followed: when t, following a
+link will display the whole thread."
+
+  :group 'gnorb-ebdb
+  :type 'boolean)
+
+(defcustom gnorb-ebdb-message-format "%:lapsed days: %:subject"
   "How a single message is formatted in the list of recent messages.
 This format string is used in multi-line record display.
 
@@ -72,8 +84,8 @@ date, and the message's count in the list, as an integer. You can
 access subject and count using the %:subject and %:count escapes.
 The message date can be formatted using any of the escapes
 mentioned in the docstring of `format-time-string', which see, or
-the escape %:lapsed, which shows how many days ago the message
-was received."
+the escape %:lapsed, which inserts the number of days ago the
+message was received."
 
   :group 'gnorb-ebdb
   :type 'string)
@@ -101,40 +113,62 @@ was received."
 		     (ebdb-scan-property 'gnorb-link #'gnorb-ebdb-link-p 1)
 		     'gnorb-link))))
     (org-gnus-follow-link (gnorb-ebdb-link-group link)
-			  (gnorb-ebdb-link-id link))))
+			  (gnorb-ebdb-link-id link))
+    (when (and gnus-show-threads
+	       gnorb-ebdb-collect-by-thread)
+      (gnus-summary-refer-thread))))
 
 (cl-defmethod ebdb-string ((field gnorb-ebdb-field-messages))
   (format "%d messages" (length (slot-value field 'messages))))
+
+(defun ebdb-gnorb-lapsed-days (date)
+  "Return the number of days between now and DATE."
+  ;; Cribbed/simplified from `article-lapsed-string'.  Need to handle
+  ;; dates in the future, though that's stupid.
+  (let* ((now (current-time))
+	 (delta (time-subtract now date))
+	 (real-sec (and delta
+			(+ (* (float (car delta)) 65536)
+			   (cadr delta))))
+	 (sec (and delta (abs real-sec))))
+    (floor (/ sec 86400))))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field gnorb-ebdb-field-messages)
 			      _style
 			      (record ebdb-record))
-  ;; Hard-code this for now, we can provide more options later.
-  (let* ((article-time-units '((day . 86400)))
-	 (msgs (slot-value field 'messages))
+  (let* ((msgs (slot-value field 'messages))
 	 (outstring
 	  (if (= (length msgs) 0)
 	      "No message yet"
 	    (mapconcat
 	     #'identity
-	     (let ((count 0))
+	     (let ((count 0) str)
 	       (mapcar
 		(lambda (m)
+		  (setq str
+			(format-time-string
+			 (replace-regexp-in-string
+			  "%:subject" (substring
+				       (gnorb-ebdb-link-subject m)
+				       0 (min 30
+					      (length (gnorb-ebdb-link-subject m))))
+			  (replace-regexp-in-string
+			   "%:count" (number-to-string (cl-incf count))
+			   gnorb-ebdb-message-format))
+			 (gnorb-ebdb-link-date m)))
+		  ;; Avoid doing the lapse calculation if not
+		  ;; necessary.  Of course, this is probably more
+		  ;; wasteful than just doing it anyway.
+		  (when (string-match-p "%:lapsed" str)
+		    (setq str
+			  (replace-regexp-in-string
+			   "%:lapsed" (number-to-string
+				       (ebdb-gnorb-lapsed-days
+					(gnorb-ebdb-link-date m)))
+			   str)))
 		  (propertize
-		   (format-time-string
-		    (replace-regexp-in-string
-		     "%:lapsed" (article-lapsed-string
-				 (gnorb-ebdb-link-date m) 1)
-		     (replace-regexp-in-string
-		      "%:subject" (substring
-				   (gnorb-ebdb-link-subject m)
-				   0 (min 30
-					  (length (gnorb-ebdb-link-subject m))))
-		      (replace-regexp-in-string
-		       "%:count" (number-to-string (cl-incf count))
-		       gnorb-ebdb-message-format)))
-		    (gnorb-ebdb-link-date m))
+		   str
 		   'face 'gnorb-ebdb-link
 		   'gnorb-link m))
 		msgs))
@@ -142,40 +176,53 @@ was received."
     outstring))
 
 (cl-defmethod ebdb-notice-field ((field gnorb-ebdb-field-messages)
-				 (_type (eql from))
-				 _hdrs
+				 (_type (eql sender))
 				 (record ebdb-record))
   "Used in the `bbdb-notice' to possibly save a link
 to a message into the record's `gnorb-ebdb-messages-field'."
 
-  (when (memq major-mode '(gnus-summary-mode gnus-article-mode))
-    (with-current-buffer gnus-summary-buffer
-      (let* ((val (slot-value field 'messages))
-	     (art-no (gnus-summary-article-number))
-	     (heads (gnus-summary-article-header art-no))
-	     (date (apply 'encode-time
-			  (parse-time-string (mail-header-date heads))))
-	     (subject (mail-header-subject heads))
-	     (id (mail-header-id heads))
-	     (group (gnorb-get-real-group-name
-		     gnus-newsgroup-name
-		     art-no))
-	     link)
-	(if (not (and date subject id group))
-	    (message "Could not save a link to this message")
-	  (setq link (make-gnorb-ebdb-link :subject subject :date date
-					   :group group :id id))
-	  (setq val (cons link (delete link val)))
-	  (when (eq gnorb-ebdb-define-recent 'received)
-	    (setq val (sort val
+  (with-current-buffer gnus-summary-buffer
+    (let* ((links (slot-value field 'messages))
+	   (art-no (gnus-summary-article-number))
+	   (heads (gnus-summary-article-header art-no))
+	   (date (apply 'encode-time
+			(parse-time-string (mail-header-date heads))))
+	   (refs (gnus-extract-references (mail-header-references heads)))
+	   (subject (gnus-simplify-subject (mail-header-subject heads)))
+	   (id (mail-header-id heads))
+	   (group (gnorb-get-real-group-name
+		   gnus-newsgroup-name
+		   art-no))
+	   link)
+      (if (not (and date subject id group))
+	  (message "Could not save a link to this message")
+	(setq link (make-gnorb-ebdb-link :subject subject :date date
+					 :group group :id id))
+	(when (and gnus-show-threads
+		   gnorb-ebdb-collect-by-thread)
+	  ;; If the new link has a ref to an earlier link, then don't
+	  ;; save the new link, but do update the date of the earlier
+	  ;; link. Ie, the new link isn't kept, but it "refreshes" the
+	  ;; date of the whole thread.
+	  (dolist (l links)
+	    (when (member (gnorb-ebdb-link-id l)
+			  refs)
+	      (setf (gnorb-ebdb-link-date l) date)
+	      ;; We can discard link.
+	      (setq link nil))))
+	(when link
+	  (setq links (cons link (delete link links))))
+	(when (eq gnorb-ebdb-define-recent 'received)
+	  (setq links (sort links
 			    (lambda (a b)
 			      (time-less-p
-			       (gnorb-bbdb-link-date b)
-			       (gnorb-bbdb-link-date a))))))
-	  (setq val (cl-subseq val 0 (min (length val) gnorb-ebdb-collect-N-messages)))
-	  (ebdb-record-change-field
-	   record field
-	   (make-instance 'gnorb-ebdb-field-messages
-			  :messages val)))))))
+			       (gnorb-ebdb-link-date b)
+			       (gnorb-ebdb-link-date a))))))
+	(setq links (cl-subseq links 0 (min (length links)
+					    gnorb-ebdb-collect-N-messages)))
+	(ebdb-record-change-field
+	 record field
+	 (make-instance 'gnorb-ebdb-field-messages
+			:messages links))))))
 
 (provide 'ebdb-gnorb)

@@ -772,7 +772,8 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 		 (setq address-list nil))
 		((not (eq task 'next))
 		 (dolist (hit (delq nil (nreverse hits)))
-		   (cl-pushnew hit records :test #'equal))))
+		   (cl-pushnew hit records :test #'equal)
+		   (ebdb-notice-record hit (nth 3 address)))))
 	  (if (and records (not ebdb-message-all-addresses))
 	      (setq address-list nil))))
       (setq records
@@ -783,9 +784,6 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
     ;; `ebdb-message-search' might yield multiple records
     (if (and records (not ebdb-message-all-addresses))
         (setq records (list (car records))))
-
-    (dolist (record records)
-      (ebdb-notice-record record))
 
     records))
 
