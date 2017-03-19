@@ -898,27 +898,11 @@ Return the records matching ADDRESS or nil."
              (mail mail) ;; possibly changed below
              (created-p created-p)
              (update-p update-p)
-	     (name-slot (ignore-errors
-			  (car
-			   (ebdb-record-field-slot-query
-			    (eieio-object-class record)
-			    `(nil . ,(eieio-object-class
-				      (ebdb-parse
-				       (if (eql record-class 'ebdb-record-organization)
-					   'ebdb-field-name-simple
-					 'ebdb-field-name-complex)
-				       name)))))))
              change-p add-mails add-name ignore-redundant)
 
         ;; Analyze the name part of the record.
         (cond (created-p		; new record
-               (ebdb-record-change-name
-		record
-		(ebdb-parse
-		 (if (eql record-class 'ebdb-record-organization)
-		     'ebdb-field-name-simple
-		   'ebdb-field-name-complex)
-		 name)))
+               (ebdb-record-change-name record name))
 
               ((or (not name)
                    ;; The following tests can differ for more complicated names
@@ -942,24 +926,25 @@ Return the records matching ADDRESS or nil."
                                          name (car (ebdb-record-mail record)))))
                ;; Keep old-name as AKA?
                (when (and old-name
-			  name-slot
+			  ;; Leaky abstraction
+			  (object-of-class-p record 'ebdb-record-person)
                           (not (member-ignore-case old-name (ebdb-record-alt-names record))))
                  (if (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record old-name)
                                      (format "Keep name \"%s\" as an AKA? " old-name))
                      (ebdb-record-insert-field
-                      record name-slot (slot-value record 'name))))
-               (ebdb-record-change-name record (ebdb-parse 'ebdb-field-name name))
+                      record 'aka (slot-value record 'name))))
+               (ebdb-record-change-name record name)
                (setq change-p 'name))
 
               ;; make new name an AKA?
               ((and old-name
-		    name-slot
+		    (object-of-class-p record 'ebdb-record-person)
                     (not (member-ignore-case name (ebdb-record-alt-names record)))
                     (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record name)
                                     (format "Make \"%s\" an alternate for \"%s\"? "
                                             name old-name)))
                (ebdb-record-insert-field
-                record name-slot (ebdb-parse 'ebdb-field-name name))
+                record 'aka (ebdb-parse 'ebdb-field-name name))
                (setq change-p 'name)))
 
         ;; Is MAIL redundant compared with the mail addresses
@@ -1013,9 +998,7 @@ Return the records matching ADDRESS or nil."
                         (progn
                           (setq record (make-instance ebdb-default-record-class))
 			  (ebdb-db-add-record (car ebdb-db-list) record)
-                          (ebdb-record-change-name
-			   record
-			   (ebdb-parse 'ebdb-field-name name))
+                          (ebdb-record-change-name record name)
                           (setq created-p t))))
 
                (let ((mails (ebdb-record-mail record)))

@@ -1637,7 +1637,9 @@ the record, change the name of the record."
   (let ((header-p (get-text-property (point) 'ebdb-record)))
     (ebdb-with-record-edits (r (list record))
       (if header-p
-	  (ebdb-record-change-name r)
+	  (let* ((old-name (slot-value r 'name))
+		 (new-name (ebdb-read (eieio-object-class old-name) nil old-name)))
+	   (ebdb-record-change-name r new-name))
 	(if (eieio-object-p field)
 	    (ebdb-record-change-field r field)
 	  (message "Point not in field"))))))

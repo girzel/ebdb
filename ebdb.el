@@ -1884,6 +1884,13 @@ If DB is given, only delete RECORD from DB.
 If UNLOAD is non-nil, we should only unload RECORD, not delete it
 altogether.")
 
+(cl-defgeneric ebdb-record-change-name (record name)
+  "Change RECORD's name to NAME.
+
+NAME can be an instance of `ebdb-field-name' or one of its
+subclasses, or it can be a string, in which case the class of
+RECORD is responsible for parsing it correctly.")
+
 (cl-defmethod ebdb-record-uuid ((record ebdb-record))
   (if-let ((uuid-field (slot-value record 'uuid)))
    (slot-value uuid-field 'uuid)))
@@ -2264,9 +2271,12 @@ or actual image data."
       (push `(address . ,a) f-list)))
   (cl-call-next-method record f-list all))
 
-(cl-defmethod ebdb-record-change-name ((record ebdb-record-entity) name)
+(cl-defmethod ebdb-record-change-name ((record ebdb-record-entity)
+				       (name ebdb-field-name))
   (when (slot-value record 'name)
     (ebdb-record-delete-field record 'name (slot-value record 'name)))
+  (setf (slot-value (ebdb-record-cache record) 'name-string)
+	(ebdb-string name))
   (ebdb-record-insert-field record 'name name))
 
 (cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
@@ -2427,15 +2437,10 @@ priority."
       (push `(organizations . ,o) f-list)))
   (cl-call-next-method record f-list all))
 
-;; TODO: Now that both people and organizations have class-based
-;; names, there's no longer any real reason to have two
-;; implementations of this method.  One implementation that accepted a
-;; `ebdb-field-name' subclass symbol would be sufficient.
-(cl-defmethod ebdb-record-change-name ((record ebdb-record-person) &optional name)
-  (let* ((new-name (or name (ebdb-read ebdb-default-name-class nil
-				       (slot-value record 'name)))))
-    (setf (slot-value (ebdb-record-cache record) 'name-string) (ebdb-string new-name))
-    (cl-call-next-method record new-name)))
+(cl-defmethod ebdb-record-change-name ((record ebdb-record-person)
+				       (name string))
+  (let ((new-name (ebdb-parse ebdb-default-name-class name)))
+   (cl-call-next-method record new-name)))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
@@ -2523,7 +2528,7 @@ priority."
 (defclass ebdb-record-organization (ebdb-record-entity)
   ((name
     :initarg :name
-    :type ebdb-field-name-simple
+    :type (or null ebdb-field-name-simple)
     :initform nil
     :documentation "The name of this organization.")
    (domain
@@ -2676,9 +2681,9 @@ appropriate person record."
     (when org
       (ebdb-record-adopt-role-fields record org t))))
 
-(cl-defmethod ebdb-record-change-name ((org ebdb-record-organization) &optional name)
-  (let ((new-name (or name (ebdb-read 'ebdb-field-name-simple nil (slot-value org 'name)))))
-    (setf (slot-value (ebdb-record-cache org) 'name-string) (ebdb-string new-name))
+(cl-defmethod ebdb-record-change-name ((org ebdb-record-organization)
+				       (name string))
+  (let ((new-name (ebdb-parse 'ebdb-field-name-simple name)))
     (cl-call-next-method org new-name)))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-organization)
