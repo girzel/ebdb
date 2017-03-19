@@ -1156,8 +1156,8 @@ There are numerous hooks.  M-x apropos ^ebdb.*hook RET
          (lambda (pair)
 	   (vector (ebdb-field-readable-name (cdr pair))
 		   `(ebdb-record-insert-field
-		    ,record ',(car pair)
-		    (ebdb-read ,(cdr pair)))
+		    ,record (ebdb-read ,(cdr pair))
+		    ',(car pair))
 		   t))
 	 (ebdb-record-field-slot-query
 	  (eieio-object-class record)))))
@@ -1415,9 +1415,9 @@ which is probably more suited for your needs."
                        (y-or-n-p (format "Delete %s: " form))))
           (unless query (message "Deleting %s" form))
 	  (dolist (m okay)
-	    (ebdb-record-insert-field record 'mail m))
+	    (ebdb-record-insert-field record m 'mail))
 	  (dolist (m redundant)
-	    (ebdb-record-delete-field record 'mail m)))))))
+	    (ebdb-record-delete-field record m 'mail)))))))
 
 (defun ebdb-touch-records (records)
   "Touch RECORDS by calling `ebdb-change-hook' unconditionally."
@@ -1610,18 +1610,10 @@ is more than one), and prompt for the record class to use."
     (let
 	((field (ebdb-read class
 			   (when (equal class 'ebdb-field-user-simple)
-			     `(:object-name ,label))))
-	 new-slot)
+			     `(:object-name ,label)))))
       (ebdb-with-record-edits (r records)
-	;; If we're adding the same field to many different records, of
-	;; different classes, it's possible that some of the records
-	;; won't accept this field, or will accept it in a different
-	;; slot.
 	(condition-case nil
-	    (progn
-	      (setq new-slot (car (ebdb-record-field-slot-query
-				   (eieio-object-class r) `(nil . ,class))))
-	      (ebdb-record-insert-field r new-slot field))
+	  (ebdb-record-insert-field r field)
 	  (ebdb-unacceptable-field
 	   (message "Record %s cannot accept field %s" (ebdb-string r) field)
 	   (sit-for 2)))))))
@@ -1697,7 +1689,7 @@ field to edit."
       ;; call it with these arguments.  Shouldn't be doing low-level
       ;; work here.
       (setq field (ebdb-read ebdb-default-notes-class))
-      (ebdb-record-insert-field record 'notes field))))
+      (ebdb-record-insert-field record field 'notes))))
 
 ;; (ebdb-list-transpose '(a b c d) 1 3)
 (defun ebdb-list-transpose (list i j)
@@ -1734,11 +1726,7 @@ confirm deletion."
 				  (ebdb-field-readable-name field)
 				  (car (split-string (ebdb-string field) "\n"))
 				  (ebdb-record-name record))))
-	(ebdb-record-delete-field
-	 record (car (ebdb-record-field-slot-query
-		      (eieio-object-class record)
-		      (cons nil (eieio-object-class field))))
-	 field))
+	(ebdb-record-delete-field record field))
       (ebdb-redisplay-records record 'reformat t))))
 
 ;;;###autoload
@@ -2718,7 +2706,7 @@ is non-nil.  Do not dial the extension."
 		       (ebdb-read-string "URL label: "
 					 nil ebdb-url-label-list))))
   (let ((url-field (make-instance 'ebdb-field-url :url url :object-name label)))
-      (ebdb-record-insert-field record 'fields url-field)
+      (ebdb-record-insert-field record url-field 'fields)
    (ebdb-display-records (list record))))
 
 ;;; Copy to kill ring

@@ -1974,22 +1974,42 @@ record."
 (cl-defmethod ebdb-stamp-time ((record ebdb-record))
   (ebdb-stamp-time (slot-value record 'timestamp)))
 
-(cl-defmethod ebdb-record-change-field ((record ebdb-record) (old-field ebdb-field) &optional new-field)
-  "Change the values of FIELD belonging to RECORD."
-  (let* ((fieldclass (eieio-object-class old-field))
-	 (slot (car (ebdb-record-field-slot-query
-		     (eieio-object-class record)
-		     (cons nil fieldclass))))
-	 (new-field (or new-field (ebdb-read fieldclass nil old-field))))
-    (when (or (null (equal old-field new-field))
-	      ebdb-update-unchanged-records)
-      (ebdb-record-delete-field record slot old-field)
-      (ebdb-record-insert-field record slot new-field)
-      new-field)))
+(cl-defgeneric ebdb-record-field-slot-query (record-class &optional query alist)
+  "Ask RECORD-CLASS for information about its interactively-settable fields.
+
+If QUERY is nil, simply return ALIST, which is a full list of
+acceptable fields.  Each list element is a cons of the form (SLOT
+. FIELDCLASS), meaning that RECORD-CLASS can accept fields of
+class FIELDCLASS in SLOT.
+
+If QUERY is non-nil, it should be a cons of either '(SLOT . nil),
+or '(nil . FIELDCLASS).  The \"nil\" is the value to query for:
+either \"which slot can accept this field class\", or \"which
+fieldclass is appropriate for this slot\".  The return value in
+either case is a cons with both slot and fieldclass filled in.")
+
+(cl-defgeneric ebdb-record-insert-field (record field &optional slot)
+  "Insert FIELD into RECORD.
+
+If SLOT is given, insert FIELD into that slot.  Otherwise, the
+slot will be found programmatically.")
+
+(cl-defgeneric ebdb-record-delete-field (record field &optional slot)
+  "Delete FIELD from RECORD.
+
+If SLOT is given, delete FIELD from that slot.  Otherwise, the
+slot will be found programmatically.")
+
+(cl-defgeneric ebdb-record-change-field (record old-field &optional new-field)
+  "Change RECORD's field OLD-FIELD.
+
+If NEW-FIELD is given, OLD-FIELD will be replaced with NEW-FIELD.
+Otherwise, the user will be prompted to create a new field, using
+OLD-FIELD's values as defaults.")
 
 (cl-defmethod ebdb-record-insert-field ((record ebdb-record)
-					(slot symbol)
-					(field ebdb-field))
+					(field ebdb-field)
+					&optional (slot symbol))
   "Add FIELD to RECORD's SLOT."
   ;; First, the databases "actually" add the field to the record, ie
   ;; persistence.  The rest of this method is just updating the
@@ -2005,18 +2025,19 @@ record."
     (ebdb-init-field field record))
   field)
 
-(cl-defmethod ebdb-record-insert-field ((record ebdb-record)
-					slot
-					(field ebdb-field))
+(cl-defmethod ebdb-record-insert-field :around ((record ebdb-record)
+						(field ebdb-field)
+						&optional slot)
   (let ((real-slot
-	 (car (ebdb-record-field-slot-query
-	       (eieio-object-class record)
-	       `(nil . ,(eieio-object-class field))))))
-    (cl-call-next-method record real-slot field)))
+	 (or slot
+	     (car (ebdb-record-field-slot-query
+		   (eieio-object-class record)
+		   `(nil . ,(eieio-object-class field)))))))
+    (cl-call-next-method record field real-slot)))
 
 (cl-defmethod ebdb-record-delete-field ((record ebdb-record)
-					(slot symbol)
-					(field ebdb-field))
+					(field ebdb-field)
+					&optional (slot symbol))
   "Delete FIELD from RECORD's SLOT, or set SLOT to nil, if no FIELD."
   ;; We don't use `slot-makeunbound' because that's a huge pain in the
   ;; ass, and why would anyone want those errors?
@@ -2027,28 +2048,27 @@ record."
     (setf (slot-value record slot) nil))
   (ebdb-delete-field field record))
 
-(cl-defmethod ebdb-record-delete-field ((record ebdb-record)
-					slot
-					(field ebdb-field))
+(cl-defmethod ebdb-record-delete-field :around ((record ebdb-record)
+						(field ebdb-field)
+						&optional slot)
   (let ((real-slot
-	 (car (ebdb-record-field-slot-query
-	       (eieio-object-class record)
-	       `(nil . ,(eieio-object-class field))))))
-    (cl-call-next-method record real-slot field)))
+	 (or slot
+	     (car (ebdb-record-field-slot-query
+		   (eieio-object-class record)
+		   `(nil . ,(eieio-object-class field)))))))
+    (cl-call-next-method record field real-slot)))
 
-(cl-defgeneric ebdb-record-field-slot-query (record-class &optional query alist)
-  "Ask RECORD-CLASS for information about its interactively-settable fields.
-
-If QUERY is nil, simply return ALIST, which is a full list of
-acceptable fields.  Each list element is a cons of the form (SLOT
-. FIELDCLASS), meaning that RECORD-CLASS can accept fields of
-class FIELDCLASS in SLOT.
-
-If QUERY is non-nil, it should be a cons of either '(SLOT . nil),
-or '(nil . FIELDCLASS).  The \"nil\" is the value to query for:
-either \"which slot can accept this field class\", or \"which
-fieldclass is appropriate for this slot\".  The return value in
-either case is a cons with both slot and fieldclass filled in.")
+(cl-defmethod ebdb-record-change-field ((record ebdb-record)
+					(old-field ebdb-field)
+					&optional new-field)
+  "Change the values of FIELD belonging to RECORD."
+  (let* ((fieldclass (eieio-object-class old-field))
+	 (new-field (or new-field (ebdb-read fieldclass nil old-field))))
+    (when (or (null (equal old-field new-field))
+	      ebdb-update-unchanged-records)
+      (ebdb-record-delete-field record old-field)
+      (ebdb-record-insert-field record new-field)
+      new-field)))
 
 (cl-defmethod ebdb-record-field-slot-query ((_class (subclass ebdb-record))
 					    &optional query alist)
@@ -2296,17 +2316,17 @@ or actual image data."
 (cl-defmethod ebdb-record-change-name ((record ebdb-record-entity)
 				       (name ebdb-field-name))
   (when (slot-value record 'name)
-    (ebdb-record-delete-field record 'name (slot-value record 'name)))
+    (ebdb-record-delete-field record (slot-value record 'name) 'name))
   (setf (slot-value (ebdb-record-cache record) 'name-string)
 	(ebdb-string name))
-  (ebdb-record-insert-field record 'name name))
+  (ebdb-record-insert-field record name 'name))
 
 (cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
   nil)
 
 (cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-entity)
-					       _slot
-					       (_mail ebdb-field-mail))
+					       (_mail ebdb-field-mail)
+					       &optional _slot)
   "After giving RECORD a new mail field, sort RECORD's mails by
 priority."
   (let ((sorted (ebdb-sort-mails (slot-value record 'mail))))
@@ -2324,8 +2344,8 @@ priority."
 ;; This needs to be a :before method so that the 'address slot is
 ;; filled by the time we call `ebdb-init-field'.
 (cl-defmethod ebdb-record-insert-field :before ((record ebdb-record-entity)
-					       _slot
-					       (field ebdb-field-mail-alias))
+					       (field ebdb-field-mail-alias)
+					       &optional _slot)
   "After inserting a new alias field, prompt the user for which
   address to use with it."
   (unless (and (slot-boundp field 'address)
@@ -2580,7 +2600,7 @@ priority."
     				    (ebdb-string org))))
       (dolist (r org-entry)
     	(setq record (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
-    	(ebdb-record-delete-field record 'organizations r)))
+    	(ebdb-record-delete-field record r 'organizations)))
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-string ((record ebdb-record-organization))
@@ -2662,17 +2682,12 @@ Currently only works for mail fields."
 					  (ebdb-string m)
 					  (ebdb-string org))))
 	    (setf (slot-value r 'mail) m)
-	    (ebdb-record-delete-field
-	     record
-	     (car (ebdb-record-field-slot-query
-		   (eieio-object-class record)
-		   `(nil . ,(eieio-object-class m))))
-	     m)
+	    (ebdb-record-delete-field record m)
 	    (ebdb-init-field r record)))))))
 
 (cl-defmethod ebdb-record-insert-field :after ((org ebdb-record-organization)
-					       _slot
-					       (_field ebdb-field-domain))
+					       (_field ebdb-field-domain)
+					       &optional _slot)
   (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
 	rec)
     (dolist (r roles)
@@ -2691,14 +2706,14 @@ appropriate person record."
     (cl-call-next-method record old-field new-field)))
 
 (cl-defmethod ebdb-record-delete-field ((_record ebdb-record-organization)
-					slot
-					(field ebdb-field-role))
+					(field ebdb-field-role)
+					&optional slot)
   (let ((record (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
-    (cl-call-next-method record slot field)))
+    (cl-call-next-method record field slot)))
 
 (cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-person)
-					       _slot
-					       (field ebdb-field-role))
+					       (field ebdb-field-role)
+					       &optional _slot)
   (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
     (when org
       (ebdb-record-adopt-role-fields record org t))))
@@ -2727,7 +2742,7 @@ instances to add as part of the role."
 	(object-add-to-list role 'fields f)))
     (when mail
       (setf (slot-value role 'mail) mail))
-    (ebdb-record-insert-field record 'organizations role)
+    (ebdb-record-insert-field record role 'organizations)
     (ebdb-init-field role record)))
 
 (defclass ebdb-record-mailing-list (ebdb-record eieio-named)

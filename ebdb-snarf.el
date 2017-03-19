@@ -336,14 +336,9 @@ automatically."
 					    (ebdb-string elt)
 					    (ebdb-string record)))
 		       (condition-case nil
-			   (let ((slot (car (ebdb-record-field-slot-query
-					     (eieio-object-class record)
-					     `(nil . ,(eieio-object-class elt))))))
-			     (ebdb-record-insert-field
-			      record
-			      slot
-			      elt)
-			     (ebdb-init-field elt record))
+			   (ebdb-record-insert-field
+			    record elt)
+			 (ebdb-init-field elt record)
 			 (ebdb-unacceptable-field nil))
 		     (push elt leftovers)))
 		 (dolist (n names)
@@ -351,7 +346,7 @@ automatically."
 					    (ebdb-string n)
 					    (ebdb-string record)))
 		       (progn (ebdb-record-insert-field
-			       record 'aka n)
+			       record n 'aka)
 			      (ebdb-init-field n record))
 		     (push n leftovers))))
 	;; We have no record, dump all the fields into LEFTOVERS.
@@ -376,10 +371,8 @@ automatically."
 			   (ebdb-read ebdb-default-record-class))))
 			(t nil))))
 	(condition-case nil
-	    (let ((slot (car (ebdb-record-field-slot-query
-			      (eieio-object-class record)
-			      `(nil . ,(eieio-object-class f))))))
-	      (ebdb-record-insert-field record slot f)
+	    (progn
+	      (ebdb-record-insert-field record f)
 	      (ebdb-init-field f record)
 	      (add-to-list records record))
 	  (ebdb-unacceptable-field nil))))

@@ -99,6 +99,57 @@
 	(ebdb-db-add-record db rec)
 	(should (stringp (ebdb-record-uuid rec)))))))
 
+;; Test adding, deleting and changing fields.
+
+(ert-deftest ebdb-add-delete-record-field ()
+  "Add and delete fields."
+  (ebdb-test-with-records
+    (let ((rec (make-instance 'ebdb-record-person))
+	  (mail (ebdb-parse ebdb-default-mail-class
+			    "bogus@nosuchaddress.com"))
+	  (phone (ebdb-parse ebdb-default-phone-class
+			     "+1 (555) 555-5555")))
+      ;; Pass slot explicitly.
+      (ebdb-record-insert-field rec mail 'mail)
+      ;; Let the method find the slot.
+      (ebdb-record-insert-field rec phone)
+      (should (object-of-class-p
+	       (car (ebdb-record-phone rec))
+	       'ebdb-field-phone))
+      (should (object-of-class-p
+	       (car (ebdb-record-mail rec))
+	       'ebdb-field-mail))
+      (ebdb-record-delete-field rec mail)
+      (ebdb-record-delete-field rec phone 'phone)
+      (should (null (ebdb-record-mail rec)))
+      (should (null (ebdb-record-phone rec))))))
+
+(ert-deftest ebdb-insert-unacceptable ()
+  "Make sure records reject unacceptable fields."
+  (ebdb-test-with-records
+    (let ((rec (make-instance 'ebdb-record-person))
+	  (field (make-instance 'ebdb-field-domain :domain "gnu.org")))
+      (should-error (ebdb-record-field-slot-query
+		     'ebdb-record-person (cons nil 'ebdb-field-domain))
+		    :type 'ebdb-unacceptable-field)
+      (should-error (ebdb-record-insert-field rec field)
+		    :type 'ebdb-unacceptable-field))))
+
+(ert-deftest ebdb-change-record-field ()
+  "Change record's field."
+  (ebdb-test-with-records
+    (let ((rec (make-instance 'ebdb-record-person))
+	  (mail (ebdb-parse ebdb-default-mail-class
+			    "bogus@nosuchaddress.com"))
+	  (mail2 (ebdb-parse ebdb-default-mail-class
+			     "no@such.address")))
+      (ebdb-record-insert-field rec mail)
+      (should (string= (ebdb-string (car (ebdb-record-mail rec)))
+		       "bogus@nosuchaddress.com"))
+      (ebdb-record-change-field rec mail mail2)
+      (should (string= (ebdb-string (car (ebdb-record-mail rec)))
+		       "no@such.address")))))
+
 ;; Field instance parse tests.
 
 ;; Test `ebdb-decompose-ebdb-address'

@@ -932,7 +932,7 @@ Return the records matching ADDRESS or nil."
                  (if (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record old-name)
                                      (format "Keep name \"%s\" as an AKA? " old-name))
                      (ebdb-record-insert-field
-                      record 'aka (slot-value record 'name))))
+                      record (slot-value record 'name) 'aka)))
                (ebdb-record-change-name record name)
                (setq change-p 'name))
 
@@ -944,7 +944,7 @@ Return the records matching ADDRESS or nil."
                                     (format "Make \"%s\" an alternate for \"%s\"? "
                                             name old-name)))
                (ebdb-record-insert-field
-                record 'aka (ebdb-parse 'ebdb-field-name name))
+                record (ebdb-parse 'ebdb-field-name name) 'aka)
                (setq change-p 'name)))
 
         ;; Is MAIL redundant compared with the mail addresses
@@ -974,7 +974,7 @@ Return the records matching ADDRESS or nil."
                    (member-ignore-case (ebdb-string mail) (ebdb-record-mail-canon record)))) ; do nothing
 
               (created-p		; new record
-               (ebdb-record-insert-field record 'mail (list mail)))
+               (ebdb-record-insert-field record (list mail) 'mail))
 
               ((not (setq add-mails (ebdb-add-job ebdb-add-mails record mail)))) ; do nothing
 
@@ -1029,7 +1029,7 @@ Return the records matching ADDRESS or nil."
                  ;; then modify RECORD
 
 		 ;; TODO: Reinstate the question about making this primary.
-                 (ebdb-record-insert-field record 'mail mail)
+                 (ebdb-record-insert-field record mail 'mail)
                  (unless change-p (setq change-p t)))))
 
         (cond (created-p
@@ -1214,7 +1214,7 @@ use all classes in `ebdb-message-headers'."
   (let ((records (ebdb-update-records
 		  (ebdb-get-address-components header-class)
 		  'existing))
-	field-instance slot)
+	field-instance)
     (when records
       (ebdb-display-records records nil nil nil (ebdb-popup-window))
       (ebdb-with-record-edits (record records)
@@ -1223,10 +1223,8 @@ use all classes in `ebdb-message-headers'."
 	(setq field-instance (ebdb-record-field record field))
 	(if field-instance
 	    (ebdb-record-change-field record field-instance)
-	  (setq field-instance (ebdb-read field)
-		slot (car (ebdb-record-field-slot-query
-			   (eieio-object-class record) `(nil . ,field))))
-	  (ebdb-record-insert-field record slot field-instance))))))
+	  (setq field-instance (ebdb-read field))
+	  (ebdb-record-insert-field record field-instance))))))
 
 ;;;###autoload
 (defun ebdb-mua-edit-field-sender (&optional field)
