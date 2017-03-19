@@ -1987,7 +1987,9 @@ record."
       (ebdb-record-insert-field record slot new-field)
       new-field)))
 
-(cl-defmethod ebdb-record-insert-field ((record ebdb-record) slot field)
+(cl-defmethod ebdb-record-insert-field ((record ebdb-record)
+					(slot symbol)
+					(field ebdb-field))
   "Add FIELD to RECORD's SLOT."
   ;; First, the databases "actually" add the field to the record, ie
   ;; persistence.  The rest of this method is just updating the
@@ -2003,7 +2005,18 @@ record."
     (ebdb-init-field field record))
   field)
 
-(cl-defmethod ebdb-record-delete-field ((record ebdb-record) slot field)
+(cl-defmethod ebdb-record-insert-field ((record ebdb-record)
+					slot
+					(field ebdb-field))
+  (let ((real-slot
+	 (car (ebdb-record-field-slot-query
+	       (eieio-object-class record)
+	       `(nil . ,(eieio-object-class field))))))
+    (cl-call-next-method record real-slot field)))
+
+(cl-defmethod ebdb-record-delete-field ((record ebdb-record)
+					(slot symbol)
+					(field ebdb-field))
   "Delete FIELD from RECORD's SLOT, or set SLOT to nil, if no FIELD."
   ;; We don't use `slot-makeunbound' because that's a huge pain in the
   ;; ass, and why would anyone want those errors?
@@ -2013,6 +2026,15 @@ record."
       (object-remove-from-list record slot field)
     (setf (slot-value record slot) nil))
   (ebdb-delete-field field record))
+
+(cl-defmethod ebdb-record-delete-field ((record ebdb-record)
+					slot
+					(field ebdb-field))
+  (let ((real-slot
+	 (car (ebdb-record-field-slot-query
+	       (eieio-object-class record)
+	       `(nil . ,(eieio-object-class field))))))
+    (cl-call-next-method record real-slot field)))
 
 (cl-defgeneric ebdb-record-field-slot-query (record-class &optional query alist)
   "Ask RECORD-CLASS for information about its interactively-settable fields.
