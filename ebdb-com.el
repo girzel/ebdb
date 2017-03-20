@@ -855,7 +855,7 @@ displayed records."
 	     ;; case.  Check if record is present, or if its uuid has
 	     ;; been left behind by some previous redisplay.  If
 	     ;; record isn't in this buffer, then bail.
-	     (setq local-record (cond ((equal r (ebdb-current-record))
+	     (setq local-record (cond ((equal r (ignore-errors (ebdb-current-record)))
 				       (ebdb-current-record t))
 				      ((assoc r ebdb-records))
 				      ((assoc (ebdb-record-uuid r) ebdb-records))
