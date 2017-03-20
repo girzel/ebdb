@@ -1082,6 +1082,8 @@ apply, however."
   (interactive)
   ;; Temporarily copy and paste from `ebdb-mua-display-records',
   ;; refactor later.
+  (unless ebdb-record-tracker
+    (ebdb-load))
   (let ((ebdb-message-all-addresses (or all ebdb-message-all-addresses))
 	(fmt ebdb-default-multiline-formatter)
         records)
