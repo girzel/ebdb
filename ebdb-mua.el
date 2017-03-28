@@ -979,7 +979,7 @@ Return the records matching ADDRESS or nil."
                    (member-ignore-case (ebdb-string mail) (ebdb-record-mail-canon record)))) ; do nothing
 
               (created-p		; new record
-               (ebdb-record-insert-field record (list mail) 'mail))
+               (ebdb-record-insert-field record mail 'mail))
 
               ((not (setq add-mails (ebdb-add-job ebdb-add-mails record mail)))) ; do nothing
 
