@@ -865,6 +865,9 @@ Return the records matching ADDRESS or nil."
 	 (record-class (if (eql (nth 3 address) 'organization)
 			   'ebdb-record-organization
 			 ebdb-default-record-class))
+	 (name-class (if (eql record-class 'ebdb-record-organization)
+			 'ebdb-field-name-simple
+		       ebdb-default-name-class))
          (records (ebdb-message-search name mail))
          created-p new-records)
     (if (and (not records) (functionp update-p))
@@ -902,7 +905,8 @@ Return the records matching ADDRESS or nil."
 
         ;; Analyze the name part of the record.
         (cond (created-p		; new record
-               (ebdb-record-change-name record name))
+               (ebdb-record-change-name
+		record (ebdb-parse name-class name)))
 
               ((or (not name)
                    ;; The following tests can differ for more complicated names
@@ -933,7 +937,8 @@ Return the records matching ADDRESS or nil."
                                      (format "Keep name \"%s\" as an AKA? " old-name))
                      (ebdb-record-insert-field
                       record (slot-value record 'name) 'aka)))
-               (ebdb-record-change-name record name)
+               (ebdb-record-change-name
+		record (ebdb-parse name-class name))
                (setq change-p 'name))
 
               ;; make new name an AKA?
@@ -998,7 +1003,8 @@ Return the records matching ADDRESS or nil."
                         (progn
                           (setq record (make-instance ebdb-default-record-class))
 			  (ebdb-db-add-record (car ebdb-db-list) record)
-                          (ebdb-record-change-name record name)
+                          (ebdb-record-change-name
+			   record (ebdb-parse name-class name))
                           (setq created-p t))))
 
                (let ((mails (ebdb-record-mail record)))

@@ -2479,11 +2479,6 @@ priority."
       (push `(organizations . ,o) f-list)))
   (cl-call-next-method record f-list all))
 
-(cl-defmethod ebdb-record-change-name ((record ebdb-record-person)
-				       (name string))
-  (let ((new-name (ebdb-parse ebdb-default-name-class name)))
-   (cl-call-next-method record new-name)))
-
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
   (ebdb-gethash (slot-value field 'rel-uuid) 'uuid))
@@ -2717,11 +2712,6 @@ appropriate person record."
   (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
     (when org
       (ebdb-record-adopt-role-fields record org t))))
-
-(cl-defmethod ebdb-record-change-name ((org ebdb-record-organization)
-				       (name string))
-  (let ((new-name (ebdb-parse 'ebdb-field-name-simple name)))
-    (cl-call-next-method org new-name)))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-organization)
 				   (field ebdb-field-role))
