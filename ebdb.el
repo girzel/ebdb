@@ -4417,6 +4417,21 @@ This strips garbage from the user full NAME string."
 ;; `ebdb-hash-record' for each record.  This function is also called
 ;; when new records are added to the database.
 
+(defcustom ebdb-hash-extra-predicates nil
+  "Extra predicates when looking up entries in the EBDB hashtable.
+
+Predicates are used to filter results from the hashtable,
+ensuring that string lookups only return the results they're
+meant to.
+
+This option should be a list of conses, where the car is a
+symbol, and the cdr is a lambda form which accepts the string key
+and a record, and returns t if the key is acceptable for
+returning that record."
+  :group 'ebdb-search
+  :package-version "0.2"
+  :type '(repeat (cons symbol functionp)))
+
 (defun ebdb-puthash (key record)
   "Associate RECORD with KEY in `ebdb-hashtable'.
 KEY must be a string or nil.  Empty strings and nil are ignored."
@@ -4472,6 +4487,10 @@ PREDICATE may take the same values as the elements of `ebdb-completion-list'."
       (mapc (lambda (mail) (if (ebdb-string= key mail)
                                (throw 'ebdb-hash-ok 'mail)))
             (ebdb-record-mail-canon record)))
+  (dolist (elt ebdb-hash-extra-predicates)
+    (when (and (memq (car elt) predicate)
+	       (funcall (cdr elt) key record))
+      (throw 'ebdb-hash-ok (car elt))))
   nil)
 
 (defun ebdb-remhash (key record)
