@@ -1562,12 +1562,9 @@ actually-editable records."
 (defun ebdb-create-record (db &optional record-class)
   "Create a new EBDB record.
 
-With no prefix argument, assume that we're creating a record in
-the first database found in `ebdb-db-list', using its default
-record class.
-
-With a prefix arg, prompt for the database to use (assuming there
-is more than one), and prompt for the record class to use."
+Assume that we're creating a record in the first database found
+in `ebdb-db-list', using its default record class.  Use
+`ebdb-create-record-extended' to be prompted for these values."
   (interactive
    (list (car ebdb-db-list)))
   (unless record-class
