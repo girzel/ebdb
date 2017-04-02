@@ -57,7 +57,7 @@
 (autoload 'eieio-customize-object "eieio-custom")
 (autoload 'calendar-gregorian-from-absolute "calendar")
 (autoload 'calendar-absolute-from-gregorian "calendar")
-(autoload 'calendar-read-date "calendar")
+(autoload 'calendar-make-alist "calendar")
 (autoload 'diary-sexp-entry "diary-lib")
 (autoload 'diary-add-to-list "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
@@ -292,13 +292,13 @@ class, and added with the `ebdb-diary-add-entries' function.
 Each entry is a two-element list: a string representation of the
 anniversary date, and the sexp (as a string):
 
-(diary-anniversary MM DD YYYY)")
+(diary-anniversary MM DD YYYY) (the year is optional)")
 
 ;; Dynamic var needed by `diary-sexp-entry'.
 (defvar original-date)
 
 (defun ebdb-diary-add-entries ()
-  "Add anniversaries from the EBDB to the diary."
+  "Add anniversaries from EBDB to the diary."
   (pcase-dolist (`(,entry ,sexp) ebdb-diary-entries)
     (when-let ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
       (diary-add-to-list original-date parsed sexp))))
@@ -1533,9 +1533,7 @@ first one."
 ;;; Anniversary field
 
 ;; The `ebdb-notice-field' method could let you know when you get an
-;; email from someone and it happens to be their birthday.  The
-;; `ebdb-action' method could open a calendar with point on the
-;; upcoming anniversary, etc.
+;; email from someone and it happens to be their birthday.
 
 (defvar ebdb-anniversary-label-list '("birthday" "marriage" "death"))
 
@@ -1543,34 +1541,66 @@ first one."
   ((label-list :initform ebdb-anniversary-label-list)
    (date
     :initarg :date
-    :type number
+    :type list
+    :custom (choice (list integer integer)
+		    (list integer integer integer))
     :documentation
-    "A number representing a date, as produced by calling
-    `calendar-absolute-from-gregorian' on a gregorian date.")
+    "A list of numbers representing a date, either (month day)
+    or (month day year)")
    (calendar
     :initarg :calendar
     :type symbol
     :initform gregorian
+    :custom symbol
     :documentation "The calendar to which this date applies.")
    (actions
     :initform '(("Browse date in calendar" . ebdb-field-anniversary-calendar)
 		("Browse date in Org agenda" . ebdb-field-anniversary-agenda))))
   :human-readable "anniversary")
 
+(cl-defmethod initialize-instance ((field ebdb-field-anniversary) &optional slots)
+  "Migrate from previous single-integer date value to (day month year) list.
+
+This allows for anniversaries where we don't know the year.
+Eventually this method will go away."
+  (when (integerp (plist-get slots :date))
+    (setq slots (plist-put slots :date
+			   (calendar
+			    (plist-get slots :date)))))
+  (cl-call-next-method field slots))
+
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-anniversary)) &optional slots obj)
-  (require 'calendar)
-  ;; The only unfortunate thing here is that we can't reasonably use
-  ;; an existing date value as the default for entering a new one. Oh
-  ;; well.
-  (let ((date (calendar-absolute-from-gregorian
-	       (calendar-read-date))))
-    (cl-call-next-method class (plist-put slots :date date) obj)))
+  ;; Fake `calendar-read-date' to make the year optional.
+  (let* ((year (ebdb-with-exit
+		(read-number "Year (C-g to omit): ")))
+	 (month (cdr (assoc-string
+		      (completing-read
+		       "Month: "
+		       (mapcar 'list (append
+				      calendar-month-name-array nil))
+		       nil t)
+		      (calendar-make-alist
+		       calendar-month-name-array 1)
+		      t)))
+	 (last (calendar-last-day-of-month
+		;; If no year, assume a non-leap year.
+		month (or year 2017)))
+	 (day (calendar-read (format "Day (1-%d): " last)
+			     (lambda (x) (and (< 0 x)
+					      (<= x last))))))
+    (cl-call-next-method class
+			 (plist-put slots :date
+				    (list month day year))
+			 obj)))
 
 (cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
-  (require 'calendar)
-  (calendar-date-string
-   (calendar-gregorian-from-absolute (slot-value ann 'date))
-   nil t))
+  (let* ((date (slot-value ann 'date))
+	 (month-name (aref calendar-month-name-array
+			   (1- (nth 0 date))))
+	 (str (format "%s %d" month-name (nth 1 date))))
+    (when (nth 2 date)
+      (setq str (concat str (format ", %d" (nth 2 date)))))
+    str))
 
 ;; `ebdb-field-anniv-diary-entry' is defined below.
 (cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) &optional record)
@@ -2208,24 +2238,48 @@ or actual image data."
 
 (cl-defmethod ebdb-field-anniversary-calendar ((_record ebdb-record)
 					       (field ebdb-field-anniversary))
-  (calendar)
-  (calendar-goto-date
-   (calendar-gregorian-from-absolute
-    (slot-value field 'date))))
+  "Go to the date of anniversary FIELD in the calendar.
+
+If FIELD doesn't specify a year, use the current year."
+  ;; This and the next function should be rethought.  Do people really
+  ;; want to look at the original date?  Won't they usually want to
+  ;; see the most recent, or the upcoming, occurrence of the date?
+  (let ((date (slot-value field 'date)))
+   (calendar)
+   (calendar-goto-date
+    (if (nth 2 date)
+	date
+      (pcase-let ((`(,month ,day) date)
+		  (cur-year (nth 5 (decode-time (current-time)))))
+	(list month day cur-year))))))
 
 (cl-defmethod ebdb-field-anniversary-agenda ((_record ebdb-record)
 					     (field ebdb-field-anniversary))
-  (org-agenda-list nil (slot-value field 'date)))
+  "Go to the date of anniversary FIELD in the Org agenda.
 
-(cl-defmethod ebdb-field-anniv-diary-entry ((anniv ebdb-field-anniversary)
+If FIELD doesn't specify a year, use the current year."
+  (let ((date (slot-value field 'date)))
+    (org-agenda-list
+     nil
+     (calendar-absolute-from-gregorian
+      (if (nth 2 date)
+	  date
+	(append date (list (nth 5 (decode-time
+				   (current-time))))))))))
+
+(cl-defmethod ebdb-field-anniv-diary-entry ((field ebdb-field-anniversary)
 					    (record ebdb-record))
-  (let ((cal-date (calendar-gregorian-from-absolute
-		   (slot-value anniv 'date))))
+  "Add a diary entry for FIELD's date."
+  (let ((cal-date (slot-value field 'date)))
     (list (concat (format "%s's "
 			  (ebdb-string record))
-		  "%d%s "
-		  (slot-value anniv 'object-name))
-	  (apply #'format "(diary-anniversary %s %s %s)"
+		  (if (nth 2 cal-date)
+		      "%d%s "
+		    "%s ")
+		  (slot-value field 'object-name))
+	  (apply #'format (if (nth 2 cal-date)
+			      "(diary-anniversary %s %s %s)"
+			    "(diary-anniversary %s %s)")
 		 cal-date))))
 
 ;;; `ebdb-record' subclasses

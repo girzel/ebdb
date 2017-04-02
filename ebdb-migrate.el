@@ -548,11 +548,10 @@ holding valid contacts in a previous BBDB format."
 	  (let* ((bits (split-string val " "))
 		 (date-bits (split-string (car bits) "-")))
 	    (push (make-instance 'ebdb-field-anniversary
-				 :date (calendar-absolute-from-gregorian
-					(mapcar #'string-to-number
-						(append
-						 (cdr date-bits)
-						 (list (car date-bits)))))
+				 :date (list
+					(string-to-number (nth 1 date-bits))
+					(string-to-number (nth 2 date-bits))
+					(string-to-number (car date-bits)))
 				 :object-name (cadr bits))
 		  fields)))
 	 ((eq lab 'notes)
