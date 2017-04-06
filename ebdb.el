@@ -2447,23 +2447,19 @@ priority."
      class (plist-put slots :name name))))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record-person))
-  (ebdb-init-field (slot-value record 'name) record)
-  (dolist (aka (slot-value record 'aka))
-    (ebdb-init-field aka record))
-  (dolist (relation (slot-value record 'relations))
-    (ebdb-init-field relation record))
-  (dolist (role (slot-value record 'organizations))
-    (ebdb-init-field role record))
+  (with-slots (name aka relations organizations) record
+    (when name
+      (ebdb-init-field name record))
+    (dolist (f (append aka relations organizations))
+      (ebdb-init-field f record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-record ((record ebdb-record-person) &optional _db unload)
-  (ebdb-delete-field (slot-value record 'name) record unload)
-  (dolist (a (slot-value record 'aka))
-    (ebdb-delete-field a record unload))
-  (dolist (r (slot-value record 'relations))
-    (ebdb-delete-field r record unload))
-  (dolist (o (slot-value record 'organizations))
-    (ebdb-delete-field o record unload))
+  (with-slots (name aka relations organizations) record
+    (when name
+      (ebdb-delete-field name record unload))
+    (dolist (f (append aka relations organizations))
+      (ebdb-delete-field f record unload)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-merge ((left ebdb-record-person)
@@ -3246,9 +3242,10 @@ the persistent save, or allow them to propagate."
     (setf (slot-value record 'uuid)
 	  (make-instance
 	   'ebdb-field-uuid
-	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix)))))
+	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
+    (ebdb-puthash (ebdb-record-uuid record) record))
   (object-add-to-list db 'records record)
-  (ebdb-db-load-records db (list record))
+  (object-add-to-list (ebdb-record-cache record) 'database db)
   (setf (slot-value db 'dirty) t)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
@@ -3258,6 +3255,7 @@ the persistent save, or allow them to propagate."
   (object-remove-from-list db 'records record)
   (object-remove-from-list (ebdb-record-cache record)
 			   'database db)
+  (setf (slot-value db 'dirty) t)
   record)
 
 (cl-defmethod ebdb-db-add-record-field :before ((db ebdb-db) record _slot _field)

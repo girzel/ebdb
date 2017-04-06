@@ -42,7 +42,7 @@
      ;; Save sets sync-time.
      (ebdb-db-save ,(car db-and-filename))
      ;; Load adds to `ebdb-db-list'.
-     (ebdb-db-load db)
+     (ebdb-db-load ,(car db-and-filename))
      (unwind-protect
 	 (progn
 	   ,@body)
@@ -61,6 +61,11 @@
 			       "emacs-ebdb-test-db-1-"
 			       temporary-file-directory)))
 
+(defvar ebdb-test-database-2 (make-temp-name
+			      (expand-file-name
+			       "emacs-ebdb-test-db-2-"
+			       temporary-file-directory)))
+
 (ert-deftest ebdb-make-database ()
   "Make a database and save it to disk."
   (ebdb-test-with-database (db ebdb-test-database-1)
@@ -77,10 +82,9 @@
 (ert-deftest ebdb-database-unsynced ()
   "Make sure database knows it's unsynced."
   (ebdb-test-with-database (db ebdb-test-database-1)
-    ;; Sync-time doesn't get updated until we load it.
-    (ebdb-db-load db)
-    ;; Apparently the two calls are too close together to register a
-    ;; difference in time, which I find weird.
+    ;; Apparently the call to `ebdb-db-load' and the test are too
+    ;; close together to register a difference in time, which I find
+    ;; weird.
     (sit-for 0.1)
     (append-to-file "\n;; Junk string" nil (slot-value db 'file))
     (should (ebdb-db-unsynced db))))
@@ -97,7 +101,19 @@
       (let ((rec (make-instance 'ebdb-record-person)))
 	(should (null (ebdb-record-uuid rec)))
 	(ebdb-db-add-record db rec)
-	(should (stringp (ebdb-record-uuid rec)))))))
+	(should (stringp (ebdb-record-uuid rec)))
+	(should (ebdb-gethash (ebdb-record-uuid rec) 'uuid))))))
+
+(ert-deftest ebdb-load-record-multiple-databases ()
+  "Test loading of a record into multiple databases."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db1 ebdb-test-database-1)
+      (ebdb-test-with-database (db2 ebdb-test-database-2)
+	(let ((rec (make-instance 'ebdb-record-person)))
+	  (ebdb-db-add-record db1 rec)
+	  (ebdb-db-add-record db2 rec)
+	  (should (= 1 (length ebdb-record-tracker)))
+	  (should (equal rec (ebdb-gethash (ebdb-record-uuid rec) 'uuid))))))))
 
 ;; Test adding, deleting and changing fields.
 
