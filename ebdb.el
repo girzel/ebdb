@@ -1013,7 +1013,7 @@ first one."
     :type (or null ebdb-field-mail)
     :initform nil)
    (fields
-    :initarg :fields 
+    :initarg :fields
     :type (list-of ebdb-field)
     :initform nil)
    (defunct
@@ -4939,6 +4939,10 @@ If PROMPT is non-nil prompt before saving."
   (message "Saving the EBDB...")
   (dolist (s ebdb-db-list)
     (ebdb-db-save s prompt))
+  (dolist (b (buffer-list))
+    (with-current-buffer b
+      (when (derived-mode-p 'ebdb-mode)
+	(set-buffer-modified-p nil))))
   (message "Saving the EBDB... done"))
 
 ;;;###autoload
