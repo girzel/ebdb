@@ -1556,6 +1556,9 @@ actually-editable records."
 	 (run-hook-with-args 'ebdb-change-hook ,(car spec))
 	 ,@body
 	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec)))
+       (dolist (b (buffer-list))
+	 (when (derived-mode-p 'ebdb-mode)
+	   (set-buffer-modified-p t)))
        (ebdb-redisplay-records ,editable-records 'reformat))))
 
 ;;;###autoload
@@ -1578,7 +1581,10 @@ in `ebdb-db-list', using its default record class.  Use
 	 (ebdb-db-add-record db record)
 	 (ebdb-init-record record)
 	 (run-hook-with-args 'ebdb-after-change-hook record)
-	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t))
+	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t)
+	 (dolist (b (buffer-list))
+	   (when (derived-mode-p 'ebdb-mode)
+	     (set-buffer-modified-p t))))
      (ebdb-readonly-db
       (message "%s is read-only" (ebdb-string db)))
      (ebdb-unsynced-db
