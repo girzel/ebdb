@@ -1638,7 +1638,8 @@ the record, change the name of the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (eieio-customize-object field)
+  (ebdb-with-record-edits (_r (list record))
+    (eieio-customize-object field))
   (setq ebdb-custom-field-record record))
 
 (cl-defmethod eieio-done-customizing ((_f ebdb-field))
@@ -1731,12 +1732,12 @@ confirm deletion."
   "Delete RECORDS.
 If prefix NOPROMPT is non-nil, do not confirm deletion."
   (interactive (list (ebdb-do-records) current-prefix-arg))
-  (dolist (record (ebdb-record-list records))
+  (ebdb-with-record-edits (r (ebdb-record-list records))
     (when (or noprompt
               (y-or-n-p (format "Delete the EBDB record of %s? "
-                                (ebdb-string record))))
-      (ebdb-delete-record record)
-      (ebdb-redisplay-records record 'remove t))))
+                                (ebdb-string r))))
+      (ebdb-delete-record r)
+      (ebdb-redisplay-records r 'remove t))))
 
 ;;;###autoload
 (defun ebdb-move-records (records db)
@@ -2167,7 +2168,7 @@ just hits return, nil is returned.  Otherwise, a valid response is forced."
 		     (not (memq record records)))
 	    (push record records)))
 	records))))
-	 
+
 
 (defun ebdb-completing-read-record (prompt &optional omit-records)
   "Prompt for and return a single record from the ebdb;
