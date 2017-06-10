@@ -530,7 +530,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	 ;; `window-text-width' doesn't work for pop-up buffers,
 	 ;; they're not displayed yet!  How do we resolve this...?
 	 (fill-column (window-text-width))
-	 (fill-prefix (make-string (+ 3 indent) ?\s))
+	 (fill-prefix (make-string (+ 5 indent) ?\s))
 	 (paragraph-start "[^:]+:[^\n]+$"))
 
     (dolist (c field-list)
@@ -542,7 +542,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	;; If I understood the mechanics of filling better, I
 	;; could probably do away with `ebdb-indent-string'
 	;; altogether.
-	(ebdb-indent-string (cdr c) (+ indent 3))))
+	(ebdb-indent-string (cdr c) (+ indent 5))))
       ;; If there are newlines in the value string, assume the field
       ;; knows what's it's doing re filling and formatting.
       (unless (or (string-match-p "\n" (cdr c))
