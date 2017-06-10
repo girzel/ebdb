@@ -2098,49 +2098,31 @@ for `ebdb-field-action'."
     (unless (string= "" to)
       (ebdb-compose-mail to subject))))
 
-;; Is there better way to yank selected mail addresses from the EBDB
-;; buffer into a message buffer?  We need some kind of a link between
-;; the EBDB buffer and the message buffer, where the mail addresses
-;; are supposed to go. Then we could browse the EBDB buffer and copy
-;; selected mail addresses from the EBDB buffer into a message buffer.
-
 (defun ebdb-mail-yank ()
   "CC the people displayed in the *EBDB* buffer on this mail message.
 The primary mail of each of the records currently listed in the
 *EBDB* buffer will be appended to the CC: field of the current buffer."
+  ;; Consider making the guts of this into a method that lives in the
+  ;; different message-sending MUA packages.  All the `derived-mode-p'
+  ;; stuff is a sign...
+
+  ;; Also, collect the addresses that are already in the To: and Cc:
+  ;; headers, and make sure we don't insert duplicates.
   (interactive)
-  (let ((addresses (with-current-buffer ebdb-buffer-name
-                     (delq nil
-                           (mapcar (lambda (x)
-                                     (if (ebdb-record-mail (car x))
-                                         (ebdb-dwim-mail (car x))))
-                                   ebdb-records))))
-        (case-fold-search t))
-    (goto-char (point-min))
-    (if (re-search-forward "^CC:[ \t]*" nil t)
-        ;; We have a CC field. Move to the end of it, inserting a comma
-        ;; if there are already addresses present.
-        (unless (eolp)
-          (end-of-line)
-          (while (looking-at "\n[ \t]")
-            (forward-char) (end-of-line))
-          (insert ",\n")
-          (indent-relative))
-      ;; Otherwise, if there is an empty To: field, move to the end of it.
-      (unless (and (re-search-forward "^To:[ \t]*" nil t)
-                   (eolp))
-        ;; Otherwise, insert an empty CC: field.
-        (end-of-line)
-        (while (looking-at "\n[ \t]")
-          (forward-char) (end-of-line))
-        (insert "\nCC:")
-        (indent-relative)))
-    ;; Now insert each of the addresses on its own line.
-    (while addresses
-      (insert (car addresses))
-      (when (cdr addresses) (insert ",\n") (indent-relative))
-      (setq addresses (cdr addresses)))))
-(define-obsolete-function-alias 'ebdb-yank-addresses 'ebdb-mail-yank)
+  (let ((addresses
+	 (with-current-buffer (ebdb-make-buffer-name)
+           (delq nil
+                 (mapcar (lambda (x)
+                           (when-let ((mail (car (ebdb-record-mail (car x) t))))
+                             (ebdb-dwim-mail (car x) mail)))
+                         ebdb-records)))))
+    (if (derived-mode-p 'message-mode 'mail-mode)
+	(when addresses
+	  (if (derived-mode-p 'message-mode)
+	      (message-goto-cc)
+	    (mail-cc))
+	  (insert (mapconcat #'identity addresses ",\n")))
+      (message "Not in a mail composition buffer"))))
 
 ;;; completion
 
