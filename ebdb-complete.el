@@ -38,8 +38,9 @@
 ;;
 ;; ### The manual way ###
 ;;
-;; The function `ebdb-complete-enable' only rebind some key in `ebdb-mode-map'
-;; and `message-mode-map', user can do this job by hand, for example:
+;; The function `ebdb-complete-enable' only rebind some key in `ebdb-mode-map',
+;; `message-mode-map' and `mail-mode-map', user can do this job by hand,
+;; for example:
 ;;
 ;; ```
 ;; ;; ebdb-mode
@@ -47,11 +48,13 @@
 ;; (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
 ;; (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window)
 ;; (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
+;; (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
 ;; ```
 
 ;;; Code:
 (require 'ebdb-com)
 (require 'message)
+(require 'sendmail)
 
 (defvar ebdb-complete-info (make-hash-table)
   "A hashtable, record buffer, buffer-window and window-point")
@@ -124,7 +127,8 @@ only useful in Message buffer."
   (let ((buffer (current-buffer))
         prefix-string)
     ;; Update `ebdb-complete-info'
-    (if (derived-mode-p 'message-mode)
+    (if (or (derived-mode-p 'message-mode)
+            (derived-mode-p 'mail-mode))
         (progn
           (setq prefix-string (ebdb-complete-grab-word))
           (puthash :buffer buffer ebdb-complete-info)
@@ -156,7 +160,8 @@ only useful in Message buffer."
                   (quit-window nil window))))
         (ebdb (ebdb-search-style) "")))
     ;; Update `header-line-format'
-    (when (and (derived-mode-p 'message-mode))
+    (when (or (derived-mode-p 'message-mode)
+              (derived-mode-p 'mail-mode))
       (with-current-buffer (ebdb-make-buffer-name)
         (setq header-line-format
               (format
@@ -198,6 +203,7 @@ when in message body, this command will indent regular text."
   (require 'message)
   (add-hook 'ebdb-mode-hook 'ebdb-complete-keybinding-setup)
   (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
+  (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
   (message "ebdb-complete: Override EBDB keybindings: `q', `C-c C-c' and `RET'"))
 
 
