@@ -24,7 +24,33 @@ This manual is for EBDB version 0.1
 
      (a) The FSF’s Back-Cover Text is: “You have the freedom to copy and
      modify this GNU manual.”
+* Getting Started
+Assuming you have no records you want to migrate from other contact
+management software, it is enough to call the top-level `ebdb'
+command.  This will create a new database at the location specified by
+`ebdb-sources' (see [[id:9a02f8fb-01e2-4cd8-8166-608814a031f7][The EBDB Database]]), prompt you for a search
+string, fail to find anything (because you don't have any records
+yet), and lastly open a {{{ebuf}}} where you can start to make new
+records ([[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).
+** Migration from BBDB
+*** Record Migration
+It's possible to migrate records from a BBDB file.  With your BBDB
+customizations still in place, set `ebdb-sources' to a non-existent
+file name, and then run `ebdb-load' (or any of the other EBDB entry
+commands).  You'll be prompted to create the new database, and upgrade
+from BBDB.  If any records could not be upgraded, they will be
+displayed in an \ast{}EBDB Migration\ast{} buffer.
+*** Variables and Options
+Many of the old BBDB customization options have been changed or
+removed entirely in EBDB.  It's probably best to put your BBDB
+customizations aside, and set new EBDB options as you come across
+them.  The most important options are detailed in this manual, you can
+also customize the "EBDB" group to see what's available.
+
 * The EBDB Database
+:PROPERTIES:
+:ID:       9a02f8fb-01e2-4cd8-8166-608814a031f7
+:END:
 EBDB supports multiple databases, and each database definition is
 saved in a file on disk.  The default database class, `ebdb-db-file',
 stores its contacts in the same file as the database itself, though
@@ -88,6 +114,9 @@ Other database-related commands:
   `ebdb-customize-database', set 'disabled to nil, and then reload it
   with `ebdb-reload-database'.
 * Creating Records
+:PROPERTIES:
+:ID:       692cde31-73be-4faf-b436-7eae8a5d02d1
+:END:
 
 Create a record using "c" (`ebdb-create') in the {{{ebuf}}} buffer.
 With no prefix arg, this command will create an instance of the

@@ -1867,7 +1867,14 @@ not necessarily.  FMT is the optional formatter to use."
 	  (when prev
 	    (push (mapcar #'ebdb-record-uuid prev) ebdb-search-history))
 	  (ebdb-display-records recs fmt (eql style 'append)))
-      (message "No matching records"))))
+      (if (null ebdb-record-tracker)
+	  ;; Special-case for new users with no existing records.
+	  ;; They're going to want to have a *EBDB* buffer to work
+	  ;; with.
+	  (progn
+	    (ebdb-display-records nil fmt)
+	    (message "EBDB database is empty"))
+	(message "No matching records")))))
 
 ;;;###autoload
 (defun ebdb (style regexp &optional fmt)
