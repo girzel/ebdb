@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
-;; Keywords: 
+;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -84,21 +84,23 @@
 
 (defun ebdb-org-open (link)
   "Follow a EBDB link."
-  (let ((records
-	 (pcase (split-string link "/" t)
-	   (`("uuid" ,key) (list (ebdb-gethash key 'uuid)))
-	   (`(,key) (ebdb-search (ebdb-records) `((ebdb-field-name ,key))))
-	   (`("mail" ,key) (ebdb-search (ebdb-records) `((ebdb-field-mail ,key))))
-	   (`("phone" ,key) (ebdb-search (ebdb-records) `((ebdb-field-phone ,key))))
-	   (`("address" ,key) (ebdb-search (ebdb-records) `((ebdb-field-address ,key))))
-	   (`("notes" ,key) (ebdb-search (ebdb-records) `((ebdb-field-notes ,key))))
-	   (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
-	   (`(,(and field (guard (child-of-class-p (intern-soft field) 'ebdb-field))) ,key)
-	    (ebdb-search (ebdb-records) `((,(intern-soft field) ,key))))
-	   (`(,other _) (error "Unknown field search prefix: %s" other)))))
+  (let ((records (ebdb-org-retrieve link)))
     (if records
 	(ebdb-display-records records nil nil nil (ebdb-popup-window))
       (message "No records found"))))
+
+(defun ebdb-org-retrieve (link)
+  (pcase (split-string link "/" t)
+    (`("uuid" ,key) (list (ebdb-gethash key 'uuid)))
+    (`(,key) (ebdb-search (ebdb-records) `((ebdb-field-name ,key))))
+    (`("mail" ,key) (ebdb-search (ebdb-records) `((ebdb-field-mail ,key))))
+    (`("phone" ,key) (ebdb-search (ebdb-records) `((ebdb-field-phone ,key))))
+    (`("address" ,key) (ebdb-search (ebdb-records) `((ebdb-field-address ,key))))
+    (`("notes" ,key) (ebdb-search (ebdb-records) `((ebdb-field-notes ,key))))
+    (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
+    (`(,(and field (guard (child-of-class-p (intern-soft field) 'ebdb-field))) ,key)
+     (ebdb-search (ebdb-records) `((,(intern-soft field) ,key))))
+    (`(,other _) (error "Unknown field search prefix: %s" other))))
 
 (defun ebdb-org-export (path desc format)
   "Create the export version of a EBDB link specified by PATH or DESC.
