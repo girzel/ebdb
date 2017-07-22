@@ -2151,23 +2151,6 @@ only return fields that are suitable for user editing.")
       (push (cons 'notes notes) f-list)))
   f-list)
 
-(cl-defgeneric ebdb-notice-record (record type)
-  "Inform RECORD that it's been \"noticed\".
-
-TYPE is one of the symbols 'sender or 'recipient, indicating
-RECORD's location in the message headers.")
-
-(cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
-  "Notice REC.
-
-Currently this just means passing on the notice message to all
-REC's `ebdb-field-user' instances, and its notes fields.  Other
-built in fields (mail, phone, address) are not \"noticed\", nor
-is the timestamp updated."
-  (with-slots (fields notes) rec
-    (dolist (f (delq nil (cons notes fields)))
-      (ebdb-notice-field f type rec))))
-
 ;; TODO: rename this to `ebdb-record-name-string', it's confusing.
 (cl-defmethod ebdb-record-name ((record ebdb-record))
   "Get or set-and-get the cached name string of RECORD."

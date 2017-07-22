@@ -369,6 +369,36 @@ if you want to notice each record only once per message."
   :group 'ebdb-mua
   :type 'hook)
 
+(defcustom ebdb-notice-record-hook nil
+  "Hook run each time a record is \"noticed\" in a message.
+
+This means that the mail address in a message belongs to an
+existing EBDB record or to a record EBDB has created for the mail
+address.
+
+Run with two arguments: the record, and one of the symbols
+'sender or 'recipient.  It is up to the hook function to
+determine which MUA is used and to act appropriately."  :group
+'ebdb-mua :type 'hook)
+
+(cl-defgeneric ebdb-notice-record (record type)
+  "Inform RECORD that it's been \"noticed\".
+
+TYPE is one of the symbols 'sender or 'recipient, indicating
+RECORD's location in the message headers.")
+
+(cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
+  "Notice REC.
+
+This means running the `ebdb-notice-record-hook', and passing on
+the notice message to all REC's `ebdb-field-user' instances, and
+its notes fields.  Other built in fields (mail, phone, address)
+are not \"noticed\", nor is the timestamp updated."
+  (run-hook-with-args 'ebdb-notice-record-hook rec type)
+  (with-slots (fields notes) rec
+    (dolist (f (delq nil (cons notes fields)))
+      (ebdb-notice-field f type rec))))
+
 (define-widget 'ebdb-alist-with-header 'group
   "My group"
   :match 'ebdb-alist-with-header-match
@@ -1056,7 +1086,7 @@ Return the records matching ADDRESS or nil."
                        (t
                         (message "noticed naked address \"%s\"" mail))))))
 
-        ;;(run-hook-with-args 'ebdb-notice-mail-hook record)
+        (run-hook-with-args 'ebdb-notice-mail-hook record)
 	;; (ebdb-notice record) ; I think this is already happening in
 	;; `ebdb-update-records'.
         (push record new-records)))
