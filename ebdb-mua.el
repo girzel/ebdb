@@ -1118,6 +1118,23 @@ See `ebdb-mua-display-records' and friends for interactive commands."
 	  (ebdb-undisplay-records)))
     records))
 
+;; This keymap is clearly aimed at mail-reading MUAs.  Currently we
+;; don't bind it in either message-mode or mail-mode; consider
+;; creating different keymaps for mail-sending and mail-reading MUAs,
+;; and binding them separately.
+(defvar ebdb-mua-keymap
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd ";") #'ebdb-mua-display-all-records)
+    (define-key km (kbd ":") #'ebdb-mua-update-records)
+    (define-key km (kbd "'") #'ebdb-mua-edit-sender-notes)
+    (define-key km (kbd "\"") #'ebdb-mua-in-ebdb-buffer)
+    (define-key km (kbd "s") #'ebdb-mua-snarf-article)
+    km)
+  "Common keymap for calling EBDB commands in an MUA.
+
+Keys have been chosen assuming that the keymap will be bound to
+\";\" in the MUA.")
+
 ;;; Mark EBDB records in the MUA summary buffer
 
 (defun ebdb-mua-summary-unify (address)

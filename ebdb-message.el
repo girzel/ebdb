@@ -69,6 +69,7 @@
   (list (get-buffer-window) 0.4))
 
 (defun ebdb-insinuate-message ()
+  ;; We don't currently bind the `ebdb-mua-keymap'.
   (when ebdb-complete-mail
     (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
 		message-completion-alist
@@ -83,11 +84,7 @@
 
 (defun ebdb-insinuate-mail ()
   "Hook EBDB into Mail Mode."
-  ;; Suggestions welcome: What are good keybindings for the following
-  ;; commands that do not collide with existing bindings?
-  ;; (define-key mail-mode-map "'" 'ebdb-mua-display-recipients)
-  ;; (define-key mail-mode-map ";" 'ebdb-mua-edit-field-recipients)
-  ;; (define-key mail-mode-map "/" 'ebdb)
+  ;; We don't currently bind the `ebdb-mua-keymap'.
   (if ebdb-complete-mail
       (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail))
   (ebdb-undisplay-records))

@@ -58,16 +58,8 @@
   (format "*%s-Rmail*" ebdb-buffer-name))
 
 (defun ebdb-insinuate-rmail ()
-  "Hook EBDB into RMAIL.
-Do not call this in your init file.  Use `ebdb-initialize'."
-  ;; Do we need keybindings for more commands?  Suggestions welcome.
-  ;; (define-key rmail-mode-map ":" 'ebdb-mua-display-records)
-  ;; (define-key rmail-mode-map "'" 'ebdb-mua-display-recipients)
-  (define-key rmail-mode-map ":" 'ebdb-mua-display-sender)
-  (define-key rmail-mode-map ";" 'ebdb-mua-edit-field-sender)
-  ;; (define-key rmail-mode-map ";" 'ebdb-mua-edit-field-recipients)
-  (define-key rmail-summary-mode-map ":" 'ebdb-mua-display-sender)
-  (define-key rmail-summary-mode-map ";" 'ebdb-mua-edit-field-sender))
+  "Hook EBDB into RMAIL."
+  (define-key rmail-mode-map ";" ebdb-mua-keymap))
 
 (add-hook 'rmail-mode-hook 'ebdb-insinuate-rmail)
 
