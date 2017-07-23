@@ -65,20 +65,6 @@
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
 
-(defcustom ebdb-annotate-field ebdb-default-user-field
-  "Field to annotate via `ebdb-annotate-record' and friends.
-This may take the values:
- affix           The list of affixes
- organization    The list of organizations
- aka             the list of AKAs
- mail            the list of email addresses
- all-fields      Read the field to edit using a completion table
-                   that includes all fields currently known to EBDB.
-
-Any other symbol is interpreted as the name of a field class."
-  :group 'ebdb-mua
-  :type '(symbol :tag "Field to annotate"))
-
 (defcustom ebdb-mua-edit-field ebdb-default-user-field
   "Field to edit with command `ebdb-mua-edit-field' and friends.
 This may take the values:
@@ -1045,49 +1031,6 @@ bind `ebdb-message-all-addresses' to ALL."
   (interactive)
   (ebdb-mua-display-records 'recipients t))
 
-;; The commands `ebdb-annotate-record' and `ebdb-mua-edit-field'
-;; have kind of similar goals, yet they use rather different strategies.
-;; `ebdb-annotate-record' is less obtrusive.  It does not display
-;; the records it operates on, nor does it display the content
-;; of the field before or after adding or replacing the annotation.
-;; Hence the user needs to know what she is doing.
-;; `ebdb-mua-edit-field' is more explicit:  It displays the records
-;; as well as the current content of the field that gets edited.
-
-(defun ebdb-mua-annotate-field-interactive ()
-  "Interactive specification for `ebdb-mua-annotate-sender' and friends."
-  (let ((field (if (eq 'all-fields ebdb-annotate-field)
-                   (intern (completing-read
-                            "Field: "
-                            (mapcar 'symbol-name
-                                    '(affix organization mail aka))))
-                 ebdb-annotate-field)))
-    (list (read-string (format "Annotate `%s': " field))
-          field current-prefix-arg)))
-
-;;;###autoload
-(defun ebdb-mua-annotate-sender (annotation &optional field replace)
-  "Add ANNOTATION to field FIELD of the EBDB record(s) of message sender(s).
-FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
-  (interactive (ebdb-mua-annotate-field-interactive))
-  (ebdb-mua-prepare-article)
-  (dolist (record (ebdb-update-records
-		   (ebdb-get-address-components 'sender)
-		   'existing))
-    (ebdb-annotate-record record annotation field replace)))
-
-;;;###autoload
-(defun ebdb-mua-annotate-recipients (annotation &optional field replace)
-  "Add ANNOTATION to field FIELD of the EBDB records of message recipients.
-FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
-  (interactive (ebdb-mua-annotate-field-interactive))
-  (ebdb-mua-prepare-article)
-  (dolist (record (ebdb-update-records
-		   (ebdb-get-address-components 'recipients)
-		   'existing))
-    (ebdb-annotate-record record annotation field replace)))
 
 ;;;###autoload
 (defun ebdb-mua-edit-field (&optional field header-class)
