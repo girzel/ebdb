@@ -1557,8 +1557,9 @@ actually-editable records."
 	 ,@body
 	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec)))
        (dolist (b (buffer-list))
-	 (when (derived-mode-p 'ebdb-mode)
-	   (set-buffer-modified-p t)))
+	 (with-current-buffer b
+	   (when (derived-mode-p 'ebdb-mode)
+	     (set-buffer-modified-p t))))
        (ebdb-redisplay-records ,editable-records 'reformat))))
 
 ;;;###autoload
