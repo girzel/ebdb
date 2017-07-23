@@ -65,21 +65,6 @@
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
 
-(defcustom ebdb-mua-edit-field ebdb-default-user-field
-  "Field to edit with command `ebdb-mua-edit-field' and friends.
-This may take the values:
- name            The full name
- affix           The list of affixes
- organization    The list of organizations
- aka             the list of AKAs
- mail            the list of email addresses
- all-fields      Read the field to edit using a completion table
-                   that includes all fields currently known to EBDB.
-
-Any other symbol is interpreted as the name of a field class."
-  :group 'ebdb-mua
-  :type '(symbol :tag "Field to edit"))
-
 (defcustom ebdb-mua-auto-update-p 'existing
   "This option governs how EBDB handles addresses found in
   incoming mail messages.  It can take one of the following
@@ -1062,44 +1047,22 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 	       [?q]))))))
 
 ;;;###autoload
-(defun ebdb-mua-edit-field (&optional field header-class)
-  "Edit FIELD of the EBDB record(s) of message sender(s) or recipients.
-FIELD defaults to value of variable `ebdb-mua-edit-field'.
-HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
-use all classes in `ebdb-message-headers'."
+(defun ebdb-mua-edit-sender-notes ()
+  "Edit the notes field of the EBDB record of the message sender."
   (interactive)
-  (cond ((memq field '(firstname lastname address phone))
-         (error "Field `%s' not editable this way" field))
-        ((not field)
-         (setq field ebdb-mua-edit-field)))
   (ebdb-mua-prepare-article)
   (let ((records (ebdb-update-records
-		  (ebdb-get-address-components header-class)
+		  (ebdb-get-address-components 'sender)
 		  'existing))
-	field-instance)
+	notes)
     (when records
-      (ebdb-display-records records nil nil nil (ebdb-popup-window))
       (ebdb-with-record-edits (record records)
-	;; All this is very bad, we need to rework `ebdb-edit-foo' so
-	;; it can be used here.
-	(setq field-instance (ebdb-record-field record field))
-	(if field-instance
-	    (ebdb-record-change-field record field-instance)
-	  (setq field-instance (ebdb-read field))
-	  (ebdb-record-insert-field record field-instance))))))
-
-;;;###autoload
-(defun ebdb-mua-edit-field-sender (&optional field)
-  "Edit FIELD of record corresponding to sender of this message.
-FIELD defaults to value of variable `ebdb-mua-edit-field'."
-  (interactive)
-  (ebdb-mua-edit-field field 'sender))
-
-;;;###autoload
-(defun ebdb-mua-edit-field-recipients (&optional field)
-  "Edit FIELD of record corresponding to recipient of this message."
-  (interactive)
-  (ebdb-mua-edit-field field 'recipients))
+	(setq notes (ebdb-record-field record 'notes))
+	(if notes
+	    (ebdb-record-change-field record notes)
+	  (setq notes (ebdb-read ebdb-default-notes-class))
+	  (ebdb-record-insert-field record notes)))
+      (ebdb-redisplay-records records 'reformat t))))
 
 ;;;###autoload
 (defun ebdb-mua-snarf-article ()
