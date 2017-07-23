@@ -138,8 +138,8 @@ You can also tell EBDB which record represents you:
 Currently this option's only use is to serve as a source for
 `ebdb-user-mail-address-re'.
 ** Record classes
-EBDB comes with two record classes, representing individuals and
-organizations.
+EBDB comes with two record classes, representing individuals
+(`ebdb-record-person') and organizations (`ebdb-record-organization').
 ** Record names
 EBDB comes with two classes for name fields: "simple" and "complex".
 Simple names are just a single string, complex names are split out
@@ -151,9 +151,10 @@ When adding fields to a record, the simple name class is labeled
 "nickname", and the complex class is labeled "alt name".
 * Record Fields
 ** Inserting new fields
-Press "i" (`ebdb-insert-field') with point on a record will prompt for
-a field type, then field values, and add the field to the record.  See
-[[id:cb2190f4-f2e6-4082-9671-24e11e5cc0c6][Field types]] for more information about the various kinds of fields.
+Pressing "i" (`ebdb-insert-field') with point on a record will prompt
+for a field type, then field values, and add the field to the record.
+See [[id:cb2190f4-f2e6-4082-9671-24e11e5cc0c6][Field types]] for more information about the various kinds of
+fields.
 
 When entering field data, optional data can be skipped by entering a
 blank string, or by pressing "C-g".  The first "C-g" will cancel the
@@ -207,48 +208,72 @@ of labels (for instance, anniversary fields may be labeled "birthday",
 Loading secondary libraries may make more field types available.
 * MUA Interaction
 One of EBDB's most important features is the ability to create, update
-and display records based on messages received in your mail user
-agent.
-** Loading MUA code
+and display records based on messages received or sent in your mail
+user agent(s).  In theory, EBDB can be integrated with any software
+package, but it's most common to use it in conjunction with sending
+and receiving emails.
+** Loading MUA Code
 MUA code is activated simply by loading the relevant library.  Keep in
-mind that "MUA" here means both a mail-reading client, and a
-mail-sending client.  For instance, if you use the Gnus package for
-reading mail, and Message for sending it, you'll want two require
-statements:
+mind that mail-reading clients and mail-sending clients are considered
+separate MUAs.  For instance, if you use the Gnus package for reading
+mail, and Message for sending it, you'll want two require statements:
 
 #+BEGIN_SRC elisp
 (require 'ebdb-gnus)
 (require 'ebdb-message)
 #+END_SRC
 
-There are other packages that provide other functionality: these are
+There are other packages that provide other MUA integration: these are
 likewise activated simply by requiring the relevant library.
-** Display and updating
-When you open a message in your MUA, EBDB can react in many different
-ways: displaying records for the sender and recipients of the message;
-creating new records for unfamiliar mail addresses; and updating
-existing records with new information.  EBDB also provides several
-interactive commands for editing the records associated with the
-selected message.
+** Display and Updating
 
-The first and most important option governing this behavior is:
+When a message is opened in an MUA, EBDB can do certain things with
+the records referenced in that message. It can:
+
+- Pop up a buffer displaying the records.
+- Create new records, or alter existing records, based on information
+   provided by the MUA.
+- Run automatic rules to edit the records.
+- Provide keybindings to manually edit the records.
+
+Each of these functionalities is optional, and can be customized
+independently of the others.
+*** Pop-up Buffers
+Each MUA associated with EBDB creates its own pop-up buffer, with a
+name like \ast{}EBDB-Gnus\ast{} or \ast{}EBDB-Rmail\ast{}.  MUAs will
+re-use their own buffers, and will not interfere with buffers the user
+has created using the `ebdb' command, or by cloning or renaming
+existing buffers.
+
+- Variable: ebdb-mua-pop-up
+  If nil, MUAs will not automatically pop up buffers.  It is still
+  possible to manually create the buffer using interactive commands
+  (see [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in MUAs]]).
+
+At present, there are *no* user customization options controlling the
+size and layout of MUA pop-up buffers: each MUA creates the pop-up
+according to hard-coded rules.  This will likely change in the future:
+please complain to the author.
+*** Auto-Updating Records
+EBDB can automatically update the name and mail addresses of records
+based on information in an MUA message. The first and most important
+option governing this behavior is:
 
 - Variable: ebdb-mua-auto-update-p
   This option determines how EBDB acts upon mail addresses found in
   incoming messages.  If nil, nothing will happen.  Other options
-  include the symbols 'search (only find existing records), 'update
-  (only find existing records, and update their name and mail fields
-  as necessary), 'query (find existing records, and query about the
-  creation of new records), and 'create (automatically create new
-  records).  A value of t is considered equivalent to 'create.  The
-  option can also be set to a function which returns one of the above
-  symbols.
+  include the symbols 'update (only find existing records, and update
+  their name and mail fields as necessary), 'query (find existing
+  records, and query about the editing and creation of new records),
+  and 'create (automatically create new records).  A value of t is
+  considered equivalent to 'create.  The option can also be set to a
+  function which returns one of the above symbols.
 
 This option only governs what EBDB does automatically, each time a
-message is displayed.  It's also possible to manually display,
-update and edit records using the commands in [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in
-MUAs]].  When updating records either automatically or interactively, a
-few more options come into play:
+message is displayed.  The same process can be run interactively using
+the commands in [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in MUAs]].  When updating records
+either automatically or interactively, a few more options come into
+play:
 
 - Variable: ebdb-add-name
   Whether to automatically change record names.  See docstring for
@@ -260,8 +285,8 @@ few more options come into play:
   How to handle apparently new mail addresses.  See docstring for
   details.
 
-There are also options governing whether EBDB considers mail addresses
-or not:
+There are also options governing whether EBDB will consider a mail
+address or not:
 
 - Variable: ebdb-accept-header-alist
   An alist governing which addresses in which headers will be
@@ -276,22 +301,73 @@ or not:
   the symbol 'self, in which case the value will be constructed from
   the record pointed to by the option `ebdb-record-self'.
 
-*** Pop-up buffers
-Each MUA associated with EBDB will create its own pop-up buffer, with
-a name like \ast{}EBDB-Gnus\ast{} or \ast{}EBDB-Rmail\ast{}.  MUAs
-will re-use their own buffers, and not interfere with buffers the user
-has created using `ebdb', or by cloning or renaming existing buffers.
+*** Noticing and Automatic Rules
 
-- Variable: ebdb-mua-pop-up
-  If nil, MUAs will not create pop-up buffers.  It may still be
-  possible to manually create the buffer (and/or edit EBDB records)
-  using interactive commands (see [[id:38166454-6750-48e9-a5e5-313ff9264c6d][Interactive Commands in MUAs]]).
+In addition to updating records' name and mail fields, it's possible
+to run other arbitrary edits on records when they are referenced in a
+message.  This process is called "noticing". Two hooks are run as a
+part of noticing:
 
-At present, there are *no* user customization options controlling the
-size and location of MUA pop-up buffers: each MUA creates the pop-up
-according to hard-coded rules.  This will likely change in the future:
-please complain to the author.
-*** Annotation and Noticing
+- User Option: ebdb-notice-record-hook
+  This hook is run once per record noticed, with two arguments: the
+  record, and one of the symbols 'sender and 'recipient, indicating
+  where in the message headers the record was found.
+- User Option: ebdb-notice-mail-hook
+  This hook is run once per mail message noticed: if multiple
+  addresses belong to a single record, it will be called once per
+  address.  The hook is run with one argument: the record.
+
+When a record is noticed, it will also call the method
+`ebdb-notice-field' on all of its fields.  Using this method requires
+a bit of familiarity with [[info:elisp#Generic%20Functions][info:elisp#Generic Functions]]; suffice it to
+say that the first argument is the field instance being noticed, the
+second argument is one of the symbols 'sender or 'recipient, and the
+third argument is the record being noticed.
+
+*** Interactive Commands
+:PROPERTIES:
+:ID:       38166454-6750-48e9-a5e5-313ff9264c6d
+:END:
+Some interactive commands are also provided for operating on the
+relevant EBDB records.  In message-reading MUAs, EBDB creates its own
+keymap, and binds it to the key ";".  The following commands assume
+this binding, and only specify the further binding.  Ie, you'll have
+to press ";:" to call `ebdb-mua-display-records'.
+
+- Key: :, ebdb-mua-update-records
+  If the option `ebdb-mua-auto-update-p' is nil, this command can be
+  used to do the same thing, and will behave as if that option were
+  set to 'query.
+- Key: ;, ebdb-mua-display-all-records
+  If the option `ebdb-mua-pop-up' is nil, this command can be used to
+  do the same thing.
+- Key: ', ebdb-mua-edit-sender-notes
+  This command allows you to edit the notes field of the message
+  sender.
+- Key: ", ebdb-mua-in-ebdb-buffer
+  This command moves point to the relevant EBDB pop-up buffer (popping
+  the buffer up first, if necessary).  You can then issue commands in
+  the EBDB buffer as usual, with the exception that "q" will move
+  point back to the previously-selected window, rather than quitting
+  the EBDB buffer.
+- Key: s, ebdb-mua-snarf-article
+  This command scans the body text of the current message, and
+  attempts to snarf new record information from it.  Email addresses
+  and names in the body text will be handled, as will information in
+  the headers of forwarded mail, and information in the signature will
+  be associated with the sender.  The user is always prompted before
+  edits are made.  This functionality is highly unreliable, and
+  probably won't work as advertised.
+
+Commands that are not bound to any keys by default:
+
+- Command: ebdb-mua-display-sender
+  Only display the sender.
+- Command: ebdb-mua-display-recipients
+  Only display the recipients.
+- Command: ebdb-mua-display-all-recipients
+  Only display recipients, using all mail addresses from the message.
+
 ** EBDB and MUA summary buffers
 EBDB can affect the way message senders are displayed in your MUA's
 summary buffer.  It can do this in two ways: 1) by changing the way
@@ -301,15 +377,18 @@ one-character mark next to the contact's name.
 EBDB can "unify" the name displayed for a sender that exists in the
 database.  In general, an MUA will display the name part of the From:
 header in the mailbox summary buffer.  EBDB can replace that display
-name with information from the database.
+name with information from the database.  This only works for Gnus and
+VM, which allow for overriding how message senders are displayed.  The
+format letter (see below) should be added to
+`gnus-summary-line-format' for Gnus (which see), and
+`vm-summary-format' for VM (ditto).
 
-- Variable: ebdb-message-clean-name-function
-- Variable: ebdb-message-mail-as-name
-- Variable: edb-mua-summary-unification-list
-
-- Variable: ebdb-mua-summary-unify-format-letter
-  Format letter to use for the EBDB-unified sender name in an MUA
-  summary buffer.  Defaults to "E".
+- User Option: ebdb-message-clean-name-function
+- User Option: ebdb-message-mail-as-name
+- User Option: edb-mua-summary-unification-list
+- User Option: ebdb-mua-summary-unify-format-letter
+  Format letter to use for the EBDB-unified sender name in an Gnus or
+  VM summary buffer.  Defaults to "E".
 
 *** Summary buffer marks
 EBDB can display a one-character mark next to the name of senders that
@@ -317,7 +396,7 @@ are in the database -- at present this is only possible in the Gnus
 and VM MUAs.  This can be done in one of three ways.  From most
 general to most specific:
 
-- Variable: ebdb-mua-summary-mark
+- User Option: ebdb-mua-summary-mark
   Set to a single-character string to use for all senders in the EBDB
   database.  Set to nil to not mark senders at all.
 - Function: ebdb-mua-make-summary-mark record
@@ -331,13 +410,9 @@ Marks are displayed in MUA summary buffers by customizing the format
 string provided by Gnus or VM, and adding the EBDB-specific format
 code:
 
-- Variable: ebdb-mua-summary-mark-format-letter
+- User Option: ebdb-mua-summary-mark-format-letter
   Format letter to use in the summary buffer format string to mark a
   record.  Defaults to "e".
-*** Interactive Commands in MUAs
-:PROPERTIES:
-:ID:       38166454-6750-48e9-a5e5-313ff9264c6d
-:END:
 * EBDB Buffers
 :PROPERTIES:
 :ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30
@@ -485,20 +560,6 @@ information for that day.
 
 Support for this feature is rudimentary.  More customization options
 are forthcoming.
-* Migration from BBDB
-** Record Migration
-It's possible to migrate records from a BBDB file.  With your BBDB
-customizations still in place, set `ebdb-sources' to a non-existent
-file name, and then run `ebdb-load' (or any of the other EBDB entry
-commands).  You'll be prompted to create the new database, and upgrade
-from BBDB.  If any records could not be upgraded, they will be
-displayed in an \ast{}EBDB Migration\ast{} buffer.
-** Variables and Options
-Many of the old BBDB customization options have been changed or
-removed entirely in EBDB.  It's probably best to put your BBDB
-customizations aside, and set new EBDB options as you come across
-them.  The most important options are detailed in this manual, you can
-also customize the "EBDB" group to see what's available.
 * Hacking EBDB
 :PROPERTIES:
 :ID:       a58993a8-0631-459f-8bd6-7155bb6df605
@@ -597,14 +658,14 @@ provide default values for the new object.
 			     "Gender: " '(female male other unknown none)
 			     nil t
 			     (when obj (symbol-name (slot-value obj :gender)))))))
-	(setq slots (plist-put :gender gender))))
+	(setq slots (plist-put slots :gender gender))))
     (cl-call-next-method class slots obj))
 
   (cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
 			    str &optional slots)
     (when (and (null (plist-get slots :gender))
 	       (member str '("female" "male" "other" "unknown" "none")))
-      (setq slots (plist-put slots :gender str)))
+      (setq slots (plist-put slots :gender (intern str)))
     (cl-call-next-method class str slots))
 
   (cl-defmethod ebdb-string ((field ebdb-field-gender))

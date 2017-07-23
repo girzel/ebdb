@@ -25,7 +25,7 @@
 ;; For simplicity's sake, all these packages will be referred to as
 ;; MUAs.
 
-;; Essentially, this library can make three things happen:
+;; Essentially, this library can make four things happen:
 
 ;; 1. Return EBDB records matched by criteria provided by the MUA, and
 ;; optionally display those records in a pop-up buffer.
@@ -37,8 +37,11 @@
 ;; updates may be automatic or interactive, depending on the user's
 ;; configuration.
 
-;; 3. Provide keybindings for editing or otherwise manipulating the
-;; records afterwards.
+;; 3. Provide hooks for allowing records to be updated automatically
+;; by user-specified functions.
+
+;; 4. Provide keybindings for editing or otherwise manipulating the
+;; records interactively.
 
 ;;; Code:
 
@@ -111,18 +114,24 @@ The strings HEADER belong to CLASS."
 
 (defcustom ebdb-message-all-addresses nil
   "If t `ebdb-update-records' returns all mail addresses of a message.
-Otherwise this function returns only the first mail address of each message."
+
+Otherwise this function returns only the first mail address of
+each message."
+
   :group 'ebdb-mua
   :type 'boolean)
 
 (defcustom ebdb-message-try-all-headers nil
   "If t try all message headers to extract an email address from a message.
-Several EBDB commands extract either the sender or the recipients' email
-addresses from a message according to `ebdb-message-headers'.  If EBDB does not
-find any email address in this subset of message headers (for example, because
-an email address is excluded because of `ebdb-user-mail-address-re')
-but `ebdb-message-try-all-headers' is t, then these commands will also consider
-the email addresses in the remaining headers."
+
+Several EBDB commands extract either the sender or the
+recipients' email addresses from a message according to
+`ebdb-message-headers'.  If EBDB does not find any email address
+in this subset of message headers (for example, because an email
+address is excluded because of `ebdb-user-mail-address-re') but
+`ebdb-message-try-all-headers' is t, then these commands will
+also consider the email addresses in the remaining headers."
+
   :group 'ebdb-mua
   :type 'boolean)
 
@@ -149,7 +158,7 @@ EBDB records are only created for messages sent by people at Maximegalon U.,
 or people posting about time travel.
 If t accept all messages.  If nil, accept all messages.
 
-See also `ebdb-ignore-message-alist', which has the opposite effect."
+See also `ebdb-ignore-header-alist', which has the opposite effect."
   :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
@@ -173,7 +182,7 @@ no EBDB records are created for messages from any mailer daemon,
 or messages sent to or CCed to either of two mailing lists.
 If t ignore all messages.  If nil do not ignore any messages.
 
-See also `ebdb-accept-message-alist', which has the opposite effect."
+See also `ebdb-accept-header-alist', which has the opposite effect."
   :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
@@ -323,16 +332,17 @@ See also `ebdb-add-mails' and `ebdb-canonicalize-mail-function'."
   :type 'boolean)
 
 (defcustom ebdb-notice-mail-hook nil
-  "Hook run each time a mail address of a record is \"noticed\" in a message.
-This means that the mail address in a message belongs to an existing EBDB record
-or to a record EBDB has created for the mail address.
+  "Hook run when a record's mail address is \"noticed\" in a message.
+
+This means that the mail address in a message belongs to an
+existing EBDB record or to a record EBDB has created for the mail
+address.
 
 Run with one argument, the record.  It is up to the hook function
-to determine which MUA is used and to act appropriately.
-Hook functions can use the variable `ebdb-update-records-address'
-to determine the header and class of the mail address according
-to `ebdb-message-headers'.  See `ebdb-auto-notes' for how to annotate records
-using `ebdb-update-records-address' and the headers of a mail message.
+to determine which MUA is used and to act appropriately.  Hook
+functions can use the variable `ebdb-update-records-address' to
+determine the header and class of the mail address according to
+`ebdb-message-headers'.
 
 If a message contains multiple mail addresses belonging to one EBDB record,
 this hook is run for each mail address.  Use `ebdb-notice-record-hook'
@@ -475,8 +485,7 @@ Currently no other MUAs support this EBDB feature."
   "Return non-nil if REGEXP matches value of HEADER."
   (let ((val (ebdb-message-header header))
         (case-fold-search t)) ; RW: Is this what we want?
-    (when (and val (string-match regexp val))
-      (throw 'done t))))
+    (and val (string-match regexp val))))
 
 (defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
   (let ((rest (if invert
@@ -579,7 +588,8 @@ are discarded as appropriate."
 
 ;;;###autoload
 (defun ebdb-update-records (address-list &optional update-p sort)
-  "Return the list of EBDB records matching ADDRESS-LIST.
+  "Find and possibly edit the records matching ADDRESS-LIST.
+
 ADDRESS-LIST is a list of mail addresses.  (It can be extracted from
 a mail message using `ebdb-get-address-components'.)
 UPDATE-P may take the following values:
@@ -604,7 +614,7 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
   (when (eq t update-p)
     (setq update-p 'create))
 
-  (let ( ;; `ebdb-update-records-p' and `ebdb-offer-to-create' are used here
+  (let (;; `ebdb-update-records-p' and `ebdb-offer-to-create' are used here
         ;; as internal variables for communication with `ebdb-query-create'.
         ;; This does not affect the value of the global user variable
         ;; `ebdb-mua-auto-update-p'.
@@ -924,8 +934,7 @@ Return the records matching ADDRESS or nil."
                         (message "noticed naked address \"%s\"" mail))))))
 
         (run-hook-with-args 'ebdb-notice-mail-hook record)
-	;; (ebdb-notice record) ; I think this is already happening in
-	;; `ebdb-update-records'.
+
         (push record new-records)))
 
     (nreverse new-records)))
@@ -970,9 +979,11 @@ apply, however."
 ;;;###autoload
 (defun ebdb-mua-display-records (&optional header-class all)
   "Display the EBDB record(s) for the addresses in this message.
-This looks into the headers of a message according to HEADER-CLASS.
-Then for the mail addresses found the corresponding EBDB records are displayed.
-Records are not created or updated.
+
+This looks into the headers of a message according to
+HEADER-CLASS.  Then for the mail addresses found the
+corresponding EBDB records are displayed.  Records are not
+created or updated.
 
 HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'.  If ALL is non-nil,
@@ -987,10 +998,6 @@ bind `ebdb-message-all-addresses' to ALL."
 		   'existing t))
     (if records (ebdb-display-records records fmt nil nil (ebdb-popup-window)))
     records))
-
-;; The following commands are some frontends for `ebdb-mua-display-records',
-;; which is always doing the real work.  In your init file, you can further
-;; modify or adapt these simple commands to your liking.
 
 ;;;###autoload
 (defun ebdb-mua-display-sender ()
@@ -1084,26 +1091,21 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 ;;;###autoload
 (defun ebdb-mua-auto-update (&optional header-class update-p)
   "Update EBDB automatically based on incoming and outgoing messages.
-This looks into the headers of a message according to HEADER-CLASS.
-Then for the mail addresses found the corresponding EBDB records are updated.
-UPDATE-P determines whether only existing EBDB records are taken
-or whether also new records are created for these mail addresses.
-Return matching records.
+
+This looks into the headers of a message according to
+HEADER-CLASS.  Then for the mail addresses found the
+corresponding EBDB records are updated.  UPDATE-P determines
+whether only existing EBDB records are taken or whether also new
+records are created for these mail addresses.  Return matching
+records.
 
 HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'.  UPDATE-P may take the
-same values as `ebdb-mua-auto-update-p'.  If UPDATE-P is nil,
-use `ebdb-mua-auto-update-p' (which see).
+same values as `ebdb-mua-auto-update-p'.  If UPDATE-P is nil, use
+`ebdb-mua-auto-update-p' (which see).
 
 If `ebdb-mua-pop-up' is non-nil, EBDB pops up the *EBDB* buffer
-along with the MUA window(s), displaying the matching records
-using `ebdb-pop-up-layout'.
-If this is nil, EBDB is updated silently.
-
-This function is intended for noninteractive use via appropriate MUA hooks.
-Call `ebdb-mua-auto-update-init' in your init file to put this function
-into the respective MUA hooks.
-See `ebdb-mua-display-records' and friends for interactive commands."
+along with the MUA window(s), displaying the matching records."
   (let* ((ebdb-silent-internal t)
 	 records)
     (setq records (ebdb-update-records
