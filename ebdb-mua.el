@@ -1031,6 +1031,35 @@ bind `ebdb-message-all-addresses' to ALL."
   (interactive)
   (ebdb-mua-display-records 'recipients t))
 
+(defun ebdb-mua-in-ebdb-buffer ()
+  "From an MUA, temporarily move point to the corresponding EBDB buffer.
+
+All further operations will take place within the EBDB buffer as
+per normal, with the exception that \"q\" will return point to
+where it was in the MUA, rather than quitting the EBDB buffer."
+  (interactive)
+  (let* ((buf (get-buffer (ebdb-make-buffer-name)))
+	 (w-conf (current-window-configuration))
+	 (w-win (selected-window))
+	 (w-point (window-point))
+	 (e-win (if (window-live-p (get-buffer-window buf))
+		    (get-buffer-window buf)
+		  (ebdb-pop-up-window buf t (ebdb-popup-window))))
+	 (key-m (make-sparse-keymap)))
+    (define-key key-m (kbd "q")
+      (lambda ()
+	(interactive)
+	(when (window-live-p w-win)
+	  (set-window-configuration w-conf)
+	  (goto-char w-point))))
+    (select-window e-win t)
+    (set-transient-map
+     key-m
+     (lambda ()
+       ;; Keep the transient map active until the user hits "q".
+       (null
+	(equal (this-command-keys-vector)
+	       [?q]))))))
 
 ;;;###autoload
 (defun ebdb-mua-edit-field (&optional field header-class)
