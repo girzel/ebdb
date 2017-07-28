@@ -722,6 +722,7 @@ Loading this library can (depending on country libraries' behavior)
 increase database load times, though it should not significantly
 affect search or display performance.
 * Diary Integration
+#+CINDEX: Diary integration
 Some EBDB fields hold dates or anniversaries (most notably the
 ~ebdb-field-anniversary~ field).  It's possible to integrate this
 information with Emacs' diary package (and from there to Org, via the
@@ -739,6 +740,19 @@ information for that day.
 
 Support for this feature is rudimentary.  More customization options
 are forthcoming.
+* Mail Aliases
+#+CINDEX: Mail aliases
+You can give records a mail alias with the "mail alias" field,
+available in the list of choices for inserting new fields.  You'll be
+prompted for an alias, and an email address to use for the alias, if
+the record has more than one.  If multiple records have the same
+alias, then entering that alias in the To: or Cc: field of a message
+composition buffer will expand to a comma-separated list of record
+addresses.
+
+At present, it's necessary to manually parse existing aliases with the
+"A" key in a {{{buf(EBDB)}}} buffer.  This limitation will be removed
+in the future.
 * Hacking EBDB
 :PROPERTIES:
 :ID:       a58993a8-0631-459f-8bd6-7155bb6df605
