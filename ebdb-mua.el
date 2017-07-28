@@ -1087,29 +1087,37 @@ where it was in the MUA, rather than quitting the EBDB buffer."
      (message "Article snarfing doesn't work in this context."))))
 
 (defun ebdb-mua-yank-cc ()
-  "CC the people displayed in the *EBDB* buffer on this mail message.
-The primary mail of each of the records currently listed in the
-*EBDB* buffer will be appended to the CC: field of the current buffer."
-  ;; Consider making the guts of this into a method that lives in the
-  ;; different message-sending MUA packages.  All the `derived-mode-p'
-  ;; stuff is a sign...
+  "Prompt for an *EBDB* buffer, and CC all records displayed in that buffer.
 
-  ;; Also, collect the addresses that are already in the To: and Cc:
-  ;; headers, and make sure we don't insert duplicates.
+The primary mail of each of the records currently listed in the
+chosen buffer will be appended to the CC: field of the current
+buffer."
+  ;; Make the guts of this into a method that lives in the different
+  ;; message-sending MUA packages.  Also needs to check that the
+  ;; addresses are not already present in To: or CC:.
   (interactive)
-  (let ((addresses
-	 (with-current-buffer (ebdb-make-buffer-name)
-           (delq nil
-                 (mapcar (lambda (x)
-                           (when-let ((mail (car (ebdb-record-mail (car x) t))))
-                             (ebdb-dwim-mail (car x) mail)))
-                         ebdb-records)))))
+  (let* ((buffer
+	  (get-buffer
+	   (completing-read
+	    "Yank from buffer: "
+	    (mapcar #'buffer-name
+		    (seq-filter (lambda (b)
+				  (with-current-buffer b
+				    (derived-mode-p 'ebdb-mode)))
+				(buffer-list))))))
+	 (addresses
+	  (with-current-buffer buffer
+            (delq nil
+                  (mapcar (lambda (x)
+                            (when-let ((mail (car (ebdb-record-mail (car x) t))))
+                              (ebdb-dwim-mail (car x) mail)))
+                          ebdb-records)))))
     (if (derived-mode-p 'message-mode 'mail-mode)
 	(when addresses
 	  (if (derived-mode-p 'message-mode)
 	      (message-goto-cc)
 	    (mail-cc))
-	  (insert (mapconcat #'identity addresses ",\n")))
+	  (insert (mapconcat #'identity addresses ", ")))
       (message "Not in a mail composition buffer"))))
 
 ;; Functions for noninteractive use in MUA hooks
