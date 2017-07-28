@@ -2106,32 +2106,6 @@ for `ebdb-field-action'."
     (unless (string= "" to)
       (ebdb-compose-mail to subject))))
 
-(defun ebdb-mail-yank ()
-  "CC the people displayed in the *EBDB* buffer on this mail message.
-The primary mail of each of the records currently listed in the
-*EBDB* buffer will be appended to the CC: field of the current buffer."
-  ;; Consider making the guts of this into a method that lives in the
-  ;; different message-sending MUA packages.  All the `derived-mode-p'
-  ;; stuff is a sign...
-
-  ;; Also, collect the addresses that are already in the To: and Cc:
-  ;; headers, and make sure we don't insert duplicates.
-  (interactive)
-  (let ((addresses
-	 (with-current-buffer (ebdb-make-buffer-name)
-           (delq nil
-                 (mapcar (lambda (x)
-                           (when-let ((mail (car (ebdb-record-mail (car x) t))))
-                             (ebdb-dwim-mail (car x) mail)))
-                         ebdb-records)))))
-    (if (derived-mode-p 'message-mode 'mail-mode)
-	(when addresses
-	  (if (derived-mode-p 'message-mode)
-	      (message-goto-cc)
-	    (mail-cc))
-	  (insert (mapconcat #'identity addresses ",\n")))
-      (message "Not in a mail composition buffer"))))
-
 ;;; completion
 
 ;;;###autoload
