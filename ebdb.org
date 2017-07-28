@@ -394,10 +394,10 @@ part of noticing:
 
 When a record is noticed, it will also call the method
 ~ebdb-notice-field~ on all of its fields.  Using this method requires
-a bit of familiarity with [[info:elisp#Generic%20Functions][info:elisp#Generic Functions]]; suffice it to
-say that the first argument is the field instance being noticed, the
-second argument is one of the symbols 'sender or 'recipient, and the
-third argument is the record being noticed.
+a bit of familiarity with [[info:elisp#Generic%20Functions][Generic Functions]]; suffice it to say that
+the first argument is the field instance being noticed, the second
+argument is one of the symbols 'sender or 'recipient, and the third
+argument is the record being noticed.
 
 *** Interactive Commands
 :PROPERTIES:
@@ -627,12 +627,18 @@ foldable characters within the string using regular expressions.  This
 process happens /after/ the transform functions have run, so there is
 a possibility for unexpected search behavior.
 ** Marking
+:PROPERTIES:
+:ID:       73462a5d-2ec7-4a83-8b38-f5be8e62b376
+:END:
 Records can be marked and acted on in bulk.  The "#" key will toggle
 the mark of the record under point.  "M-#" will toggle the marks of
 all the records in the buffer, and "C-#" will unmark all records in
 the buffer.  Many editing commands can act on multiple marked
 records.
 ** Exporting/Formatting
+:PROPERTIES:
+:ID:       0f72cc06-99e4-45b1-aa32-14e909f0765e
+:END:
 It is possible to export (referred to as "formatting") records in
 various ways.  The most common export format is that of the
 {{{buf(EBDB)}}} buffers themselves, but other formats are possible.
@@ -644,7 +650,7 @@ imperfect: not all fields can be exported correctly.  VCard version
 - Key: f, ebdb-format-to-tmp-buffer
 
   This command prompts for a formatter, and formats the record under
-  point to a temporary buffer.  Use marking to format multiple
+  point to a temporary buffer.  Use [[id:73462a5d-2ec7-4a83-8b38-f5be8e62b376][marking]] to format multiple
   records.
 
 - Key: F, ebdb-format-all-records
@@ -753,6 +759,15 @@ addresses.
 At present, it's necessary to manually parse existing aliases with the
 "A" key in a {{{buf(EBDB)}}} buffer.  This limitation will be removed
 in the future.
+* vCard Support
+EBDB has rudimentary support for exporting to vCard format; this
+functionality will be expanded in the future.  After loading the
+@@texinfo:@file{@@ebdb-vcard@@texinfo:}@@ library, a vCard formatter
+will be available when formatting EBDB records (see
+[[id:0f72cc06-99e4-45b1-aa32-14e909f0765e][Exporting/Formatting]]).
+
+Support for importing vCard files is on the EBDB roadmap, as is,
+eventually, support for CardDav servers.
 * Hacking EBDB
 :PROPERTIES:
 :ID:       a58993a8-0631-459f-8bd6-7155bb6df605
@@ -763,9 +778,8 @@ classes -- database, record, and field.  The behavior of EBDB can be
 radically changed by creating new classes, or overriding the existing
 methods of classes, without touching the original source code.  This
 manual won't go into details about Emacs' object-orientation support:
-see [[info:eieio#Top][info:eieio#Top]] for information on defining classes, and
-[[info:elisp#Generic%20Functions][info:elisp#Generic Functions]] for information on writing generic
-functions and methods.
+see [[info:eieio#Top][EIEIO]] for information on defining classes, and [[info:elisp#Generic%20Functions][Generic Functions]]
+for information on writing generic functions and methods.
 
 The simplest customization involves changing the default classes used
 for basic record and field types.
