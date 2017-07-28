@@ -695,6 +695,32 @@ article headers.
 
   Snarf the body of the current article.  This will also snarf the
   headers of forwarded emails.
+* Internationalization
+#+CINDEX: Internationalization
+EBDB comes with an internationalization framework that can provide
+country- and region-specific behavior for certain fields.  This
+functionality is initialized by loading the
+@@texinfo:@file{@@ebdb-i18n@@texinfo:}@@ library.  This library does
+nothing by itself, it simply provides hooks for other country-specific
+libraries, which must be loaded separately.
+
+At present, EBDB comes with only one country-specific library,
+@@texinfo:@file{@@ebdb-chn@@texinfo:}@@, for Chinese-related fields.
+It parses and displays phone numbers and names correctly, and also
+allows users to search on Chinese names using pinyin.  It requires the
+~pyim~ package, available on MELPA.
+
+The present dearth of libraries is a result of the author scratching
+his own itch.  Contributions of new libraries are very welcome.  Also
+welcome, though less enthusiastically, are requests for new libraries.
+
+Internationalization libraries do not modify the database in any way,
+and can be safely unloaded.  They simply alter the way EBDB reads,
+parses and displays field values, and can also store extra information
+(eg.@@texinfo:@:@@g for searching purposes) in a record's cache.
+Loading this library can (depending on country libraries' behavior)
+increase database load times, though it should not significantly
+affect search or display performance.
 * Diary Integration
 Some EBDB fields hold dates or anniversaries (most notably the
 ~ebdb-field-anniversary~ field).  It's possible to integrate this
