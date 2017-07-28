@@ -1,0 +1,1390 @@
+\input texinfo    @c -*- texinfo -*-
+@c %**start of header
+@setfilename ./ebdb.info
+@settitle EBDB Manual
+@documentencoding UTF-8
+@documentlanguage en
+@syncodeindex pg cp
+@c %**end of header
+
+@copying
+Copyright @copyright{} 2016 Free Software Foundation, Inc.
+
+@quotation
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, with the Front-Cover Texts being “A GNU Manual,”
+and with the Back-Cover Texts as in (a) below.  A copy of the license
+is included in the section entitled “GNU Free Documentation License.”
+
+(a) The FSF’s Back-Cover Text is: “You have the freedom to copy and
+modify this GNU manual.”
+@end quotation
+@end copying
+
+@dircategory Emacs
+@direntry
+* EBDB: (ebdb).         Contact management package.
+@end direntry
+
+@finalout
+@titlepage
+@title EBDB Manual
+@subtitle This manual is for version 0.2, updated 28 July, 2017
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@contents
+
+@ifnottex
+@node Top
+@top EBDB Manual
+@end ifnottex
+
+@menu
+* Getting Started::
+* The EBDB Database::
+* Creating Records::
+* Record Fields::
+* MUA Interaction::
+* *EBDB* Buffers::
+* Snarfing::
+* Internationalization::
+* Diary Integration::
+* Mail Aliases::
+* vCard Support::
+* Hacking EBDB::
+* Index::
+
+@detailmenu
+--- The Detailed Node Listing ---
+
+Getting Started
+
+* Migration from BBDB::
+
+Migration from BBDB
+
+* Record Migration::
+* Variables and Options::
+
+
+Creating Records
+
+* Record classes::
+* Record names::
+
+
+
+Record Fields
+
+* Inserting new fields::
+* Editing existing fields::
+* Deleting records and fields::
+* Field types::
+
+
+
+MUA Interaction
+
+* Loading MUA Code::
+* Display and Updating::
+* EBDB and MUA summary buffers::
+
+
+Display and Updating
+
+* Pop-up Buffers::
+* Auto-Updating Records::
+* Noticing and Automatic Rules::
+* Interactive Commands::
+
+
+EBDB and MUA summary buffers
+
+* Sender name display::
+* Summary buffer marks::
+
+*EBDB* Buffers
+
+* Searching::
+* Marking::
+* Exporting/Formatting::
+
+Searching
+
+* Changing Search Behavior::
+
+
+
+
+
+
+Hacking EBDB
+
+* Field Classes::
+
+Field Classes
+
+* Init and Delete Methods::
+* The Labeled Field Class::
+* Actions::
+* Custom Field Searching::
+* Formatting in the EBDB Buffer::
+@end detailmenu
+@end menu
+
+@node Getting Started
+@chapter Getting Started
+
+Assuming you have no records you want to migrate from other contact
+management software, it is enough to call the top-level @code{ebdb}
+command.  This will create a new database at the location specified by
+@code{ebdb-sources} (see @ref{The EBDB Database}), prompt you for a search
+string, fail to find anything (because you don't have any records
+yet), and lastly open a *EBDB* buffer where you can start to
+make new records (see @ref{Creating Records}).
+
+@menu
+* Migration from BBDB::
+@end menu
+
+@node Migration from BBDB
+@section Migration from BBDB
+
+@cindex Migrating from BBDB
+
+@menu
+* Record Migration::
+* Variables and Options::
+@end menu
+
+@node Record Migration
+@subsection Record Migration
+
+It's possible to migrate records from a BBDB file.  With your BBDB
+customizations still in place, set @code{ebdb-sources} to a non-existent
+file name, and then run @code{ebdb-load} (or any of the other EBDB entry
+commands).  You'll be prompted to create the new database, and upgrade
+from BBDB.  If any records could not be upgraded, they will be
+displayed in an *EBDB Migration* buffer.
+
+@node Variables and Options
+@subsection Variables and Options
+
+Many of the old BBDB customization options have been changed or
+removed entirely in EBDB.  It's probably best to put your BBDB
+customizations aside, and set new EBDB options as you come across
+them.  The most important options are detailed in this manual, you can
+also customize the ``EBDB'' group to see what's available.
+
+@node The EBDB Database
+@chapter The EBDB Database
+
+EBDB supports multiple databases, and each database definition is
+saved in a file on disk.  The default database class, @code{ebdb-db-file},
+stores its contacts in the same file as the database itself, though
+other database classes may store contacts elsewhere.
+
+@cindex Creating a database
+@defopt ebdb-sources
+
+User option specifying one or more databases to load.  It can be a
+single element, or a list of elements.  Each element can be a
+filename, from which a database is loaded, or it can be an instance
+of a subclass of the @code{ebdb-db} class.  The database at the head of
+the list will be considered the default database.
+@end defopt
+
+Databases have a few user-facing settings:
+
+@defopt read-only
+
+If t, records can only be read from the database, not edited or
+deleted.
+@end defopt
+
+@defopt auto-save
+
+Set to nil to prevent auto-saving of the database's records.
+@end defopt
+
+@defopt buffer-char
+
+Set to a single character that will be displayed next to records in
+the *EBDB* buffer, indicating which database they belong
+to.
+@end defopt
+
+@defopt disabled
+
+When t, the database will essentially be ignored -- no records will
+be read from it.  Setting this to t will only take effect on next
+restart; to disable a database immediately, use
+@code{ebdb-disable-database} below.
+@end defopt
+
+@defopt record-class
+
+The default record class to use when creating new records in this
+database.  The default is @code{ebdb-default-record-class}.
+@end defopt
+
+While it's possible to edit database definitions directly in the file,
+it's safer to use the customization interface to do so from the
+*EBDB* buffer.
+
+@table @asis
+@kindex d e
+@cindex ebdb-customize-database db
+@item @kbd{d e} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-customize-database db})
+
+Use the customize interface to edit the definition of DB.
+@end table
+
+Records can be moved or copied from one database to another. It's also
+possible for a single record to live in more than one database, though
+this functionality is experimental. When a record is loaded from more
+than one database, the two copies are compared using the ``timestamp''
+field, and the older copy is discarded.
+
+@table @asis
+@kindex d m
+@cindex ebdb-move-record record to-db
+@item @kbd{d m} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-move-record record to-db})
+
+Move RECORD from its existing database to TO-DB.
+
+@kindex d c
+@cindex ebdb-copy-record record to-db
+@item @kbd{d c} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-copy-record record to-db})
+
+Copy RECORD into TO-DB, leaving it in its existing database(s).
+@end table
+
+Other database-related commands:
+
+@table @asis
+@kindex d r
+@cindex ebdb-reload-database db
+@item @kbd{d r} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-reload-database db})
+
+Reload all records from a database.  This also redisplays any of
+those records that were visible in *EBDB* buffers.
+
+@kindex d d
+@cindex ebdb-disable-database db
+@item @kbd{d d} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-disable-database db})
+
+This command disables a database, unloading all of its records and
+essentially ignoring it from now on.  The disabled state persists
+between restarts.  To re-enable a database, edit it using
+@code{ebdb-customize-database}, set 'disabled to nil, and then reload it
+with @code{ebdb-reload-database}.
+@end table
+
+@node Creating Records
+@chapter Creating Records
+
+@cindex Creating records
+Create a record using ``c'' (@code{ebdb-create}) in the *EBDB* buffer.
+With no prefix arg, this command will create an instance of the
+default record class, in the database at the head of @code{ebdb-sources}.
+
+@defopt ebdb-default-record-class
+
+The default record class to use when creating new records.
+@end defopt
+
+Alternately create a record using ``C'' (@code{ebdb-create-extended}), which
+will prompt for a record class to use, as well as a database to store
+the record in, if there is more than one.
+
+You can also tell EBDB which record represents you:
+
+@defopt ebdb-record-self
+
+The value of this option should be the UUID of your own record.  You
+can find this by pressing ``T'' (to show all fields) on your record.
+@end defopt
+
+Currently this option's only use is to serve as a source for
+@code{ebdb-user-mail-address-re}.
+
+@menu
+* Record classes::
+* Record names::
+@end menu
+
+@node Record classes
+@section Record classes
+
+EBDB comes with two record classes, representing individuals
+(@code{ebdb-record-person}) and organizations (@code{ebdb-record-organization}).
+
+@node Record names
+@section Record names
+
+EBDB comes with two classes for name fields: ``simple'' and ``complex''.
+Simple names are just a single string, complex names are split out
+into surname, given names, suffix, etc.  All records have a single
+canonical name: person records have a complex name, organization
+records have a simple name.
+
+In addition, person records can have one or more ``aka'' names, and
+these akas can be either simple or complex.  When adding fields to a
+record, the simple name class is labeled ``nickname'', and the complex
+class is labeled ``alt name''.
+
+@node Record Fields
+@chapter Record Fields
+
+@menu
+* Inserting new fields::
+* Editing existing fields::
+* Deleting records and fields::
+* Field types::
+@end menu
+
+@node Inserting new fields
+@section Inserting new fields
+
+@cindex Inserting new fields
+Pressing ``i'' (@code{ebdb-insert-field}) with point on a record will prompt
+for a field type, then field values, and add the field to the record.
+See below for more information about the various kinds of fields.
+
+When entering field data, optional data can be skipped by entering a
+blank string, or by pressing ``C-g''.  The first ``C-g'' will cancel the
+current data prompt; the second ``C-g'' will cancel the creation of the
+field altogether.  For instance, when creating address fields, EBDB
+will allow you to create an arbitrary number of street lines.  When
+you've added enough, either enter a blank string, or hit ``C-g''.
+
+@node Editing existing fields
+@section Editing existing fields
+
+@cindex Editing fields
+Pressing ``e'' (@code{ebdb-edit-field}) with point on a field will allow you
+to edit an existing field, with the previous values as defaults.
+
+Alternately, press ``E'' (@code{ebdb-edit-field-customize}) to edit the
+field's values using the Customize interface.  Some fields have slots
+that can only be edited this way; other fields have slots that cannot
+be edited at all once the field is created.
+
+@node Deleting records and fields
+@section Deleting records and fields
+
+@cindex Deleting records and fields
+Pressing ``C-k'' on a field will ask you for confirmation, then delete
+the field.  Pressing ``C-k'' while point is on or before a record's main
+name will instead prompt to delete the whole record.
+
+@node Field types
+@section Field types
+
+:ID:       cb2190f4-f2e6-4082-9671-24e11e5cc0c6
+Fields can be classed in a few different categories.  Some are
+``plumbing'' fields, that are present for all records, but not generally
+visible or user-editable: these include the creation date, timestamp,
+and UUID.  You can view these fields by hitting ``T'' on the record.
+Other fields are ``built-in'': basic fields that get special treatment.
+These include the name, mail, phone, address, and notes fields.  EBDB
+comes with default classes for these fields: if you would like to use
+different defaults, you can create new classes (inheriting from the
+existing ones) and use those instead.  See @ref{Hacking EBDB} for more
+information.
+
+Besides the ``plumbing'' and ``built-in'' fields, all other fields are
+``user'' fields, and belong to one of two types: @code{ebdb-field-user} and
+@code{ebdb-field-user-simple}.  The former is an abstract class, used to
+build fields with more complicated structures.  The latter represents
+a simple field with a string label and a string value, and no special
+behavior.
+
+When adding fields to a record, EBDB offers up all the known labels of
+the simple user field class as possible choices.  Typing in an unknown
+string will define a new label, which will be offered as a choice in
+the future.
+
+Fields built from @code{ebdb-field-user} will have their own string name.
+EBDB comes with classes including ``anniversary'', ``url'', ``id'',
+``relation'', ``role'' and more.  Many of these fields have their own list
+of labels (for instance, anniversary fields may be labeled ``birthday'',
+``wedding'', etc).
+
+Loading secondary libraries may make more field types available.
+
+@node MUA Interaction
+@chapter MUA Interaction
+
+One of EBDB's most important features is the ability to create, update
+and display records based on messages received or sent in your mail
+user agent(s).  In theory, EBDB can be integrated with any software
+package, but it's most common to use it in conjunction with sending
+and receiving emails.
+
+@menu
+* Loading MUA Code::
+* Display and Updating::
+* EBDB and MUA summary buffers::
+@end menu
+
+@node Loading MUA Code
+@section Loading MUA Code
+
+:ORDERED:  t
+MUA code is activated simply by loading the relevant library.  Keep in
+mind that mail-reading clients and mail-sending clients are considered
+separate MUAs.  For instance, if you use the Gnus package for reading
+mail, and Message for sending it, you'll want two require statements:
+
+@lisp
+(require 'ebdb-gnus)
+(require 'ebdb-message)
+@end lisp
+
+There are other packages that provide other MUA integration: these are
+likewise activated simply by requiring the relevant library.
+
+@node Display and Updating
+@section Display and Updating
+
+When a message is opened in an MUA, EBDB can do certain things with
+the records referenced in that message. It can:
+
+@itemize
+@item
+Pop up a buffer displaying the records.
+
+@item
+Create new records, or alter existing records, based on information
+provided by the MUA.
+
+@item
+Run automatic rules to edit the records.
+
+@item
+Provide keybindings to manually edit the records.
+@end itemize
+
+Each of these functionalities is optional, and can be customized
+independently of the others.
+
+@menu
+* Pop-up Buffers::
+* Auto-Updating Records::
+* Noticing and Automatic Rules::
+* Interactive Commands::
+@end menu
+
+@node Pop-up Buffers
+@subsection Pop-up Buffers
+
+Each MUA associated with EBDB creates its own pop-up buffer, with a
+name like *EBDB-Gnus* or @{@{@{(buf(EBDB-Rmail)@}@}@}.  MUAs will
+re-use their own buffers, and will not interfere with buffers the user
+has created using the @code{ebdb} command, or by cloning or renaming
+existing buffers.
+
+@defopt ebdb-mua-pop-up
+
+If nil, MUAs will not automatically pop up buffers.  It is still
+possible to manually create the buffer using interactive commands
+(see below).
+@end defopt
+
+At present, there are *no* user customization options controlling the
+size and layout of MUA pop-up buffers: each MUA creates the pop-up
+according to hard-coded rules.  This will likely change in the future:
+please complain to the author.
+
+@node Auto-Updating Records
+@subsection Auto-Updating Records
+
+EBDB can automatically update the name and mail addresses of records
+based on information in an MUA message. The first and most important
+option governing this behavior is:
+
+@defopt ebdb-mua-auto-update-p
+
+This option determines how EBDB acts upon mail addresses found in
+incoming messages.  If nil, nothing will happen.  Other options
+include the symbols 'update (only find existing records, and update
+their name and mail fields as necessary), 'query (find existing
+records, and query about the editing and creation of new records),
+and 'create (automatically create new records).  A value of t is
+considered equivalent to 'create.  The option can also be set to a
+function which returns one of the above symbols.
+@end defopt
+
+This option only governs what EBDB does automatically, each time a
+message is displayed.  The same process can be run interactively using
+the commands below.  When updating records either automatically or
+interactively, a few more options come into play:
+
+@defopt ebdb-add-name
+
+Whether to automatically change record names.  See docstring for
+details.
+@end defopt
+
+@defopt ebdb-add-aka
+
+Whether to automatically add new names as akas.  See docstring for
+details.
+@end defopt
+
+@defopt ebdb-add-mails
+
+How to handle apparently new mail addresses.  See docstring for
+details.
+@end defopt
+
+There are also options governing whether EBDB will consider a mail
+address or not:
+
+@defopt ebdb-accept-header-alist
+
+An alist governing which addresses in which headers will be
+accepted.  See docstring for details.
+@end defopt
+
+@defopt ebdb-ignore-header-alist
+
+An alist governing which addresses in which headers will be ignored.
+See docstring for details.
+@end defopt
+
+@defopt ebdb-user-mail-address-re
+
+A regular expression matching the user's own mail address(es).  In
+addition to a regexp, this can also be the symbol 'message, in which
+case the value will be copied from @code{message-alternative-emails}, or
+the symbol 'self, in which case the value will be constructed from
+the record pointed to by the option @code{ebdb-record-self}.
+@end defopt
+
+@node Noticing and Automatic Rules
+@subsection Noticing and Automatic Rules
+
+In addition to updating records' name and mail fields, it's possible
+to run other arbitrary edits on records when they are referenced in a
+message.  This process is called ``noticing''. Two hooks are run as a
+part of noticing:
+
+@defopt ebdb-notice-record-hook
+
+This hook is run once per record noticed, with two arguments: the
+record, and one of the symbols 'sender and 'recipient, indicating
+where in the message headers the record was found.
+@end defopt
+
+@defopt ebdb-notice-mail-hook
+
+This hook is run once per mail message noticed: if multiple
+addresses belong to a single record, it will be called once per
+address.  The hook is run with one argument: the record.
+@end defopt
+
+When a record is noticed, it will also call the method
+@code{ebdb-notice-field} on all of its fields.  Using this method requires
+a bit of familiarity with @ref{Generic%20Functions,Generic Functions,,elisp,}; suffice it to say that
+the first argument is the field instance being noticed, the second
+argument is one of the symbols 'sender or 'recipient, and the third
+argument is the record being noticed.
+
+@node Interactive Commands
+@subsection Interactive Commands
+
+Some interactive commands are also provided for operating on the
+relevant EBDB records.  In message-reading MUAs, EBDB creates its own
+keymap, and binds it to the key ``;''.  The following list assumes this
+binding, and only specifies the further binding.  Ie, press ``;:'' to
+call @code{ebdb-mua-display-records}.
+
+@table @asis
+@kindex :
+@cindex ebdb-mua-update-records
+@item @kbd{:} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mua-update-records})
+
+If the option @code{ebdb-mua-auto-update-p} is nil, this command can be
+used to do the same thing, and will behave as if that option were
+set to 'query.
+
+@kindex ;
+@cindex ebdb-mua-display-all-records
+@item @kbd{;} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mua-display-all-records})
+
+If the option @code{ebdb-mua-pop-up} is nil, this command can be used to
+do the same thing.
+
+@kindex '
+@cindex ebdb-mua-edit-sender-notes
+@item @kbd{'} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mua-edit-sender-notes})
+
+This command allows you to edit the notes field of the message
+sender.
+
+@kindex ``
+@cindex ebdb-mua-in-ebdb-buffer
+@item @kbd{``} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mua-in-ebdb-buffer})
+
+This command moves point to the relevant EBDB pop-up buffer (popping
+the buffer up first, if necessary).  You can then issue commands in
+the EBDB buffer as usual, with the exception that ``q'' will move
+point back to the previously-selected window, rather than quitting
+the EBDB buffer.
+
+@kindex s
+@cindex ebdb-mua-snarf-article
+@item @kbd{s} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mua-snarf-article})
+
+This command scans the body text of the current message, and
+attempts to snarf new record information from it.  Email addresses
+and names in the body text will be handled, as will information in
+the headers of forwarded mail, and information in the signature will
+be associated with the sender.  The user is always prompted before
+edits are made.  This functionality is highly unreliable, and
+probably won't work as advertised.
+
+@end table
+
+@cindex ebdb-mua-yank-cc
+@deffn Command ebdb-mua-yank-cc
+
+Prompt for an existing *EBDB* buffer, and add addresses for
+all the records displayed there to the CC: line of the message being
+composed.  This command is not bound by default, because the EBDB
+keymap is not bound by default in message composition MUAs.
+@end deffn
+
+Other commands that are not bound to any keys by default:
+
+@cindex ebdb-mua-display-sender
+@deffn Command ebdb-mua-display-sender
+
+Only display the sender.
+@end deffn
+
+@cindex ebdb-mua-display-recipients
+@deffn Command ebdb-mua-display-recipients
+
+Only display the recipients.
+@end deffn
+
+@cindex ebdb-mua-display-all-recipients
+@deffn Command ebdb-mua-display-all-recipients
+
+Only display recipients, using all mail addresses from the message.
+@end deffn
+
+@node EBDB and MUA summary buffers
+@section EBDB and MUA summary buffers
+
+EBDB can affect the way message senders are displayed in your MUA's
+summary buffer.  It can do this in two ways: 1) by changing the way
+the contact name is displayed, and 2) by optionally displaying a
+one-character mark next to the contact's name.
+
+@menu
+* Sender name display::
+* Summary buffer marks::
+@end menu
+
+@node Sender name display
+@subsection Sender name display
+
+EBDB can ``unify'' the name displayed for a sender that exists in the
+database.  In general, an MUA will display the name part of the From:
+header in the mailbox summary buffer.  EBDB can replace that display
+name with information from the database.  This only works for Gnus and
+VM, which allow for overriding how message senders are displayed.  The
+format letter (see below) should be added to
+@code{gnus-summary-line-format} for Gnus (which see), and
+@code{vm-summary-format} for VM (ditto).
+
+@defopt ebdb-message-clean-name-function
+
+A function used to clean up the name extracted from the headers of a
+message.
+@end defopt
+
+@defopt ebdb-message-mail-as-name
+
+If non-nil, the mail address will be used as a fallback for new
+record names.
+@end defopt
+
+@defopt ebdb-mua-summary-unification-list
+
+A list of fields used by @code{ebdb-mua-summary-unify} to return a value
+for unification.  See docstring for details.
+@end defopt
+
+@defopt ebdb-mua-summary-unify-format-letter
+
+Format letter to use for the EBDB-unified sender name in an Gnus or
+VM summary buffer.  Defaults to ``E''.
+@end defopt
+
+@node Summary buffer marks
+@subsection Summary buffer marks
+
+EBDB can display a one-character mark next to the name of senders that
+are in the database -- at present this is only possible in the Gnus
+and VM MUAs.  This can be done in one of three ways.  From most
+general to most specific:
+
+@defopt ebdb-mua-summary-mark
+
+Set to a single-character string to use for all senders in the EBDB
+database.  Set to nil to not mark senders at all.
+@end defopt
+
+@defun ebdb-mua-make-summary-mark record
+
+This generic function accepts RECORD as a single argument, and
+returns a single-character string to be used as a mark.
+@end defun
+
+@itemize
+@item
+Field class: ebdb-field-summary-mark
+
+Give a record an instance of this field class to use a
+specific mark for that record.
+@end itemize
+
+Marks are displayed in MUA summary buffers by customizing the format
+string provided by Gnus or VM, and adding the EBDB-specific format
+code:
+
+@defopt ebdb-mua-summary-mark-format-letter
+
+Format letter to use in the summary buffer format string to mark a
+record.  Defaults to ``e''.
+@end defopt
+
+@node *EBDB* Buffers
+@chapter *EBDB* Buffers
+
+EBDB buffers inherit from special-mode, and so the usual special-mode
+keybindings apply.
+
+EBDB can create several separate buffers for displaying contacts.
+Typically, each MUA creates its own buffer, with names like
+*EBDB-Gnus*, etc.  Users can also create their own buffers
+that won't be interfered with by MUA pop-up action.  Calling the
+@code{ebdb} command directly will create such a ``user-owned'' buffer; it's
+also possible to create more by using the @code{ebdb-clone-buffer} and
+@code{ebdb-rename-buffer} commands within existing EBDB buffers.
+
+@defopt ebdb-buffer-name
+
+The base string that is used to create EBDB buffers, without
+asterisks.  Defaults to ``EBDB''.
+@end defopt
+
+@table @asis
+@kindex b c
+@cindex ebdb-clone-buffer
+@item @kbd{b c} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-clone-buffer})
+
+Prompt for a buffer name, and create a new EBDB buffer displaying
+the same records as the original buffer.
+
+@kindex b r
+@cindex ebdb-rename-buffer
+@item @kbd{b r} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-rename-buffer})
+
+Rename the current EBDB buffer.  If this is done in a MUA pop-up
+buffer, the original buffer will be recreated next time the MUA
+requests another pop up.
+@end table
+
+@menu
+* Searching::
+* Marking::
+* Exporting/Formatting::
+@end menu
+
+@node Searching
+@section Searching
+
+@cindex Searching the EBDB
+The most general search is performed with ``/ /'', which searches on
+many different record fields and displays the results.
+
+The EBDB major mode provides many keys for searching on specific
+record fields.  Most of these keys are used after one of three prefix
+keys, which change the behavior of the search: ``/'' clears the buffer
+before displaying the results, ``|'' searches only among the records
+already displayed, and ``+'' appends the search results to the records
+already displayed.
+
+For instance, record name search is on the key ``n'', meaning you can
+use ``/ n'', ``| n'', or ``+ n''.  Search keys that work this way are:
+
+@itemize
+@item
+``n'': Search names
+
+@item
+``o'': Search organizations
+
+@item
+``p'': Search phones
+
+@item
+``a'': Search addresses
+
+@item
+``m'': Search mails
+
+@item
+``x'': Search user fields (prompts for which field to search on)
+
+@item
+``c'': Search records that have been modified since last save
+
+@item
+``C'': Search by record class
+
+@item
+``D'': Prompt for a database and display all records belonging to that
+database
+@end itemize
+
+Search commands that currently only work with the ``/'' prefix are:
+
+@itemize
+@item
+``/ 1'': Prompt for a single record, and display it
+
+@item
+``/ d'': Search duplicate records
+@end itemize
+
+Each user-created *EBDB* buffer keeps track of search history
+in that buffer.  To pop back to previous searches, use:
+
+@table @asis
+@kindex ^
+@cindex ebdb-search-pop
+@item @kbd{^} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-search-pop})
+@end table
+
+@menu
+* Changing Search Behavior::
+@end menu
+
+@node Changing Search Behavior
+@subsection Changing Search Behavior
+
+There are three ways to alter the behavior of EBDB searches.
+
+@defopt ebdb-case-fold-search
+
+An equivalent to the regular @code{case-fold-search} variable, which
+see.  Defaults to the value of that variable.
+@end defopt
+
+@defopt ebdb-char-fold-search
+
+Controls whether character folding is used when matching search
+strings against record values.
+@end defopt
+
+@defopt ebdb-search-transform-functions
+
+A list of functions that can be used to arbitrarily transform search
+strings.  Each function should accept a single string argument, and
+return the transformed string.  If the search criterion is not a
+string (some fields produce sexp search criteria) these functions
+will not be used.
+@end defopt
+
+Be careful of potential interaction between character folding and
+transform functions.  Character folding works by calling
+@code{char-fold-to-regexp} on the search string, effectively replacing
+foldable characters within the string using regular expressions.  This
+process happens /after/ the transform functions have run, so there is
+a possibility for unexpected search behavior.
+
+@node Marking
+@section Marking
+
+Records can be marked and acted on in bulk.  The ``#'' key will toggle
+the mark of the record under point.  ``M-#'' will toggle the marks of
+all the records in the buffer, and ``C-#'' will unmark all records in
+the buffer.  Many editing commands can act on multiple marked
+records.
+
+@node Exporting/Formatting
+@section Exporting/Formatting
+
+It is possible to export (referred to as ``formatting'') records in
+various ways.  The most common export format is that of the
+*EBDB* buffers themselves, but other formats are possible.
+
+At present, the only other supported format is VCard, and support is
+imperfect: not all fields can be exported correctly.  VCard version
+2.1 is unsupported: the only options are version 3.0 and 4.0.
+
+@table @asis
+@kindex f
+@cindex ebdb-format-to-tmp-buffer
+@item @kbd{f} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-format-to-tmp-buffer})
+
+This command prompts for a formatter, and formats the record under
+point to a temporary buffer.  Use @ref{Marking, , marking} to format multiple
+records.
+
+@kindex F
+@cindex ebdb-format-all-records
+@item @kbd{F} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-format-all-records})
+
+Export all records in the database (not only those displayed) to a
+different format.
+@end table
+
+It's possible to write new formatters, documentation is forthcoming.
+
+@node Snarfing
+@chapter Snarfing
+
+@cindex Snarfing text
+``Snarfing'' refers to scanning free-form text and extracting
+information related to EBDB records from it.  For example, calling
+@code{ebdb-snarf} while the region contains the text ``John Doe
+<j.doe@@email.com>'' will find an existing matching contact, or prompt
+to create a new contact, and then display it.
+
+Snarfing is a work in progress: at present, only mail addresses (and
+nearby names) are acted upon, and it often doesn't work correctly.
+
+@cindex ebdb-snarf &optional string start end recs
+@deffn Command ebdb-snarf &optional string start end recs
+
+Extract record-related information from a piece of text.  Find,
+update, or create records as necessary, and then display them.  When
+the region is active, this command snarfs the current region,
+otherwise it snarfs the entire current buffer.  Called as a
+function, it can accept a string as the first argument and snarfs
+that.  The RECS argument, which cannot be passed interactively, is a
+list of records that are assumed to be related to snarfable data in
+STRING.
+@end deffn
+
+@defopt ebdb-snarf-routines
+
+An alist of field class symbols and related regexps.  The regexps
+are used to collect text that is likely parseable by the
+@code{ebdb-parse} method of the field class.
+@end defopt
+
+@defopt ebdb-snarf-name-re
+
+A list of regular expressions used to recognize names for a snarfed
+contact.  Searching names directly is mostly impossible, so names
+are only looked for in close proximity to other field data.
+@end defopt
+
+In MUAs, EBDB can also snarf the body of the article being displayed.
+This is separate from the updating process, which only examines the
+article headers.
+
+@cindex ebdb-mua-snarf-article
+@deffn Command ebdb-mua-snarf-article
+
+Snarf the body of the current article.  This will also snarf the
+headers of forwarded emails.
+@end deffn
+
+@node Internationalization
+@chapter Internationalization
+
+@cindex Internationalization
+EBDB comes with an internationalization framework that can provide
+country- and region-specific behavior for certain fields.  This
+functionality is initialized by loading the
+@file{ebdb-i10n} library.  This library does
+nothing by itself, it simply provides hooks for other country-specific
+libraries, which must be loaded separately.
+
+At present, EBDB comes with only one country-specific library,
+@file{ebdb-chn}, for Chinese-related fields.
+It parses and displays phone numbers and names correctly, and also
+allows users to search on Chinese names using pinyin.  It requires the
+@code{pyim} package, available on MELPA.
+
+The present dearth of libraries is a result of the author scratching
+his own itch.  Contributions of new libraries are very welcome.  Also
+welcome, though less enthusiastically, are requests for new libraries.
+
+Internationalization libraries do not modify the database in any way,
+and can be safely unloaded.  They simply alter the way EBDB reads,
+parses and displays field values, and can also store extra information
+(eg.@: for searching purposes) in a record's cache.  Loading this
+library can (depending on country libraries' behavior) increase
+database load times, though it should not significantly affect search
+or display performance.
+
+@node Diary Integration
+@chapter Diary Integration
+
+@cindex Diary integration
+Some EBDB fields hold dates or anniversaries (most notably the
+@code{ebdb-field-anniversary} field).  It's possible to integrate this
+information with Emacs' diary package (and from there to Org, via the
+@code{org-agenda-include-diary} option).  At present, you'll need to have
+an actual diary file present at the location indicated by
+@code{diary-file}, though the file can be blank.
+
+@defopt ebdb-use-diary
+
+If non-nil, EBDB fields with date information will attempt to add
+that information to the diary.
+@end defopt
+
+When viewing the calendar, you can use the ``d'' key to see diary
+information for that day.
+
+Support for this feature is rudimentary.  More customization options
+are forthcoming.
+
+@node Mail Aliases
+@chapter Mail Aliases
+
+@cindex Mail aliases
+You can give records a mail alias with the ``mail alias'' field,
+available in the list of choices for inserting new fields.  You'll be
+prompted for an alias, and an email address to use for the alias, if
+the record has more than one.  If multiple records have the same
+alias, then entering that alias in the To: or Cc: field of a message
+composition buffer will expand to a comma-separated list of record
+addresses.
+
+At present, it's necessary to manually parse existing aliases with the
+``A'' key in a *EBDB* buffer.  This limitation will be removed
+in the future.
+
+@node vCard Support
+@chapter vCard Support
+
+EBDB has rudimentary support for exporting to vCard format; this
+functionality will be expanded in the future.  After loading the
+@file{ebdb-vcard} library, a vCard formatter
+will be available when formatting EBDB records (see
+@ref{Exporting/Formatting}).
+
+Support for importing vCard files is on the EBDB roadmap, as is,
+eventually, support for CardDav servers.
+
+@node Hacking EBDB
+@chapter Hacking EBDB
+
+EBDB is designed to be highly extensible.  In addition to the usual
+customization options, it provides for subclassing of the three main
+classes -- database, record, and field.  The behavior of EBDB can be
+radically changed by creating new classes, or overriding the existing
+methods of classes, without touching the original source code.  This
+manual won't go into details about Emacs' object-orientation support:
+see @ref{Top,EIEIO,,eieio,} for information on defining classes, and @ref{Generic%20Functions,Generic Functions,,elisp,}
+for information on writing generic functions and methods.
+
+The simplest customization involves changing the default classes used
+for basic record and field types.
+
+@defopt ebdb-default-record-class
+
+The default class used for creating records.  This class will be
+used when creating records with ``c'' in ebdb-mode, or when
+automatically creating records (ie, from snarfing).  It's always
+possible to create a record of a different class by using ``C'' in
+ebdb-mode.
+@end defopt
+
+@defopt ebdb-default-name-class
+
+The default class for complex names.  Simple names (used for
+organizations and nicknames) are always plain strings -- this option
+only governs the class used for articulated names of individuals,
+with separate slots for surname, given names, suffixes, etc.
+@end defopt
+
+@defopt ebdb-default-mail-class
+
+The default class for mail fields.
+@end defopt
+
+@defopt ebdb-default-phone-class
+
+The default class for phone fields.
+@end defopt
+
+@defopt ebdb-default-address-class
+
+The default class for address fields.
+@end defopt
+
+@defopt ebdb-default-notes-class
+
+The default class for notes fields.
+@end defopt
+
+If, for instance, you'd like to create a custom mail field and have
+all records use that instead of the built-in one:
+
+@lisp
+(defclass my-mail-field (ebdb-field-mail)
+  ;; custom slots
+  )
+
+(setq ebdb-default-mail-class my-mail-field)
+@end lisp
+
+Note that there are currently no facilities for changing the class of
+existing objects.  This may be addressed in the future.
+
+@menu
+* Field Classes::
+@end menu
+
+@node Field Classes
+@section Field Classes
+
+It's fairly easy to create your own custom field classes in EBDB.  All
+such fields should subclass the @code{ebdb-field-user} class, which sets up
+basic behavior.  That base class provides for no slots at all, so your
+class must define the slots where the field data will be held.  It
+should also provide a class option holding a human-readable string for
+the class type.  As an example:
+
+@lisp
+(defclass ebdb-field-gender (ebdb-field-user)
+  ((gender
+    :initarg :gender
+    :initform unknown
+    :type symbol
+    :custom (choice
+	     (const :tag "Female" female)
+	     (const :tag "Male" male)
+	     (const :tag "Other" other)
+	     (const :tag "Unknown" unknown)
+	     (const :tag "None/Not Applicable" none))))
+  :human-readable "gender"
+  :documentation "A field holding gender information about this record.")
+@end lisp
+
+Once the class itself is defined, there are three basic methods which
+must be provided: @code{ebdb-read}, which prompts the user for values used
+to create a new field instance, @code{ebdb-parse}, which accepts a string
+or other data and creates a new field instance from it, and
+@code{ebdb-string}, which returns a string representation of the field
+instance.  The simplest field types only need to provide these three
+methods.
+
+The @code{ebdb-read} and @code{ebdb-parse} methods are static (class-level)
+methods.  Both take an optional ``slots'' argument, which a plist of
+slot values that will eventually be fed to @code{make-instance}.  If values
+are already present in the plist, these methods should /not/ override
+them.  In addition, @code{ebdb-read} takes an optional ``obj'' argument,
+which, if present, is an existing field instance that can be used to
+provide default values for the new object.
+
+@lisp
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-gender))
+			 &optional slots obj)
+  (unless (plist-get slots :gender)
+    (let ((gender (intern (completing-read
+			   "Gender: " '(female male other unknown none)
+			   nil t
+			   (when obj (symbol-name (slot-value obj :gender)))))))
+      (setq slots (plist-put slots :gender gender))))
+  (cl-call-next-method class slots obj))
+
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
+			  str &optional slots)
+  (when (and (null (plist-get slots :gender))
+	     (member str '("female" "male" "other" "unknown" "none")))
+    (setq slots (plist-put slots :gender (intern str)))
+  (cl-call-next-method class str slots))
+
+(cl-defmethod ebdb-string ((field ebdb-field-gender))
+  (symbol-name (slot-value field 'gender)))
+@end lisp
+
+@menu
+* Init and Delete Methods::
+* The Labeled Field Class::
+* Actions::
+* Custom Field Searching::
+* Formatting in the EBDB Buffer::
+@end menu
+
+@node Init and Delete Methods
+@subsection Init and Delete Methods
+
+It's also very common to define @code{ebdb-init-field} and
+@code{ebdb-delete-field} methods for classes.  These methods can be used to
+maintain secondary data structures, or set up extra hashing for
+records, or do any other supplemental work.  The one restriction is
+that they must not change the database: they may not edit records or
+their fields.  Both methods are called with the field instance as the
+first argument, and the record the instance belongs to as an optional
+second argument.  @code{ebdb-delete-field} also accepts an optional third
+argument, ``unload'', which is non-nil when the record is being
+unloaded, rather than deleted.
+
+Both methods should always end with a call to @code{cl-call-next-method}.
+
+@code{ebdb-init-field} is called:
+
+@itemize
+@item
+When loading for the first time (records call @code{ebdb-init-field} on
+all of their fields after they're loaded).
+
+@item
+When adding a new field instance to a record.
+
+@item
+When editing an existing field instance (editing is a
+delete-and-create operation).
+@end itemize
+
+@code{ebdb-delete-field} is called:
+
+@itemize
+@item
+When deleting a field instance.
+
+@item
+When deleting the record owning the field instance.
+
+@item
+When editing an existing field instance (editing is a
+delete-and-create operation).
+
+@item
+When unloading a record from the database (the optional third
+``unload'' argument will be non-nil).
+@end itemize
+
+@node The Labeled Field Class
+@subsection The Labeled Field Class
+
+Many field classes maintain their own list of labels: ie, anniversary
+fields can be labeled ``birthday'', ``wedding'', etc.  This functionality
+can be added to fields by additionally subclassing the
+@code{ebdb-field-labeled} class, and then defining a variable that will be
+used to hold labels, and pointing to it in the class-allocated
+``label-list'' slot.  Everything else is taken care of automatically.
+
+@lisp
+(defvar my-field-label-list '("default1" "default2")
+  "A list of labels for the my-labeled-field class.")
+
+(defclass my-labeled-field (ebdb-field-user ebdb-field-labeled)
+  ((label-list :initform my-field-label-list)))
+@end lisp
+
+@node Actions
+@subsection Actions
+
+All field classes have a class-allocated slot called ``actions''.  The
+value of this slot is a list of conses, for instance: @code{("Browse URL"
+. ebdb-field-url-browse)}.  Users can trigger these actions by
+pressing ``RET'' while point is on the field in the *EBDB*
+buffer, using a numeric prefix arg to select from multiple possible
+actions, or the 0 prefix arg to be prompted for which action to take.
+
+The functions in this list should accept two arguments, the record and
+the field instance under point.
+
+@node Custom Field Searching
+@subsection Custom Field Searching
+
+In most cases, searching the EBDB database is a matter of prompting
+for a regular expression, then matching that regexp against the result
+of @code{ebdb-string} called on a field instance.
+
+However, it is possible for field classes to provide more
+sophisticated searching behavior, if desired.  When the user calls
+@code{ebdb-search-user-fields} in the *EBDB* buffer, he or she will be
+prompted for a field class to search on.  When a field class is
+chosen, it has the option to prompt for more complex search criteria.
+This is done by overriding two matching methods: @code{ebdb-search-read},
+and @code{ebdb-field-search}.
+
+@code{ebdb-search-read} is a static (class-level) method.  Its only
+argument is the field class being searched on.  It should prompt the
+user for whatever search criterion it wants, then return that
+criterion.  This can be nearly anything, so long as the matching
+@code{ebdb-field-search} can accept it.
+
+The @code{ebdb-field-search} method accepts a field instance as the first
+argument, and the search criterion as the second.  It should return
+non-nil if the criterion somehow matches the field.  Note that it's
+perfectly possible to write several @code{ebdb-field-search} methods,
+dispatching on different criterion types, if that makes things easier.
+
+In addition, fields that subclass @code{ebdb-field-labeled} can accept
+search criterion as a cons: @code{("label string"
+. other-search-criteria)}.  The label string will first be matched
+against the label of the instance, and then other-search-criteria will
+be passed to the @code{ebdb-field-search} method as usual.
+
+@node Formatting in the EBDB Buffer
+@subsection Formatting in the EBDB Buffer
+
+Most fields will be displayed in the *EBDB* buffer simply using
+@code{ebdb-string}.  It's possible to customize this display by overriding
+the @code{ebdb-fmt-field} method.  Without going into too much detail, this
+method dispatches on four arguments: the formatter, the field, a
+``style'' symbol argument (typically 'normal, 'oneline, 'compact',
+'collapse or 'expanded), and the record being formatted.
+
+Specify an ebdb formatter for the first argument to target
+*EBDB* formatting.  Choices are @code{ebdb-formatter-ebdb} (for
+all cases), or one of @code{ebdb-formatter-ebdb-multiline} or
+@code{ebdb-formatter-ebdb-oneline}.  Keep in mind that many field classes
+are not displayed at all in the oneline format.
+
+An example: most fields are output with style set to 'normal, meaning
+that it will use the value of @code{ebdb-string}.  By default, formatters
+display address fields in the 'collapse style, which is mapped to the
+'oneline style, which simply drops everything after the first newline.
+
+Say you still wanted addresses output on a single line, but you wanted
+to provide a little more information on that line: the first line of
+the street addresses, plus the city, plus the country.  You could
+achieve that by overriding the 'collapse style like so:
+
+@lisp
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
+			      (field ebdb-field-address)
+			      (_style (eql collapse))
+			      (_record ebdb-record))
+  "Give address fields a special 'collapse formatting."
+  (with-slots (streets locality country) field
+   (format "%s (%s, %s)" (car streets) locality country)))
+
+@end lisp
+
+The leading underscores on parameters are there to keep the compiler
+quiet: the arguments are necessary for dispatch, but aren't actually
+used in the body of the method.
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
