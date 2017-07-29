@@ -1646,7 +1646,7 @@ the record, change the name of the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (ebdb-with-record-edits (_r (list record))
+  (ebdb-with-record-edits (r (list record))
     (eieio-customize-object field))
   (setq ebdb-custom-field-record record))
 
