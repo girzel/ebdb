@@ -474,8 +474,8 @@ property is the field instance itself."
 		((eq priority 'defunct) 'ebdb-defunct)
 		(t nil))))
     (if face
-      (propertize value 'face face))
-    value))
+	(propertize value 'face face)
+      value)))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
@@ -489,8 +489,8 @@ property is the field instance itself."
 			    (ebdb-fmt-field fmt mail 'oneline record))
 		  (ebdb-string person))))
     (if (slot-value field 'defunct)
-	(propertize value 'face 'ebdb-defunct))
-    value))
+	(propertize value 'face 'ebdb-defunct)
+      value)))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
@@ -504,8 +504,8 @@ property is the field instance itself."
 			    (ebdb-fmt-field fmt mail 'oneline record))
 		  (ebdb-string org))))
     (if (slot-value field 'defunct)
-      (propertize value 'face 'ebdb-defunct))
-    value))
+	(propertize value 'face 'ebdb-defunct)
+      value)))
 
 (defsubst ebdb-indent-string (string column)
   "Indent nonempty lines in STRING to COLUMN (except first line).
