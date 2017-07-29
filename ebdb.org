@@ -805,6 +805,19 @@ contacts with existing Org tags.  Completion is offered as expected.
 The field doesn't do much else, at present, but in the future there
 will be options for popping up an {{{buf(EBDB)}}} buffer alongside an
 Org agenda buffer, etc.
+* Citing Records
+Often one wants to share contact information into other channels: for
+instance, pasting a contact's name and mail address in a message
+you're sending to someone else.  EBDB refers to this as "citing", and
+provides a general interface to this through:
+
+- Command: ebdb-cite-records
+
+  This command is not bound in any mode, but can be called
+  interactively.  It prompts for a record, then inserts a citation for
+  the record into the current buffer.  In most text-mode buffers, the
+  citation looks like "Some Name <some@email.com>".  In Org buffers,
+  it is a link with a "mailto:" prefix.
 * Hacking EBDB
 :PROPERTIES:
 :ID:       a58993a8-0631-459f-8bd6-7155bb6df605
