@@ -1584,8 +1584,9 @@ in `ebdb-db-list', using its default record class.  Use
 	 (run-hook-with-args 'ebdb-after-change-hook record)
 	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t)
 	 (dolist (b (buffer-list))
-	   (when (derived-mode-p 'ebdb-mode)
-	     (set-buffer-modified-p t))))
+	   (with-current-buffer b
+	    (when (derived-mode-p 'ebdb-mode)
+	      (set-buffer-modified-p t)))))
      (ebdb-readonly-db
       (message "%s is read-only" (ebdb-string db)))
      (ebdb-unsynced-db
