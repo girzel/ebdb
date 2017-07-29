@@ -1615,10 +1615,12 @@ in `ebdb-db-list', using its default record class.  Use
     (let
 	((field (ebdb-read class
 			   (when (equal class 'ebdb-field-user-simple)
-			     `(:object-name ,label)))))
+			     `(:object-name ,label))))
+	 clone)
       (ebdb-with-record-edits (r records)
+	(setq clone (clone field))
 	(condition-case nil
-	  (ebdb-record-insert-field r field)
+	  (ebdb-record-insert-field r clone)
 	  (ebdb-unacceptable-field
 	   (message "Record %s cannot accept field %s" (ebdb-string r) field)
 	   (sit-for 2)))))))
