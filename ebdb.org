@@ -651,6 +651,26 @@ imperfect: not all fields can be exported correctly.  VCard version
   different format.
 
 It's possible to write new formatters, documentation is forthcoming.
+* Completion
+There are many Emacs completion frameworks out there, and EBDB comes
+with support for helm, counsel, and company.  See the relevant
+libraries; they provide the commands ~helm-ebdb~, ~counsel-ebdb~, and
+~company-ebdb~, respectively.  Counsel and company are made to be
+hooked into Emacs' existing completion frameworks; the helm command
+must be called explicitly.
+
+Another library, @@texinfo:@file{@@ebdb-complete@@texinfo:}@@, uses an
+ephemeral pop-up {{{buf(EBDB)}}} buffer for record completion.  The
+command ~ebdb-complete~ provides an interactive entry point, or you
+can enable it for "TAB" in ~message-mode~ by calling
+~ebdb-complete-enable~.
+
+Several native EBDB commands involve selecting a record, or multiple
+records.  At present, the completion interface for these commands is a
+bit random: several of the command simply use ~completing-read~
+directly, which isn't right.  At some point, all EBDB commands that
+ask the user to select a record will become aware of the
+currently-loaded completion frameworks.
 * Snarfing
 #+CINDEX: Snarfing text
 "Snarfing" refers to scanning free-form text and extracting
