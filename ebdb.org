@@ -267,10 +267,7 @@ user agent(s).  In theory, EBDB can be integrated with any software
 package, but it's most common to use it in conjunction with sending
 and receiving emails.
 ** Loading MUA Code
-:PROPERTIES:
-:ORDERED:  t
 
-:END:
 MUA code is activated simply by loading the relevant library.  Keep in
 mind that mail-reading clients and mail-sending clients are considered
 separate MUAs.  For instance, if you use the Gnus package for reading
@@ -282,11 +279,10 @@ mail, and Message for sending it, you'll want two require statements:
 #+END_SRC
 
 There are other packages that provide other MUA integration: these are
-likewise activated simply by requiring the relevant library.
+likewise activated simply by requiring the relevant library, named
+"ebdb-<MUA>".  MUAs supported by EBDB include gnus, message, mh-e,
+mu4e, rmail, and VM.
 ** Display and Updating
-:PROPERTIES:
-
-:END:
 
 When a message is opened in an MUA, EBDB can do certain things with
 the records referenced in that message. It can:
@@ -465,9 +461,7 @@ Other commands that are not bound to any keys by default:
   Only display recipients, using all mail addresses from the message.
 
 ** EBDB and MUA summary buffers
-:PROPERTIES:
 
-:END:
 EBDB can affect the way message senders are displayed in your MUA's
 summary buffer.  It can do this in two ways: 1) by changing the way
 the contact name is displayed, and 2) by optionally displaying a
@@ -597,9 +591,7 @@ in that buffer.  To pop back to previous searches, use:
 
 - Key: ^, ebdb-search-pop
 *** Changing Search Behavior
-:PROPERTIES:
 
-:END:
 There are three ways to alter the behavior of EBDB searches.
 
 - User Option: ebdb-case-fold-search
