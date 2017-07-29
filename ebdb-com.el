@@ -1573,24 +1573,24 @@ in `ebdb-db-list', using its default record class.  Use
    (list (car ebdb-db-list)))
   (unless record-class
     (setq record-class (slot-value db 'record-class)))
-  (let ((record (ebdb-read record-class)))
-   (condition-case nil
-       (progn
-	 (ebdb-db-editable db nil t)
-	 (run-hook-with-args 'ebdb-create-hook record)
-	 (run-hook-with-args 'ebdb-change-hook record)
-	 (ebdb-db-add-record db record)
-	 (ebdb-init-record record)
-	 (run-hook-with-args 'ebdb-after-change-hook record)
-	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t)
-	 (dolist (b (buffer-list))
-	   (with-current-buffer b
+  (condition-case nil
+      (let (record)
+	(ebdb-db-editable db nil t)
+	(setq record (ebdb-read record-class))
+	(run-hook-with-args 'ebdb-create-hook record)
+	(run-hook-with-args 'ebdb-change-hook record)
+	(ebdb-db-add-record db record)
+	(ebdb-init-record record)
+	(run-hook-with-args 'ebdb-after-change-hook record)
+	(ebdb-display-records (list record) ebdb-default-multiline-formatter t)
+	(dolist (b (buffer-list))
+	  (with-current-buffer b
 	    (when (derived-mode-p 'ebdb-mode)
 	      (set-buffer-modified-p t)))))
-     (ebdb-readonly-db
-      (message "%s is read-only" (ebdb-string db)))
-     (ebdb-unsynced-db
-      (message "%s is out of sync" (ebdb-string db))))))
+    (ebdb-readonly-db
+     (message "%s is read-only" (ebdb-string db)))
+    (ebdb-unsynced-db
+     (message "%s is out of sync" (ebdb-string db)))))
 
 ;;;###autoload
 (defun ebdb-create-record-extended ()
