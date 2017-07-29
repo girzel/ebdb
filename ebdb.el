@@ -4990,8 +4990,8 @@ interpreted as t, ie the record passes."
     (when ebdb-char-fold-search
       (dolist (c clauses)
 	(when (and (consp c)
-		   (stringp (cadr c))))
-	(setf (cadr c) (char-fold-to-regexp (cadr c)))))
+		   (stringp (cadr c)))
+	  (setf (cadr c) (char-fold-to-regexp (cadr c))))))
     (seq-filter
      (lambda (r)
        (eql (null invert)
