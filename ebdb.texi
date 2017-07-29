@@ -31,7 +31,7 @@ modify this GNU manual.”
 @finalout
 @titlepage
 @title EBDB Manual
-@subtitle This manual is for version 0.2, updated 28 July, 2017
+@subtitle This manual is for version 0.2, updated 29 July, 2017
 @page
 @vskip 0pt plus 1filll
 @insertcopying
@@ -50,12 +50,15 @@ modify this GNU manual.”
 * Creating Records::
 * Record Fields::
 * MUA Interaction::
-* *EBDB* Buffers::
+* EBDB Buffers::
+* Completion::
 * Snarfing::
 * Internationalization::
 * Diary Integration::
 * Mail Aliases::
 * vCard Support::
+* Org Integration::
+* Citing Records::
 * Hacking EBDB::
 * Index::
 
@@ -108,15 +111,19 @@ EBDB and MUA summary buffers
 * Sender name display::
 * Summary buffer marks::
 
-*EBDB* Buffers
+EBDB Buffers
 
 * Searching::
+* The Basics of ebdb-mode::
 * Marking::
 * Exporting/Formatting::
 
 Searching
 
 * Changing Search Behavior::
+
+
+
 
 
 
@@ -249,7 +256,8 @@ Records can be moved or copied from one database to another. It's also
 possible for a single record to live in more than one database, though
 this functionality is experimental. When a record is loaded from more
 than one database, the two copies are compared using the ``timestamp''
-field, and the older copy is discarded.
+field, and the older copy is discarded.  In an *EBDB* buffer,
+the following keys can be used to manipulate databases and their records.
 
 @table @asis
 @kindex d m
@@ -437,7 +445,6 @@ and receiving emails.
 @node Loading MUA Code
 @section Loading MUA Code
 
-:ORDERED:  t
 MUA code is activated simply by loading the relevant library.  Keep in
 mind that mail-reading clients and mail-sending clients are considered
 separate MUAs.  For instance, if you use the Gnus package for reading
@@ -449,7 +456,9 @@ mail, and Message for sending it, you'll want two require statements:
 @end lisp
 
 There are other packages that provide other MUA integration: these are
-likewise activated simply by requiring the relevant library.
+likewise activated simply by requiring the relevant library, named
+``ebdb-<MUA>''.  MUAs supported by EBDB include gnus, message, mh-e,
+mu4e, rmail, and VM.
 
 @node Display and Updating
 @section Display and Updating
@@ -770,11 +779,8 @@ Format letter to use in the summary buffer format string to mark a
 record.  Defaults to ``e''.
 @end defopt
 
-@node *EBDB* Buffers
-@chapter *EBDB* Buffers
-
-EBDB buffers inherit from special-mode, and so the usual special-mode
-keybindings apply.
+@node EBDB Buffers
+@chapter EBDB Buffers
 
 EBDB can create several separate buffers for displaying contacts.
 Typically, each MUA creates its own buffer, with names like
@@ -809,6 +815,7 @@ requests another pop up.
 
 @menu
 * Searching::
+* The Basics of ebdb-mode::
 * Marking::
 * Exporting/Formatting::
 @end menu
@@ -870,6 +877,16 @@ Search commands that currently only work with the ``/'' prefix are:
 ``/ d'': Search duplicate records
 @end itemize
 
+Searches can be inverted:
+
+@table @asis
+@kindex !
+@cindex ebdb-search-invert
+@item @kbd{!} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-search-invert})
+
+Invert the results of the next search.
+@end table
+
 Each user-created *EBDB* buffer keeps track of search history
 in that buffer.  To pop back to previous searches, use:
 
@@ -916,6 +933,180 @@ foldable characters within the string using regular expressions.  This
 process happens /after/ the transform functions have run, so there is
 a possibility for unexpected search behavior.
 
+@node The Basics of ebdb-mode
+@section The Basics of ebdb-mode
+
+EBDB buffers inherit from special-mode, and so the usual special-mode
+keybindings apply.
+
+@table @asis
+@kindex n
+@cindex ebdb-next-record
+@item @kbd{n} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-next-record})
+
+Move point to the next record.
+
+@kindex p
+@cindex ebdb-prev-record
+@item @kbd{p} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-prev-record})
+
+Move point to the previous record.
+
+@kindex N
+@cindex ebdb-next-field
+@item @kbd{N} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-next-field})
+
+Move point to the next field.
+
+@kindex P
+@cindex ebdb-prev-field
+@item @kbd{P} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-prev-field})
+
+Move point to the previous field.
+
+@kindex c
+@cindex ebdb-create-record
+@item @kbd{c} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-create-record})
+
+Create a new person record in the primary database.
+
+@kindex C
+@cindex ebdb-create-record-extended
+@item @kbd{C} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-create-record-extended})
+
+Prompt for database and record class, then create a new record.
+
+@kindex i
+@cindex ebdb-insert-field
+@item @kbd{i} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-insert-field})
+
+Insert a new field into the record under point, or the marked records.
+
+@kindex e
+@cindex ebdb-edit-field
+@item @kbd{e} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-edit-field})
+
+Edit the field under point.
+
+@kindex E
+@cindex ebdb-edit-field-customize
+@item @kbd{E} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-edit-field-customize})
+
+Use the extended customize interface to edit the field under point.
+
+@kindex ;
+@cindex ebdb-edit-foo
+@item @kbd{;} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-edit-foo})
+
+Either insert/edit the record's notes field or, with a prefix arg,
+prompt for an existing field and edit it.
+
+@kindex C-k
+@cindex ebdb-delete-field-or-record
+@item @kbd{C-k} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-delete-field-or-record})
+
+With point on a record field, offer to delete that field.  With
+point on a record header, offer to delete the whole record.
+
+@kindex RET
+@cindex ebdb-record-action
+@item @kbd{RET} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-record-action})
+
+Run an ``action'' on the field under point. If multiple actions are
+provided, you'll be prompted to choose one.  Not all fields provide
+actions.  ``RET'' on a mail field will compose a message to that mail
+address
+
+@kindex m
+@cindex ebdb-mail
+@item @kbd{m} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-mail})
+
+Begin composing a message to the record under point.  With a prefix
+arg, prompt for the mail address to use; otherwise use the record's
+primary address.
+
+@kindex t
+@cindex ebdb-toggle-records-format
+@item @kbd{t} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-toggle-records-format})
+
+Toggle between a multi-line and one-line display.
+
+@kindex T
+@cindex ebdb-display-records-completely
+@item @kbd{T} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-display-records-completely})
+
+Display all of a record's fields.
+
+@kindex r
+@cindex ebdb-reformat-records
+@item @kbd{r} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-reformat-records})
+
+Redisplay the record under point.
+
+@kindex o
+@cindex ebdb-omit-records
+@item @kbd{o} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-omit-records})
+
+Remove the record under point (or marked records) from the buffer
+(does not delete the records).
+
+@kindex w f
+@cindex ebdb-copy-fields-as-kill
+@item @kbd{w f} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-copy-fields-as-kill})
+
+Copy the string value of the field under point to the kill ring.
+
+@kindex w r
+@cindex ebdb-copy-records-as-kill
+@item @kbd{w r} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-copy-records-as-kill})
+
+Copy a string representation of the whole record under point to the
+kill ring.
+
+@kindex w m
+@cindex ebdb-copy-mail-as-kill
+@item @kbd{w m} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-copy-mail-as-kill})
+
+Copy a name-plus-mail string citation for the record under point to
+the kill ring.  These strings look like ``John Q Public
+<john@@public.com>''.  By default this will use the record's primary
+address; supply a prefix arg to be prompted for which address to
+use.
+
+@kindex g
+@cindex revert-buffer
+@item @kbd{g} @tie{}@tie{}@tie{}@tie{}(@code{revert-buffer})
+
+Redisplay all visible records.
+
+@kindex ?
+@cindex ebdb-help
+@item @kbd{?} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-help})
+
+Show a very brief help message.
+
+@kindex h
+@cindex ebdb-info
+@item @kbd{h} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-info})
+
+Open this manual.
+
+@kindex s
+@cindex ebdb-save
+@item @kbd{s} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-save})
+
+Save all databases.
+
+@kindex q
+@cindex quit-window
+@item @kbd{q} @tie{}@tie{}@tie{}@tie{}(@code{quit-window})
+
+Delete the *EBDB* window.
+@end table
+
+@ref{Creating Records} and @ref{Record Fields} for more on record creation and
+field manipulation.
+
 @node Marking
 @section Marking
 
@@ -954,6 +1145,29 @@ different format.
 @end table
 
 It's possible to write new formatters, documentation is forthcoming.
+
+@node Completion
+@chapter Completion
+
+There are many Emacs completion frameworks out there, and EBDB comes
+with support for helm, counsel, and company.  See the relevant
+libraries; they provide the commands @code{helm-ebdb}, @code{counsel-ebdb}, and
+@code{company-ebdb}, respectively.  Counsel and company are made to be
+hooked into Emacs' existing completion frameworks; the helm command
+must be called explicitly.
+
+Another library, @file{ebdb-complete}, uses an
+ephemeral pop-up *EBDB* buffer for record completion.  The
+command @code{ebdb-complete} provides an interactive entry point, or you
+can enable it for ``TAB'' in @code{message-mode} by calling
+@code{ebdb-complete-enable}.
+
+Several native EBDB commands involve selecting a record, or multiple
+records.  At present, the completion interface for these commands is a
+bit random: several of the commands simply use @code{completing-read}
+directly, which isn't right.  At some point, all EBDB commands that
+ask the user to select a record will become aware of the
+currently-loaded completion frameworks.
 
 @node Snarfing
 @chapter Snarfing
@@ -1013,7 +1227,7 @@ headers of forwarded emails.
 EBDB comes with an internationalization framework that can provide
 country- and region-specific behavior for certain fields.  This
 functionality is initialized by loading the
-@file{ebdb-i10n} library.  This library does
+@file{ebdb-i18n} library.  This library does
 nothing by itself, it simply provides hooks for other country-specific
 libraries, which must be loaded separately.
 
@@ -1030,10 +1244,10 @@ welcome, though less enthusiastically, are requests for new libraries.
 Internationalization libraries do not modify the database in any way,
 and can be safely unloaded.  They simply alter the way EBDB reads,
 parses and displays field values, and can also store extra information
-(eg.@: for searching purposes) in a record's cache.  Loading this
-library can (depending on country libraries' behavior) increase
-database load times, though it should not significantly affect search
-or display performance.
+(eg.@:g for searching purposes) in a record's cache.
+Loading this library can (depending on country libraries' behavior)
+increase database load times, though it should not significantly
+affect search or display performance.
 
 @node Diary Integration
 @chapter Diary Integration
@@ -1085,6 +1299,52 @@ will be available when formatting EBDB records (see
 
 Support for importing vCard files is on the EBDB roadmap, as is,
 eventually, support for CardDav servers.
+
+@node Org Integration
+@chapter Org Integration
+
+EBDB has standard support for Org functionality: creating links to
+EBDB records works as expected with ``C-c l'', and following a link will
+open an *EBDB* buffer and display the linked record.
+
+Typically, links are created using the record's UUID field -- these
+links are fast and accurate -- but it's also possible to create links
+that initiate an EBDB search, and return multiple records.  EBDB links
+are of the format ``ebdb:<field type>/<search string>''.  The ``field
+type'' is typically the name of an EBDB field class (for instance,
+``ebdb-field-anniversary''), and opening a link of this sort results in
+a search of all records for which <search string> matches the string
+value of that particular field type.  For convenience, a few field
+type shorthands are recognized: in addition to ``uuid'', there is
+``mail'', ``phone'', ``address'', ``notes'' and ``tags'' (see below).  For
+instance, to create a link to all records with a 206 phone area code,
+use ``@uref{phone/206}'', and to create a link to all records who work at
+Google, use ``@uref{mail/google.com}''.
+
+The @file{ebdb-org} library also contains the
+@code{ebdb-org-field-tags} field class, allowing users to tag their
+contacts with existing Org tags.  Completion is offered as expected.
+The field doesn't do much else, at present, but in the future there
+will be options for popping up an *EBDB* buffer alongside an
+Org agenda buffer, etc.
+
+@node Citing Records
+@chapter Citing Records
+
+Often one wants to share contact information into other channels: for
+instance, pasting a contact's name and mail address in a message
+you're sending to someone else.  EBDB refers to this as ``citing'', and
+provides a general interface to this through:
+
+@cindex ebdb-cite-records
+@deffn Command ebdb-cite-records
+
+This command is not bound in any mode, but can be called
+interactively.  It prompts for a record, then inserts a citation for
+the record into the current buffer.  In most text-mode buffers, the
+citation looks like ``Some Name <some@@email.com>''.  In Org buffers,
+it is a link with a ``mailto:'' prefix.
+@end deffn
 
 @node Hacking EBDB
 @chapter Hacking EBDB

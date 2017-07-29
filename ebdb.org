@@ -2,15 +2,13 @@
 #+TEXINFO_HEADER: @syncodeindex pg cp
 #+AUTHOR: Eric Abrahamsen <eric@ericabrahamsen.net>
 #+TITLE: EBDB Manual
-#+SUBTITLE: This manual is for version 0.2, updated 28 July, 2017
+#+SUBTITLE: This manual is for version 0.2, updated 29 July, 2017
 #+TEXINFO_DIR_CATEGORY: Emacs
 #+TEXINFO_DIR_TITLE: EBDB: (ebdb)
 #+TEXINFO_DIR_DESC: Contact management package
 #+TEXINFO_DEFFN: t
 #+OPTIONS: *:nil num:t toc:2 h:4 num:3
 #+MACRO: buf \ast{}$1\ast{}
-#+MACRO: version 0.2
-#+MACRO: updated last updated
 
 * Copying
 :PROPERTIES:
@@ -122,7 +120,8 @@ Records can be moved or copied from one database to another. It's also
 possible for a single record to live in more than one database, though
 this functionality is experimental. When a record is loaded from more
 than one database, the two copies are compared using the "timestamp"
-field, and the older copy is discarded.
+field, and the older copy is discarded.  In an {{{buf(EBDB)}}} buffer,
+the following keys can be used to manipulate databases and their records.
 
 - Key: d m, ebdb-move-record record to-db
 
@@ -193,6 +192,9 @@ these akas can be either simple or complex.  When adding fields to a
 record, the simple name class is labeled "nickname", and the complex
 class is labeled "alt name".
 * Record Fields
+:PROPERTIES:
+:ID:       4170bd36-64bf-44b4-87d0-29fbed968851
+:END:
 ** Inserting new fields
 #+CINDEX: Inserting new fields
 Pressing "i" (~ebdb-insert-field~) with point on a record will prompt
@@ -525,13 +527,10 @@ code:
 
   Format letter to use in the summary buffer format string to mark a
   record.  Defaults to "e".
-* {{{buf(EBDB)}}} Buffers
+* EBDB Buffers
 :PROPERTIES:
 :ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30
 :END:
-EBDB buffers inherit from special-mode, and so the usual special-mode
-keybindings apply.
-
 EBDB can create several separate buffers for displaying contacts.
 Typically, each MUA creates its own buffer, with names like
 {{{buf(EBDB-Gnus)}}}, etc.  Users can also create their own buffers
@@ -586,6 +585,12 @@ Search commands that currently only work with the "/" prefix are:
 - "/ 1": Prompt for a single record, and display it
 - "/ d": Search duplicate records
 
+Searches can be inverted:
+
+- Key: !, ebdb-search-invert
+
+  Invert the results of the next search.
+
 Each user-created {{{buf(EBDB)}}} buffer keeps track of search history
 in that buffer.  To pop back to previous searches, use:
 
@@ -618,6 +623,126 @@ transform functions.  Character folding works by calling
 foldable characters within the string using regular expressions.  This
 process happens /after/ the transform functions have run, so there is
 a possibility for unexpected search behavior.
+** The Basics of ebdb-mode
+EBDB buffers inherit from special-mode, and so the usual special-mode
+keybindings apply.
+
+- Key: n, ebdb-next-record
+
+  Move point to the next record.
+
+- Key: p, ebdb-prev-record
+
+  Move point to the previous record.
+
+- Key: N, ebdb-next-field
+
+  Move point to the next field.
+
+- Key: P, ebdb-prev-field
+
+  Move point to the previous field.
+
+- Key: c, ebdb-create-record
+
+  Create a new person record in the primary database.
+
+- Key: C, ebdb-create-record-extended
+
+  Prompt for database and record class, then create a new record.
+
+- Key: i, ebdb-insert-field
+
+  Insert a new field into the record under point, or the marked records.
+
+- Key: e, ebdb-edit-field
+
+  Edit the field under point.
+
+- Key: E, ebdb-edit-field-customize
+
+  Use the extended customize interface to edit the field under point.
+
+- Key: ;, ebdb-edit-foo
+
+  Either insert/edit the record's notes field or, with a prefix arg,
+  prompt for an existing field and edit it.
+
+- Key: C-k, ebdb-delete-field-or-record
+
+  With point on a record field, offer to delete that field.  With
+  point on a record header, offer to delete the whole record.
+
+- Key: RET, ebdb-record-action
+
+  Run an "action" on the field under point. If multiple actions are
+  provided, you'll be prompted to choose one.  Not all fields provide
+  actions.  "RET" on a mail field will compose a message to that mail
+  address
+
+- Key: m, ebdb-mail
+
+  Begin composing a message to the record under point.  With a prefix
+  arg, prompt for the mail address to use; otherwise use the record's
+  primary address.
+
+- Key: t, ebdb-toggle-records-format
+
+  Toggle between a multi-line and one-line display.
+
+- Key: T, ebdb-display-records-completely
+
+  Display all of a record's fields.
+
+- Key: r, ebdb-reformat-records
+
+  Redisplay the record under point.
+
+- Key: o, ebdb-omit-records
+
+  Remove the record under point (or marked records) from the buffer
+  (does not delete the records).
+
+- Key: w f, ebdb-copy-fields-as-kill
+
+  Copy the string value of the field under point to the kill ring.
+
+- Key: w r, ebdb-copy-records-as-kill
+
+  Copy a string representation of the whole record under point to the
+  kill ring.
+
+- Key: w m, ebdb-copy-mail-as-kill
+
+  Copy a name-plus-mail string citation for the record under point to
+  the kill ring.  These strings look like "John Q Public
+  <john@public.com>".  By default this will use the record's primary
+  address; supply a prefix arg to be prompted for which address to
+  use.
+
+- Key: g, revert-buffer
+
+  Redisplay all visible records.
+
+- Key: ?, ebdb-help
+
+  Show a very brief help message.
+
+- Key: h, ebdb-info
+
+  Open this manual.
+
+- Key: s, ebdb-save
+
+  Save all databases.
+
+- Key: q, quit-window
+
+  Delete the {{{buf(EBDB)}}} window.
+
+[[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]] and [[id:4170bd36-64bf-44b4-87d0-29fbed968851][Record Fields]] for more on record creation and
+field manipulation.
+
 ** Marking
 :PROPERTIES:
 :ID:       73462a5d-2ec7-4a83-8b38-f5be8e62b376
@@ -667,7 +792,7 @@ can enable it for "TAB" in ~message-mode~ by calling
 
 Several native EBDB commands involve selecting a record, or multiple
 records.  At present, the completion interface for these commands is a
-bit random: several of the command simply use ~completing-read~
+bit random: several of the commands simply use ~completing-read~
 directly, which isn't right.  At some point, all EBDB commands that
 ask the user to select a record will become aware of the
 currently-loaded completion frameworks.
@@ -1063,10 +1188,10 @@ The leading underscores on parameters are there to keep the compiler
 quiet: the arguments are necessary for dispatch, but aren't actually
 used in the body of the method.
 
-# Local Variables:
-# sentence-end-double-space: t
-# End
 * Index
 :PROPERTIES:
 :INDEX:    cp
 :END:
+# Local Variables:
+# sentence-end-double-space: t
+# End
