@@ -780,6 +780,31 @@ will be available when formatting EBDB records (see
 
 Support for importing vCard files is on the EBDB roadmap, as is,
 eventually, support for CardDav servers.
+* Org Integration
+EBDB has standard support for Org functionality: creating links to
+EBDB records works as expected with "C-c l", and following a link will
+open an {{{buf(EBDB)}}} buffer and display the linked record.
+
+Typically, links are created using the record's UUID field -- these
+links are fast and accurate -- but it's also possible to create links
+that initiate an EBDB search, and return multiple records.  EBDB links
+are of the format "ebdb:<field type>/<search string>".  The "field
+type" is typically the name of an EBDB field class (for instance,
+"ebdb-field-anniversary"), and opening a link of this sort results in
+a search of all records for which <search string> matches the string
+value of that particular field type.  For convenience, a few field
+type shorthands are recognized: in addition to "uuid", there is
+"mail", "phone", "address", "notes" and "tags" (see below).  For
+instance, to create a link to all records with a 206 phone area code,
+use "ebdb:phone/206", and to create a link to all records who work at
+Google, use "ebdb:mail/google.com".
+
+The @@texinfo:@file{@@ebdb-org@@texinfo:}@@ library also contains the
+~ebdb-org-field-tags~ field class, allowing users to tag their
+contacts with existing Org tags.  Completion is offered as expected.
+The field doesn't do much else, at present, but in the future there
+will be options for popping up an {{{buf(EBDB)}}} buffer alongside an
+Org agenda buffer, etc.
 * Hacking EBDB
 :PROPERTIES:
 :ID:       a58993a8-0631-459f-8bd6-7155bb6df605
