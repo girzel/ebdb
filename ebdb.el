@@ -1772,7 +1772,7 @@ record uuids.")
   mail address to use with that alias.")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-mail-alias)) &optional slots obj)
-  (let ((alias (ebdb-read-string "Alias: " (when obj (car (slot-value obj 'alias)))
+  (let ((alias (ebdb-read-string "Alias: " (when obj (slot-value obj 'alias))
 				 (mapcar #'car ebdb-mail-alias-alist))))
     (cl-call-next-method class (plist-put slots :alias alias) obj)))
 
