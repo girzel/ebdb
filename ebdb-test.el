@@ -130,6 +130,25 @@
 	    rec (ebdb-parse 'ebdb-field-mail "none@such.com"))
 	   :type 'ebdb-readonly-db))))))
 
+(ert-deftest ebdb-test-with-record-edits ()
+  "Test the `ebdb-with-record-edits' macro."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db1 ebdb-test-database-1)
+      (ebdb-test-with-database (db2 ebdb-test-database-2)
+	(let ((rec1 (make-instance 'ebdb-record-person))
+	      (rec2 (make-instance 'ebdb-record-person)))
+	  (ebdb-db-add-record db1 rec1)
+	  (ebdb-db-add-record db2 rec1)
+	  (ebdb-db-add-record db1 rec2)
+	  (setf (slot-value db2 'read-only) t)
+	  (ebdb-with-record-edits (r (list rec1 rec2))
+	    (ebdb-record-insert-field
+	     r (ebdb-parse 'ebdb-field-mail "none@such.com")))
+	  ;; rec1 should have been excluded from the list of editable
+	  ;; records, but no error should be raised.
+	  (should-not
+	   (slot-value rec1 'mail)))))))
+
 ;; Test adding, deleting and changing fields.
 
 (ert-deftest ebdb-add-delete-record-field ()
