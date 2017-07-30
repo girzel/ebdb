@@ -115,6 +115,21 @@
 	  (should (= 1 (length ebdb-record-tracker)))
 	  (should (equal rec (ebdb-gethash (ebdb-record-uuid rec) 'uuid))))))))
 
+(ert-deftest ebdb-load-record-multiple-databases-error ()
+  "Test that record can't be edited when one of its databases is
+  read-only."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db1 ebdb-test-database-1)
+      (ebdb-test-with-database (db2 ebdb-test-database-2)
+	(let ((rec (make-instance 'ebdb-record-person)))
+	  (ebdb-db-add-record db1 rec)
+	  (ebdb-db-add-record db2 rec)
+	  (setf (slot-value db1 'read-only) t)
+	  (should-error
+	   (ebdb-record-insert-field
+	    rec (ebdb-parse 'ebdb-field-mail "none@such.com"))
+	   :type 'ebdb-readonly-db))))))
+
 ;; Test adding, deleting and changing fields.
 
 (ert-deftest ebdb-add-delete-record-field ()
@@ -435,7 +450,7 @@
   (should (equal (ebdb-vcard-escape "Marry\\n uncle!")
 		 "Marry\\n uncle!"))
 
-  (should (equal (ebdb-vcard-escape "Mine 
+  (should (equal (ebdb-vcard-escape "Mine
 uncle")
 		 "Mine \\nuncle"))
 
@@ -443,7 +458,7 @@ uncle")
 		 "Marry, nuncle!"))
 
   (should (equal (ebdb-vcard-unescape "Marry \\nuncle")
-		 "Marry 
+		 "Marry
 uncle"))
 
   (should (equal (ebdb-vcard-unescape
