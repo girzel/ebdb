@@ -115,7 +115,7 @@ Before quit, this command will do some clean jobs."
   (buffer-substring
    (point)
    (save-excursion
-     (skip-syntax-backward "w")
+     (skip-syntax-backward "w_")
      (point))))
 
 (defun ebdb-complete ()
