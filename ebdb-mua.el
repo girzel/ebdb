@@ -25,7 +25,7 @@
 ;; For simplicity's sake, all these packages will be referred to as
 ;; MUAs.
 
-;; Essentially, this library can make three things happen:
+;; Essentially, this library can make four things happen:
 
 ;; 1. Return EBDB records matched by criteria provided by the MUA, and
 ;; optionally display those records in a pop-up buffer.
@@ -37,8 +37,11 @@
 ;; updates may be automatic or interactive, depending on the user's
 ;; configuration.
 
-;; 3. Provide keybindings for editing or otherwise manipulating the
-;; records afterwards.
+;; 3. Provide hooks for allowing records to be updated automatically
+;; by user-specified functions.
+
+;; 4. Provide keybindings for editing or otherwise manipulating the
+;; records interactively.
 
 ;;; Code:
 
@@ -64,35 +67,6 @@
 (defvar ebdb-update-records-address nil
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
-
-(defcustom ebdb-annotate-field ebdb-default-user-field
-  "Field to annotate via `ebdb-annotate-record' and friends.
-This may take the values:
- affix           The list of affixes
- organization    The list of organizations
- aka             the list of AKAs
- mail            the list of email addresses
- all-fields      Read the field to edit using a completion table
-                   that includes all fields currently known to EBDB.
-
-Any other symbol is interpreted as the name of a field class."
-  :group 'ebdb-mua
-  :type '(symbol :tag "Field to annotate"))
-
-(defcustom ebdb-mua-edit-field ebdb-default-user-field
-  "Field to edit with command `ebdb-mua-edit-field' and friends.
-This may take the values:
- name            The full name
- affix           The list of affixes
- organization    The list of organizations
- aka             the list of AKAs
- mail            the list of email addresses
- all-fields      Read the field to edit using a completion table
-                   that includes all fields currently known to EBDB.
-
-Any other symbol is interpreted as the name of a field class."
-  :group 'ebdb-mua
-  :type '(symbol :tag "Field to edit"))
 
 (defcustom ebdb-mua-auto-update-p 'existing
   "This option governs how EBDB handles addresses found in
@@ -140,18 +114,24 @@ The strings HEADER belong to CLASS."
 
 (defcustom ebdb-message-all-addresses nil
   "If t `ebdb-update-records' returns all mail addresses of a message.
-Otherwise this function returns only the first mail address of each message."
+
+Otherwise this function returns only the first mail address of
+each message."
+
   :group 'ebdb-mua
   :type 'boolean)
 
 (defcustom ebdb-message-try-all-headers nil
   "If t try all message headers to extract an email address from a message.
-Several EBDB commands extract either the sender or the recipients' email
-addresses from a message according to `ebdb-message-headers'.  If EBDB does not
-find any email address in this subset of message headers (for example, because
-an email address is excluded because of `ebdb-user-mail-address-re')
-but `ebdb-message-try-all-headers' is t, then these commands will also consider
-the email addresses in the remaining headers."
+
+Several EBDB commands extract either the sender or the
+recipients' email addresses from a message according to
+`ebdb-message-headers'.  If EBDB does not find any email address
+in this subset of message headers (for example, because an email
+address is excluded because of `ebdb-user-mail-address-re') but
+`ebdb-message-try-all-headers' is t, then these commands will
+also consider the email addresses in the remaining headers."
+
   :group 'ebdb-mua
   :type 'boolean)
 
@@ -178,7 +158,7 @@ EBDB records are only created for messages sent by people at Maximegalon U.,
 or people posting about time travel.
 If t accept all messages.  If nil, accept all messages.
 
-See also `ebdb-ignore-message-alist', which has the opposite effect."
+See also `ebdb-ignore-header-alist', which has the opposite effect."
   :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
@@ -202,7 +182,7 @@ no EBDB records are created for messages from any mailer daemon,
 or messages sent to or CCed to either of two mailing lists.
 If t ignore all messages.  If nil do not ignore any messages.
 
-See also `ebdb-accept-message-alist', which has the opposite effect."
+See also `ebdb-accept-header-alist', which has the opposite effect."
   :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
@@ -352,22 +332,53 @@ See also `ebdb-add-mails' and `ebdb-canonicalize-mail-function'."
   :type 'boolean)
 
 (defcustom ebdb-notice-mail-hook nil
-  "Hook run each time a mail address of a record is \"noticed\" in a message.
-This means that the mail address in a message belongs to an existing EBDB record
-or to a record EBDB has created for the mail address.
+  "Hook run when a record's mail address is \"noticed\" in a message.
+
+This means that the mail address in a message belongs to an
+existing EBDB record or to a record EBDB has created for the mail
+address.
 
 Run with one argument, the record.  It is up to the hook function
-to determine which MUA is used and to act appropriately.
-Hook functions can use the variable `ebdb-update-records-address'
-to determine the header and class of the mail address according
-to `ebdb-message-headers'.  See `ebdb-auto-notes' for how to annotate records
-using `ebdb-update-records-address' and the headers of a mail message.
+to determine which MUA is used and to act appropriately.  Hook
+functions can use the variable `ebdb-update-records-address' to
+determine the header and class of the mail address according to
+`ebdb-message-headers'.
 
 If a message contains multiple mail addresses belonging to one EBDB record,
 this hook is run for each mail address.  Use `ebdb-notice-record-hook'
 if you want to notice each record only once per message."
   :group 'ebdb-mua
   :type 'hook)
+
+(defcustom ebdb-notice-record-hook nil
+  "Hook run each time a record is \"noticed\" in a message.
+
+This means that the mail address in a message belongs to an
+existing EBDB record or to a record EBDB has created for the mail
+address.
+
+Run with two arguments: the record, and one of the symbols
+'sender or 'recipient.  It is up to the hook function to
+determine which MUA is used and to act appropriately."  :group
+'ebdb-mua :type 'hook)
+
+(cl-defgeneric ebdb-notice-record (record type)
+  "Inform RECORD that it's been \"noticed\".
+
+TYPE is one of the symbols 'sender or 'recipient, indicating
+RECORD's location in the message headers.")
+
+(cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
+  "Notice REC.
+
+This means running the `ebdb-notice-record-hook', and passing on
+the notice message to all REC's `ebdb-field-user' instances, and
+its notes fields.  Other built in fields (mail, phone, address)
+are not \"noticed\", nor is the timestamp updated."
+  (run-hook-with-args 'ebdb-notice-record-hook rec type)
+  (with-slots (fields notes) rec
+    (dolist (f (delq nil (cons notes fields)))
+      (ebdb-notice-field f type rec))))
 
 (define-widget 'ebdb-alist-with-header 'group
   "My group"
@@ -380,140 +391,6 @@ if you want to notice each record only once per message."
 (defun ebdb-alist-with-header-match (widget value)
   (widget-group-match widget
                       (widget-apply widget :value-to-internal value)))
-
-(defvar ebdb-auto-notes-rules-expanded nil
-  "Expanded `ebdb-auto-notes-rules'.") ; Internal variable
-
-(defcustom ebdb-auto-notes-rules nil
-  "List of rules for adding notes to records of mail addresses of messages.
-This automatically annotates the EBDB record of the sender or recipient
-of a message based on the value of a header such as the Subject header.
-This requires that `ebdb-notice-mail-hook' contains `ebdb-auto-notes'
-and that the record already exists or `ebdb-update-records-p' returns such that
-the record will be created.  Messages matching `ebdb-auto-notes-ignore-messages'
-are ignored.
-
-The elements of this list are
-
-   (FROM-TO HEADER ANNOTATE ...)
-   (HEADER ANNOTATE ...)
-
-FROM-TO is a list of headers and/or header classes as in `ebdb-message-headers'.
-The record corresponding to a mail address of a message is considered for
-annotation if this mail address was found in a header matching FROM-TO.
-If FROM-TO is missing or t, records for each mail address are considered
-irrespective of where the mail address was found in a message.
-
-HEADER is a message header that is considered for generating the annotation.
-
-ANNOTATE may take the following values:
-
-  (REGEXP . STRING)       [this is equivalent to (REGEXP notes STRING)]
-  (REGEXP FIELD STRING)
-  (REGEXP FIELD STRING REPLACE)
-
-REGEXP must match the value of HEADER for generating an annotation.
-However, if the value of HEADER also matches an element of
-`ebdb-auto-notes-ignore-headers' no annotation is generated.
-
-The annotation will be added to FIELD of the respective record.
-FIELD defaults to `ebdb-default-user-field'.
-
-STRING defines a replacement for the match of REGEXP in the value of HEADER.
-It may contain \\& or \\N specials used by `replace-match'.
-The resulting string becomes the annotation.
-If STRING is an integer N, the Nth matching subexpression is used.
-If STRING is a function, it will be called with one arg, the value of HEADER.
-The return value (which must be a string) is then used.
-
-If REPLACE is t, the resulting string replaces the old contents of FIELD.
-If it is nil, the string is appended to the contents of FIELD (unless the
-annotation is already part of the content of field).
-
-For example,
-
-   ((\"To\" (\"-vm@\" . \"VM mailing list\"))
-    (\"Subject\" (\"sprocket\" . \"mail about sprockets\")
-               (\"you bonehead\" . \"called me a bonehead\")))
-
-will cause the text \"VM mailing list\" to be added to the notes field
-of the records corresponding to anyone you get mail from via one of the VM
-mailing lists.
-
-If multiple clauses match the message, all of the corresponding strings
-will be added.
-
-See also variables `ebdb-auto-notes-ignore-messages' and
-`ebdb-auto-notes-ignore-headers'.
-
-For speed-up, the function `ebdb-auto-notes' actually use expanded rules
-stored in the internal variable `ebdb-auto-notes-rules-expanded'.
-If you change the value of `ebdb-auto-notes-rules' outside of customize,
-set `ebdb-auto-notes-rules-expanded' to nil, so that the expanded rules
-will be re-evaluated."
-  :group 'ebdb-mua
-  :set (lambda (symbol value)
-         (set-default symbol value)
-         (setq ebdb-auto-notes-rules-expanded nil))
-  :type '(repeat
-          (ebdb-alist-with-header
-           (repeat (choice
-                    (const sender)
-                    (const recipients)))
-           (string :tag "Header name")
-           (repeat (choice
-                    (cons :tag "Value Pair"
-                          (regexp :tag "Regexp to match on header value")
-                          (string :tag "String for notes if regexp matches"))
-                    (list :tag "Replacement list"
-                          (regexp :tag "Regexp to match on header value")
-                          (choice :tag "Record field"
-                                  (const notes :tag "Notes")
-                                  (const organization :tag "Organization")
-                                  (symbol :tag "Other field class"))
-                          (choice :tag "Regexp match"
-                                  (string :tag "Replacement string")
-                                  (integer :tag "Subexpression match")
-                                  (function :tag "Callback Function"))
-                          (choice :tag "Replace previous contents"
-                                  (const :tag "No" nil)
-                                  (const :tag "Yes" t))))))))
-
-(defcustom ebdb-auto-notes-ignore-messages nil
-  "List of rules for ignoring entire messages in `ebdb-auto-notes'.
-The elements may have the following values:
-  a function  This function is called with one arg, the record
-              that would be annotated.
-              Ignore this message if the function returns non-nil.
-              This function may use `ebdb-update-records-address'.
-  (HEADER . REGEXP)  Ignore messages where HEADER matches REGEXP.
-              For example,  (\"From\" . ebdb-user-mail-address-re)
-              disables any recording of notes for mail addresses
-              found in messages coming from yourself, see
-              `ebdb-user-mail-address-re'.
-See also `ebdb-auto-notes-ignore-headers'."
-  :group 'ebdb-mua
-  :type '(repeat (cons
-                  (string :tag "Header name")
-                  (regexp :tag "Regexp to match on header value"))))
-
-(defcustom ebdb-auto-notes-ignore-headers nil
-  "Alist of headers and regexps to ignore in `ebdb-auto-notes'.
-Each element is of the form
-
-    (HEADER . REGEXP)
-
-For example,
-
-    (\"Organization\" . \"^Gatewayed from\\\\\|^Source only\")
-
-will exclude the phony `Organization:' headers in GNU mailing-lists
-gatewayed to gnu.* newsgroups.
-See also `ebdb-auto-notes-ignore-messages'."
-  :group 'ebdb-mua
-  :type '(repeat (cons
-                  (string :tag "Header name")
-                  (regexp :tag "Regexp to match on header value"))))
 
 (defcustom ebdb-mua-pop-up t
   "If non-nil, display an auto-updated EBDB window while using a MUA."
@@ -608,8 +485,7 @@ Currently no other MUAs support this EBDB feature."
   "Return non-nil if REGEXP matches value of HEADER."
   (let ((val (ebdb-message-header header))
         (case-fold-search t)) ; RW: Is this what we want?
-    (when (and val (string-match regexp val))
-      (throw 'done t))))
+    (and val (string-match regexp val))))
 
 (defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
   (let ((rest (if invert
@@ -712,7 +588,8 @@ are discarded as appropriate."
 
 ;;;###autoload
 (defun ebdb-update-records (address-list &optional update-p sort)
-  "Return the list of EBDB records matching ADDRESS-LIST.
+  "Find and possibly edit the records matching ADDRESS-LIST.
+
 ADDRESS-LIST is a list of mail addresses.  (It can be extracted from
 a mail message using `ebdb-get-address-components'.)
 UPDATE-P may take the following values:
@@ -737,7 +614,7 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
   (when (eq t update-p)
     (setq update-p 'create))
 
-  (let ( ;; `ebdb-update-records-p' and `ebdb-offer-to-create' are used here
+  (let (;; `ebdb-update-records-p' and `ebdb-offer-to-create' are used here
         ;; as internal variables for communication with `ebdb-query-create'.
         ;; This does not affect the value of the global user variable
         ;; `ebdb-mua-auto-update-p'.
@@ -1056,9 +933,8 @@ Return the records matching ADDRESS or nil."
                        (t
                         (message "noticed naked address \"%s\"" mail))))))
 
-        ;;(run-hook-with-args 'ebdb-notice-mail-hook record)
-	;; (ebdb-notice record) ; I think this is already happening in
-	;; `ebdb-update-records'.
+        (run-hook-with-args 'ebdb-notice-mail-hook record)
+
         (push record new-records)))
 
     (nreverse new-records)))
@@ -1103,9 +979,11 @@ apply, however."
 ;;;###autoload
 (defun ebdb-mua-display-records (&optional header-class all)
   "Display the EBDB record(s) for the addresses in this message.
-This looks into the headers of a message according to HEADER-CLASS.
-Then for the mail addresses found the corresponding EBDB records are displayed.
-Records are not created or updated.
+
+This looks into the headers of a message according to
+HEADER-CLASS.  Then for the mail addresses found the
+corresponding EBDB records are displayed.  Records are not
+created or updated.
 
 HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'.  If ALL is non-nil,
@@ -1120,10 +998,6 @@ bind `ebdb-message-all-addresses' to ALL."
 		   'existing t))
     (if records (ebdb-display-records records fmt nil nil (ebdb-popup-window)))
     records))
-
-;; The following commands are some frontends for `ebdb-mua-display-records',
-;; which is always doing the real work.  In your init file, you can further
-;; modify or adapt these simple commands to your liking.
 
 ;;;###autoload
 (defun ebdb-mua-display-sender ()
@@ -1149,103 +1023,53 @@ bind `ebdb-message-all-addresses' to ALL."
   (interactive)
   (ebdb-mua-display-records 'recipients t))
 
-;; The commands `ebdb-annotate-record' and `ebdb-mua-edit-field'
-;; have kind of similar goals, yet they use rather different strategies.
-;; `ebdb-annotate-record' is less obtrusive.  It does not display
-;; the records it operates on, nor does it display the content
-;; of the field before or after adding or replacing the annotation.
-;; Hence the user needs to know what she is doing.
-;; `ebdb-mua-edit-field' is more explicit:  It displays the records
-;; as well as the current content of the field that gets edited.
+(defun ebdb-mua-in-ebdb-buffer ()
+  "From an MUA, temporarily move point to the corresponding EBDB buffer.
 
-;; In principle, this function can be used not only with MUAs.
-(defun ebdb-annotate-record (record annotation &optional field _replace)
-  "In RECORD add an ANNOTATION to field FIELD.
-FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD.
-If ANNOTATION is an empty string and REPLACE is non-nil, delete FIELD."
-  (if (memq field '(name firstname lastname phone address))
-      (error "Field `%s' illegal" field))
-  (setq annotation (ebdb-string-trim annotation))
-  (cond ((memq field '(affix organization mail aka))
-         (setq annotation (list annotation)))
-        ((not field) (setq field ebdb-annotate-field)))
-  (ebdb-record-change-field record field annotation))
-
-(defun ebdb-mua-annotate-field-interactive ()
-  "Interactive specification for `ebdb-mua-annotate-sender' and friends."
-  (let ((field (if (eq 'all-fields ebdb-annotate-field)
-                   (intern (completing-read
-                            "Field: "
-                            (mapcar 'symbol-name
-                                    '(affix organization mail aka))))
-                 ebdb-annotate-field)))
-    (list (read-string (format "Annotate `%s': " field))
-          field current-prefix-arg)))
-
-;;;###autoload
-(defun ebdb-mua-annotate-sender (annotation &optional field replace)
-  "Add ANNOTATION to field FIELD of the EBDB record(s) of message sender(s).
-FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
-  (interactive (ebdb-mua-annotate-field-interactive))
-  (ebdb-mua-prepare-article)
-  (dolist (record (ebdb-update-records
-		   (ebdb-get-address-components 'sender)
-		   'existing))
-    (ebdb-annotate-record record annotation field replace)))
-
-;;;###autoload
-(defun ebdb-mua-annotate-recipients (annotation &optional field replace)
-  "Add ANNOTATION to field FIELD of the EBDB records of message recipients.
-FIELD defaults to `ebdb-annotate-field'.
-If REPLACE is non-nil, ANNOTATION replaces the content of FIELD."
-  (interactive (ebdb-mua-annotate-field-interactive))
-  (ebdb-mua-prepare-article)
-  (dolist (record (ebdb-update-records
-		   (ebdb-get-address-components 'recipients)
-		   'existing))
-    (ebdb-annotate-record record annotation field replace)))
-
-;;;###autoload
-(defun ebdb-mua-edit-field (&optional field header-class)
-  "Edit FIELD of the EBDB record(s) of message sender(s) or recipients.
-FIELD defaults to value of variable `ebdb-mua-edit-field'.
-HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
-use all classes in `ebdb-message-headers'."
+All further operations will take place within the EBDB buffer as
+per normal, with the exception that \"q\" will return point to
+where it was in the MUA, rather than quitting the EBDB buffer."
   (interactive)
-  (cond ((memq field '(firstname lastname address phone))
-         (error "Field `%s' not editable this way" field))
-        ((not field)
-         (setq field ebdb-mua-edit-field)))
+  (let* ((buf (get-buffer (ebdb-make-buffer-name)))
+	 (w-conf (current-window-configuration))
+	 (w-win (selected-window))
+	 (w-point (window-point))
+	 (e-win (if (window-live-p (get-buffer-window buf))
+		    (get-buffer-window buf)
+		  (ebdb-pop-up-window buf t (ebdb-popup-window))))
+	 (key-m (make-sparse-keymap)))
+    (define-key key-m (kbd "q")
+      (lambda ()
+	(interactive)
+	(when (window-live-p w-win)
+	  (set-window-configuration w-conf)
+	  (goto-char w-point))))
+    (select-window e-win t)
+    (set-transient-map
+     key-m
+     (lambda ()
+       ;; Keep the transient map active until the user hits "q".
+       (null
+	(equal (this-command-keys-vector)
+	       [?q]))))))
+
+;;;###autoload
+(defun ebdb-mua-edit-sender-notes ()
+  "Edit the notes field of the EBDB record of the message sender."
+  (interactive)
   (ebdb-mua-prepare-article)
   (let ((records (ebdb-update-records
-		  (ebdb-get-address-components header-class)
+		  (ebdb-get-address-components 'sender)
 		  'existing))
-	field-instance)
+	notes)
     (when records
-      (ebdb-display-records records nil nil nil (ebdb-popup-window))
       (ebdb-with-record-edits (record records)
-	;; All this is very bad, we need to rework `ebdb-edit-foo' so
-	;; it can be used here.
-	(setq field-instance (ebdb-record-field record field))
-	(if field-instance
-	    (ebdb-record-change-field record field-instance)
-	  (setq field-instance (ebdb-read field))
-	  (ebdb-record-insert-field record field-instance))))))
-
-;;;###autoload
-(defun ebdb-mua-edit-field-sender (&optional field)
-  "Edit FIELD of record corresponding to sender of this message.
-FIELD defaults to value of variable `ebdb-mua-edit-field'."
-  (interactive)
-  (ebdb-mua-edit-field field 'sender))
-
-;;;###autoload
-(defun ebdb-mua-edit-field-recipients (&optional field)
-  "Edit FIELD of record corresponding to recipient of this message."
-  (interactive)
-  (ebdb-mua-edit-field field 'recipients))
+	(setq notes (ebdb-record-field record 'notes))
+	(if notes
+	    (ebdb-record-change-field record notes)
+	  (setq notes (ebdb-read ebdb-default-notes-class))
+	  (ebdb-record-insert-field record notes)))
+      (ebdb-redisplay-records records 'reformat t))))
 
 ;;;###autoload
 (defun ebdb-mua-snarf-article ()
@@ -1262,31 +1086,60 @@ FIELD defaults to value of variable `ebdb-mua-edit-field'."
     (cl-no-applicable-method
      (message "Article snarfing doesn't work in this context."))))
 
+(defun ebdb-mua-yank-cc ()
+  "Prompt for an *EBDB* buffer, and CC all records displayed in that buffer.
+
+The primary mail of each of the records currently listed in the
+chosen buffer will be appended to the CC: field of the current
+buffer."
+  ;; Make the guts of this into a method that lives in the different
+  ;; message-sending MUA packages.  Also needs to check that the
+  ;; addresses are not already present in To: or CC:.
+  (interactive)
+  (let* ((buffer
+	  (get-buffer
+	   (completing-read
+	    "Yank from buffer: "
+	    (mapcar #'buffer-name
+		    (seq-filter (lambda (b)
+				  (with-current-buffer b
+				    (derived-mode-p 'ebdb-mode)))
+				(buffer-list))))))
+	 (addresses
+	  (with-current-buffer buffer
+            (delq nil
+                  (mapcar (lambda (x)
+                            (when-let ((mail (car (ebdb-record-mail (car x) t))))
+                              (ebdb-dwim-mail (car x) mail)))
+                          ebdb-records)))))
+    (if (derived-mode-p 'message-mode 'mail-mode)
+	(when addresses
+	  (if (derived-mode-p 'message-mode)
+	      (message-goto-cc)
+	    (mail-cc))
+	  (insert (mapconcat #'identity addresses ", ")))
+      (message "Not in a mail composition buffer"))))
+
 ;; Functions for noninteractive use in MUA hooks
 
 ;;;###autoload
 (defun ebdb-mua-auto-update (&optional header-class update-p)
   "Update EBDB automatically based on incoming and outgoing messages.
-This looks into the headers of a message according to HEADER-CLASS.
-Then for the mail addresses found the corresponding EBDB records are updated.
-UPDATE-P determines whether only existing EBDB records are taken
-or whether also new records are created for these mail addresses.
-Return matching records.
+
+This looks into the headers of a message according to
+HEADER-CLASS.  Then for the mail addresses found the
+corresponding EBDB records are updated.  UPDATE-P determines
+whether only existing EBDB records are taken or whether also new
+records are created for these mail addresses.  Return matching
+records.
 
 HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
 use all classes in `ebdb-message-headers'.  UPDATE-P may take the
-same values as `ebdb-mua-auto-update-p'.  If UPDATE-P is nil,
-use `ebdb-mua-auto-update-p' (which see).
+same values as `ebdb-mua-auto-update-p'.  If UPDATE-P is nil, use
+`ebdb-mua-auto-update-p' (which see).
 
 If `ebdb-mua-pop-up' is non-nil, EBDB pops up the *EBDB* buffer
-along with the MUA window(s), displaying the matching records
-using `ebdb-pop-up-layout'.
-If this is nil, EBDB is updated silently.
-
-This function is intended for noninteractive use via appropriate MUA hooks.
-Call `ebdb-mua-auto-update-init' in your init file to put this function
-into the respective MUA hooks.
-See `ebdb-mua-display-records' and friends for interactive commands."
+along with the MUA window(s), displaying the matching records."
   (let* ((ebdb-silent-internal t)
 	 records)
     (setq records (ebdb-update-records
@@ -1301,90 +1154,22 @@ See `ebdb-mua-display-records' and friends for interactive commands."
 	  (ebdb-undisplay-records)))
     records))
 
-;;;###autoload
-(defun ebdb-auto-notes (record)
-  "Automatically annotate RECORD based on the headers of the current message.
-See the variables `ebdb-auto-notes-rules', `ebdb-auto-notes-ignore-messages'
-and `ebdb-auto-notes-ignore-headers'.
-For use as an element of `ebdb-notice-record-hook'."
-  ;; This code re-evaluates the annotations each time a message is viewed.
-  ;; It would be faster if we could somehow store (permanently?) that we
-  ;; have already annotated a message.
-  (let ((case-fold-search t))
-    (unless ;; check the ignore-messages pattern
-	(let ((ignore-messages ebdb-auto-notes-ignore-messages)
-	      ignore rule)
-	  (while (and (not ignore) (setq rule (pop ignore-messages)))
-	    (if (cond ((functionp rule)
-		       ;; RULE may use `ebdb-update-records-address'
-		       (funcall rule record))
-		      ((symbolp rule)
-		       (eq rule (nth 4 ebdb-update-records-address)))
-		      ((eq 1 (safe-length rule))
-		       (ebdb-message-header-re (car rule) (cdr rule)))
-		      ((eq 2 (safe-length rule))
-		       (and (eq (car rule) (nth 4 ebdb-update-records-address))
-			    (ebdb-message-header-re (nth 1 rule) (nth 2 rule)))))
-		(setq ignore t)))
-	  ignore)
+;; This keymap is clearly aimed at mail-reading MUAs.  Currently we
+;; don't bind it in either message-mode or mail-mode; consider
+;; creating different keymaps for mail-sending and mail-reading MUAs,
+;; and binding them separately.
+(defvar ebdb-mua-keymap
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd ";") #'ebdb-mua-display-all-records)
+    (define-key km (kbd ":") #'ebdb-mua-update-records)
+    (define-key km (kbd "'") #'ebdb-mua-edit-sender-notes)
+    (define-key km (kbd "\"") #'ebdb-mua-in-ebdb-buffer)
+    (define-key km (kbd "s") #'ebdb-mua-snarf-article)
+    km)
+  "Common keymap for calling EBDB commands in an MUA.
 
-      ;; For speed-up expanded rules are stored in `ebdb-auto-notes-rules-expanded'.
-      (when (and ebdb-auto-notes-rules
-                 (not ebdb-auto-notes-rules-expanded))
-        (let (expanded mua from-to header)
-          (dolist (rule ebdb-auto-notes-rules)
-            ;; Which MUA do we want?
-            (if (or (stringp (car rule))
-                    (stringp (nth 1 rule)))
-                (setq mua t)
-              (setq mua (if (symbolp (car rule)) (listp (car rule)) (car rule))
-                    rule (cdr rule)))
-            ;; Which FROM-TO headers do we want?
-            (if (stringp (car rule))
-                (setq from-to t)
-              (setq from-to (car rule)
-                    rule (cdr rule)))
-            (setq header (car rule))
-            (let (string field replace elt-e)
-              (dolist (elt (cdr rule))
-                (if (consp (setq string (cdr elt)))
-                    (setq field (car string) ; (REGEXP FIELD-NAME STRING REPLACE)
-                          replace (nth 2 string) ; perhaps nil
-                          string (nth 1 string))
-                  ;; else it's simple (REGEXP . STRING)
-                  (setq field ebdb-default-user-field
-                        replace nil))
-                (push (list (car elt) field string replace) elt-e))
-              (push (append (list mua from-to header) (nreverse elt-e)) expanded)))
-          (setq ebdb-auto-notes-rules-expanded (nreverse expanded))))
-
-      (dolist (rule ebdb-auto-notes-rules-expanded)
-        (let ((mua (car rule)) (from-to (nth 1 rule)) (header (nth 2 rule))
-              hd-val string annotation)
-          (when (and (or (eq mua t)
-                         (memq (nth 4 ebdb-update-records-address) mua))
-                     (or (eq from-to t)
-                         (member-ignore-case
-                          (nth 2 ebdb-update-records-address) from-to)
-                         (memq (nth 3 ebdb-update-records-address) from-to))
-                     (setq hd-val (ebdb-message-header header)))
-            (dolist (elt (nthcdr 3 rule))
-              (when (and (string-match (car elt) hd-val)
-                         (let ((ignore (cdr (assoc-string
-                                             header
-                                             ebdb-auto-notes-ignore-headers t))))
-                           (not (and ignore (string-match ignore hd-val)))))
-                (setq string (nth 2 elt)
-                      annotation
-                      (cond ((integerp string)
-                             (match-string string hd-val))
-                            ((stringp string)
-                             (replace-match string nil nil hd-val))
-                            ((functionp string)
-                             (funcall string hd-val))
-                            (t (error "Illegal value: %s" string))))
-                (ebdb-annotate-record record annotation
-                                      (nth 1 elt) (nth 3 elt))))))))))
+Keys have been chosen assuming that the keymap will be bound to
+\";\" in the MUA.")
 
 ;;; Mark EBDB records in the MUA summary buffer
 

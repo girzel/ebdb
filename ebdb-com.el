@@ -474,8 +474,8 @@ property is the field instance itself."
 		((eq priority 'defunct) 'ebdb-defunct)
 		(t nil))))
     (if face
-      (propertize value 'face face))
-    value))
+	(propertize value 'face face)
+      value)))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
@@ -489,8 +489,8 @@ property is the field instance itself."
 			    (ebdb-fmt-field fmt mail 'oneline record))
 		  (ebdb-string person))))
     (if (slot-value field 'defunct)
-	(propertize value 'face 'ebdb-defunct))
-    value))
+	(propertize value 'face 'ebdb-defunct)
+      value)))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
@@ -504,8 +504,8 @@ property is the field instance itself."
 			    (ebdb-fmt-field fmt mail 'oneline record))
 		  (ebdb-string org))))
     (if (slot-value field 'defunct)
-      (propertize value 'face 'ebdb-defunct))
-    value))
+	(propertize value 'face 'ebdb-defunct)
+      value)))
 
 (defsubst ebdb-indent-string (string column)
   "Indent nonempty lines in STRING to COLUMN (except first line).
@@ -530,7 +530,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	 ;; `window-text-width' doesn't work for pop-up buffers,
 	 ;; they're not displayed yet!  How do we resolve this...?
 	 (fill-column (window-text-width))
-	 (fill-prefix (make-string (+ 3 indent) ?\s))
+	 (fill-prefix (make-string (+ 5 indent) ?\s))
 	 (paragraph-start "[^:]+:[^\n]+$"))
 
     (dolist (c field-list)
@@ -542,7 +542,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	;; If I understood the mechanics of filling better, I
 	;; could probably do away with `ebdb-indent-string'
 	;; altogether.
-	(ebdb-indent-string (cdr c) (+ indent 3))))
+	(ebdb-indent-string (cdr c) (+ indent 5))))
       ;; If there are newlines in the value string, assume the field
       ;; knows what's it's doing re filling and formatting.
       (unless (or (string-match-p "\n" (cdr c))
@@ -1556,6 +1556,10 @@ actually-editable records."
 	 (run-hook-with-args 'ebdb-change-hook ,(car spec))
 	 ,@body
 	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec)))
+       (dolist (b (buffer-list))
+	 (with-current-buffer b
+	   (when (derived-mode-p 'ebdb-mode)
+	     (set-buffer-modified-p t))))
        (ebdb-redisplay-records ,editable-records 'reformat))))
 
 ;;;###autoload
@@ -1569,20 +1573,24 @@ in `ebdb-db-list', using its default record class.  Use
    (list (car ebdb-db-list)))
   (unless record-class
     (setq record-class (slot-value db 'record-class)))
-  (let ((record (ebdb-read record-class)))
-   (condition-case nil
-       (progn
-	 (ebdb-db-editable db nil t)
-	 (run-hook-with-args 'ebdb-create-hook record)
-	 (run-hook-with-args 'ebdb-change-hook record)
-	 (ebdb-db-add-record db record)
-	 (ebdb-init-record record)
-	 (run-hook-with-args 'ebdb-after-change-hook record)
-	 (ebdb-display-records (list record) ebdb-default-multiline-formatter t))
-     (ebdb-readonly-db
-      (message "%s is read-only" (ebdb-string db)))
-     (ebdb-unsynced-db
-      (message "%s is out of sync" (ebdb-string db))))))
+  (condition-case nil
+      (let (record)
+	(ebdb-db-editable db nil t)
+	(setq record (ebdb-read record-class))
+	(run-hook-with-args 'ebdb-create-hook record)
+	(run-hook-with-args 'ebdb-change-hook record)
+	(ebdb-db-add-record db record)
+	(ebdb-init-record record)
+	(run-hook-with-args 'ebdb-after-change-hook record)
+	(ebdb-display-records (list record) ebdb-default-multiline-formatter t)
+	(dolist (b (buffer-list))
+	  (with-current-buffer b
+	    (when (derived-mode-p 'ebdb-mode)
+	      (set-buffer-modified-p t)))))
+    (ebdb-readonly-db
+     (message "%s is read-only" (ebdb-string db)))
+    (ebdb-unsynced-db
+     (message "%s is out of sync" (ebdb-string db)))))
 
 ;;;###autoload
 (defun ebdb-create-record-extended ()
@@ -1607,10 +1615,12 @@ in `ebdb-db-list', using its default record class.  Use
     (let
 	((field (ebdb-read class
 			   (when (equal class 'ebdb-field-user-simple)
-			     `(:object-name ,label)))))
+			     `(:object-name ,label))))
+	 clone)
       (ebdb-with-record-edits (r records)
+	(setq clone (clone field))
 	(condition-case nil
-	  (ebdb-record-insert-field r field)
+	  (ebdb-record-insert-field r clone)
 	  (ebdb-unacceptable-field
 	   (message "Record %s cannot accept field %s" (ebdb-string r) field)
 	   (sit-for 2)))))))
@@ -1638,7 +1648,8 @@ the record, change the name of the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (eieio-customize-object field)
+  (ebdb-with-record-edits (r (list record))
+    (eieio-customize-object field))
   (setq ebdb-custom-field-record record))
 
 (cl-defmethod eieio-done-customizing ((_f ebdb-field))
@@ -1731,12 +1742,12 @@ confirm deletion."
   "Delete RECORDS.
 If prefix NOPROMPT is non-nil, do not confirm deletion."
   (interactive (list (ebdb-do-records) current-prefix-arg))
-  (dolist (record (ebdb-record-list records))
+  (ebdb-with-record-edits (r (ebdb-record-list records))
     (when (or noprompt
               (y-or-n-p (format "Delete the EBDB record of %s? "
-                                (ebdb-string record))))
-      (ebdb-delete-record record)
-      (ebdb-redisplay-records record 'remove t))))
+                                (ebdb-string r))))
+      (ebdb-delete-record r)
+      (ebdb-redisplay-records r 'remove t))))
 
 ;;;###autoload
 (defun ebdb-move-records (records db)
@@ -1860,7 +1871,14 @@ not necessarily.  FMT is the optional formatter to use."
 	  (when prev
 	    (push (mapcar #'ebdb-record-uuid prev) ebdb-search-history))
 	  (ebdb-display-records recs fmt (eql style 'append)))
-      (message "No matching records"))))
+      (if (null ebdb-record-tracker)
+	  ;; Special-case for new users with no existing records.
+	  ;; They're going to want to have a *EBDB* buffer to work
+	  ;; with.
+	  (progn
+	    (ebdb-display-records nil fmt)
+	    (message "EBDB database is empty"))
+	(message "No matching records")))))
 
 ;;;###autoload
 (defun ebdb (style regexp &optional fmt)
@@ -2091,50 +2109,6 @@ for `ebdb-field-action'."
     (unless (string= "" to)
       (ebdb-compose-mail to subject))))
 
-;; Is there better way to yank selected mail addresses from the EBDB
-;; buffer into a message buffer?  We need some kind of a link between
-;; the EBDB buffer and the message buffer, where the mail addresses
-;; are supposed to go. Then we could browse the EBDB buffer and copy
-;; selected mail addresses from the EBDB buffer into a message buffer.
-
-(defun ebdb-mail-yank ()
-  "CC the people displayed in the *EBDB* buffer on this mail message.
-The primary mail of each of the records currently listed in the
-*EBDB* buffer will be appended to the CC: field of the current buffer."
-  (interactive)
-  (let ((addresses (with-current-buffer ebdb-buffer-name
-                     (delq nil
-                           (mapcar (lambda (x)
-                                     (if (ebdb-record-mail (car x))
-                                         (ebdb-dwim-mail (car x))))
-                                   ebdb-records))))
-        (case-fold-search t))
-    (goto-char (point-min))
-    (if (re-search-forward "^CC:[ \t]*" nil t)
-        ;; We have a CC field. Move to the end of it, inserting a comma
-        ;; if there are already addresses present.
-        (unless (eolp)
-          (end-of-line)
-          (while (looking-at "\n[ \t]")
-            (forward-char) (end-of-line))
-          (insert ",\n")
-          (indent-relative))
-      ;; Otherwise, if there is an empty To: field, move to the end of it.
-      (unless (and (re-search-forward "^To:[ \t]*" nil t)
-                   (eolp))
-        ;; Otherwise, insert an empty CC: field.
-        (end-of-line)
-        (while (looking-at "\n[ \t]")
-          (forward-char) (end-of-line))
-        (insert "\nCC:")
-        (indent-relative)))
-    ;; Now insert each of the addresses on its own line.
-    (while addresses
-      (insert (car addresses))
-      (when (cdr addresses) (insert ",\n") (indent-relative))
-      (setq addresses (cdr addresses)))))
-(define-obsolete-function-alias 'ebdb-yank-addresses 'ebdb-mail-yank)
-
 ;;; completion
 
 ;;;###autoload
@@ -2167,7 +2141,7 @@ just hits return, nil is returned.  Otherwise, a valid response is forced."
 		     (not (memq record records)))
 	    (push record records)))
 	records))))
-	 
+
 
 (defun ebdb-completing-read-record (prompt &optional omit-records)
   "Prompt for and return a single record from the ebdb;
@@ -2792,9 +2766,7 @@ With prefix argument ARG, prompt for which mail address to use."
 ;;;###autoload
 (defun ebdb-info ()
   (interactive)
-  (message "The manual is not yet complete, please see ebdb.org")
-;  (info (format "(%s)Top" (or ebdb-info-file "ebdb")))
-  )
+  (info (format "(%s)Top" (or ebdb-info-file "ebdb"))))
 
 ;;;###autoload
 (defun ebdb-help ()

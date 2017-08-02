@@ -27,7 +27,7 @@
 
 ;;; Code:
 
-(require 'chinese-pyim-dictools)
+(require 'pyim)
 
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
 				(_cc (eql 86)))

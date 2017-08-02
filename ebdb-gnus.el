@@ -477,16 +477,8 @@ quoted replies."
   ;; `ebdb-mua-display-sender' fails in *Article* buffers, where
   ;; `gnus-article-read-summary-keys' provides an additional wrapper
   ;; that restores the window configuration.
-  (define-key gnus-summary-mode-map ";" 'ebdb-mua-update-records)
-  (define-key gnus-article-mode-map ";" 'ebdb-mua-update-records)
-  ;; For `ebdb-mua-edit-field-sender' it is probably OK if
-  ;;`gnus-article-read-summary-keys' restores the window configuration.
-  (define-key gnus-summary-mode-map ":" 'ebdb-mua-edit-field-sender)
-  (define-key gnus-article-mode-map ":" 'ebdb-mua-edit-field-sender)
-  ;; Do we need keybindings for more commands?  Suggestions welcome.
-  ;; (define-key gnus-summary-mode-map ":" 'ebdb-mua-display-records)
-  ;; (define-key gnus-summary-mode-map "'" 'ebdb-mua-display-recipients)
-  ;; (define-key gnus-summary-mode-map ";" 'ebdb-mua-edit-field-recipients)
+  (define-key gnus-summary-mode-map ";" ebdb-mua-keymap)
+  (define-key gnus-article-mode-map ";" ebdb-mua-keymap)
 
   ;; Set up user field for use in `gnus-summary-line-format'
   ;; (1) Big solution: use whole name
@@ -524,20 +516,8 @@ quoted replies."
       (fset (intern (concat "gnus-user-format-function-"
                             ebdb-mua-summary-mark-format-letter))
             (lambda (header)
-              (ebdb-mua-summary-mark (mail-header-from header)))))
-
-  ;; Scoring
-;  (add-hook 'ebdb-after-change-hook 'ebdb/gnus-score-invalidate-alist)
-  )
-  ;; (setq gnus-score-find-score-files-function
-  ;;  (if (boundp 'gnus-score-find-score-files-function)
-  ;;      (cond ((functionp gnus-score-find-score-files-function)
-  ;;             (list gnus-score-find-score-files-function 'ebdb/gnus-score))
-  ;;            ((listp gnus-score-find-score-files-function)
-  ;;             (append gnus-score-find-score-files-function 'ebdb/gnus-score))
-  ;;            (t 'ebdb/gnus-score))
-  ;;    'ebdb/gnus-score))
+              (ebdb-mua-summary-mark (mail-header-from header))))))
 
 (provide 'ebdb-gnus)
 ;;; ebdb-gnus.el ends here
-;;; 
+;;;

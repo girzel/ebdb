@@ -335,14 +335,8 @@ from different senders."
 
 ;;;###autoload
 (defun ebdb-insinuate-vm ()
-  "Hook EBDB into VM.
-Do not call this in your init file.  Use `ebdb-initialize'."
-  (define-key vm-mode-map ":" 'ebdb-mua-display-records)
-  (define-key vm-mode-map "`" 'ebdb-mua-display-sender)
-  (define-key vm-mode-map "'" 'ebdb-mua-display-recipients)
-  (define-key vm-mode-map ";" 'ebdb-mua-edit-field-sender)
-  ;; Do we need keybindings for more commands?  Suggestions welcome.
-  ;; (define-key vm-mode-map "'" 'ebdb-mua-edit-field-recipients)
+  "Hook EBDB into VM."
+  (define-key vm-mode-map ";" ebdb-mua-keymap)
   (define-key vm-mode-map "/" 'ebdb)
   ;; `mail-mode-map' is the parent of `vm-mail-mode-map'.
   ;; So the following is also done by `ebdb-insinuate-mail'.

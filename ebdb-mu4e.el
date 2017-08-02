@@ -39,14 +39,9 @@
   (format "*%s-mu4e*" ebdb-buffer-name))
 
 (defun ebdb-insinuate-mu4e ()
-  "Hook EBDB into mu4e.
-Do not call this in your init file.  Use `ebdb-initialize'."
+  "Hook EBDB into mu4e."
   ;; Tackle headers later
-  ;; (define-key mu4e-headers-mode-map ":" 'ebdb-mua-display-sender)
-  ;; (define-key mu4e-headers-mode-map ";" 'ebdb-mua-edit-field-sender)
-  ;; Do we need keybindings for more commands?  Suggestions welcome.
-  (define-key mu4e-view-mode-map ":" 'ebdb-mua-display-sender)
-  (define-key mu4e-view-mode-map ";" 'ebdb-mua-edit-field-sender))
+  (define-key mu4e-view-mode-map ";" ebdb-mua-keymap))
 
 ;; Why wasn't `ebdb-mua-auto-update' ever hooked in to mu4e?
 

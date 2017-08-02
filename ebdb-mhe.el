@@ -115,14 +115,8 @@ Returns the empty string if HEADER is not in the message."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun ebdb-insinuate-mh ()
-  "Call this function to hook EBDB into MH-E.
-Do not call this in your init file.  Use `ebdb-initialize'."
-  (define-key mh-folder-mode-map ":" 'ebdb-mua-display-sender)
-  (define-key mh-folder-mode-map ";" 'ebdb-mua-edit-field-sender)
-  ;; Do we need keybindings for more commands?  Suggestions welcome.
-  ;; (define-key mh-folder-mode-map ":" 'ebdb-mua-display-records)
-  ;; (define-key mh-folder-mode-map "'" 'ebdb-mua-display-recipients)
-  ;; (define-key mh-folder-mode-map ";" 'ebdb-mua-edit-field-recipients)
+  "Hook EBDB into MH-E."
+  (define-key mh-folder-mode-map ";" ebdb-mua-keymap)
   (when ebdb-complete-mail
       (define-key mh-letter-mode-map "\M-;" 'ebdb-complete-mail)
       (define-key mh-letter-mode-map "\e\t" 'ebdb-complete-mail)))

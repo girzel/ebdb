@@ -1013,7 +1013,7 @@ first one."
     :type (or null ebdb-field-mail)
     :initform nil)
    (fields
-    :initarg :fields 
+    :initarg :fields
     :type (list-of ebdb-field)
     :initform nil)
    (defunct
@@ -1772,7 +1772,7 @@ record uuids.")
   mail address to use with that alias.")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-mail-alias)) &optional slots obj)
-  (let ((alias (ebdb-read-string "Alias: " (when obj (car (slot-value obj 'alias)))
+  (let ((alias (ebdb-read-string "Alias: " (when obj (slot-value obj 'alias))
 				 (mapcar #'car ebdb-mail-alias-alist))))
     (cl-call-next-method class (plist-put slots :alias alias) obj)))
 
@@ -2151,23 +2151,6 @@ only return fields that are suitable for user editing.")
       (push (cons 'notes notes) f-list)))
   f-list)
 
-(cl-defgeneric ebdb-notice-record (record type)
-  "Inform RECORD that it's been \"noticed\".
-
-TYPE is one of the symbols 'sender or 'recipient, indicating
-RECORD's location in the message headers.")
-
-(cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
-  "Notice REC.
-
-Currently this just means passing on the notice message to all
-REC's `ebdb-field-user' instances, and its notes fields.  Other
-built in fields (mail, phone, address) are not \"noticed\", nor
-is the timestamp updated."
-  (with-slots (fields notes) rec
-    (dolist (f (delq nil (cons notes fields)))
-      (ebdb-notice-field f type rec))))
-
 ;; TODO: rename this to `ebdb-record-name-string', it's confusing.
 (cl-defmethod ebdb-record-name ((record ebdb-record))
   "Get or set-and-get the cached name string of RECORD."
@@ -2447,23 +2430,19 @@ priority."
      class (plist-put slots :name name))))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record-person))
-  (ebdb-init-field (slot-value record 'name) record)
-  (dolist (aka (slot-value record 'aka))
-    (ebdb-init-field aka record))
-  (dolist (relation (slot-value record 'relations))
-    (ebdb-init-field relation record))
-  (dolist (role (slot-value record 'organizations))
-    (ebdb-init-field role record))
+  (with-slots (name aka relations organizations) record
+    (when name
+      (ebdb-init-field name record))
+    (dolist (f (append aka relations organizations))
+      (ebdb-init-field f record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-record ((record ebdb-record-person) &optional _db unload)
-  (ebdb-delete-field (slot-value record 'name) record unload)
-  (dolist (a (slot-value record 'aka))
-    (ebdb-delete-field a record unload))
-  (dolist (r (slot-value record 'relations))
-    (ebdb-delete-field r record unload))
-  (dolist (o (slot-value record 'organizations))
-    (ebdb-delete-field o record unload))
+  (with-slots (name aka relations organizations) record
+    (when name
+      (ebdb-delete-field name record unload))
+    (dolist (f (append aka relations organizations))
+      (ebdb-delete-field f record unload)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-merge ((left ebdb-record-person)
@@ -3246,9 +3225,10 @@ the persistent save, or allow them to propagate."
     (setf (slot-value record 'uuid)
 	  (make-instance
 	   'ebdb-field-uuid
-	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix)))))
+	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
+    (ebdb-puthash (ebdb-record-uuid record) record))
   (object-add-to-list db 'records record)
-  (ebdb-db-load-records db (list record))
+  (object-add-to-list (ebdb-record-cache record) 'database db)
   (setf (slot-value db 'dirty) t)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
@@ -3258,6 +3238,7 @@ the persistent save, or allow them to propagate."
   (object-remove-from-list db 'records record)
   (object-remove-from-list (ebdb-record-cache record)
 			   'database db)
+  (setf (slot-value db 'dirty) t)
   record)
 
 (cl-defmethod ebdb-db-add-record-field :before ((db ebdb-db) record _slot _field)
@@ -4941,6 +4922,10 @@ If PROMPT is non-nil prompt before saving."
   (message "Saving the EBDB...")
   (dolist (s ebdb-db-list)
     (ebdb-db-save s prompt))
+  (dolist (b (buffer-list))
+    (with-current-buffer b
+      (when (derived-mode-p 'ebdb-mode)
+	(set-buffer-modified-p nil))))
   (message "Saving the EBDB... done"))
 
 ;;;###autoload
@@ -5005,8 +4990,8 @@ interpreted as t, ie the record passes."
     (when ebdb-char-fold-search
       (dolist (c clauses)
 	(when (and (consp c)
-		   (stringp (cadr c))))
-	(setf (cadr c) (char-fold-to-regexp (cadr c)))))
+		   (stringp (cadr c)))
+	  (setf (cadr c) (char-fold-to-regexp (cadr c))))))
     (seq-filter
      (lambda (r)
        (eql (null invert)
