@@ -1,3 +1,4 @@
+# -*- sentence-end-double-space: t -*-
 #+TEXINFO_CLASS: info
 #+TEXINFO_HEADER: @syncodeindex pg cp
 #+AUTHOR: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -1285,6 +1286,3 @@ used in the body of the method.
 :PROPERTIES:
 :INDEX:    cp
 :END:
-# Local Variables:
-# sentence-end-double-space: t
-# End
