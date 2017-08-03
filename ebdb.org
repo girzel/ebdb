@@ -178,6 +178,7 @@ Currently this option's only use is to serve as a source for
 :END:
 EBDB comes with two record classes, representing individuals
 (~ebdb-record-person~) and organizations (~ebdb-record-organization~).
+Records can have "roles" at organizations [[id:1398bd78-b380-4f36-ab05-44ea5ca8632f][Role Fields]].
 ** Record names
 :PROPERTIES:
 
@@ -196,7 +197,7 @@ class is labeled "alt name".
 :PROPERTIES:
 :ID:       4170bd36-64bf-44b4-87d0-29fbed968851
 :END:
-** Inserting new fields
+** Inserting New Fields
 #+CINDEX: Inserting new fields
 Pressing "i" (~ebdb-insert-field~) with point on a record will prompt
 for a field type, then field values, and add the field to the record.
@@ -208,7 +209,7 @@ current data prompt; the second "C-g" will cancel the creation of the
 field altogether.  For instance, when creating address fields, EBDB
 will allow you to create an arbitrary number of street lines.  When
 you've added enough, either enter a blank string, or hit "C-g".
-** Editing existing fields
+** Editing Existing Fields
 :PROPERTIES:
 
 :END:
@@ -220,7 +221,7 @@ Alternately, press "E" (~ebdb-edit-field-customize~) to edit the
 field's values using the Customize interface.  Some fields have slots
 that can only be edited this way; other fields have slots that cannot
 be edited at all once the field is created.
-** Deleting records and fields
+** Deleting Records and Fields
 :PROPERTIES:
 
 :END:
@@ -228,7 +229,7 @@ be edited at all once the field is created.
 Pressing "C-k" on a field will ask you for confirmation, then delete
 the field.  Pressing "C-k" while point is on or before a record's main
 name will instead prompt to delete the whole record.
-** Field types
+** Field Types
 :PROPERTIES:
 :ID:       cb2190f4-f2e6-4082-9671-24e11e5cc0c6
 
@@ -263,6 +264,41 @@ of labels (for instance, anniversary fields may be labeled "birthday",
 "wedding", etc).
 
 Loading secondary libraries may make more field types available.
+*** Role Fields
+:PROPERTIES:
+:ID:       1398bd78-b380-4f36-ab05-44ea5ca8632f
+:END:
+One type of field worth mentioning in particular is the role field.
+EBDB records come in two types at present: person and organization.
+People have roles at organizations: jobs, volunteer positions, etc.
+People are also likely to have roles at more than one organization.
+
+When adding a role field to a record, you'll be prompted to choose the
+relevant organization role, prompted for a string label denoting
+eg.@@texinfo:@:@@ a job title, and prompted for a mail address that
+belongs only to this role field (ie.@@texinfo:@:@@ an institutional
+email address).  If the organization has a "domain" field type, and
+the person has an existing mail address that matches that domain,
+you'll be prompted to move that address to the role field.
+
+When viewing organization records, the role fields for all related
+person records are also displayed as part of the organization record.
+
+If a person's role at an organization later comes to an end, the role
+field can be deleted, or marked as "defunct", if record keeping is
+desired.  This can only be done using the customize-based editing
+interface (the "E" key on the role field).
+
+In fact, in addition to a mail field, role fields can contain an
+arbitrary number of other fields, representing metadata about the role
+(an employee number, employment start date, etc).  The author has yet
+to come up with a good interface for viewing and manipulating these
+extra fields, however, so the functionality remains hidden.
+Suggestions are very welcome.
+
+Manipulating role fields is generally a little clunky, at present.
+This will be addressed in future.
+
 * MUA Interaction
 One of EBDB's most important features is the ability to create, update
 and display records based on messages received or sent in your mail
@@ -861,7 +897,7 @@ welcome, though less enthusiastically, are requests for new libraries.
 Internationalization libraries do not modify the database in any way,
 and can be safely unloaded.  They simply alter the way EBDB reads,
 parses and displays field values, and can also store extra information
-(eg.@@texinfo:@:@@g for searching purposes) in a record's cache.
+(eg.@@texinfo:@:@@ for searching purposes) in a record's cache.
 Loading this library can (depending on country libraries' behavior)
 increase database load times, though it should not significantly
 affect search or display performance.

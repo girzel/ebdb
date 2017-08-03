@@ -63,12 +63,17 @@ Creating Records
 
 Record Fields
 
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 
 
+
+
+Field Types
+
+* Role Fields::
 
 MUA Interaction
 
@@ -307,6 +312,7 @@ File: ebdb.info,  Node: Record classes,  Next: Record names,  Up: Creating Recor
 
 EBDB comes with two record classes, representing individuals
 (‘ebdb-record-person’) and organizations (‘ebdb-record-organization’).
+Records can have “roles” at organizations *note Role Fields::.
 
 
 File: ebdb.info,  Node: Record names,  Prev: Record classes,  Up: Creating Records
@@ -333,15 +339,15 @@ File: ebdb.info,  Node: Record Fields,  Next: MUA Interaction,  Prev: Creating R
 
 * Menu:
 
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 
 
-File: ebdb.info,  Node: Inserting new fields,  Next: Editing existing fields,  Up: Record Fields
+File: ebdb.info,  Node: Inserting New Fields,  Next: Editing Existing Fields,  Up: Record Fields
 
-4.1 Inserting new fields
+4.1 Inserting New Fields
 ========================
 
 Pressing “i” (‘ebdb-insert-field’) with point on a record will prompt
@@ -356,9 +362,9 @@ allow you to create an arbitrary number of street lines.  When you’ve
 added enough, either enter a blank string, or hit “C-g”.
 
 
-File: ebdb.info,  Node: Editing existing fields,  Next: Deleting records and fields,  Prev: Inserting new fields,  Up: Record Fields
+File: ebdb.info,  Node: Editing Existing Fields,  Next: Deleting Records and Fields,  Prev: Inserting New Fields,  Up: Record Fields
 
-4.2 Editing existing fields
+4.2 Editing Existing Fields
 ===========================
 
 Pressing “e” (‘ebdb-edit-field’) with point on a field will allow you to
@@ -370,9 +376,9 @@ that can only be edited this way; other fields have slots that cannot be
 edited at all once the field is created.
 
 
-File: ebdb.info,  Node: Deleting records and fields,  Next: Field types,  Prev: Editing existing fields,  Up: Record Fields
+File: ebdb.info,  Node: Deleting Records and Fields,  Next: Field Types,  Prev: Editing Existing Fields,  Up: Record Fields
 
-4.3 Deleting records and fields
+4.3 Deleting Records and Fields
 ===============================
 
 Pressing “C-k” on a field will ask you for confirmation, then delete the
@@ -380,9 +386,9 @@ field.  Pressing “C-k” while point is on or before a record’s main name
 will instead prompt to delete the whole record.
 
 
-File: ebdb.info,  Node: Field types,  Prev: Deleting records and fields,  Up: Record Fields
+File: ebdb.info,  Node: Field Types,  Prev: Deleting Records and Fields,  Up: Record Fields
 
-4.4 Field types
+4.4 Field Types
 ===============
 
 :ID: cb2190f4-f2e6-4082-9671-24e11e5cc0c6 Fields can be classed in a few
@@ -415,6 +421,47 @@ of labels (for instance, anniversary fields may be labeled “birthday”,
 “wedding”, etc).
 
    Loading secondary libraries may make more field types available.
+
+* Menu:
+
+* Role Fields::
+
+
+File: ebdb.info,  Node: Role Fields,  Up: Field Types
+
+4.4.1 Role Fields
+-----------------
+
+One type of field worth mentioning in particular is the role field.
+EBDB records come in two types at present: person and organization.
+People have roles at organizations: jobs, volunteer positions, etc.
+People are also likely to have roles at more than one organization.
+
+   When adding a role field to a record, you’ll be prompted to choose
+the relevant organization role, prompted for a string label denoting eg.
+a job title, and prompted for a mail address that belongs only to this
+role field (ie. an institutional email address).  If the organization
+has a “domain” field type, and the person has an existing mail address
+that matches that domain, you’ll be prompted to move that address to the
+role field.
+
+   When viewing organization records, the role fields for all related
+person records are also displayed as part of the organization record.
+
+   If a person’s role at an organization later comes to an end, the role
+field can be deleted, or marked as “defunct”, if record keeping is
+desired.  This can only be done using the customize-based editing
+interface (the “E” key on the role field).
+
+   In fact, in addition to a mail field, role fields can contain an
+arbitrary number of other fields, representing metadata about the role
+(an employee number, employment start date, etc).  The author has yet to
+come up with a good interface for viewing and manipulating these extra
+fields, however, so the functionality remains hidden.  Suggestions are
+very welcome.
+
+   Manipulating role fields is generally a little clunky, at present.
+This will be addressed in future.
 
 
 File: ebdb.info,  Node: MUA Interaction,  Next: EBDB Buffers,  Prev: Record Fields,  Up: Top
@@ -1137,7 +1184,7 @@ welcome, though less enthusiastically, are requests for new libraries.
    Internationalization libraries do not modify the database in any way,
 and can be safely unloaded.  They simply alter the way EBDB reads,
 parses and displays field values, and can also store extra information
-(eg.g for searching purposes) in a record’s cache.  Loading this library
+(eg. for searching purposes) in a record’s cache.  Loading this library
 can (depending on country libraries’ behavior) increase database load
 times, though it should not significantly affect search or display
 performance.
@@ -1648,7 +1695,7 @@ Index
 
 * Creating a database:                   The EBDB Database.   (line  11)
 * Creating records:                      Creating Records.    (line   6)
-* Deleting records and fields:           Deleting records and fields.
+* Deleting records and fields:           Deleting Records and Fields.
                                                               (line   6)
 * Diary integration:                     Diary Integration.   (line   6)
 * ebdb-cite-records:                     Citing Records.      (line  11)
@@ -1731,9 +1778,9 @@ Index
 * ebdb-snarf &optional string start end recs: Snarfing.       (line  15)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  69)
-* Editing fields:                        Editing existing fields.
+* Editing fields:                        Editing Existing Fields.
                                                               (line   6)
-* Inserting new fields:                  Inserting new fields.
+* Inserting new fields:                  Inserting New Fields.
                                                               (line   6)
 * Internationalization:                  Internationalization.
                                                               (line   6)
@@ -1750,52 +1797,53 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2217
-Node: Migration from BBDB2839
-Node: Record Migration3014
-Node: Variables and Options3551
-Node: The EBDB Database4037
-Node: Creating Records7193
-Node: Record classes8240
-Node: Record names8506
-Node: Record Fields9181
-Node: Inserting new fields9425
-Node: Editing existing fields10221
-Node: Deleting records and fields10821
-Node: Field types11217
-Node: MUA Interaction13036
-Node: Loading MUA Code13560
-Node: Display and Updating14273
-Node: Pop-up Buffers15042
-Node: Auto-Updating Records15907
-Node: Noticing and Automatic Rules18292
-Node: Interactive Commands19635
-Node: EBDB and MUA summary buffers22124
-Node: Sender name display22610
-Node: Summary buffer marks23898
-Node: EBDB Buffers25093
-Node: Searching26286
-Node: Changing Search Behavior27996
-Node: The Basics of ebdb-mode29246
-Node: Marking32610
-Node: Exporting/Formatting33038
-Node: Completion33997
-Node: Snarfing35138
-Node: Internationalization37042
-Node: Writing Internationalization Libraries38521
-Node: Diary Integration42809
-Node: Mail Aliases43675
-Node: vCard Support44384
-Node: Org Integration44883
-Node: Citing Records46457
-Node: Hacking EBDB47216
-Node: Field Classes49466
-Node: Init and Delete Methods52356
-Node: The Labeled Field Class53912
-Node: Actions54748
-Node: Custom Field Searching55413
-Node: Formatting in the EBDB Buffer57201
-Node: Index59200
+Node: Getting Started2248
+Node: Migration from BBDB2870
+Node: Record Migration3045
+Node: Variables and Options3582
+Node: The EBDB Database4068
+Node: Creating Records7224
+Node: Record classes8271
+Node: Record names8604
+Node: Record Fields9279
+Node: Inserting New Fields9523
+Node: Editing Existing Fields10319
+Node: Deleting Records and Fields10919
+Node: Field Types11315
+Node: Role Fields13160
+Node: MUA Interaction14851
+Node: Loading MUA Code15375
+Node: Display and Updating16088
+Node: Pop-up Buffers16857
+Node: Auto-Updating Records17722
+Node: Noticing and Automatic Rules20107
+Node: Interactive Commands21450
+Node: EBDB and MUA summary buffers23939
+Node: Sender name display24425
+Node: Summary buffer marks25713
+Node: EBDB Buffers26908
+Node: Searching28101
+Node: Changing Search Behavior29811
+Node: The Basics of ebdb-mode31061
+Node: Marking34425
+Node: Exporting/Formatting34853
+Node: Completion35812
+Node: Snarfing36953
+Node: Internationalization38857
+Node: Writing Internationalization Libraries40335
+Node: Diary Integration44623
+Node: Mail Aliases45489
+Node: vCard Support46198
+Node: Org Integration46697
+Node: Citing Records48271
+Node: Hacking EBDB49030
+Node: Field Classes51280
+Node: Init and Delete Methods54170
+Node: The Labeled Field Class55726
+Node: Actions56562
+Node: Custom Field Searching57227
+Node: Formatting in the EBDB Buffer59015
+Node: Index61014
 
 End Tag Table
 

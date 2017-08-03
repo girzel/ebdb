@@ -84,12 +84,17 @@ Creating Records
 
 Record Fields
 
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 
 
+
+
+Field Types
+
+* Role Fields::
 
 MUA Interaction
 
@@ -336,6 +341,7 @@ Currently this option's only use is to serve as a source for
 
 EBDB comes with two record classes, representing individuals
 (@code{ebdb-record-person}) and organizations (@code{ebdb-record-organization}).
+Records can have ``roles'' at organizations @ref{Role Fields}.
 
 @node Record names
 @section Record names
@@ -355,14 +361,14 @@ class is labeled ``alt name''.
 @chapter Record Fields
 
 @menu
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 @end menu
 
-@node Inserting new fields
-@section Inserting new fields
+@node Inserting New Fields
+@section Inserting New Fields
 
 @cindex Inserting new fields
 Pressing ``i'' (@code{ebdb-insert-field}) with point on a record will prompt
@@ -376,8 +382,8 @@ field altogether.  For instance, when creating address fields, EBDB
 will allow you to create an arbitrary number of street lines.  When
 you've added enough, either enter a blank string, or hit ``C-g''.
 
-@node Editing existing fields
-@section Editing existing fields
+@node Editing Existing Fields
+@section Editing Existing Fields
 
 @cindex Editing fields
 Pressing ``e'' (@code{ebdb-edit-field}) with point on a field will allow you
@@ -388,16 +394,16 @@ field's values using the Customize interface.  Some fields have slots
 that can only be edited this way; other fields have slots that cannot
 be edited at all once the field is created.
 
-@node Deleting records and fields
-@section Deleting records and fields
+@node Deleting Records and Fields
+@section Deleting Records and Fields
 
 @cindex Deleting records and fields
 Pressing ``C-k'' on a field will ask you for confirmation, then delete
 the field.  Pressing ``C-k'' while point is on or before a record's main
 name will instead prompt to delete the whole record.
 
-@node Field types
-@section Field types
+@node Field Types
+@section Field Types
 
 :ID:       cb2190f4-f2e6-4082-9671-24e11e5cc0c6
 Fields can be classed in a few different categories.  Some are
@@ -430,6 +436,44 @@ of labels (for instance, anniversary fields may be labeled ``birthday'',
 ``wedding'', etc).
 
 Loading secondary libraries may make more field types available.
+
+@menu
+* Role Fields::
+@end menu
+
+@node Role Fields
+@subsection Role Fields
+
+One type of field worth mentioning in particular is the role field.
+EBDB records come in two types at present: person and organization.
+People have roles at organizations: jobs, volunteer positions, etc.
+People are also likely to have roles at more than one organization.
+
+When adding a role field to a record, you'll be prompted to choose the
+relevant organization role, prompted for a string label denoting
+eg.@: a job title, and prompted for a mail address that
+belongs only to this role field (ie.@: an institutional
+email address).  If the organization has a ``domain'' field type, and
+the person has an existing mail address that matches that domain,
+you'll be prompted to move that address to the role field.
+
+When viewing organization records, the role fields for all related
+person records are also displayed as part of the organization record.
+
+If a person's role at an organization later comes to an end, the role
+field can be deleted, or marked as ``defunct'', if record keeping is
+desired.  This can only be done using the customize-based editing
+interface (the ``E'' key on the role field).
+
+In fact, in addition to a mail field, role fields can contain an
+arbitrary number of other fields, representing metadata about the role
+(an employee number, employment start date, etc).  The author has yet
+to come up with a good interface for viewing and manipulating these
+extra fields, however, so the functionality remains hidden.
+Suggestions are very welcome.
+
+Manipulating role fields is generally a little clunky, at present.
+This will be addressed in future.
 
 @node MUA Interaction
 @chapter MUA Interaction
@@ -1248,7 +1292,7 @@ welcome, though less enthusiastically, are requests for new libraries.
 Internationalization libraries do not modify the database in any way,
 and can be safely unloaded.  They simply alter the way EBDB reads,
 parses and displays field values, and can also store extra information
-(eg.@:g for searching purposes) in a record's cache.
+(eg.@: for searching purposes) in a record's cache.
 Loading this library can (depending on country libraries' behavior)
 increase database load times, though it should not significantly
 affect search or display performance.
