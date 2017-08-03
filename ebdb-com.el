@@ -1031,68 +1031,8 @@ buffer."
 ;;;###autoload
 (define-derived-mode ebdb-mode special-mode "EBDB"
   "Major mode for viewing and editing the Insidious Big Brother Database.
-Letters no longer insert themselves.  Numbers are prefix arguments.
-You can move around using the usual cursor motion commands.
-\\<ebdb-mode-map>
-\\[ebdb-insert-field]\t Insert a new field into the current record.  \
-Note that this\n\t will let you add new fields of your own as well.
-\\[ebdb-edit-field]\t Edit the field on the current line.
-\\[ebdb-edit-field-customize]\t Edit field using the customize interface.
-\\[ebdb-delete-field-or-record]\t Delete the field on the \
-current line.  If the current line is the\n\t first line of a record, then \
-delete the entire record.
-\\[ebdb-dial]\t Dial the current phone field.
-\\[ebdb-next-record], \\[ebdb-prev-record]\t Move to the next or the previous \
-displayed record, respectively.
-\\[ebdb-next-field], \\[ebdb-prev-field]\t Move to the next or the previous \
-record field.
-\\[ebdb-create-record]\t Create a new record.
-\\[ebdb-create-record-extended]\t Create a new record with extended options.
-\\[ebdb-toggle-records-format]\t Toggle whether the current record is displayed in a \
-one-line\n\t listing, or a full multi-line listing.
-\\[ebdb-copy-fields-as-kill]\t Copy field(s) under point as a kill.
-\\[ebdb-copy-mail-as-kill]\t Copy name+mail of record as a kill.
-\\[ebdb-copy-records-as-kill]\t Copy record(s) as a kill.
-\\[ebdb-fmt-to-tmp-buffer]\t Export records to a different format.
-\\[ebdb-omit-records]\t Remove the current record from the display without \
-deleting it from\n\t the database.
-\\[ebdb-toggle-record-mark]\t Mark or unmark record under point.
-\\[ebdb-toggle-all-record-marks]\t Toggle all record marks
-\\[ebdb-unmark-all-records]\t Unmark all records.
-\\[ebdb-clone-buffer]\t Clone the current EBDB buffer.
-\\[ebdb-rename-buffer]\t Rename the current EBDB buffer.
-\\[ebdb]\t Search for records in the database (on all fields).
-\\[ebdb-search-mail]\t Search for records by mail address.
-\\[ebdb-search-organization]\t Search for records by organization.
-\\[ebdb-search-user-fields]\t Search for records by user fields.
-\\[ebdb-search-name]\t Search for records by name.
-\\[ebdb-search-changed]\t Display records that have changed since the database \
-was saved.
-\\[ebdb-mail]\t Compose mail to the person represented by the \
-current record.
-\\[ebdb-save]\t Save the EBDB file to disk.
-\\[ebdb-info]\t Read the Info documentation for EBDB.
-\\[ebdb-help]\t Display a one line command summary in the echo area.
 
-For address completion using the names and mail addresses in the database:
-\t in Sendmail mode, type \\<mail-mode-map>\\[ebdb-complete-mail].
-\t in Message mode, type \\<message-mode-map>\\[ebdb-complete-mail].
-
-Important variables:
-\t `ebdb-ignore-redundant-mails'
-\t `ebdb-case-fold-search'
-\t `ebdb-completion-list'
-\t `ebdb-default-domain'
-\t `ebdb-sources'
-\t `ebdb-mua-auto-update-p'
-\t `ebdb-add-name'
-\t `ebdb-add-aka'
-\t `ebdb-add-mails'
-\t `ebdb-mua-pop-up'
-\t `ebdb-record-self'
-\t `ebdb-user-mail-address-re'
-
-There are numerous hooks.  M-x apropos ^ebdb.*hook RET
+Derives from `special-mode'; the usual `special-mode' bindings apply.
 
 \\{ebdb-mode-map}"
   (setq truncate-lines t
