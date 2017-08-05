@@ -1717,6 +1717,16 @@ Eventually this method will go away."
 
 ;; URL field
 
+(defcustom ebdb-url-valid-schemes '("http:" "https:" "irc:")
+  "A list of strings matching schemes acceptable to
+  `ebdb-field-url' instances.
+
+Strings should not be regular expressions.  They should include
+the colon character."
+
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
 (defvar ebdb-url-label-list '("homepage")
   "List of known URL labels.")
 
@@ -1738,6 +1748,18 @@ Eventually this method will go away."
 
 (cl-defmethod ebdb-string ((field ebdb-field-url))
   (slot-value field 'url))
+
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-url))
+			  (str string)
+			  &optional slots)
+  "Parse a URL.
+
+See `ebdb-url-valid-schemes' for a list of acceptable schemes."
+  (when (null (plist-get slots :url))
+    (if (string-match-p (regexp-opt ebdb-url-valid-schemes) str)
+	(setq slots (plist-put slots :url (string-trim str)))
+      (signal 'ebdb-unparseable (list "invalid URL scheme"))))
+  (cl-call-next-method class str slots))
 
 ;;; Fields that change EBDB's behavior.
 
