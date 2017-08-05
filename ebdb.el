@@ -2648,12 +2648,22 @@ priority."
 			  (right ebdb-record-organization)
 			  &optional auto)
   "Merge organization RIGHT into LEFT, and return LEFT."
-  (with-slots (name domain) right
-    (when (or auto (yes-or-no-p (format "Use name %s? " (ebdb-string name))))
-      (ebdb-record-change-name left name))
-    (when (and domain
-	       (or auto (yes-or-no-p (format "Use domain %s? " domain))))
-      (setf (slot-value left 'domain) domain)))
+  (let ((roles (append (gethash (ebdb-record-uuid left) ebdb-org-hashtable)
+		       (gethash (ebdb-record-uuid right) ebdb-org-hashtable)))
+	(l-uuid (ebdb-record-uuid left)))
+    (with-slots (name domain) right
+      (when (or auto (yes-or-no-p (format "Use name %s? " (ebdb-string name))))
+	(ebdb-record-change-name left name))
+      (when (and domain
+		 (or auto (yes-or-no-p (format "Use domain %s? " domain))))
+	(setf (slot-value left 'domain) domain)))
+    (when (and roles (or auto (yes-or-no-p
+			       (format "Move all person roles from %s to %s"
+				       (ebdb-string right)
+				       (ebdb-string left)))))
+      (dolist (r roles)
+	(setf (slot-value r 'org-uuid) l-uuid))
+      (puthash l-uuid roles ebdb-org-hashtable)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-record-field-slot-query ((class (subclass ebdb-record-organization))
