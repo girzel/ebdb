@@ -80,13 +80,6 @@ Used by `ebdb-mouse-menu'."
   :group 'ebdb-record-display
   :type 'sexp)
 
-;; (defcustom ebdb-mua-auto-snarf-signature nil
-;;   "If t, EBDB will attempt to snarf the mail message signature
-;;   and add additional field information (ie phone or address) to
-;;   the sending record.
-
-;; Valid values are nil, 'query or t, or 'auto.")
-
 (defcustom ebdb-display-hook nil
   "Hook run after the *EBDB* is filled in."
   :group 'ebdb-record-display

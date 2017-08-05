@@ -472,6 +472,16 @@ quoted replies."
     (article-goto-body)
     (buffer-substring-no-properties (point) (point-max))))
 
+(cl-defmethod ebdb-mua-article-signature (&context (major-mode gnus-summary-mode))
+  (gnus-with-article-buffer
+    (gnus-article-search-signature)
+    (forward-line)
+    (buffer-substring-no-properties
+     (point)
+     ;; Assume a blank line concludes a signature.
+     (or (re-search-forward "\n\n" nil t)
+	 (point-max)))))
+
 (defun ebdb-insinuate-gnus ()
   "Hook EBDB into Gnus."
   ;; `ebdb-mua-display-sender' fails in *Article* buffers, where

@@ -953,6 +953,14 @@ Dispatches on the value of major-mode."
 This method should NOT return the message headers, only the
 article text.  This is typically used for snarfing.")
 
+(cl-defgeneric ebdb-mua-article-signature (major-mode)
+  "Return the text of the signature of the current article.")
+
+;; At the moment this is only implemented for Gnus.
+(cl-defmethod ebdb-mua-article-signature ()
+  "Default version returns nothing."
+  "")
+
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)
   "Update all records associated with the message under point.
@@ -1073,16 +1081,31 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 
 ;;;###autoload
 (defun ebdb-mua-snarf-article ()
-  "Snarf the body of the current article."
+  "Snarf the body of the current article.
+
+This snarfs all available record information in the article,
+first attempting to associate it with the senders and recipients
+of the article, afterwards prompting for the creation of new
+records.
+
+In addition, if a signature is present, snarf it and attempt at
+associate field information in it with the article sender."
   (interactive)
   (condition-case nil
       ;; If the MUA has already popped up a buffer, assume the records
       ;; displayed there are relevant to the article snarf.
       (let* ((buf (get-buffer (ebdb-make-buffer-name)))
-	     (recs (when (buffer-live-p buf)
-		     (mapcar #'car (buffer-local-value 'ebdb-records buf)))))
+	     (all-recs (ebdb-update-records
+			(ebdb-get-address-components)
+			'existing))
+	     (sender (ebdb-update-records
+		      (ebdb-get-address-components 'sender)
+		      'existing))
+	     (signature (ebdb-mua-get-signature)))
 	(ebdb-mua-prepare-article)
-	(ebdb-snarf (ebdb-mua-article-body) nil nil recs))
+	(unless (or (null (stringp signature)) (string-blank-p signature))
+	  (ebdb-snarf signature nil nil sender))
+	(ebdb-snarf (ebdb-mua-article-body) nil nil all-recs))
     (cl-no-applicable-method
      (message "Article snarfing doesn't work in this context."))))
 
