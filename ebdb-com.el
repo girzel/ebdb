@@ -1416,16 +1416,6 @@ DATE must be in yyyy-mm-dd format."
    (ebdb-compare-records (ebdb-record-field record 'timestamp)
                          'creation-date 'equal) fmt))
 
-;;; Parsing phone numbers
-;;; XXX this needs expansion to handle international prefixes properly
-;;; i.e. +353-number without discarding the +353 part. Problem being
-;;; that this will necessitate yet another change in the database
-;;; format for people who are using north american numbers.
-
-(defsubst ebdb-subint (string num)
-  "Used for parsing phone numbers."
-  (string-to-number (match-string num string)))
-
 (defmacro ebdb-with-record-edits (spec &rest body)
   "Run BODY on all records listed in the cdr of SPEC.
 
