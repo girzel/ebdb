@@ -746,6 +746,11 @@ process."
     (ebdb-add-to-list label-var (slot-value field 'object-name))
     (cl-call-next-method)))
 
+(cl-defmethod eieio-object-name-string ((field ebdb-field-labeled))
+  "Return a string which is FIELD's name."
+  (or (slot-value field 'object-name)
+      (ebdb-field-readable-name (class-of field))))
+
 ;;; The obfuscated field type.  This is a little goofy, but might come
 ;;; in handy.
 
