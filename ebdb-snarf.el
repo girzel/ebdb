@@ -46,7 +46,10 @@
 (require 'ebdb-com)
 
 (defcustom ebdb-snarf-routines
-  '((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)"))
+  `((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)")
+    (ebdb-field-url ,(concat "\\("
+			     (regexp-opt ebdb-url-valid-schemes)
+			     "//[^ \n\t]+\\)")))
 
   "An alist of EBDB field classes and related regexps.
 

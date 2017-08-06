@@ -841,8 +841,8 @@ information related to EBDB records from it.  For example, calling
 <j.doe@email.com>" will find an existing contact or prompt to create a
 new one, and then display that contact.
 
-Snarfing is a work in progress: at present, only mail addresses (and
-nearby names) are acted upon, and it often doesn't work correctly.
+Snarfing is a work in progress: at present, only mail addresses, URLs
+and nearby names are acted upon, and it often doesn't work correctly.
 
 - Command: ebdb-snarf &optional string start end recs
 
