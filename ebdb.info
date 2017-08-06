@@ -1122,11 +1122,11 @@ File: ebdb.info,  Node: Snarfing,  Next: Internationalization,  Prev: Completion
 “Snarfing” refers to scanning free-form text and extracting information
 related to EBDB records from it.  For example, calling ‘ebdb-snarf’
 while the region contains the text “John Doe <j.doe@email.com>” will
-find an existing matching contact, or prompt to create a new contact,
-and then display it.
+find an existing contact or prompt to create a new one, and then display
+that contact.
 
-   Snarfing is a work in progress: at present, only mail addresses (and
-nearby names) are acted upon, and it often doesn’t work correctly.
+   Snarfing is a work in progress: at present, only mail addresses, URLs
+and nearby names are acted upon, and it often doesn’t work correctly.
 
  -- Command: ebdb-snarf &optional string start end recs
 
@@ -1158,7 +1158,8 @@ article headers.
  -- Command: ebdb-mua-snarf-article
 
      Snarf the body of the current article.  This will also snarf the
-     headers of forwarded emails.
+     headers of forwarded emails, and the signature.  With a prefix
+     argument, only snarf the signature.
 
 
 File: ebdb.info,  Node: Internationalization,  Next: Diary Integration,  Prev: Snarfing,  Up: Top
@@ -1829,21 +1830,21 @@ Node: Marking34425
 Node: Exporting/Formatting34853
 Node: Completion35812
 Node: Snarfing36953
-Node: Internationalization38857
-Node: Writing Internationalization Libraries40335
-Node: Diary Integration44623
-Node: Mail Aliases45489
-Node: vCard Support46198
-Node: Org Integration46697
-Node: Citing Records48271
-Node: Hacking EBDB49030
-Node: Field Classes51280
-Node: Init and Delete Methods54170
-Node: The Labeled Field Class55726
-Node: Actions56562
-Node: Custom Field Searching57227
-Node: Formatting in the EBDB Buffer59015
-Node: Index61014
+Node: Internationalization38932
+Node: Writing Internationalization Libraries40410
+Node: Diary Integration44698
+Node: Mail Aliases45564
+Node: vCard Support46273
+Node: Org Integration46772
+Node: Citing Records48346
+Node: Hacking EBDB49105
+Node: Field Classes51355
+Node: Init and Delete Methods54245
+Node: The Labeled Field Class55801
+Node: Actions56637
+Node: Custom Field Searching57302
+Node: Formatting in the EBDB Buffer59090
+Node: Index61089
 
 End Tag Table
 

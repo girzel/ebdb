@@ -1080,7 +1080,7 @@ where it was in the MUA, rather than quitting the EBDB buffer."
       (ebdb-redisplay-records records 'reformat t))))
 
 ;;;###autoload
-(defun ebdb-mua-snarf-article ()
+(defun ebdb-mua-snarf-article (&optional arg)
   "Snarf the body of the current article.
 
 This snarfs all available record information in the article,
@@ -1089,8 +1089,10 @@ of the article, afterwards prompting for the creation of new
 records.
 
 In addition, if a signature is present, snarf it and attempt at
-associate field information in it with the article sender."
-  (interactive)
+associate field information in it with the article sender.
+
+With a prefix arg, only snarf the signature."
+  (interactive "P")
   (condition-case nil
       ;; If the MUA has already popped up a buffer, assume the records
       ;; displayed there are relevant to the article snarf.
@@ -1105,7 +1107,8 @@ associate field information in it with the article sender."
 	(ebdb-mua-prepare-article)
 	(unless (or (null (stringp signature)) (string-blank-p signature))
 	  (ebdb-snarf signature nil nil sender))
-	(ebdb-snarf (ebdb-mua-article-body) nil nil all-recs))
+	(unless arg
+	  (ebdb-snarf (ebdb-mua-article-body) nil nil all-recs)))
     (cl-no-applicable-method
      (message "Article snarfing doesn't work in this context."))))
 

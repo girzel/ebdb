@@ -874,7 +874,8 @@ article headers.
 - Command: ebdb-mua-snarf-article
 
   Snarf the body of the current article.  This will also snarf the
-  headers of forwarded emails.
+  headers of forwarded emails, and the signature.  With a prefix
+  argument, only snarf the signature.
 * Internationalization
 #+CINDEX: Internationalization
 EBDB comes with an internationalization framework that can provide
