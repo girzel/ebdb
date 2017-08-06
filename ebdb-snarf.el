@@ -37,6 +37,10 @@
 ;; to construct field instances.  `ebdb-snarf-collect' uses the
 ;; elements of this list to search for relevant strings.
 
+;; Country-specific internationalization libraries are highly
+;; encouraged to add values to `ebdb-snarf-routines', locating field
+;; information specific to that country/region/language.
+
 ;;; Code:
 
 (require 'ebdb-com)
@@ -48,19 +52,25 @@
 
 Each alist element is an EBDB field class symbol, followed by a
 list of regular expressions that can be used to produce instances
-of that class when passed to `ebdb-parse'."
+of that class when passed to `ebdb-parse'.  Each regular
+expression should contain at least one parenthetical group: the
+`ebdb-parse' method of the class will receive the results of
+\(match-string 1\)."
 
   :group 'ebdb-snarf
   :type 'list)
 
 (defcustom ebdb-snarf-name-re
-  (list "\\(?:[[:upper:]][[:lower:]]+[,[:space:]]*\\)\\{1,\\}")
+  (list "\\(?:[[:upper:]][[:lower:]]+[,.[:space:]]*\\)\\{2,\\}")
 
   "A list of regular expressions matching names.
 
 This is a separate option from `ebdb-snarf-routines' because
 snarfing doesn't search for names separately, only in conjunction
-with other field types."
+with other field types.
+
+Regular expressions in this list should not include parenthetical
+groups."
 
   :group 'ebdb-snarf
   :type 'list)
@@ -93,6 +103,7 @@ be relevant to snarfed field data."
 	records)
     (with-temp-buffer
       (insert (string-trim str))
+      (goto-char (point-min))
       (setq records (ebdb-snarf-query
 		     (ebdb-snarf-collapse
 		      (ebdb-snarf-collect recs)))))
@@ -105,126 +116,116 @@ be relevant to snarfed field data."
 This function will find everything that looks like field
 information, and do its best to organize it into likely groups.
 If RECORDS is given, it should be a list of records that we think
-have something to do with the text in the buffer."
+have something to do with the text in the buffer.
+
+This function returns a list of vectors.  Each vector contains
+three elements: a record, a list of name-class instances, and a
+list of other field instances.  Any element can be nil."
   (let ((case-fold-search nil)
-	bundles)
+	;; BUNDLES is the list of vectors.  If RECORDS is given, then
+	;; we have something to start with.
+	(bundles (when records
+		   (mapcar (lambda (r)
+			     (vector r nil nil))
+			   records)))
+	;; We are looking for text like this:
 
-    ;; The structure we'll return is a list of vectors, containing
-    ;; records and fields we believe are associated.  Each vector has
-    ;; three elements: a record, a list of name instances, and a list
-    ;; of all other fields.  If RECORDS is given, then we have
-    ;; something to start with.
+	;; John Bob <john@bob.com>
 
-    (when records
-      (setq bundles (mapcar (lambda (r)
-			      (vector r nil nil))
-			    records)))
+	;; Try calling John Bob: (555) 555-5555
 
-    ;; We don't explicitly search for names, because how would you
-    ;; know?  Instead, we look for things that appear to be names,
-    ;; that come right before some other field information.  Eg:
+	;; John Bob
+	;; John@bob.com
+	;; (555) 555-5555
+	;; 1111 Upsidedown Drive
+	;; Nowhere, Massachusetts, 55555
 
-    ;; John Bob <john@bob.com>
+	;; (Also see the snarfing tests in ebdb-test.el.)
 
-    ;; John Bob (555) 555-5555
+	;; The tactic is: Make a big regexp that finds any probable
+	;; field data.  Once there's a hit, search *backwards* for a
+	;; name, and *forwards* for more fields.  All contiguous field
+	;; data is grouped into the same bundle.  If the first field
+	;; found is at bol, assume "block" style data, as in the third
+	;; example above.  If it is not at bol, assume "inline" style
+	;; data, as in the second example.
 
-    ;; John Bob
-    ;; 1111 Upsidedown Drive
-    ;; Nowhere, Massachusetts, 55555
+	;; Snarfing mail message data is very common, it would be nice
+	;; to somehow disregard left-hand quotation characters and
+	;; indendation.  A problem for another day.
+	(big-re
+	 (concat
+	  "\\(?:"
+	  (mapconcat
+	   (lambda (r)
+	     (if (stringp (cadr r))
+		 (cadr r)
+	       (mapconcat #'identity (cadr r) "\\|")))
+	   ebdb-snarf-routines
+	   "\\|")
+	  "\\)"))
+	bundle block name)
 
-    ;; For each individual regular expression, we scan the whole
-    ;; buffer and create single field-class instances from any
-    ;; matches, and possibly an accompanying name-class instance, and
-    ;; decide what to do about both of them.
-    (dolist (class ebdb-snarf-routines)
-      (dolist (re (cdr class))
-	(goto-char (point-min))
-	(while (re-search-forward re nil t)
-	  (condition-case nil
-	      (let* ((found (ebdb-parse
-			     (car class)
-			     (match-string-no-properties 1)))
-		     (name (save-excursion
-			     (goto-char (progn (when (= (point-at-bol)
-							(match-beginning 0))
-						 (forward-line -1))
-					       (line-beginning-position)))
-			     (when (re-search-forward
-				    (concat
-				     ;; When snarfing messages, we're
-				     ;; likely to see email headers in
-				     ;; the message body, for instance
-				     ;; in quoted replies.
-				     "\\(?:From: \\|To: \\|Cc: \\)?\\("
-				     (mapconcat #'identity
-						ebdb-snarf-name-re "\\|")
-				     "\\)")
-				    (match-beginning 0) t)
-			       ;; If something goes wrong with the
-			       ;; name, don't worry about it.
-			       (ignore-errors
-				 (ebdb-parse
-				  'ebdb-field-name
-				  (string-trim (match-string-no-properties 1)))))))
-		     ;; Make a regular expression that stands a chance
-		     ;; of matching an existing record or record
-		     ;; fields.  This is likely *too* permissive.
-		     (generic-re
-		      (regexp-opt
-		       (append (split-string
-				(downcase
-				 (car (split-string
-				       ;; Sneaky special-casing of email addresses.
-				       (ebdb-string found)
-				       "@")))
-				"[-_.)(,']" t)
-			       (when name
-				 (split-string
-				  (downcase (ebdb-string name))
-				  "[, ]" t))))))
-		;; See if any of this information fits what we've got in
-		;; BUNDLES.
-		(unless (catch 'match
-			  (dolist (b bundles)
-			    ;; Can't directly use `pcase-dolist'
-			    ;; because the bound variables are not
-			    ;; generalized variables: you can't assign
-			    ;; to them.  It would be nice to have a
-			    ;; `pcase-letf'!
-			    (pcase-let ((`[,record ,names ,fields] b))
-			      (when (or (and record
-					     (ebdb-search (list record)
-							  `((ebdb-field-name ,generic-re)
-							    ;; This catches too much.
-					;(,(car class) ,generic-re)
-							    )))
-					(and (or fields names)
-					     (seq-some
-					      (lambda (elt)
-						(ebdb-field-search elt generic-re))
-					      (append fields names))))
-				;; It seems to match, check if the field
-				;; or name are already in the bundle.
-				(unless (and fields
-					     (assoc-string
-					      (ebdb-string found)
-					      (mapcar #'ebdb-string fields)))
-				  (push found (aref b 2)))
-				(unless (or (null name)
-					    (and names
-						 (null (assoc-string
-							(ebdb-string name)
-							(mapcar #'ebdb-string names)))))
-				  (push name (aref b 1)))
-				(throw 'match t)))))
-		  ;; If it doesn't, add a new grouping to BUNDLES.
-		  (push (vector nil (when name (list name)) (list found))
-			bundles)))
-	    ;; If a regular expression matches but the result is
-	    ;; unparseable, that means the regexp is bad and should be
-	    ;; changed.  Later, report these errors if `ebdb-debug' is
-	    ;; true.
-	    (ebdb-unparseable nil)))))
+    (while (re-search-forward big-re nil t)
+      (goto-char (match-beginning 0))
+      (setq block (= (point) (point-at-bol)))
+      (when (setq name
+		  (save-excursion
+		    (when (re-search-backward
+			   (concat
+			    "\\("
+			    (mapconcat #'identity
+				       ebdb-snarf-name-re "\\|")
+			    "\\)")
+			   (save-excursion
+			     (if block
+				 (progn (forward-line -1)
+					(line-beginning-position))
+			       (point-at-bol)))
+			   t)
+		      ;; If something goes wrong with the
+		      ;; name, don't worry about it.
+		      (ignore-errors
+			(ebdb-parse
+			 'ebdb-field-name
+			 (string-trim (match-string-no-properties 0)))))))
+	;; If NAME matches one of the records that are already in
+	;; BUNDLES, then assume we should be working with that record.
+	(dolist (b bundles)
+	  (when (and (aref b 0)
+		     (string-match-p (ebdb-string name)
+				     (ebdb-string (aref b 0))))
+	    (setq bundle b))))
+
+      (unless bundle
+	(setq bundle (make-vector 3 nil))
+	(when name
+	  (push name (aref bundle 1))))
+
+      (dolist (class ebdb-snarf-routines)
+	(dolist (re (cdr class))
+	  (while (re-search-forward re (if block
+					   (save-excursion
+					     (forward-line)
+					     (line-end-position))
+					 (point-at-eol))
+				    t)
+	    (condition-case nil
+		(push (ebdb-parse
+		       (car class)
+		       (match-string-no-properties 1))
+		      (aref bundle 2))
+
+	      ;; If a regular expression matches but the result is
+	      ;; unparseable, that means the regexp is bad and should be
+	      ;; changed.  Later, report these errors if `ebdb-debug' is
+	      ;; true.
+	      (ebdb-unparseable nil)))))
+      (when bundle
+	(push bundle bundles)
+	(setq bundle nil))
+      (when block
+	(beginning-of-line 2)))
     bundles))
 
 (defun ebdb-snarf-collapse (input)
@@ -294,7 +295,7 @@ automatically."
 	(when (yes-or-no-p
 	       (format "Create new record%s? "
 		       (if (or fields names)
-			   (format " for %s"
+			   (format " for fields %s"
 				   (mapconcat #'ebdb-string
 					      (append fields names)
 					      "/"))
@@ -356,7 +357,7 @@ automatically."
       (when record
 	(push record records)))
     ;; Handle fields in LEFTOVERS.
-    (dolist (f leftovers)
+    (dolist (f (delete-dups leftovers))
       (when-let ((record
 		  (cond ((yes-or-no-p
 			  (format "Add %s to existing record? "

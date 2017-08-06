@@ -838,8 +838,8 @@ currently-loaded completion frameworks.
 "Snarfing" refers to scanning free-form text and extracting
 information related to EBDB records from it.  For example, calling
 ~ebdb-snarf~ while the region contains the text "John Doe
-<j.doe@email.com>" will find an existing matching contact, or prompt
-to create a new contact, and then display it.
+<j.doe@email.com>" will find an existing contact or prompt to create a
+new one, and then display that contact.
 
 Snarfing is a work in progress: at present, only mail addresses (and
 nearby names) are acted upon, and it often doesn't work correctly.

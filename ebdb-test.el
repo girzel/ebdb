@@ -278,12 +278,13 @@
 	 '("Eric Abrahamsen <eric@ericabrahamsen.net>"
 	   "Eric Abrahamsen eric@ericabrahamsen.net"
 	   "Eric Abrahamsen (eric@ericabrahamsen.net)"
-	   "Eric Abrahamsen \n <eric@ericabrahamsen.net>"
+	   "Eric Abrahamsen \n<eric@ericabrahamsen.net>"
 	   "Eric Abrahamsen can't hold his drink\n<eric@ericabrahamsen.net> is where you can write and tell him so."))
 	result)
     (dolist (text test-texts)
       (with-temp-buffer
 	(insert text)
+	(goto-char (point-min))
 	(setq result (car (ebdb-snarf-collect)))
 	(pcase result
 	  (`[nil (,name) (,mail)]
