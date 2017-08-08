@@ -173,7 +173,10 @@ for their symbol representations.")
 		     (string-to-number (match-string 1 str))))))
     (or (and cc
 	     (condition-case nil
-		 (ebdb-parse-i18n class str cc slots)
+		 (ebdb-parse-i18n
+		  class
+		  (replace-match "" nil nil str 0)
+		  cc (plist-put slots :country-code cc))
 	       (cl-no-method nil)))
 	(cl-call-next-method))))
 
