@@ -1103,7 +1103,7 @@ With a prefix arg, only snarf the signature."
 	     (sender (ebdb-update-records
 		      (ebdb-get-address-components 'sender)
 		      'existing))
-	     (signature (ebdb-mua-get-signature)))
+	     (signature (ebdb-mua-article-signature)))
 	(ebdb-mua-prepare-article)
 	(unless (or (null (stringp signature)) (string-blank-p signature))
 	  (ebdb-snarf signature nil nil sender))
