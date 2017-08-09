@@ -902,99 +902,6 @@ parses and displays field values, and can also store extra information
 Loading this library can (depending on country libraries' behavior)
 increase database load times, though it should not significantly
 affect search or display performance.
-** Writing Internationalization Libraries
-Writing new internationalization libraries involves using generic
-functions. [[info:elisp#Generic%20Functions][Generic Functions]].  It will also require a bit of
-familiarity with EBDB's internals.
-
-Internationalization affects three different field types: addresses,
-phone numbers, and names.  It works by providing "i18n" versions of
-common methods for those three fields:
-
-| Regular method    | Internationalized method |
-|-------------------+--------------------------|
-| ebdb-read         | ebdb-read-i18n           |
-| ebdb-parse        | ebdb-parse-i18n          |
-| ebdb-string       | ebdb-string-i18n         |
-| ebdb-init-field   | ebdb-init-field-i18n     |
-| ebdb-delete-field | ebdb-delete-field-i18n   |
-
-When the "ebdb-i18n" library is loaded and the left-column ("vanilla")
-versions of field methods are called, EBDB first checks to see if a
-valid "internationalized" (right-column) method exists.  If it does,
-that method is used instead of the vanilla one.
-
-What is a "valid internationalized method"?  That depends on the field
-type.  Each field type uses a different key or "spec" to determine the
-nationality or locality of the field instance.
-
-- Address fields use a three-character symbol derived from the [[https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3][ISO
-  316601 alpha 3]] country codes.  These codes can be found in the
-  variable ~ebdb-i18n-countries~.
-- Phone fields use the phone number's numerical country code as a
-  spec.  These codes can be found in the variable
-  ~ebdb-i18n-phone-codes~.
-- Name fields are keyed to the symbol representing the script used to
-  write them. Specifically, the first character CHAR of the name is
-  tested in this way: =(aref char-script-table CHAR)=, which returns a
-  symbol.
-
-How are these "specs" used?  Each internationalized version of the
-above methods accepts the spec as an additional argument, which it is
-able to specialize on.  Every country-specific method should check the
-spec to see if it is relevant to that library. If so, it handles the
-necessary behavior; if not, it passes by using ~cl-call-next-method~.
-See the function signatures of each internationalized method to find
-how to handle the extra argument, called SPEC.
-
-Here's a concrete example:
-
-Say we want to make sure all French phone numbers are represented by a
-string that looks like "+33 05 12 34 56 79".  This is not how they are
-stored in the database, but this is how they should be represented to
-the user.  We need to override the ~ebdb-string-i18n~ method for the
-phone field class.  This method takes two arguments -- the field
-instance, and the country-code spec -- and needs to specialize on both
-arguments.  The method signature will look like this:
-
-#+BEGIN_SRC emacs-lisp
-  (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-                                  (_cc (eql 33))))
-#+END_SRC
-
-See the manual on generic functions for details; suffice it to say
-that this method will only run when the first argument is an instance
-of the ~ebdb-field-phone~ class (or a subclass), and the second
-argument is the number 33.
-
-Now we know that this method will only run for French phone numbers,
-so we can format the number correctly:
-
-#+BEGIN_SRC emacs-lisp
-  (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-                                  (_cc (eql 33)))
-    (with-slots (area-code number extension) phone
-      (concat
-       "+33 "
-       (when area-code
-         (format "%02d" area-code))
-       (format "%s%s %s%s %s%s %s%s"
-               (split-string number "" t))
-       (when extension
-         (format "X%d" extension)))))
-#+END_SRC
-
-Again this only affects the display of numbers, not how they are
-stored in the database.
-
-Note that, while phone numbers themselves are stored as strings (they
-do not represent a quantity, after all), the country and area codes
-are stored as numbers, precisely so that they can be specialized on
-using ~eql~.
-
-See the signatures of the other internationalized methods for how to
-use them.  The symbol specs for country codes and script names can
-also be specialized on with the ~eql~ specializer.
 * Diary Integration
 #+CINDEX: Diary integration
 Some EBDB fields hold dates or anniversaries (most notably the
@@ -1319,6 +1226,99 @@ The leading underscores on parameters are there to keep the compiler
 quiet: the arguments are necessary for dispatch, but aren't actually
 used in the body of the method.
 
+** Writing Internationalization Libraries
+Writing new internationalization libraries involves using generic
+functions. [[info:elisp#Generic%20Functions][Generic Functions]].  It will also require a bit of
+familiarity with EBDB's internals.
+
+Internationalization affects three different field types: addresses,
+phone numbers, and names.  It works by providing "i18n" versions of
+common methods for those three fields:
+
+| Regular method    | Internationalized method |
+|-------------------+--------------------------|
+| ebdb-read         | ebdb-read-i18n           |
+| ebdb-parse        | ebdb-parse-i18n          |
+| ebdb-string       | ebdb-string-i18n         |
+| ebdb-init-field   | ebdb-init-field-i18n     |
+| ebdb-delete-field | ebdb-delete-field-i18n   |
+
+When the "ebdb-i18n" library is loaded and the left-column ("vanilla")
+versions of field methods are called, EBDB first checks to see if a
+valid "internationalized" (right-column) method exists.  If it does,
+that method is used instead of the vanilla one.
+
+What is a "valid internationalized method"?  That depends on the field
+type.  Each field type uses a different key or "spec" to determine the
+nationality or locality of the field instance.
+
+- Address fields use a three-character symbol derived from the [[https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3][ISO
+  316601 alpha 3]] country codes.  These codes can be found in the
+  variable ~ebdb-i18n-countries~.
+- Phone fields use the phone number's numerical country code as a
+  spec.  These codes can be found in the variable
+  ~ebdb-i18n-phone-codes~.
+- Name fields are keyed to the symbol representing the script used to
+  write them. Specifically, the first character CHAR of the name is
+  tested in this way: =(aref char-script-table CHAR)=, which returns a
+  symbol.
+
+How are these "specs" used?  Each internationalized version of the
+above methods accepts the spec as an additional argument, which it is
+able to specialize on.  Every country-specific method should check the
+spec to see if it is relevant to that library. If so, it handles the
+necessary behavior; if not, it passes by using ~cl-call-next-method~.
+See the function signatures of each internationalized method to find
+how to handle the extra argument, called SPEC.
+
+Here's a concrete example:
+
+Say we want to make sure all French phone numbers are represented by a
+string that looks like "+33 05 12 34 56 79".  This is not how they are
+stored in the database, but this is how they should be represented to
+the user.  We need to override the ~ebdb-string-i18n~ method for the
+phone field class.  This method takes two arguments -- the field
+instance, and the country-code spec -- and needs to specialize on both
+arguments.  The method signature will look like this:
+
+#+BEGIN_SRC emacs-lisp
+  (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+                                  (_cc (eql 33))))
+#+END_SRC
+
+See the manual on generic functions for details; suffice it to say
+that this method will only run when the first argument is an instance
+of the ~ebdb-field-phone~ class (or a subclass), and the second
+argument is the number 33.
+
+Now we know that this method will only run for French phone numbers,
+so we can format the number correctly:
+
+#+BEGIN_SRC emacs-lisp
+  (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+                                  (_cc (eql 33)))
+    (with-slots (area-code number extension) phone
+      (concat
+       "+33 "
+       (when area-code
+         (format "%02d" area-code))
+       (format "%s%s %s%s %s%s %s%s"
+               (split-string number "" t))
+       (when extension
+         (format "X%d" extension)))))
+#+END_SRC
+
+Again this only affects the display of numbers, not how they are
+stored in the database.
+
+Note that, while phone numbers themselves are stored as strings (they
+do not represent a quantity, after all), the country and area codes
+are stored as numbers, precisely so that they can be specialized on
+using ~eql~.
+
+See the signatures of the other internationalized methods for how to
+use them.  The symbol specs for country codes and script names can
+also be specialized on with the ~eql~ specializer.
 * Index
 :PROPERTIES:
 :INDEX:    cp

@@ -108,10 +108,6 @@ Searching
 
 
 
-Internationalization
-
-* Writing Internationalization Libraries::
-
 
 
 
@@ -121,6 +117,7 @@ Internationalization
 Hacking EBDB
 
 * Field Classes::
+* Writing Internationalization Libraries::
 
 Field Classes
 
@@ -1190,108 +1187,6 @@ can (depending on country libraries’ behavior) increase database load
 times, though it should not significantly affect search or display
 performance.
 
-* Menu:
-
-* Writing Internationalization Libraries::
-
-
-File: ebdb.info,  Node: Writing Internationalization Libraries,  Up: Internationalization
-
-9.1 Writing Internationalization Libraries
-==========================================
-
-Writing new internationalization libraries involves using generic
-functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
-will also require a bit of familiarity with EBDB’s internals.
-
-   Internationalization affects three different field types: addresses,
-phone numbers, and names.  It works by providing “i18n” versions of
-common methods for those three fields:
-
-Regular method      Internationalized method
------------------------------------------------
-ebdb-read           ebdb-read-i18n
-ebdb-parse          ebdb-parse-i18n
-ebdb-string         ebdb-string-i18n
-ebdb-init-field     ebdb-init-field-i18n
-ebdb-delete-field   ebdb-delete-field-i18n
-
-   When the “ebdb-i18n” library is loaded and the left-column
-(“vanilla”) versions of field methods are called, EBDB first checks to
-see if a valid “internationalized” (right-column) method exists.  If it
-does, that method is used instead of the vanilla one.
-
-   What is a “valid internationalized method”?  That depends on the
-field type.  Each field type uses a different key or “spec” to determine
-the nationality or locality of the field instance.
-
-   • Address fields use a three-character symbol derived from the ISO
-     316601 alpha 3 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3)
-     country codes.  These codes can be found in the variable
-     ‘ebdb-i18n-countries’.
-
-   • Phone fields use the phone number’s numerical country code as a
-     spec.  These codes can be found in the variable
-     ‘ebdb-i18n-phone-codes’.
-
-   • Name fields are keyed to the symbol representing the script used to
-     write them.  Specifically, the first character CHAR of the name is
-     tested in this way: (aref char-script-table CHAR), which returns a
-     symbol.
-
-   How are these “specs” used?  Each internationalized version of the
-above methods accepts the spec as an additional argument, which it is
-able to specialize on.  Every country-specific method should check the
-spec to see if it is relevant to that library.  If so, it handles the
-necessary behavior; if not, it passes by using ‘cl-call-next-method’.
-See the function signatures of each internationalized method to find how
-to handle the extra argument, called SPEC.
-
-   Here’s a concrete example:
-
-   Say we want to make sure all French phone numbers are represented by
-a string that looks like “+33 05 12 34 56 79”.  This is not how they are
-stored in the database, but this is how they should be represented to
-the user.  We need to override the ‘ebdb-string-i18n’ method for the
-phone field class.  This method takes two arguments – the field
-instance, and the country-code spec – and needs to specialize on both
-arguments.  The method signature will look like this:
-
-     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33))))
-
-   See the manual on generic functions for details; suffice it to say
-that this method will only run when the first argument is an instance of
-the ‘ebdb-field-phone’ class (or a subclass), and the second argument is
-the number 33.
-
-   Now we know that this method will only run for French phone numbers,
-so we can format the number correctly:
-
-     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33)))
-       (with-slots (area-code number extension) phone
-         (concat
-          "+33 "
-          (when area-code
-            (format "%02d" area-code))
-          (format "%s%s %s%s %s%s %s%s"
-     	     (split-string number "" t))
-          (when extension
-            (format "X%d" extension)))))
-
-   Again this only affects the display of numbers, not how they are
-stored in the database.
-
-   Note that, while phone numbers themselves are stored as strings (they
-do not represent a quantity, after all), the country and area codes are
-stored as numbers, precisely so that they can be specialized on using
-‘eql’.
-
-   See the signatures of the other internationalized methods for how to
-use them.  The symbol specs for country codes and script names can also
-be specialized on with the ‘eql’ specializer.
-
 
 File: ebdb.info,  Node: Diary Integration,  Next: Mail Aliases,  Prev: Internationalization,  Up: Top
 
@@ -1461,9 +1356,10 @@ existing objects.  This may be addressed in the future.
 * Menu:
 
 * Field Classes::
+* Writing Internationalization Libraries::
 
 
-File: ebdb.info,  Node: Field Classes,  Up: Hacking EBDB
+File: ebdb.info,  Node: Field Classes,  Next: Writing Internationalization Libraries,  Up: Hacking EBDB
 
 15.1 Field Classes
 ==================
@@ -1686,6 +1582,104 @@ quiet: the arguments are necessary for dispatch, but aren’t actually
 used in the body of the method.
 
 
+File: ebdb.info,  Node: Writing Internationalization Libraries,  Prev: Field Classes,  Up: Hacking EBDB
+
+15.2 Writing Internationalization Libraries
+===========================================
+
+Writing new internationalization libraries involves using generic
+functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
+will also require a bit of familiarity with EBDB’s internals.
+
+   Internationalization affects three different field types: addresses,
+phone numbers, and names.  It works by providing “i18n” versions of
+common methods for those three fields:
+
+Regular method      Internationalized method
+-----------------------------------------------
+ebdb-read           ebdb-read-i18n
+ebdb-parse          ebdb-parse-i18n
+ebdb-string         ebdb-string-i18n
+ebdb-init-field     ebdb-init-field-i18n
+ebdb-delete-field   ebdb-delete-field-i18n
+
+   When the “ebdb-i18n” library is loaded and the left-column
+(“vanilla”) versions of field methods are called, EBDB first checks to
+see if a valid “internationalized” (right-column) method exists.  If it
+does, that method is used instead of the vanilla one.
+
+   What is a “valid internationalized method”?  That depends on the
+field type.  Each field type uses a different key or “spec” to determine
+the nationality or locality of the field instance.
+
+   • Address fields use a three-character symbol derived from the ISO
+     316601 alpha 3 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3)
+     country codes.  These codes can be found in the variable
+     ‘ebdb-i18n-countries’.
+
+   • Phone fields use the phone number’s numerical country code as a
+     spec.  These codes can be found in the variable
+     ‘ebdb-i18n-phone-codes’.
+
+   • Name fields are keyed to the symbol representing the script used to
+     write them.  Specifically, the first character CHAR of the name is
+     tested in this way: (aref char-script-table CHAR), which returns a
+     symbol.
+
+   How are these “specs” used?  Each internationalized version of the
+above methods accepts the spec as an additional argument, which it is
+able to specialize on.  Every country-specific method should check the
+spec to see if it is relevant to that library.  If so, it handles the
+necessary behavior; if not, it passes by using ‘cl-call-next-method’.
+See the function signatures of each internationalized method to find how
+to handle the extra argument, called SPEC.
+
+   Here’s a concrete example:
+
+   Say we want to make sure all French phone numbers are represented by
+a string that looks like “+33 05 12 34 56 79”.  This is not how they are
+stored in the database, but this is how they should be represented to
+the user.  We need to override the ‘ebdb-string-i18n’ method for the
+phone field class.  This method takes two arguments – the field
+instance, and the country-code spec – and needs to specialize on both
+arguments.  The method signature will look like this:
+
+     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+     				(_cc (eql 33))))
+
+   See the manual on generic functions for details; suffice it to say
+that this method will only run when the first argument is an instance of
+the ‘ebdb-field-phone’ class (or a subclass), and the second argument is
+the number 33.
+
+   Now we know that this method will only run for French phone numbers,
+so we can format the number correctly:
+
+     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+     				(_cc (eql 33)))
+       (with-slots (area-code number extension) phone
+         (concat
+          "+33 "
+          (when area-code
+            (format "%02d" area-code))
+          (format "%s%s %s%s %s%s %s%s"
+     	     (split-string number "" t))
+          (when extension
+            (format "X%d" extension)))))
+
+   Again this only affects the display of numbers, not how they are
+stored in the database.
+
+   Note that, while phone numbers themselves are stored as strings (they
+do not represent a quantity, after all), the country and area codes are
+stored as numbers, precisely so that they can be specialized on using
+‘eql’.
+
+   See the signatures of the other internationalized methods for how to
+use them.  The symbol specs for country codes and script names can also
+be specialized on with the ‘eql’ specializer.
+
+
 File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
 Index
@@ -1798,53 +1792,53 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2248
-Node: Migration from BBDB2870
-Node: Record Migration3045
-Node: Variables and Options3582
-Node: The EBDB Database4068
-Node: Creating Records7224
-Node: Record classes8271
-Node: Record names8604
-Node: Record Fields9279
-Node: Inserting New Fields9523
-Node: Editing Existing Fields10319
-Node: Deleting Records and Fields10919
-Node: Field Types11315
-Node: Role Fields13160
-Node: MUA Interaction14851
-Node: Loading MUA Code15375
-Node: Display and Updating16088
-Node: Pop-up Buffers16857
-Node: Auto-Updating Records17722
-Node: Noticing and Automatic Rules20107
-Node: Interactive Commands21450
-Node: EBDB and MUA summary buffers23939
-Node: Sender name display24425
-Node: Summary buffer marks25713
-Node: EBDB Buffers26908
-Node: Searching28101
-Node: Changing Search Behavior29811
-Node: The Basics of ebdb-mode31061
-Node: Marking34425
-Node: Exporting/Formatting34853
-Node: Completion35812
-Node: Snarfing36953
-Node: Internationalization38932
-Node: Writing Internationalization Libraries40410
-Node: Diary Integration44698
-Node: Mail Aliases45564
-Node: vCard Support46273
-Node: Org Integration46772
-Node: Citing Records48346
-Node: Hacking EBDB49105
-Node: Field Classes51355
-Node: Init and Delete Methods54245
-Node: The Labeled Field Class55801
-Node: Actions56637
-Node: Custom Field Searching57302
-Node: Formatting in the EBDB Buffer59090
-Node: Index61089
+Node: Getting Started2225
+Node: Migration from BBDB2847
+Node: Record Migration3022
+Node: Variables and Options3559
+Node: The EBDB Database4045
+Node: Creating Records7201
+Node: Record classes8248
+Node: Record names8581
+Node: Record Fields9256
+Node: Inserting New Fields9500
+Node: Editing Existing Fields10296
+Node: Deleting Records and Fields10896
+Node: Field Types11292
+Node: Role Fields13137
+Node: MUA Interaction14828
+Node: Loading MUA Code15352
+Node: Display and Updating16065
+Node: Pop-up Buffers16834
+Node: Auto-Updating Records17699
+Node: Noticing and Automatic Rules20084
+Node: Interactive Commands21427
+Node: EBDB and MUA summary buffers23916
+Node: Sender name display24402
+Node: Summary buffer marks25690
+Node: EBDB Buffers26885
+Node: Searching28078
+Node: Changing Search Behavior29788
+Node: The Basics of ebdb-mode31038
+Node: Marking34402
+Node: Exporting/Formatting34830
+Node: Completion35789
+Node: Snarfing36930
+Node: Internationalization38909
+Node: Diary Integration40334
+Node: Mail Aliases41200
+Node: vCard Support41909
+Node: Org Integration42408
+Node: Citing Records43982
+Node: Hacking EBDB44741
+Node: Field Classes47034
+Node: Init and Delete Methods49971
+Node: The Labeled Field Class51527
+Node: Actions52363
+Node: Custom Field Searching53028
+Node: Formatting in the EBDB Buffer54816
+Node: Writing Internationalization Libraries56815
+Node: Index61119
 
 End Tag Table
 
