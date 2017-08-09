@@ -50,15 +50,15 @@
   "Produce a EBDB buffer name associated with Mail mode."
   (ebdb-message-buffer-name))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				    &context (major-mode message-mode))
   (message-field-value header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				    &context (major-mode notmuch-message-mode))
   (message-field-value header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				    &context (major-mode mail-mode))
   (message-field-value header))
 

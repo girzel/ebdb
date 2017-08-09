@@ -433,19 +433,19 @@ Note that `\( is the backquote, NOT the quote '\(."
 ;; absence of some headers.
 ;; See http://permalink.gmane.org/gmane.emacs.gnus.general/78741
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode gnus-summary-mode))
   "Return value of HEADER for current Gnus message."
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))
 
 ;; This is all a little goofy.
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode gnus-article-mode))
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode gnus-tree-mode))
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))

@@ -184,7 +184,7 @@ use one of the following, as appropriate:
                                   (ebdb-extract-address-components
                                    (mapconcat
                                     (lambda (header)
-                                      (ebdb-message-header header))
+                                      (ebdb-mua-message-header header))
                                     ebdb-pgp-headers ", ")
                                    t)))))))
                  (and ebdb-pgp-default-action

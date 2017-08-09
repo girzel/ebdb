@@ -1631,8 +1631,8 @@ the nationality or locality of the field instance.
 
    • Name fields are keyed to the symbol representing the script used to
      write them.  Specifically, the first character CHAR of the name is
-     tested in this way: (aref char-script-table CHAR), which returns a
-     symbol.
+     tested in this way: ‘(aref char-script-table CHAR)’, which returns
+     a symbol.
 
    How are these “specs” used?  Each internationalized version of the
 above methods accepts the spec as an additional argument, which it is
@@ -1712,11 +1712,11 @@ examples.
    When ‘ebdb-mua-auto-update’ runs, it scans the headers of the current
 article/message for name/mail data, and uses that data to locate,
 create, edit, and display records.  It does this by calling the generic
-function ‘ebdb-message-header’ with the string header name; it is the
-responsibility of the MUA to implement this function, and return the
+function ‘ebdb-mua-message-header’ with the string header name; it is
+the responsibility of the MUA to implement this function, and return the
 contents of the appropriate header.  For instance, in Gnus:
 
-     (cl-defmethod ebdb-message-header ((header string)
+     (cl-defmethod ebdb-mua-message-header ((header string)
      				   &context (major-mode gnus-summary-mode))
        "Return value of HEADER for current Gnus message."
        (set-buffer gnus-article-buffer)
@@ -1941,9 +1941,9 @@ Node: Actions52495
 Node: Custom Field Searching53160
 Node: Formatting in the EBDB Buffer54948
 Node: Writing Internationalization Libraries56947
-Node: Writing Integration For New MUAs61292
-Node: Article snarfing64710
-Node: Index65432
+Node: Writing Integration For New MUAs61298
+Node: Article snarfing64724
+Node: Index65446
 
 End Tag Table
 

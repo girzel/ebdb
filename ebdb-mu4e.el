@@ -29,7 +29,7 @@
 
 ;; Tackle `mu4e-headers-mode' later
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode mu4e-view-mode))
   (set-buffer mu4e~view-buffer-name)
   (message-field-value header))

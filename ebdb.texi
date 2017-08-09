@@ -1746,7 +1746,7 @@ spec.  These codes can be found in the variable
 @item
 Name fields are keyed to the symbol representing the script used to
 write them. Specifically, the first character CHAR of the name is
-tested in this way: @verb{~(aref char-script-table CHAR)~}, which returns a
+tested in this way: @code{(aref char-script-table CHAR)}, which returns a
 symbol.
 @end itemize
 
@@ -1829,12 +1829,12 @@ for examples.
 When @code{ebdb-mua-auto-update} runs, it scans the headers of the current
 article/message for name/mail data, and uses that data to locate,
 create, edit, and display records.  It does this by calling the
-generic function @code{ebdb-message-header} with the string header name; it
+generic function @code{ebdb-mua-message-header} with the string header name; it
 is the responsibility of the MUA to implement this function, and
 return the contents of the appropriate header.  For instance, in Gnus:
 
 @lisp
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode gnus-summary-mode))
   "Return value of HEADER for current Gnus message."
   (set-buffer gnus-article-buffer)

@@ -305,19 +305,19 @@ from different senders."
   "Produce a EBDB buffer name associated with VM mode."
   (format "*%s-VM*" ebdb-buffer-name))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode vm-mode))
   (ebdb/vm-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode vm-virtual-mode))
   (ebdb/vm-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode vm-summary-mode))
   (ebdb/vm-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode vm-presentation-mode))
   (ebdb/vm-header header))
 

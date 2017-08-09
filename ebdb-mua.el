@@ -483,7 +483,7 @@ Currently no other MUAs support this EBDB feature."
 
 (defsubst ebdb-message-header-re (header regexp)
   "Return non-nil if REGEXP matches value of HEADER."
-  (let ((val (ebdb-message-header header))
+  (let ((val (ebdb-mua-message-header header))
         (case-fold-search t)) ; RW: Is this what we want?
     (and val (string-match regexp val))))
 
@@ -536,7 +536,7 @@ variables `ebdb-user-mail-address-re',
 		     (ebdb-mua-check-header header-type address-parts t)))))))
 
 ;; How are you supposed to do the &context arglist for a defgeneric?
-(cl-defgeneric ebdb-message-header (header)
+(cl-defgeneric ebdb-mua-message-header (header)
   "Get value of HEADER for the mua keyed to major-mode.")
 
 (defun ebdb-get-address-components (&optional header-class ignore-address)
@@ -559,7 +559,7 @@ are discarded as appropriate."
     (condition-case nil
 	(dolist (headers message-headers)
 	  (dolist (header (cdr headers))
-	    (when (setq content (ebdb-message-header header))
+	    (when (setq content (ebdb-mua-message-header header))
 	      (setq content (mail-decode-encoded-word-string content))
 	      (dolist (address (ebdb-extract-address-components content t))
 		(setq mail (cadr address))
@@ -575,7 +575,7 @@ are discarded as appropriate."
 		  (push mail mail-list)
 		  (push (list (car address) (cadr address) header (car headers) major-mode) address-list))))))
       (cl-no-applicable-method
-       ;; Potentially triggered by `ebdb-message-header', which
+       ;; Potentially triggered by `ebdb-mua-message-header', which
        ;; dispatches on major-mode.
        (error "EBDB does not support %s" major-mode)))
     (or (nreverse address-list)
