@@ -139,6 +139,7 @@ Hacking EBDB
 
 * Field Classes::
 * Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 
 Field Classes
 
@@ -147,6 +148,12 @@ Field Classes
 * Actions::
 * Custom Field Searching::
 * Formatting in the EBDB Buffer::
+
+
+
+Writing Integration For New MUAs
+
+* Article snarfing::
 @end detailmenu
 @end menu
 
@@ -1461,6 +1468,7 @@ existing objects.  This may be addressed in the future.
 @menu
 * Field Classes::
 * Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 @end menu
 
 @node Field Classes
@@ -1798,6 +1806,103 @@ using @code{eql}.
 See the signatures of the other internationalized methods for how to
 use them.  The symbol specs for country codes and script names can
 also be specialized on with the @code{eql} specializer.
+
+@node Writing Integration For New MUAs
+@section Writing Integration For New MUAs
+
+Theoretically EBDB can be incorporated into any Emacs package, but
+it's most commonly used in conjunction with a mail user agent.  It
+comes with support for a few MUAs out of the box, but integration with
+a new one can be written fairly easily.
+
+The first step of integration involves hooking the function
+@code{ebdb-mua-auto-update} somewhere into the MUA's operation.  For most
+MUAs, the appropriate place is when a message or article is opened for
+viewing by the user.  This allows EBDB to act on the information found
+in that message.
+
+The second step requires providing new versions of a handful of
+generic functions.  All MUA-specific generic functions specialize on
+the current major-mode, using the @code{&context} specializer.  See below
+for examples.
+
+When @code{ebdb-mua-auto-update} runs, it scans the headers of the current
+article/message for name/mail data, and uses that data to locate,
+create, edit, and display records.  It does this by calling the
+generic function @code{ebdb-message-header} with the string header name; it
+is the responsibility of the MUA to implement this function, and
+return the contents of the appropriate header.  For instance, in Gnus:
+
+@lisp
+(cl-defmethod ebdb-message-header ((header string)
+				   &context (major-mode gnus-summary-mode))
+  "Return value of HEADER for current Gnus message."
+  (set-buffer gnus-article-buffer)
+  (gnus-fetch-original-field header))
+
+@end lisp
+
+The first argument is the string header, and the second is the
+specializer on the current major-mode.  Possible header values include
+those found in @code{ebdb-message-headers}. Note that if you expect this
+function to be called in more than one major-mode, you'll have to
+provide multiple versions of the function.  The &context specializer
+uses @code{derived-mode-p} behind the scenes, though, so if all the modes
+derive from a single parent mode (and the behavior should be the same
+in all derived modes) it is enough to specialize on the parent mode.
+
+Some MUAs might need to do a bit of work to ensure that the article in
+question is opened and set up properly:
+
+@defun ebdb-mua-prepare-article
+Called with no argument but the mode specializer, this function
+should do whatever is necessary to prepare the article.
+@end defun
+
+Providing *EBDB* buffer pop-up support involves implementing
+two separate functions:
+
+@defun ebdb-make-buffer-name
+Called with no arguments but the mode specializer, this function
+should return the string name of the *EBDB* buffer to be
+associated with this MUA.  Usually the function body will look like:
+@code{(format "*%s-<mua>" ebdb-buffer-name)}.
+@end defun
+
+@defun ebdb-popup-window
+Called with no arguments but the mode specializer, this function
+should return a list of two elements: the window to be split to make
+room for the *EBDB* buffer window, and a float value
+between 0 and 1 indicating the size of the new *EBDB*
+buffer window, as a percentage of the window being split.
+@end defun
+
+In addition, it might be nice to bind the @code{ebdb-mua-keymap} in the
+MUA's mode-map.  This map provides bindings for some commonly-used
+EBDB functions.
+
+@menu
+* Article snarfing::
+@end menu
+
+@node Article snarfing
+@subsection Article snarfing
+
+EBDB can scan articles or messages for likely field information, and
+prompt the user to add the fields to new or existing records---this is
+done by the user with the interactive command
+@code{ebdb-mua-snarf-article}.  In order to work, the MUA must be able to
+provide that function with the text of the message body, and the text
+of the message signature (if any).  This is done with two generic
+functions:
+
+@defun ebdb-mua-article-body
+Return the text of the article body, or nil.
+@end defun
+
+@defun ebdb-mua-article-signature
+Return the text of the article signature, or nil.
+@end defun
 
 @node Index
 @unnumbered Index

@@ -118,6 +118,7 @@ Hacking EBDB
 
 * Field Classes::
 * Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 
 Field Classes
 
@@ -126,6 +127,12 @@ Field Classes
 * Actions::
 * Custom Field Searching::
 * Formatting in the EBDB Buffer::
+
+
+
+Writing Integration For New MUAs
+
+* Article snarfing::
 
 
 File: ebdb.info,  Node: Getting Started,  Next: The EBDB Database,  Prev: Top,  Up: Top
@@ -1357,6 +1364,7 @@ existing objects.  This may be addressed in the future.
 
 * Field Classes::
 * Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 
 
 File: ebdb.info,  Node: Field Classes,  Next: Writing Internationalization Libraries,  Up: Hacking EBDB
@@ -1582,7 +1590,7 @@ quiet: the arguments are necessary for dispatch, but aren’t actually
 used in the body of the method.
 
 
-File: ebdb.info,  Node: Writing Internationalization Libraries,  Prev: Field Classes,  Up: Hacking EBDB
+File: ebdb.info,  Node: Writing Internationalization Libraries,  Next: Writing Integration For New MUAs,  Prev: Field Classes,  Up: Hacking EBDB
 
 15.2 Writing Internationalization Libraries
 ===========================================
@@ -1678,6 +1686,101 @@ stored as numbers, precisely so that they can be specialized on using
    See the signatures of the other internationalized methods for how to
 use them.  The symbol specs for country codes and script names can also
 be specialized on with the ‘eql’ specializer.
+
+
+File: ebdb.info,  Node: Writing Integration For New MUAs,  Prev: Writing Internationalization Libraries,  Up: Hacking EBDB
+
+15.3 Writing Integration For New MUAs
+=====================================
+
+Theoretically EBDB can be incorporated into any Emacs package, but it’s
+most commonly used in conjunction with a mail user agent.  It comes with
+support for a few MUAs out of the box, but integration with a new one
+can be written fairly easily.
+
+   The first step of integration involves hooking the function
+‘ebdb-mua-auto-update’ somewhere into the MUA’s operation.  For most
+MUAs, the appropriate place is when a message or article is opened for
+viewing by the user.  This allows EBDB to act on the information found
+in that message.
+
+   The second step requires providing new versions of a handful of
+generic functions.  All MUA-specific generic functions specialize on the
+current major-mode, using the ‘&context’ specializer.  See below for
+examples.
+
+   When ‘ebdb-mua-auto-update’ runs, it scans the headers of the current
+article/message for name/mail data, and uses that data to locate,
+create, edit, and display records.  It does this by calling the generic
+function ‘ebdb-message-header’ with the string header name; it is the
+responsibility of the MUA to implement this function, and return the
+contents of the appropriate header.  For instance, in Gnus:
+
+     (cl-defmethod ebdb-message-header ((header string)
+     				   &context (major-mode gnus-summary-mode))
+       "Return value of HEADER for current Gnus message."
+       (set-buffer gnus-article-buffer)
+       (gnus-fetch-original-field header))
+
+
+   The first argument is the string header, and the second is the
+specializer on the current major-mode.  Possible header values include
+those found in ‘ebdb-message-headers’.  Note that if you expect this
+function to be called in more than one major-mode, you’ll have to
+provide multiple versions of the function.  The &context specializer
+uses ‘derived-mode-p’ behind the scenes, though, so if all the modes
+derive from a single parent mode (and the behavior should be the same in
+all derived modes) it is enough to specialize on the parent mode.
+
+   Some MUAs might need to do a bit of work to ensure that the article
+in question is opened and set up properly:
+
+ -- Function: ebdb-mua-prepare-article
+     Called with no argument but the mode specializer, this function
+     should do whatever is necessary to prepare the article.
+
+   Providing *EBDB* buffer pop-up support involves implementing two
+separate functions:
+
+ -- Function: ebdb-make-buffer-name
+     Called with no arguments but the mode specializer, this function
+     should return the string name of the *EBDB* buffer to be associated
+     with this MUA. Usually the function body will look like: ‘(format
+     "*%s-<mua>" ebdb-buffer-name)’.
+
+ -- Function: ebdb-popup-window
+     Called with no arguments but the mode specializer, this function
+     should return a list of two elements: the window to be split to
+     make room for the *EBDB* buffer window, and a float value between 0
+     and 1 indicating the size of the new *EBDB* buffer window, as a
+     percentage of the window being split.
+
+   In addition, it might be nice to bind the ‘ebdb-mua-keymap’ in the
+MUA’s mode-map.  This map provides bindings for some commonly-used EBDB
+functions.
+
+* Menu:
+
+* Article snarfing::
+
+
+File: ebdb.info,  Node: Article snarfing,  Up: Writing Integration For New MUAs
+
+15.3.1 Article snarfing
+-----------------------
+
+EBDB can scan articles or messages for likely field information, and
+prompt the user to add the fields to new or existing records—this is
+done by the user with the interactive command ‘ebdb-mua-snarf-article’.
+In order to work, the MUA must be able to provide that function with the
+text of the message body, and the text of the message signature (if
+any).  This is done with two generic functions:
+
+ -- Function: ebdb-mua-article-body
+     Return the text of the article body, or nil.
+
+ -- Function: ebdb-mua-article-signature
+     Return the text of the article signature, or nil.
 
 
 File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
@@ -1792,53 +1895,55 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2225
-Node: Migration from BBDB2847
-Node: Record Migration3022
-Node: Variables and Options3559
-Node: The EBDB Database4045
-Node: Creating Records7201
-Node: Record classes8248
-Node: Record names8581
-Node: Record Fields9256
-Node: Inserting New Fields9500
-Node: Editing Existing Fields10296
-Node: Deleting Records and Fields10896
-Node: Field Types11292
-Node: Role Fields13137
-Node: MUA Interaction14828
-Node: Loading MUA Code15352
-Node: Display and Updating16065
-Node: Pop-up Buffers16834
-Node: Auto-Updating Records17699
-Node: Noticing and Automatic Rules20084
-Node: Interactive Commands21427
-Node: EBDB and MUA summary buffers23916
-Node: Sender name display24402
-Node: Summary buffer marks25690
-Node: EBDB Buffers26885
-Node: Searching28078
-Node: Changing Search Behavior29788
-Node: The Basics of ebdb-mode31038
-Node: Marking34402
-Node: Exporting/Formatting34830
-Node: Completion35789
-Node: Snarfing36930
-Node: Internationalization38909
-Node: Diary Integration40334
-Node: Mail Aliases41200
-Node: vCard Support41909
-Node: Org Integration42408
-Node: Citing Records43982
-Node: Hacking EBDB44741
-Node: Field Classes47034
-Node: Init and Delete Methods49971
-Node: The Labeled Field Class51527
-Node: Actions52363
-Node: Custom Field Searching53028
-Node: Formatting in the EBDB Buffer54816
-Node: Writing Internationalization Libraries56815
-Node: Index61119
+Node: Getting Started2320
+Node: Migration from BBDB2942
+Node: Record Migration3117
+Node: Variables and Options3654
+Node: The EBDB Database4140
+Node: Creating Records7296
+Node: Record classes8343
+Node: Record names8676
+Node: Record Fields9351
+Node: Inserting New Fields9595
+Node: Editing Existing Fields10391
+Node: Deleting Records and Fields10991
+Node: Field Types11387
+Node: Role Fields13232
+Node: MUA Interaction14923
+Node: Loading MUA Code15447
+Node: Display and Updating16160
+Node: Pop-up Buffers16929
+Node: Auto-Updating Records17794
+Node: Noticing and Automatic Rules20179
+Node: Interactive Commands21522
+Node: EBDB and MUA summary buffers24011
+Node: Sender name display24497
+Node: Summary buffer marks25785
+Node: EBDB Buffers26980
+Node: Searching28173
+Node: Changing Search Behavior29883
+Node: The Basics of ebdb-mode31133
+Node: Marking34497
+Node: Exporting/Formatting34925
+Node: Completion35884
+Node: Snarfing37025
+Node: Internationalization39004
+Node: Diary Integration40429
+Node: Mail Aliases41295
+Node: vCard Support42004
+Node: Org Integration42503
+Node: Citing Records44077
+Node: Hacking EBDB44836
+Node: Field Classes47166
+Node: Init and Delete Methods50103
+Node: The Labeled Field Class51659
+Node: Actions52495
+Node: Custom Field Searching53160
+Node: Formatting in the EBDB Buffer54948
+Node: Writing Internationalization Libraries56947
+Node: Writing Integration For New MUAs61292
+Node: Article snarfing64710
+Node: Index65432
 
 End Tag Table
 

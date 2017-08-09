@@ -1319,6 +1319,90 @@ using ~eql~.
 See the signatures of the other internationalized methods for how to
 use them.  The symbol specs for country codes and script names can
 also be specialized on with the ~eql~ specializer.
+** Writing Integration For New MUAs
+Theoretically EBDB can be incorporated into any Emacs package, but
+it's most commonly used in conjunction with a mail user agent.  It
+comes with support for a few MUAs out of the box, but integration with
+a new one can be written fairly easily.
+
+The first step of integration involves hooking the function
+~ebdb-mua-auto-update~ somewhere into the MUA's operation.  For most
+MUAs, the appropriate place is when a message or article is opened for
+viewing by the user.  This allows EBDB to act on the information found
+in that message.
+
+The second step requires providing new versions of a handful of
+generic functions.  All MUA-specific generic functions specialize on
+the current major-mode, using the ~&context~ specializer.  See below
+for examples.
+
+When ~ebdb-mua-auto-update~ runs, it scans the headers of the current
+article/message for name/mail data, and uses that data to locate,
+create, edit, and display records.  It does this by calling the
+generic function ~ebdb-message-header~ with the string header name; it
+is the responsibility of the MUA to implement this function, and
+return the contents of the appropriate header.  For instance, in Gnus:
+
+#+BEGIN_SRC emacs-lisp
+  (cl-defmethod ebdb-message-header ((header string)
+                                     &context (major-mode gnus-summary-mode))
+    "Return value of HEADER for current Gnus message."
+    (set-buffer gnus-article-buffer)
+    (gnus-fetch-original-field header))
+
+#+END_SRC
+
+The first argument is the string header, and the second is the
+specializer on the current major-mode.  Possible header values include
+those found in ~ebdb-message-headers~. Note that if you expect this
+function to be called in more than one major-mode, you'll have to
+provide multiple versions of the function.  The &context specializer
+uses ~derived-mode-p~ behind the scenes, though, so if all the modes
+derive from a single parent mode (and the behavior should be the same
+in all derived modes) it is enough to specialize on the parent mode.
+
+Some MUAs might need to do a bit of work to ensure that the article in
+question is opened and set up properly:
+
+- Function: ebdb-mua-prepare-article
+  Called with no argument but the mode specializer, this function
+  should do whatever is necessary to prepare the article.
+
+Providing {{{buf(EBDB)}}} buffer pop-up support involves implementing
+two separate functions:
+
+- Function: ebdb-make-buffer-name
+  Called with no arguments but the mode specializer, this function
+  should return the string name of the {{{buf(EBDB)}}} buffer to be
+  associated with this MUA.  Usually the function body will look like:
+  ~(format "*%s-<mua>" ebdb-buffer-name)~.
+
+- Function: ebdb-popup-window
+  Called with no arguments but the mode specializer, this function
+  should return a list of two elements: the window to be split to make
+  room for the {{{buf(EBDB)}}} buffer window, and a float value
+  between 0 and 1 indicating the size of the new {{{buf(EBDB)}}}
+  buffer window, as a percentage of the window being split.
+
+In addition, it might be nice to bind the ~ebdb-mua-keymap~ in the
+MUA's mode-map.  This map provides bindings for some commonly-used
+EBDB functions.
+
+*** Article snarfing
+
+EBDB can scan articles or messages for likely field information, and
+prompt the user to add the fields to new or existing records---this is
+done by the user with the interactive command
+~ebdb-mua-snarf-article~.  In order to work, the MUA must be able to
+provide that function with the text of the message body, and the text
+of the message signature (if any).  This is done with two generic
+functions:
+
+- Function: ebdb-mua-article-body
+  Return the text of the article body, or nil.
+
+- Function: ebdb-mua-article-signature
+  Return the text of the article signature, or nil.
 * Index
 :PROPERTIES:
 :INDEX:    cp
