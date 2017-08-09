@@ -282,20 +282,17 @@
 	   "Eric Abrahamsen can't hold his drink\n<eric@ericabrahamsen.net> is where you can write and tell him so."))
 	result)
     (dolist (text test-texts)
-      (with-temp-buffer
-	(insert text)
-	(goto-char (point-min))
-	(setq result (car (ebdb-snarf-collect)))
-	(pcase result
-	  (`[nil (,name) (,mail)]
-	   (unless (string= (ebdb-string name) "Eric Abrahamsen")
-	     (ert-fail (list (format "Parsing \"%s\" resulted in name %s"
-				     text (ebdb-string name)))))
-	   (unless (string= (ebdb-string mail) "eric@ericabrahamsen.net")
-	     (ert-fail (list (format "Parsing \"%s\" resulted in mail %s"
-				     text (ebdb-string mail))))))
-	  (_ (ert-fail (list (format "Parsing \"%s\" resulted in %s"
-				     text result)))))))))
+      (setq result (car (ebdb-snarf-collect text)))
+      (pcase result
+	(`[nil (,name) (,mail)]
+	 (unless (string= (ebdb-string name) "Eric Abrahamsen")
+	   (ert-fail (list (format "Parsing \"%s\" resulted in name %s"
+				   text (ebdb-string name)))))
+	 (unless (string= (ebdb-string mail) "eric@ericabrahamsen.net")
+	   (ert-fail (list (format "Parsing \"%s\" resulted in mail %s"
+				   text (ebdb-string mail))))))
+	(_ (ert-fail (list (format "Parsing \"%s\" resulted in %s"
+				   text result))))))))
 
 ;; Search testing.
 

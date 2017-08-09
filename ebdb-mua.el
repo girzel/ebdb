@@ -953,13 +953,17 @@ Dispatches on the value of major-mode."
 This method should NOT return the message headers, only the
 article text.  This is typically used for snarfing.")
 
+(cl-defmethod ebdb-mua-article-body ()
+  "Default version returns nil."
+  nil)
+
 (cl-defgeneric ebdb-mua-article-signature (major-mode)
   "Return the text of the signature of the current article.")
 
 ;; At the moment this is only implemented for Gnus.
 (cl-defmethod ebdb-mua-article-signature ()
-  "Default version returns nothing."
-  "")
+  "Default version returns nil."
+  nil)
 
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)
@@ -1093,22 +1097,29 @@ associate field information in it with the article sender.
 
 With a prefix arg, only snarf the signature."
   (interactive "P")
+  (ebdb-mua-prepare-article)
   (condition-case nil
       ;; If the MUA has already popped up a buffer, assume the records
       ;; displayed there are relevant to the article snarf.
-      (let* ((buf (get-buffer (ebdb-make-buffer-name)))
-	     (all-recs (ebdb-update-records
+      (let* ((all-recs (ebdb-update-records
 			(ebdb-get-address-components)
 			'existing))
 	     (sender (ebdb-update-records
 		      (ebdb-get-address-components 'sender)
 		      'existing))
-	     (signature (ebdb-mua-article-signature)))
-	(ebdb-mua-prepare-article)
-	(unless (or (null (stringp signature)) (string-blank-p signature))
-	  (ebdb-snarf signature nil nil sender))
-	(unless arg
-	  (ebdb-snarf (ebdb-mua-article-body) nil nil all-recs)))
+	     (body (ebdb-mua-article-body))
+	     (signature (ebdb-mua-article-signature))
+	     (records
+	      (delete-dups
+	       (append
+		(when signature
+		  (ebdb-snarf signature nil nil sender t))
+		(when (and  body (null arg))
+		  (ebdb-snarf body nil nil all-recs t))))))
+
+	(if records
+	    (ebdb-display-records records nil t nil (ebdb-popup-window))
+	  (message "No snarfable data found")))
     (cl-no-applicable-method
      (message "Article snarfing doesn't work in this context."))))
 

@@ -79,7 +79,7 @@ groups."
   :type 'list)
 
 ;;;###autoload
-(defun ebdb-snarf (&optional string start end recs)
+(defun ebdb-snarf (&optional string start end recs ret)
   "Snarf text and attempt to display/update/create a record from it.
 
 If STRING is given, snarf the string.  If START and END are given
@@ -89,32 +89,35 @@ buffer positions, and snarf the region between.  If all three
 arguments are nil, snarf the entire current buffer.
 
 If RECORDS is present, it is a list of records that we assume may
-be relevant to snarfed field data."
-  (interactive)
-  (let ((str
-	 (cond ((use-region-p)
-		(buffer-substring-no-properties
-		 (region-beginning) (region-end)))
-	       ((and (or start end) string)
-		(substring string start end))
-	       ((and start end (null string))
-		(buffer-substring-no-properties start end))
-	       (string
-		string)
-	       (t
-		(buffer-string))))
-	records)
-    (with-temp-buffer
-      (insert (string-trim str))
-      (goto-char (point-min))
-      (setq records (ebdb-snarf-query
-		     (ebdb-snarf-collapse
-		      (ebdb-snarf-collect recs)))))
-    (when records
-      (ebdb-display-records records nil t nil (list (selected-window))))))
+be relevant to snarfed field data.
 
-(defun ebdb-snarf-collect (&optional records)
-  "Collect EBDB record information from the text of the current buffer.
+If RET is non-nil, return the records.  Otherwise display them."
+  (interactive)
+  (let* ((str
+	  (cond ((use-region-p)
+		 (buffer-substring-no-properties
+		  (region-beginning) (region-end)))
+		((and (or start end) string)
+		 (substring string start end))
+		((and start end (null string))
+		 (buffer-substring-no-properties start end))
+		(string
+		 string)
+		(t
+		 (buffer-string))))
+	 (records
+	  (ebdb-snarf-query
+	   (ebdb-snarf-collapse
+	    (ebdb-snarf-collect str recs)))))
+
+    (if (null ret)
+	(if records
+	    (ebdb-display-records records nil t nil (list (selected-window)))
+	  (message "No snarfable data found"))
+      records)))
+
+(defun ebdb-snarf-collect (str &optional records)
+  "Collect EBDB record information from string STR.
 
 This function will find everything that looks like field
 information, and do its best to organize it into likely groups.
@@ -169,66 +172,69 @@ list of other field instances.  Any element can be nil."
 	  "\\)"))
 	bundle block name)
 
-    (while (re-search-forward big-re nil t)
-      (goto-char (match-beginning 0))
-      (setq block (= (point) (point-at-bol)))
-      (when (setq name
-		  (save-excursion
-		    (when (re-search-backward
-			   (concat
-			    "\\("
-			    (mapconcat #'identity
-				       ebdb-snarf-name-re "\\|")
-			    "\\)")
-			   (save-excursion
-			     (if block
-				 (progn (forward-line -1)
-					(line-beginning-position))
-			       (point-at-bol)))
-			   t)
-		      ;; If something goes wrong with the
-		      ;; name, don't worry about it.
-		      (ignore-errors
-			(ebdb-parse
-			 'ebdb-field-name
-			 (string-trim (match-string-no-properties 0)))))))
-	;; If NAME matches one of the records that are already in
-	;; BUNDLES, then assume we should be working with that record.
-	(dolist (b bundles)
-	  (when (and (aref b 0)
-		     (string-match-p (ebdb-string name)
-				     (ebdb-string (aref b 0))))
-	    (setq bundle b))))
+    (with-temp-buffer
+      (insert str)
+      (goto-char (point-min))
+      (while (re-search-forward big-re nil t)
+	(goto-char (match-beginning 0))
+	(setq block (= (point) (point-at-bol)))
+	(when (setq name
+		    (save-excursion
+		      (when (re-search-backward
+			     (concat
+			      "\\("
+			      (mapconcat #'identity
+					 ebdb-snarf-name-re "\\|")
+			      "\\)")
+			     (save-excursion
+			       (if block
+				   (progn (forward-line -1)
+					  (line-beginning-position))
+				 (point-at-bol)))
+			     t)
+			;; If something goes wrong with the
+			;; name, don't worry about it.
+			(ignore-errors
+			  (ebdb-parse
+			   'ebdb-field-name
+			   (string-trim (match-string-no-properties 0)))))))
+	  ;; If NAME matches one of the records that are already in
+	  ;; BUNDLES, then assume we should be working with that record.
+	  (dolist (b bundles)
+	    (when (and (aref b 0)
+		       (string-match-p (ebdb-string name)
+				       (ebdb-string (aref b 0))))
+	      (setq bundle b))))
 
-      (unless bundle
-	(setq bundle (make-vector 3 nil))
-	(when name
-	  (push name (aref bundle 1))))
+	(unless bundle
+	  (setq bundle (make-vector 3 nil))
+	  (when name
+	    (push name (aref bundle 1))))
 
-      (dolist (class ebdb-snarf-routines)
-	(dolist (re (cdr class))
-	  (while (re-search-forward re (if block
-					   (save-excursion
-					     (forward-line)
-					     (line-end-position))
-					 (point-at-eol))
-				    t)
-	    (condition-case nil
-		(push (ebdb-parse
-		       (car class)
-		       (match-string-no-properties 1))
-		      (aref bundle 2))
+	(dolist (class ebdb-snarf-routines)
+	  (dolist (re (cdr class))
+	    (while (re-search-forward re (if block
+					     (save-excursion
+					       (forward-line)
+					       (line-end-position))
+					   (point-at-eol))
+				      t)
+	      (condition-case nil
+		  (push (ebdb-parse
+			 (car class)
+			 (match-string-no-properties 1))
+			(aref bundle 2))
 
-	      ;; If a regular expression matches but the result is
-	      ;; unparseable, that means the regexp is bad and should be
-	      ;; changed.  Later, report these errors if `ebdb-debug' is
-	      ;; true.
-	      (ebdb-unparseable nil)))))
-      (when bundle
-	(push bundle bundles)
-	(setq bundle nil))
-      (when block
-	(beginning-of-line 2)))
+		;; If a regular expression matches but the result is
+		;; unparseable, that means the regexp is bad and should be
+		;; changed.  Later, report these errors if `ebdb-debug' is
+		;; true.
+		(ebdb-unparseable nil)))))
+	(when bundle
+	  (push bundle bundles)
+	  (setq bundle nil))
+	(when block
+	  (beginning-of-line 2))))
     bundles))
 
 (defun ebdb-snarf-collapse (input)
