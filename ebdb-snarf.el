@@ -49,7 +49,8 @@
   `((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)")
     (ebdb-field-url ,(concat "\\("
 			     (regexp-opt ebdb-url-valid-schemes)
-			     "//[^ \n\t]+\\)")))
+			     "//[^ \n\t]+\\)"))
+    (ebdb-field-phone "\\(\\+?[[:digit:]]\\{1,3\\}[ )-.]?[[:digit:] -.()]+\\)"))
 
   "An alist of EBDB field classes and related regexps.
 
