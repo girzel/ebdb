@@ -30,6 +30,7 @@
 ;;; Code:
 
 (require 'pyim)
+(require 'ebdb-i18n)
 
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
 				(_cc (eql 86)))

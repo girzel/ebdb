@@ -29,7 +29,6 @@
 
 (require 'ert)
 (require 'ebdb-i18n)
-(require 'ebdb-chn)
 
 ;; Basic name parsing.
 
@@ -41,19 +40,6 @@
 	(brigitte (ebdb-parse 'ebdb-field-name-complex "Brigitte Bardot")))
     (should (string= (ebdb-name-last max) "von Sydow"))
     (should (string= (ebdb-name-last brigitte) "Bardot"))))
-
-(ert-deftest ebdb-i18n-parse-chinese-name ()
-  "Parse names in Chinese.
-
-Uses `ebdb-parse-i18n' method from ebdb-chn.el."
-  (let ((two-char (ebdb-parse 'ebdb-field-name-complex "李四"))
-	(three-char (ebdb-parse 'ebdb-field-name-complex "张国荣"))
-	(compound-surname-1 (ebdb-parse 'ebdb-field-name-complex "司马迁"))
-	(compound-surname-2 (ebdb-parse 'ebdb-field-name-complex "慕容学村")))
-    (should (string= (ebdb-name-last two-char) "李"))
-    (should (string= (ebdb-name-last three-char) "张"))
-    (should (string= (ebdb-name-last compound-surname-1) "司马"))
-    (should (string= (ebdb-name-last compound-surname-2) "慕容"))))
 
 (ert-deftest ebdb-i18n-parse-unhandled-name ()
   "Parse a name for which there is no `ebdb-i18n-parse' method

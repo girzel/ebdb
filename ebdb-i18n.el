@@ -43,9 +43,6 @@
 ;;; Code:
 
 (require 'ebdb)
-;; Require all i18n libraries provided by EBDB.  Third-party i18n
-;; libraries should require this library.
-(require 'ebdb-chn)
 
 (defgroup ebdb-i18n nil
   "Options for EBDB internationalization."
