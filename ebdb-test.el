@@ -467,7 +467,7 @@
   (should (equal (ebdb-vcard-escape "Marry\\n uncle!")
 		 "Marry\\n uncle!"))
 
-  (should (equal (ebdb-vcard-escape "Mine
+  (should (equal (ebdb-vcard-escape "Mine 
 uncle")
 		 "Mine \\nuncle"))
 
@@ -475,7 +475,7 @@ uncle")
 		 "Marry, nuncle!"))
 
   (should (equal (ebdb-vcard-unescape "Marry \\nuncle")
-		 "Marry
+		 "Marry 
 uncle"))
 
   (should (equal (ebdb-vcard-unescape
