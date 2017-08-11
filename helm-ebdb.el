@@ -63,7 +63,7 @@
 (defun helm-ebdb-cite-records (candidate)
   "Insert Name <email> string for CANDIDATE or marked candidate."
   (let ((recs (or (helm-marked-candidates) (list candidate))))
-    (ebdb-cite-records-mail recs)))
+    (ebdb-cite-records recs)))
 
 (defvar helm-source-ebdb
   '((name . "EBDB")

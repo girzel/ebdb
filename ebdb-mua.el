@@ -49,6 +49,8 @@
 (require 'ebdb-com)
 
 (autoload 'ebdb-snarf "ebdb-snarf")
+(autoload 'message-goto-cc "message")
+(autoload 'mail-cc "sendmail")
 
 (eval-and-compile
   (autoload 'mail-decode-encoded-word-string "mail-parse"))

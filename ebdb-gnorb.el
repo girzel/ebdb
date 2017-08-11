@@ -106,7 +106,7 @@ message was received."
    (actions :initform '(("Follow link" . gnorb-ebdb-follow-link))))
   :human-readable "gnus messages")
 
-(defun gnorb-ebdb-follow-link (record field)
+(defun gnorb-ebdb-follow-link (_record _field)
   (when-let ((link (or
 		    (get-text-property (point) 'gnorb-link)
 		    (get-text-property
@@ -133,10 +133,10 @@ message was received."
 	 (sec (and delta (abs real-sec))))
     (floor (/ sec 86400))))
 
-(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field gnorb-ebdb-field-messages)
 			      _style
-			      (record ebdb-record))
+			      (_record ebdb-record))
   (let* ((msgs (slot-value field 'messages))
 	 (outstring
 	  (if (= (length msgs) 0)

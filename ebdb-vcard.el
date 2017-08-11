@@ -29,6 +29,8 @@
 
 (require 'ebdb-format)
 
+(autoload 'calendar-gregorian-from-absolute "calendar")
+
 (defclass ebdb-formatter-vcard (ebdb-formatter)
   ((coding-system :initform 'utf-8-dos)
    (version-string

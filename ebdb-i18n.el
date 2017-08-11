@@ -21,11 +21,10 @@
 
 ;; This file contains extensions to EBDB, making it more
 ;; internationally aware.  It works by hijacking many of the common
-;; methods for field manipulation, by attaching :extra methods to
-;; them, and dispatching to new methods that allow for specialization
-;; on country codes, area codes, character scripts, etc.  The new
-;; methods are generally named the same as the old methods, plus a
-;; "-i18n" suffix.
+;; methods for field manipulation, attaching :extra methods to them,
+;; and dispatching to new methods that allow for specialization on
+;; country codes, area codes, character scripts, etc.  The new method
+;; names are the same as the old names, plus a "-i18n" suffix.
 
 ;; The methods in this file are only responsible for doing the
 ;; hijacking, and calling the i18n versions of the original methods --
@@ -54,438 +53,270 @@
   :type 'list
   :group 'ebdb-i18n)
 
-(cl-defgeneric ebdb-read-i18n (class slots obj spec)
-  "An internationalized version of `ebdb-read'.
+;; defvars come first to pacify compiler.
 
-This works the same as `ebdb-read', plus an additional argument
-SPEC.  What SPEC is depends on CLASS, but might be a phone
-country code, or a country symbol, or a script symbol.
-
-This method should return a plist of slots for object creation.")
-
-(cl-defgeneric ebdb-parse-i18n (class string spec &optional slots)
-  "An internationalized version of `ebdb-parse'.
-
-This works the same as `ebdb-read', plus an additional argument
-SPEC.  What SPEC is depends on CLASS, but might be a phone
-country code, or a country symbol, or a script symbol.  SLOTS is
-a plist of existing slot values.
-
-This method should return a new instance of CLASS.")
-
-(cl-defgeneric ebdb-string-i18n (field spec)
-  "An internationalized version of `ebdb-string'.")
-
-(cl-defgeneric ebdb-init-field-i18n (field record spec)
-  "An internationalized version of `ebdb-init-field'.")
-
-(cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
-  "An internationalized version of `ebdb-delete-field'.")
-
-(cl-defmethod ebdb-parse-i18n :around (_class _string _spec &optional _slots)
-  "Don't clobber match data when testing names."
-  (save-match-data
-    (cl-call-next-method)))
-
-;;;###autoload
-(defun ebdb-internationalize-addresses ()
-  "Go through all the EBDB contacts and \"internationalize\"
-  address fields.
-
-Essentially this just means swapping out the string country names
-for their symbol representations.")
-
-(cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-address))
-				       &optional slots obj)
-  (let ((country
-	 (cdr (assoc (completing-read
-		      "Country: "
-		      ebdb-i18n-countries nil nil
-		      (when obj (car (rassoc (ebdb-address-country obj)
-					     ebdb-i18n-countries))))
-		     ebdb-i18n-countries))))
-    (setq slots
-	  (condition-case nil
-	      (ebdb-read-i18n class
-			      (plist-put slots :country country) obj country)
-	    (cl-no-method
-	     (plist-put slots :country country))))
-    (cl-call-next-method class slots obj)))
-
-(cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-phone))
-				       &optional slots obj)
-  (let ((country
-	 (if obj
-	     (slot-value obj 'country-code)
-	   (cdr (assoc (completing-read
-			"Country/Region: "
-			ebdb-i18n-phone-codes nil nil)
-		       ebdb-i18n-phone-codes))))
-	  area-code)
-      ;; Obviously this whole structure thing is just poorly
-      ;; thought-out.
-      (when (consp country)
-	(cond ((numberp (car country))
-	       (setq area-code (second country)
-		     country (car country)))
-	      ((consp (car country))
-	       (setq country (assoc
-			      (string-to-number
-			       (completing-read
-				"Choose: "
-			      (mapcar (lambda (x)
-					(number-to-string (car x)))
-				      country)))
-			    country)
-		    area-code (second country))))
-      (when (consp area-code)
-	(setq area-code (string-to-number
-			 (completing-read
-			  "Area code: "
-			  (mapcar #'number-to-string area-code))))))
-    (when area-code
-      (setq slots (plist-put slots :area-code area-code)))
-    (setq slots (plist-put slots :country-code country))
-    (setq slots
-	  (condition-case nil
-	      (ebdb-read-i18n class slots obj country)
-	    (cl-no-method
-	     slots)))
-    (cl-call-next-method class slots obj)))
-
-(cl-defmethod ebdb-string :extra "i18n" ((phone ebdb-field-phone))
-  "Internationally-aware version of `ebdb-string' for phones."
-  (let ((cc (slot-value phone 'country-code)))
-    (or (and cc
-	     (condition-case nil
-		 (ebdb-string-i18n phone cc)
-	       (cl-no-method nil)))
-	(cl-call-next-method))))
-
-(cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-phone))
-					(str string)
-					&optional slots)
-  (let ((cc (or (plist-get slots :country-code)
-		(and (string-match "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+" str)
-		     (string-to-number (match-string 1 str))))))
-    (or (and cc
-	     (condition-case nil
-		 (ebdb-parse-i18n
-		  class
-		  (replace-match "" nil nil str 0)
-		  cc (plist-put slots :country-code cc))
-	       (cl-no-method nil)))
-	(cl-call-next-method))))
-
-;; We don't need to override the `ebdb-read' method for names.  It
-;; only matters what script the name is in if the user has set
-;; `ebdb-read-name-articulate' to nil, in which case the name is
-;; passed to this `ebdb-parse' method.
-(cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-name-complex))
-					(string string)
-					&optional slots)
-  ;; For now, only test the first character of whatever string the
-  ;; user has entered.
-  (let ((script (unless (string-empty-p string)
-		  (aref char-script-table (aref string 0)))))
-    (or (and script
-	     (null (memq script ebdb-i18n-ignorable-scripts))
-	     (condition-case nil
-		 (ebdb-parse-i18n class string script slots)
-	       (cl-no-method
-		nil)))
-	(cl-call-next-method))))
-
-(cl-defmethod ebdb-string :extra "i18n" ((name ebdb-field-name-complex))
-  (let* ((str (cl-call-next-method name))
-	 (script (aref char-script-table (aref str 0))))
-    (unless (memq script ebdb-i18n-ignorable-scripts)
-      (condition-case nil
-	  (setq str (ebdb-string-i18n name script))
-	(cl-no-method nil)))
-    str))
-
-(cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
-  "Do additional initialization work for international names."
-  (let* ((res (cl-call-next-method name record))
-	 (str (ebdb-string name))
-	 (script (aref char-script-table (aref str 0))))
-    (unless (memq script ebdb-i18n-ignorable-scripts)
-      (condition-case nil
-	  (ebdb-init-field-i18n name record script)
-	(cl-no-method nil)))
-    res))
-
-(cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) &optional record unload)
-  "Do additional deletion work for international names."
-  (let* ((str (ebdb-string name))
-	 (script (aref char-script-table (aref str 0))))
-    (unless (memq script ebdb-i18n-ignorable-scripts)
-      (condition-case nil
-	  (ebdb-delete-field-i18n name record script unload)
-	(cl-no-method nil))))
-  (cl-call-next-method))
-
+;; Taken from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3, on Feb
+;; 27, 2016
 (defvar ebdb-i18n-countries
   '(
-("Afghanistan" . afg)
-("Åland Islands" . ala)
-("Albania" . alb)
-("Algeria" . dza)
-("American Samoa" . asm)
-("Andorra" . and)
-("Angola" . ago)
-("Anguilla" . aia)
-("Antarctica" . ata)
-("Antigua and Barbuda" . atg)
-("Argentina" . arg)
-("Armenia" . arm)
-("Aruba" . abw)
-("Australia" . aus)
-("Austria" . aut)
-("Azerbaijan" . aze)
-("Bahamas" . bhs)
-("Bahrain" . bhr)
-("Bangladesh" . bgd)
-("Barbados" . brb)
-("Belarus" . blr)
-("Belgium" . bel)
-("Belize" . blz)
-("Benin" . ben)
-("Bermuda" . bmu)
-("Bhutan" . btn)
-("Bolivia" . bol)
-("Bonaire" . bes)
-("Sint Eustatius" . bes)
-("Saba" . bes)
-("Bosnia and Herzegovina" . bih)
-("Botswana" . bwa)
-("Bouvet Island" . bvt)
-("Brazil" . bra)
-("British Indian Ocean Territory" . iot)
-("Brunei Darussalam" . brn)
-("Bulgaria" . bgr)
-("Burkina Faso" . bfa)
-("Burundi" . bdi)
-("Cabo Verde" . cpv)
-("Cambodia" . khm)
-("Cameroon" . cmr)
-("Canada" . can)
-("Cayman Islands" . cym)
-("Central African Republic" . caf)
-("Chad" . tcd)
-("Chile" . chl)
-("China" . chn)
-("Christmas Island" . cxr)
-("Cocos (Keeling) Islands" . cck)
-("Colombia" . col)
-("Comoros" . com)
-("Congo" . cog)
-("Congo" . cod)
-("Cook Islands" . cok)
-("Costa Rica" . cri)
-("Côte d'Ivoire" . civ)
-("Croatia" . hrv)
-("Cuba" . cub)
-("Curaçao" . cuw)
-("Cyprus" . cyp)
-("Czech Republic" . cze)
-("Denmark" . dnk)
-("Djibouti" . dji)
-("Dominica" . dma)
-("Dominican Republic" . dom)
-("Ecuador" . ecu)
-("Egypt" . egy)
-("El Salvador" . slv)
-("Emacs" . emc)
-("Equatorial Guinea" . gnq)
-("Eritrea" . eri)
-("Estonia" . est)
-("Ethiopia" . eth)
-("Falkland Islands" . flk)
-("Faroe Islands" . fro)
-("Fiji" . fji)
-("Finland" . fin)
-("France" . fra)
-("French Guiana" . guf)
-("French Polynesia" . pyf)
-("French Southern Territories" . atf)
-("Gabon" . gab)
-("Gambia" . gmb)
-("Georgia" . geo)
-("Germany" . deu)
-("Ghana" . gha)
-("Gibraltar" . gib)
-("Greece" . grc)
-("Greenland" . grl)
-("Grenada" . grd)
-("Guadeloupe" . glp)
-("Guam" . gum)
-("Guatemala" . gtm)
-("Guernsey" . ggy)
-("Guinea" . gin)
-("Guinea-Bissau" . gnb)
-("Guyana" . guy)
-("Haiti" . hti)
-("Heard Island and McDonald Islands" . hmd)
-("Holy See" . vat)
-("Honduras" . hnd)
-("Hong Kong" . hkg)
-("Hungary" . hun)
-("Iceland" . isl)
-("India" . ind)
-("Indonesia" . idn)
-("Iran" . irn)
-("Iraq" . irq)
-("Ireland" . irl)
-("Isle of Man" . imn)
-("Israel" . isr)
-("Italy" . ita)
-("Jamaica" . jam)
-("Japan" . jpn)
-("Jersey" . jey)
-("Jordan" . jor)
-("Kazakhstan" . kaz)
-("Kenya" . ken)
-("Kiribati" . kir)
-("North Korea" . prk)
-("South Korea" . kor)
-("Kuwait" . kwt)
-("Kyrgyzstan" . kgz)
-("Lao People's Democratic Republic" . lao)
-("Latvia" . lva)
-("Lebanon" . lbn)
-("Lesotho" . lso)
-("Liberia" . lbr)
-("Libya" . lby)
-("Liechtenstein" . lie)
-("Lithuania" . ltu)
-("Luxembourg" . lux)
-("Macao" . mac)
-("Macedonia" . mkd)
-("Madagascar" . mdg)
-("Malawi" . mwi)
-("Malaysia" . mys)
-("Maldives" . mdv)
-("Mali" . mli)
-("Malta" . mlt)
-("Marshall Islands" . mhl)
-("Martinique" . mtq)
-("Mauritania" . mrt)
-("Mauritius" . mus)
-("Mayotte" . myt)
-("Mexico" . mex)
-("Micronesia" . fsm)
-("Moldova" . mda)
-("Monaco" . mco)
-("Mongolia" . mng)
-("Montenegro" . mne)
-("Montserrat" . msr)
-("Morocco" . mar)
-("Mozambique" . moz)
-("Myanmar" . mmr)
-("Namibia" . nam)
-("Nauru" . nru)
-("Nepal" . npl)
-("Netherlands" . nld)
-("New Caledonia" . ncl)
-("New Zealand" . nzl)
-("Nicaragua" . nic)
-("Niger" . ner)
-("Nigeria" . nga)
-("Niue" . niu)
-("Norfolk Island" . nfk)
-("Northern Mariana Islands" . mnp)
-("Norway" . nor)
-("Oman" . omn)
-("Pakistan" . pak)
-("Palau" . plw)
-("Palestine" . pse)
-("Panama" . pan)
-("Papua New Guinea" . png)
-("Paraguay" . pry)
-("Peru" . per)
-("Philippines" . phl)
-("Pitcairn" . pcn)
-("Poland" . pol)
-("Portugal" . prt)
-("Puerto Rico" . pri)
-("Qatar" . qat)
-("Réunion" . reu)
-("Romania" . rou)
-("Russian Federation" . rus)
-("Rwanda" . rwa)
-("Saint Barthélemy" . blm)
-("Saint Helena, Ascension and Tristan da Cunha" . shn)
-("Saint Kitts and Nevis" . kna)
-("Saint Lucia" . lca)
-("Saint Martin" . maf)
-("Saint Pierre and Miquelon" . spm)
-("Saint Vincent and the Grenadines" . vct)
-("Samoa" . wsm)
-("San Marino" . smr)
-("Sao Tome and Principe" . stp)
-("Saudi Arabia" . sau)
-("Senegal" . sen)
-("Serbia" . srb)
-("Seychelles" . syc)
-("Sierra Leone" . sle)
-("Singapore" . sgp)
-("Sint Maarten" . sxm)
-("Slovakia" . svk)
-("Slovenia" . svn)
-("Solomon Islands" . slb)
-("Somalia" . som)
-("South Africa" . zaf)
-("South Georgia and the South Sandwich Islands" . sgs)
-("South Sudan" . ssd)
-("Spain" . esp)
-("Sri Lanka" . lka)
-("Sudan" . sdn)
-("Suriname" . sur)
-("Svalbard and Jan Mayen" . sjm)
-("Swaziland" . swz)
-("Sweden" . swe)
-("Switzerland" . che)
-("Syrian Arab Republic" . syr)
-("Taiwan" . twn)
-("Tajikistan" . tjk)
-("Tanzania" . tza)
-("Thailand" . tha)
-("Timor-Leste" . tls)
-("Togo" . tgo)
-("Tokelau" . tkl)
-("Tonga" . ton)
-("Trinidad and Tobago" . tto)
-("Tunisia" . tun)
-("Turkey" . tur)
-("Turkmenistan" . tkm)
-("Turks and Caicos Islands" . tca)
-("Tuvalu" . tuv)
-("Uganda" . uga)
-("Ukraine" . ukr)
-("United Arab Emirates" . are)
-("United Kingdom of Great Britain and Northern Ireland" . gbr)
-("United States of America" . usa)
-("United States Minor Outlying Islands" . umi)
-("Uruguay" . ury)
-("Uzbekistan" . uzb)
-("Vanuatu" . vut)
-("Venezuela" . ven)
-("Viet Nam" . vnm)
-("Virgin Islands (British)" . vgb)
-("Virgin Islands (U.S.)" . vir)
-("Wallis and Futuna" . wlf)
-("Western Sahara" . esh)
-("Yemen" . yem)
-("Zambia" . zmb)
-("Zimbabwe" . zwe))
+    ("Afghanistan" . afg)
+    ("Åland Islands" . ala)
+    ("Albania" . alb)
+    ("Algeria" . dza)
+    ("American Samoa" . asm)
+    ("Andorra" . and)
+    ("Angola" . ago)
+    ("Anguilla" . aia)
+    ("Antarctica" . ata)
+    ("Antigua and Barbuda" . atg)
+    ("Argentina" . arg)
+    ("Armenia" . arm)
+    ("Aruba" . abw)
+    ("Australia" . aus)
+    ("Austria" . aut)
+    ("Azerbaijan" . aze)
+    ("Bahamas" . bhs)
+    ("Bahrain" . bhr)
+    ("Bangladesh" . bgd)
+    ("Barbados" . brb)
+    ("Belarus" . blr)
+    ("Belgium" . bel)
+    ("Belize" . blz)
+    ("Benin" . ben)
+    ("Bermuda" . bmu)
+    ("Bhutan" . btn)
+    ("Bolivia" . bol)
+    ("Bonaire" . bes)
+    ("Sint Eustatius" . bes)
+    ("Saba" . bes)
+    ("Bosnia and Herzegovina" . bih)
+    ("Botswana" . bwa)
+    ("Bouvet Island" . bvt)
+    ("Brazil" . bra)
+    ("British Indian Ocean Territory" . iot)
+    ("Brunei Darussalam" . brn)
+    ("Bulgaria" . bgr)
+    ("Burkina Faso" . bfa)
+    ("Burundi" . bdi)
+    ("Cabo Verde" . cpv)
+    ("Cambodia" . khm)
+    ("Cameroon" . cmr)
+    ("Canada" . can)
+    ("Cayman Islands" . cym)
+    ("Central African Republic" . caf)
+    ("Chad" . tcd)
+    ("Chile" . chl)
+    ("China" . chn)
+    ("Christmas Island" . cxr)
+    ("Cocos (Keeling) Islands" . cck)
+    ("Colombia" . col)
+    ("Comoros" . com)
+    ("Congo" . cog)
+    ("Congo" . cod)
+    ("Cook Islands" . cok)
+    ("Costa Rica" . cri)
+    ("Côte d'Ivoire" . civ)
+    ("Croatia" . hrv)
+    ("Cuba" . cub)
+    ("Curaçao" . cuw)
+    ("Cyprus" . cyp)
+    ("Czech Republic" . cze)
+    ("Denmark" . dnk)
+    ("Djibouti" . dji)
+    ("Dominica" . dma)
+    ("Dominican Republic" . dom)
+    ("Ecuador" . ecu)
+    ("Egypt" . egy)
+    ("El Salvador" . slv)
+    ("Emacs" . emc)
+    ("Equatorial Guinea" . gnq)
+    ("Eritrea" . eri)
+    ("Estonia" . est)
+    ("Ethiopia" . eth)
+    ("Falkland Islands" . flk)
+    ("Faroe Islands" . fro)
+    ("Fiji" . fji)
+    ("Finland" . fin)
+    ("France" . fra)
+    ("French Guiana" . guf)
+    ("French Polynesia" . pyf)
+    ("French Southern Territories" . atf)
+    ("Gabon" . gab)
+    ("Gambia" . gmb)
+    ("Georgia" . geo)
+    ("Germany" . deu)
+    ("Ghana" . gha)
+    ("Gibraltar" . gib)
+    ("Greece" . grc)
+    ("Greenland" . grl)
+    ("Grenada" . grd)
+    ("Guadeloupe" . glp)
+    ("Guam" . gum)
+    ("Guatemala" . gtm)
+    ("Guernsey" . ggy)
+    ("Guinea" . gin)
+    ("Guinea-Bissau" . gnb)
+    ("Guyana" . guy)
+    ("Haiti" . hti)
+    ("Heard Island and McDonald Islands" . hmd)
+    ("Holy See" . vat)
+    ("Honduras" . hnd)
+    ("Hong Kong" . hkg)
+    ("Hungary" . hun)
+    ("Iceland" . isl)
+    ("India" . ind)
+    ("Indonesia" . idn)
+    ("Iran" . irn)
+    ("Iraq" . irq)
+    ("Ireland" . irl)
+    ("Isle of Man" . imn)
+    ("Israel" . isr)
+    ("Italy" . ita)
+    ("Jamaica" . jam)
+    ("Japan" . jpn)
+    ("Jersey" . jey)
+    ("Jordan" . jor)
+    ("Kazakhstan" . kaz)
+    ("Kenya" . ken)
+    ("Kiribati" . kir)
+    ("North Korea" . prk)
+    ("South Korea" . kor)
+    ("Kuwait" . kwt)
+    ("Kyrgyzstan" . kgz)
+    ("Lao People's Democratic Republic" . lao)
+    ("Latvia" . lva)
+    ("Lebanon" . lbn)
+    ("Lesotho" . lso)
+    ("Liberia" . lbr)
+    ("Libya" . lby)
+    ("Liechtenstein" . lie)
+    ("Lithuania" . ltu)
+    ("Luxembourg" . lux)
+    ("Macao" . mac)
+    ("Macedonia" . mkd)
+    ("Madagascar" . mdg)
+    ("Malawi" . mwi)
+    ("Malaysia" . mys)
+    ("Maldives" . mdv)
+    ("Mali" . mli)
+    ("Malta" . mlt)
+    ("Marshall Islands" . mhl)
+    ("Martinique" . mtq)
+    ("Mauritania" . mrt)
+    ("Mauritius" . mus)
+    ("Mayotte" . myt)
+    ("Mexico" . mex)
+    ("Micronesia" . fsm)
+    ("Moldova" . mda)
+    ("Monaco" . mco)
+    ("Mongolia" . mng)
+    ("Montenegro" . mne)
+    ("Montserrat" . msr)
+    ("Morocco" . mar)
+    ("Mozambique" . moz)
+    ("Myanmar" . mmr)
+    ("Namibia" . nam)
+    ("Nauru" . nru)
+    ("Nepal" . npl)
+    ("Netherlands" . nld)
+    ("New Caledonia" . ncl)
+    ("New Zealand" . nzl)
+    ("Nicaragua" . nic)
+    ("Niger" . ner)
+    ("Nigeria" . nga)
+    ("Niue" . niu)
+    ("Norfolk Island" . nfk)
+    ("Northern Mariana Islands" . mnp)
+    ("Norway" . nor)
+    ("Oman" . omn)
+    ("Pakistan" . pak)
+    ("Palau" . plw)
+    ("Palestine" . pse)
+    ("Panama" . pan)
+    ("Papua New Guinea" . png)
+    ("Paraguay" . pry)
+    ("Peru" . per)
+    ("Philippines" . phl)
+    ("Pitcairn" . pcn)
+    ("Poland" . pol)
+    ("Portugal" . prt)
+    ("Puerto Rico" . pri)
+    ("Qatar" . qat)
+    ("Réunion" . reu)
+    ("Romania" . rou)
+    ("Russian Federation" . rus)
+    ("Rwanda" . rwa)
+    ("Saint Barthélemy" . blm)
+    ("Saint Helena, Ascension and Tristan da Cunha" . shn)
+    ("Saint Kitts and Nevis" . kna)
+    ("Saint Lucia" . lca)
+    ("Saint Martin" . maf)
+    ("Saint Pierre and Miquelon" . spm)
+    ("Saint Vincent and the Grenadines" . vct)
+    ("Samoa" . wsm)
+    ("San Marino" . smr)
+    ("Sao Tome and Principe" . stp)
+    ("Saudi Arabia" . sau)
+    ("Senegal" . sen)
+    ("Serbia" . srb)
+    ("Seychelles" . syc)
+    ("Sierra Leone" . sle)
+    ("Singapore" . sgp)
+    ("Sint Maarten" . sxm)
+    ("Slovakia" . svk)
+    ("Slovenia" . svn)
+    ("Solomon Islands" . slb)
+    ("Somalia" . som)
+    ("South Africa" . zaf)
+    ("South Georgia and the South Sandwich Islands" . sgs)
+    ("South Sudan" . ssd)
+    ("Spain" . esp)
+    ("Sri Lanka" . lka)
+    ("Sudan" . sdn)
+    ("Suriname" . sur)
+    ("Svalbard and Jan Mayen" . sjm)
+    ("Swaziland" . swz)
+    ("Sweden" . swe)
+    ("Switzerland" . che)
+    ("Syrian Arab Republic" . syr)
+    ("Taiwan" . twn)
+    ("Tajikistan" . tjk)
+    ("Tanzania" . tza)
+    ("Thailand" . tha)
+    ("Timor-Leste" . tls)
+    ("Togo" . tgo)
+    ("Tokelau" . tkl)
+    ("Tonga" . ton)
+    ("Trinidad and Tobago" . tto)
+    ("Tunisia" . tun)
+    ("Turkey" . tur)
+    ("Turkmenistan" . tkm)
+    ("Turks and Caicos Islands" . tca)
+    ("Tuvalu" . tuv)
+    ("Uganda" . uga)
+    ("Ukraine" . ukr)
+    ("United Arab Emirates" . are)
+    ("United Kingdom of Great Britain and Northern Ireland" . gbr)
+    ("United States of America" . usa)
+    ("United States Minor Outlying Islands" . umi)
+    ("Uruguay" . ury)
+    ("Uzbekistan" . uzb)
+    ("Vanuatu" . vut)
+    ("Venezuela" . ven)
+    ("Viet Nam" . vnm)
+    ("Virgin Islands (British)" . vgb)
+    ("Virgin Islands (U.S.)" . vir)
+    ("Wallis and Futuna" . wlf)
+    ("Western Sahara" . esh)
+    ("Yemen" . yem)
+    ("Zambia" . zmb)
+    ("Zimbabwe" . zwe))
   "Mapping between a string label for countries or regions, in
 English, and a three-letter symbol identifying the country, as
 per ISO 3166-1 alpha 3.")
-;; Taken from https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3, on Feb
-;; 27, 2016
 
+;; Taken from https://en.wikipedia.org/wiki/Telephone_country_codes,
+;; on Jul 30, 2016
 (defvar ebdb-i18n-phone-codes
   '(
     ;; Need a different way of doing this.
@@ -764,9 +595,179 @@ per ISO 3166-1 alpha 3.")
 ("Zambia" . 260)
 ("Zanzibar" . 255)
 ("Zimbabwe" .  263))
-"Mapping of country names to country-code numbers.")
-;; Taken from https://en.wikipedia.org/wiki/Telephone_country_codes,
-;; on Jul 30, 2016
+  "Mapping of country names to country-code numbers.")
+
+(cl-defgeneric ebdb-read-i18n (class slots obj spec)
+  "An internationalized version of `ebdb-read'.
+
+This works the same as `ebdb-read', plus an additional argument
+SPEC.  What SPEC is depends on CLASS, but might be a phone
+country code, or a country symbol, or a script symbol.
+
+This method should return a plist of slots for object creation.")
+
+(cl-defgeneric ebdb-parse-i18n (class string spec &optional slots)
+  "An internationalized version of `ebdb-parse'.
+
+This works the same as `ebdb-read', plus an additional argument
+SPEC.  What SPEC is depends on CLASS, but might be a phone
+country code, or a country symbol, or a script symbol.  SLOTS is
+a plist of existing slot values.
+
+This method should return a new instance of CLASS.")
+
+(cl-defgeneric ebdb-string-i18n (field spec)
+  "An internationalized version of `ebdb-string'.")
+
+(cl-defgeneric ebdb-init-field-i18n (field record spec)
+  "An internationalized version of `ebdb-init-field'.")
+
+(cl-defgeneric ebdb-delete-field-i18n (field record spec unload)
+  "An internationalized version of `ebdb-delete-field'.")
+
+(cl-defmethod ebdb-parse-i18n :around (_class _string _spec &optional _slots)
+  "Don't clobber match data when testing names."
+  (save-match-data
+    (cl-call-next-method)))
+
+;;;###autoload
+(defun ebdb-internationalize-addresses ()
+  "Go through all the EBDB contacts and \"internationalize\"
+  address fields.
+
+Essentially this just means swapping out the string country names
+for their symbol representations.")
+
+(cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-address))
+				       &optional slots obj)
+  (let ((country
+	 (cdr (assoc (completing-read
+		      "Country: "
+		      ebdb-i18n-countries nil nil
+		      (when obj (car (rassoc (ebdb-address-country obj)
+					     ebdb-i18n-countries))))
+		     ebdb-i18n-countries))))
+    (setq slots
+	  (condition-case nil
+	      (ebdb-read-i18n class
+			      (plist-put slots :country country) obj country)
+	    (cl-no-method
+	     (plist-put slots :country country))))
+    (cl-call-next-method class slots obj)))
+
+(cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-phone))
+				       &optional slots obj)
+  (let ((country
+	 (if obj
+	     (slot-value obj 'country-code)
+	   (cdr (assoc (completing-read
+			"Country/Region: "
+			ebdb-i18n-phone-codes nil nil)
+		       ebdb-i18n-phone-codes))))
+	  area-code)
+      ;; Obviously this whole structure thing is just poorly
+      ;; thought-out.
+      (when (consp country)
+	(cond ((numberp (car country))
+	       (setq area-code (cl-second country)
+		     country (car country)))
+	      ((consp (car country))
+	       (setq country (assoc
+			      (string-to-number
+			       (completing-read
+				"Choose: "
+			      (mapcar (lambda (x)
+					(number-to-string (car x)))
+				      country)))
+			    country)
+		    area-code (cl-second country))))
+      (when (consp area-code)
+	(setq area-code (string-to-number
+			 (completing-read
+			  "Area code: "
+			  (mapcar #'number-to-string area-code))))))
+    (when area-code
+      (setq slots (plist-put slots :area-code area-code)))
+    (setq slots (plist-put slots :country-code country))
+    (setq slots
+	  (condition-case nil
+	      (ebdb-read-i18n class slots obj country)
+	    (cl-no-method
+	     slots)))
+    (cl-call-next-method class slots obj)))
+
+(cl-defmethod ebdb-string :extra "i18n" ((phone ebdb-field-phone))
+  "Internationally-aware version of `ebdb-string' for phones."
+  (let ((cc (slot-value phone 'country-code)))
+    (or (and cc
+	     (condition-case nil
+		 (ebdb-string-i18n phone cc)
+	       (cl-no-method nil)))
+	(cl-call-next-method))))
+
+(cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-phone))
+					(str string)
+					&optional slots)
+  (let ((cc (or (plist-get slots :country-code)
+		(and (string-match "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+" str)
+		     (string-to-number (match-string 1 str))))))
+    (or (and cc
+	     (condition-case nil
+		 (ebdb-parse-i18n
+		  class
+		  (replace-match "" nil nil str 0)
+		  cc (plist-put slots :country-code cc))
+	       (cl-no-method nil)))
+	(cl-call-next-method))))
+
+;; We don't need to override the `ebdb-read' method for names.  It
+;; only matters what script the name is in if the user has set
+;; `ebdb-read-name-articulate' to nil, in which case the name is
+;; passed to this `ebdb-parse' method.
+(cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-name-complex))
+					(string string)
+					&optional slots)
+  ;; For now, only test the first character of whatever string the
+  ;; user has entered.
+  (let ((script (unless (string-empty-p string)
+		  (aref char-script-table (aref string 0)))))
+    (or (and script
+	     (null (memq script ebdb-i18n-ignorable-scripts))
+	     (condition-case nil
+		 (ebdb-parse-i18n class string script slots)
+	       (cl-no-method
+		nil)))
+	(cl-call-next-method))))
+
+(cl-defmethod ebdb-string :extra "i18n" ((name ebdb-field-name-complex))
+  (let* ((str (cl-call-next-method name))
+	 (script (aref char-script-table (aref str 0))))
+    (unless (memq script ebdb-i18n-ignorable-scripts)
+      (condition-case nil
+	  (setq str (ebdb-string-i18n name script))
+	(cl-no-method nil)))
+    str))
+
+(cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
+  "Do additional initialization work for international names."
+  (let* ((res (cl-call-next-method name record))
+	 (str (ebdb-string name))
+	 (script (aref char-script-table (aref str 0))))
+    (unless (memq script ebdb-i18n-ignorable-scripts)
+      (condition-case nil
+	  (ebdb-init-field-i18n name record script)
+	(cl-no-method nil)))
+    res))
+
+(cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) &optional record unload)
+  "Do additional deletion work for international names."
+  (let* ((str (ebdb-string name))
+	 (script (aref char-script-table (aref str 0))))
+    (unless (memq script ebdb-i18n-ignorable-scripts)
+      (condition-case nil
+	  (ebdb-delete-field-i18n name record script unload)
+	(cl-no-method nil))))
+  (cl-call-next-method))
 
 (provide 'ebdb-i18n)
 ;;; ebdb-i18n.el ends here

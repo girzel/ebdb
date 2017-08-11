@@ -28,6 +28,8 @@
 (require 'message)
 (require 'sendmail)
 
+(defvar gnus-window-to-buffer)
+
 (defgroup ebdb-mua-message nil
   "Message-specific EBDB customizations"
   :group 'ebdb-mua)

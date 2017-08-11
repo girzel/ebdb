@@ -52,7 +52,8 @@
 
 ;;; Code:
 
-(require 'ebdb)
+(require 'ebdb-com)
+(require 'org)
 
 (if (fboundp 'org-link-set-parameters)
     (org-link-set-parameters "ebdb"

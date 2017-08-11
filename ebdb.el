@@ -55,13 +55,18 @@
 (autoload 'widget-group-match "wid-edit")
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")
-(autoload 'calendar-gregorian-from-absolute "calendar")
 (autoload 'calendar-absolute-from-gregorian "calendar")
 (autoload 'calendar-make-alist "calendar")
+(autoload 'calendar-goto-date "calendar")
+(autoload 'calendar-last-day-of-month "calendar")
+(autoload 'calendar- "calendar")
+(autoload 'calendar-read "calendar")
+(autoload 'calendar-read-date "calendar")
 (autoload 'diary-sexp-entry "diary-lib")
 (autoload 'diary-add-to-list "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
 (defvar ebdb-i18n-countries)
+(defvar calendar-month-name-array)
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -409,11 +414,366 @@ will match \"ì\", and so on.  This may slow searching down."
   :group 'ebdb-search
   :type 'boolean)
 
+(defcustom ebdb-hash-extra-predicates nil
+  "Extra predicates when looking up entries in the EBDB hashtable.
+
+Predicates are used to filter results from the hashtable,
+ensuring that string lookups only return the results they're
+meant to.
+
+This option should be a list of conses, where the car is a
+symbol, and the cdr is a lambda form which accepts the string key
+and a record, and returns t if the key is acceptable for
+returning that record."
+  :group 'ebdb-search
+  :package-version "0.2"
+  :type '(repeat (cons symbol functionp)))
+
+(defcustom ebdb-signal-program (executable-find "signal-cli")
+  "The name of the signal-cli program, if installed.
+
+This program must be present in order to send text messages
+through the Signal service."
+  :group 'ebdb-utilities-dialing
+  :type 'string)
+
 (defcustom ebdb-info-file nil
   "Location of the ebdb info file, if it's not in the standard place."
   :group 'ebdb
   :type '(choice (const :tag "Standard location" nil)
                  (file :tag "Nonstandard location")))
+
+(defcustom ebdb-canonical-hosts
+  ;; Example
+  (regexp-opt '("cs.cmu.edu" "ri.cmu.edu"))
+  "Regexp matching the canonical part of the domain part of a mail address.
+If the domain part of a mail address matches this regexp, the domain
+is replaced by the substring that actually matched this address.
+
+Used by  `ebdb-canonicalize-mail-1'.  See also `ebdb-ignore-redundant-mails'."
+  :group 'ebdb-utilities
+  :type '(regexp :tag "Regexp matching sites"))
+
+(defcustom ebdb-canonicalize-mail-function nil
+  "If non-nil, it should be a function of one arg: a mail address string.
+When EBDB is parsing mail addresses, the corresponding mail
+addresses are passed to this function first.  It acts as a kind
+of \"filter\" to transform the mail addresses before they are
+compared against or added to the database.  See
+`ebdb-canonicalize-mail-1' for a more complete example.  If this
+function returns nil, EBDB assumes that there is no mail address.
+
+See also `ebdb-ignore-redundant-mails'."
+  :group 'ebdb-utilities
+  :type 'function)
+
+(defcustom ebdb-message-clean-name-function 'ebdb-message-clean-name-default
+  "Function to clean up the name in the header of a message.
+It takes one argument, the name as extracted by
+`mail-extract-address-components'."
+  :group 'ebdb-utilities
+  :type 'function)
+
+;;; Record editing
+
+;; The following two options should be obviated by ebdb-i18n.el
+;; See http://en.wikipedia.org/wiki/Postal_address
+;; http://www.upu.int/en/activities/addressing/postal-addressing-systems-in-member-countstateries.html
+(defcustom ebdb-address-format-list
+  '(((arg) "splrc" "@%s\n@%p, @%l@, %r@\n%c@" "@%l@")
+    ((aus) "slrpc" "@%s\n@%l@ %r@ %p@\n%c@" "@%l@")
+    ((aut due esp che)
+     "splrc" "@%s\n@%p @%l@ (%r)@\n%c@" "@%l@")
+    ((can) "slrcp" "@%s\n@%l@, %r@\n%c@ %p@" "@%l@")
+    ((chn) "slprc" "@%s\n@%l@\n%p@ %r@\n%c@" "@%l@") ; English format
+    ; (("China") "cprls" "@%c @%p\n@%r @%l@ %s@" "@%l@") ; Chinese format
+    ((ind) "slprc" "@%s\n@%l@ %p@ (%r)@\n%c@" "@%l@")
+    ((usa) "slrpc" "@%s\n@%l@, %r@ %p@\n%c@" "@%l@")
+    (t ebdb-edit-address-default ebdb-format-address-default "@%l@"))
+  "List of address editing and formatting rules for EBDB.
+Each rule is a list (IDENTIFIER EDIT FORMAT FORMAT).
+The first rule for which IDENTIFIER matches an address is used for editing
+and formatting the address.
+
+IDENTIFIER may be a list of countries.
+IDENTIFIER may also be a function that is called with one arg, the address
+to be used.  The rule applies if the function returns non-nil.
+See `ebdb-address-continental-p' for an example.
+If IDENTIFIER is t, this rule always applies.  Usually, this should be
+the last rule that becomes a fall-back (default).
+
+EDIT may be a function that is called with one argument, the address.
+See `ebdb-edit-address-default' for an example.
+
+EDIT may also be an editting format string.  It is a string containing
+the five letters s, c, p, S, and C that specify the order for editing
+the five elements of an address:
+
+s  streets
+l  locality
+p  postcode
+r  region
+c  country
+
+The first FORMAT of each rule is used for multi-line layout, the second FORMAT
+is used for one-line layout.
+
+FORMAT may be a function that is called with one argument, the address.
+See `ebdb-format-address-default' for an example.
+
+FORMAT may also be a format string.  It consists of formatting elements
+separated by a delimiter defined via the first (and last) character of FORMAT.
+Each formatting element may contain one of the following format specifiers:
+
+%s  streets (used repeatedly for each street part)
+%l  locality
+%p  postcode
+%r  region
+%c  country
+
+A formatting element will be applied only if the corresponding part
+of the address is a non-empty string.
+
+See also `ebdb-print-address-format-list'."
+  :group 'ebdb-record-edit
+  :type '(repeat (list (choice (const :tag "Default" t)
+                               (function :tag "Function")
+                               (repeat (string)))
+                       (choice (string)
+                               (function :tag "Function"))
+                       (choice (string)
+                               (function :tag "Function"))
+                       (choice (string)
+                               (function :tag "Function")))))
+
+(defcustom ebdb-continental-postcode-regexp
+  "^\\s *[A-Z][A-Z]?\\s *-\\s *[0-9][0-9][0-9]"
+  "Regexp matching continental postcodes.
+Used by address format identifier `ebdb-address-continental-p'.
+The regexp should match postcodes of the form CH-8052, NL-2300RA,
+and SE-132 54."
+  :group 'ebdb-record-edit
+  :type 'regexp)
+
+(defcustom ebdb-legal-postcodes
+  '(;; empty string
+    "^$"
+    ;; Matches 1 to 6 digits.
+    "^[ \t\n]*[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[ \t\n]*$"
+    ;; Matches 5 digits and 3 or 4 digits.
+    "^[ \t\n]*\\([0-9][0-9][0-9][0-9][0-9]\\)[ \t\n]*-?[ \t\n]*\\([0-9][0-9][0-9][0-9]?\\)[ \t\n]*$"
+    ;; Match postcodes for Canada, UK, etc. (result is ("LL47" "U4B")).
+    "^[ \t\n]*\\([A-Za-z0-9]+\\)[ \t\n]+\\([A-Za-z0-9]+\\)[ \t\n]*$"
+    ;; Match postcodes for continental Europe.  Examples "CH-8057"
+    ;; or "F - 83320" (result is ("CH" "8057") or ("F" "83320")).
+    ;; Support for "NL-2300RA" added at request from Carsten Dominik
+    ;; <dominik@astro.uva.nl>
+    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+ ?[A-Z]*\\)[ \t\n]*$"
+    ;; Match postcodes from Sweden where the five digits are grouped 3+2
+    ;; at the request from Mats Lofdahl <MLofdahl@solar.stanford.edu>.
+    ;; (result is ("SE" (133 36)))
+    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+\\)[ \t\n]+\\([0-9]+\\)[ \t\n]*$")
+  "List of regexps that match legal postcodes.
+Whether this is used at all depends on the variable `ebdb-check-postcode'."
+  :group 'ebdb-record-edit
+  :type '(repeat regexp))
+
+(defcustom ebdb-default-separator '("[,;]" ", ")
+  "The default field separator.  It is a list (SPLIT-RE JOIN).
+This is used for fields which do not have an entry in `ebdb-separator-alist'."
+  :group 'ebdb-record-edit
+  :type '(list regexp string))
+
+(defcustom ebdb-separator-alist
+  '((record "\n\n" "\n\n") ; used by `ebdb-copy-fields-as-kill'
+    (name-first-last "[ ,;]" " ")
+    (name-last-first "[ ,;]" ", ")
+    (name-field ":\n" ":\n") ; used by `ebdb-copy-fields-as-kill'
+    (phone "[,;]" ", ")
+    (address ";\n" ";\n")
+    (organization "[,;]" ", ")
+    (affix "[,;]"  ", ")
+    (aka "[,;]" ", ")
+    (mail "[,;]" ", ")
+    (mail-alias "[,;]" ", ")
+    (vm-folder "[,;]" ", ")
+    (birthday "\n" "\n")
+    (wedding "\n" "\n")
+    (anniversary "\n" "\n")
+    (notes "\n" "\n"))
+  "Alist of field separators.
+Each element is of the form (FIELD SPLIT-RE JOIN).
+For fields lacking an entry here `ebdb-default-separator' is used instead."
+  :group 'ebdb-record-edit
+  :type '(repeat (list symbol regexp string)))
+
+(defcustom ebdb-image-path nil
+  "List of directories to search for `ebdb-image'."
+  :group 'ebdb-record-edit
+  :type '(repeat (directory)))
+
+(defcustom ebdb-image-suffixes '(".png" ".jpg" ".gif" ".xpm")
+  "List of file name suffixes searched for `ebdb-image'."
+  :group 'ebdb-record-edit
+  :type '(repeat (string :tag "File suffix")))
+
+(defcustom ebdb-read-name-articulate nil
+  "Specify how to read record names.
+
+If nil, read full names as single strings, and parse them
+accordingly.  If t, the user will be prompted separately for each
+field of the name.
+
+If this option is nil, and the user enters a single string, the
+resulting name field will be an instance of
+`ebdb-field-name-simple'.  Even if this option is t, the user can
+still trigger the creation of a simple name field by entering a
+single string for the surname, and nothing else."
+  :group 'ebdb-record-edit
+  :type 'boolean)
+
+(defcustom ebdb-lastname-prefixes
+ '("von" "de" "di")
+  "List of lastname prefixes recognized in name fields.
+Used to enhance dividing name strings into firstname and lastname parts.
+Case is ignored."
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
+(defcustom ebdb-lastname-re
+  (concat "[- \t]*\\(\\(?:\\<"
+          (regexp-opt ebdb-lastname-prefixes)
+          ;; multiple last names concatenated by `-'
+          "\\>[- \t]+\\)?\\(?:\\w+[ \t]*-[ \t]*\\)*\\w+\\)\\'")
+  "Regexp matching the last name of a full name.
+Its first parenthetical subexpression becomes the last name."
+  :group 'ebdb-record-edit
+  :type 'regexp)
+
+(defcustom ebdb-lastname-suffixes
+ '("Jr" "Sr" "II" "III")
+  "List of lastname suffixes recognized in name fields.
+Used to dividing name strings into firstname and lastname parts.
+All suffixes are complemented by optional `.'.  Case is ignored."
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
+(defcustom ebdb-lastname-suffix-re
+  (concat "[-,. \t/\\]+\\("
+          (regexp-opt ebdb-lastname-suffixes)
+          ;; suffices are complemented by optional `.'.
+          "\\.?\\)\\W*\\'")
+  "Regexp matching the suffix of a last name.
+Its first parenthetical subexpression becomes the suffix."
+  :group 'ebdb-record-edit
+  :type 'regexp)
+
+(defcustom ebdb-allow-duplicates nil
+  "When non-nil EBDB allows records with duplicate names and email addresses.
+In rare cases, this may lead to confusion with EBDB's MUA interface."
+  :group 'ebdb-record-edit
+  :type 'boolean)
+
+(defcustom ebdb-address-label-list '("home" "work" "other")
+  "List of labels for Address field."
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
+(defcustom ebdb-phone-label-list '("home" "work" "cell" "fax" "other")
+  "List of labels for Phone field."
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
+(defcustom ebdb-default-country "Emacs";; what do you mean, it's not a country?
+  "Default country to use if none is specified."
+  :group 'ebdb-record-edit
+  :type '(choice (const :tag "None" nil)
+                 (string :tag "Default Country")))
+
+(defcustom ebdb-check-postcode t
+  "If non-nil, require legal postcodes when entering an address.
+The format of legal postcodes is determined by the variable
+`ebdb-legal-postcodes'."
+  :group 'ebdb-record-edit
+  :type 'boolean)
+
+(defcustom ebdb-default-user-field 'ebdb-field-notes
+  "Default field when editing EBDB records."
+  :group 'ebdb-record-edit
+  :type '(symbol :tag "Field"))
+
+(defcustom ebdb-url-valid-schemes '("http:" "https:" "irc:")
+  "A list of strings matching schemes acceptable to
+  `ebdb-field-url' instances.
+
+Strings should not be regular expressions.  They should include
+the colon character."
+
+  :group 'ebdb-record-edit
+  :type '(repeat string))
+
+(defcustom ebdb-mail-avoid-redundancy nil
+  "How to handle the name part of `ebdb-dwim-mail'.
+
+If nil, always return both name and mail.  If value is mail-only
+never use full name.  Other non-nil values mean do not use full
+name in mail address when same as mail.
+"
+  :group 'ebdb-sendmail
+  :type '(choice (const :tag "Allow redundancy" nil)
+                 (const :tag "Never use full name" mail-only)
+                 (const :tag "Avoid redundancy" t)))
+
+(defcustom ebdb-complete-mail t
+  "If t MUA insinuation provides key binding for command `ebdb-complete-mail'."
+  :group 'ebdb-sendmail
+  :type 'boolean)
+
+(defcustom ebdb-completion-list t
+  "Controls the behaviour of `ebdb-complete-mail'.
+If a list of symbols, it specifies which fields to complete.  Symbols include
+  name (= record's display name)
+  alt-names (= any other names the record has)
+  organization
+  mail (= all email addresses of each record)
+  primary (= first email address of each record)
+If t, completion is done for all of the above.
+If nil, no completion is offered."
+  ;; These symbols match the fields for which EBDB provides entries in
+  ;; `ebdb-hash-table'.
+  :group 'ebdb-sendmail
+  :type '(choice (const :tag "No Completion" nil)
+                 (const :tag "Complete across all fields" t)
+                 (repeat :tag "Field"
+                         (choice (const name)
+                                 (const alt-names)
+                                 (const organization)
+                                 (const primary)
+                                 (const mail)))))
+
+(defcustom ebdb-complete-mail-allow-cycling nil
+  "If non-nil cycle mail addresses when calling `ebdb-complete-mail'."
+  :group 'ebdb-sendmail
+  :type 'boolean)
+
+(defcustom ebdb-complete-mail-hook nil
+  "List of functions called after a sucessful completion."
+  :group 'ebdb-sendmail
+  :type 'hook)
+
+(defcustom ebdb-mail-abbrev-expand-hook nil
+  ;; Replacement for function `mail-abbrev-expand-hook'.
+  "Function (not hook) run each time an alias is expanded.
+The function is called with two args the alias and the list
+of corresponding mail addresses."
+  :group 'ebdb-sendmail
+  :type 'function)
+
+(defcustom ebdb-completion-display-record t
+  "If non-nil `ebdb-complete-mail' displays the EBDB record after completion."
+  :group 'ebdb-sendmail
+  :type '(choice (const :tag "Update the EBDB buffer" t)
+                 (const :tag "Do not update the EBDB buffer" nil)))
 
 (defvar ebdb-update-unchanged-records nil
   "If non-nil update unchanged records in the database.
@@ -749,7 +1109,7 @@ process."
 (cl-defmethod eieio-object-name-string ((field ebdb-field-labeled))
   "Return a string which is FIELD's name."
   (or (slot-value field 'object-name)
-      (ebdb-field-readable-name (class-of field))))
+      (ebdb-field-readable-name (eieio-object-class field))))
 
 ;;; The obfuscated field type.  This is a little goofy, but might come
 ;;; in handy.
@@ -1722,16 +2082,6 @@ Eventually this method will go away."
 
 ;; URL field
 
-(defcustom ebdb-url-valid-schemes '("http:" "https:" "irc:")
-  "A list of strings matching schemes acceptable to
-  `ebdb-field-url' instances.
-
-Strings should not be regular expressions.  They should include
-the colon character."
-
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
 (defvar ebdb-url-label-list '("homepage")
   "List of known URL labels.")
 
@@ -1865,6 +2215,62 @@ record uuids.")
   (with-slots (country number) field
     (format "(%s) %s" country number)))
 
+;;; The cache class
+
+;; This probably bears some re-thinking.  It would be nice to make it
+;; behave as a "real" cache, in the sense that all the accessors are
+;; accessors on the records themselves -- the records don't need to be
+;; aware of the cache.  The (probably multiple) cache classes should
+;; be parent classes, not slots on the record (or rather, the cache
+;; slot on the record comes from the cache parent class).  We ask the
+;; record for information, and the cache method intercepts the call,
+;; returns the value if it has it, and if not then asks the record for
+;; the value then stores it.  Ie, a real cache.  Not all the cache
+;; slots would work that way, of course -- for instance. a record has
+;; no way of knowing its databases except via the cache.
+
+(defclass ebdb-cache ()
+  ((name-string
+    :initarg :name-string
+    :type string
+    :initform nil
+    :documentation "The \"canonical\" name for the record, as
+    displayed in the *EBDB* buffer.")
+   (alt-names
+    :initarg :alt-names
+    :type (list-of string)
+    :initform nil
+    :documentation "A list of strings representing all other
+    alternate names for this record.")
+   (organizations
+    :initarg :organizations
+    :type list
+    :initform nil
+    :documentation
+    "A list of strings representing the organizations this record
+    is associated with.")
+   (mail-aka
+    :initarg :mail-aka
+    :type list
+    :initform nil)
+   (mail-canon
+    :initarg :mail-canon
+    :type list
+    :initform nil)
+   (sortkey
+    :initarg :sortkey
+    :type string
+    :initform nil)
+   (database
+    :initarg :database
+    :type (list-of ebdb-db)
+    :initform nil
+    :documentation
+    "The database(s) this record belongs to."))
+  ;; I'm not sure if a marker slot is still going to be necessary in
+  ;; this setup.
+  :allow-nil-initform t)
+
 ;;; Records
 
 ;; The basic, abstract `ebdb-record' class should require no user
@@ -1911,7 +2317,7 @@ record uuids.")
     :initarg :cache
     :type (or null ebdb-cache)
     :initform nil
-    ;:accessor ebdb-record-cache
+					;:accessor ebdb-record-cache
     ))
   :abstract t
   :allow-nil-initform t
@@ -2236,11 +2642,18 @@ or actual image data."
   ;; Unimplemented.
   nil)
 
+;; See http://www.ietf.org/rfc/rfc3966.txt
 (cl-defmethod ebdb-field-phone-dial ((_record ebdb-record)
 				     (phone ebdb-field-phone))
   "Make some attempt to call this PHONE number."
-  ;; This won't actually work.
-  (ebdb-dial-number (ebdb-string phone)))
+  (with-slots (country-code area-code number extension) phone
+    (browse-url
+     (concat
+      "tel:"
+      (when country-code (format "+%d" country-code))
+      (when area-code (number-to-string area-code))
+      number
+      (when extension (format ";ext=%d" extension))))))
 
 (cl-defmethod ebdb-field-url-browse ((_record ebdb-record)
 				     (field ebdb-field-url))
@@ -2388,6 +2801,9 @@ If FIELD doesn't specify a year, use the current year."
 (cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
   nil)
 
+;; TODO: This is wrong, it will alter the database after the main body
+;; of `ebdb-record-insert-field' has run.  Can we simply switch it to
+;; :before?
 (cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-entity)
 					       (_mail ebdb-field-mail)
 					       &optional _slot)
@@ -2395,6 +2811,10 @@ If FIELD doesn't specify a year, use the current year."
 priority."
   (let ((sorted (ebdb-sort-mails (slot-value record 'mail))))
     (setf (slot-value record 'mail) sorted)))
+
+(defun ebdb-compose-mail (&rest args)
+  "Start composing a mail message to send."
+  (apply 'compose-mail args))
 
 (cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
 				       (mail ebdb-field-mail))
@@ -3307,62 +3727,6 @@ the persistent save, or allow them to propagate."
   (setf (slot-value db 'dirty) t)
   (cl-call-next-method))
 
-;;; The cache class
-
-;; This probably bears some re-thinking.  It would be nice to make it
-;; behave as a "real" cache, in the sense that all the accessors are
-;; accessors on the records themselves -- the records don't need to be
-;; aware of the cache.  The (probably multiple) cache classes should
-;; be parent classes, not slots on the record (or rather, the cache
-;; slot on the record comes from the cache parent class).  We ask the
-;; record for information, and the cache method intercepts the call,
-;; returns the value if it has it, and if not then asks the record for
-;; the value then stores it.  Ie, a real cache.  Not all the cache
-;; slots would work that way, of course -- for instance. a record has
-;; no way of knowing its databases except via the cache.
-
-(defclass ebdb-cache ()
-  ((name-string
-    :initarg :name-string
-    :type string
-    :initform nil
-    :documentation "The \"canonical\" name for the record, as
-    displayed in the *EBDB* buffer.")
-   (alt-names
-    :initarg :alt-names
-    :type (list-of string)
-    :initform nil
-    :documentation "A list of strings representing all other
-    alternate names for this record.")
-   (organizations
-    :initarg :organizations
-    :type list
-    :initform nil
-    :documentation
-    "A list of strings representing the organizations this record
-    is associated with.")
-   (mail-aka
-    :initarg :mail-aka
-    :type list
-    :initform nil)
-   (mail-canon
-    :initarg :mail-canon
-    :type list
-    :initform nil)
-   (sortkey
-    :initarg :sortkey
-    :type string
-    :initform nil)
-   (database
-    :initarg :database
-    :type (list-of ebdb-db)
-    :initform nil
-    :documentation
-    "The database(s) this record belongs to."))
-  ;; I'm not sure if a marker slot is still going to be necessary in
-  ;; this setup.
-  :allow-nil-initform t)
-
 ;;; Subclasses of `ebdb-db'.
 
 ;; File-based database, keeping its records in-file.
@@ -3587,9 +3951,7 @@ If RECORDS are given, only search those records."
 
 ;;; Getters
 
-;; The simplest of getters/setters are defined with an :accessor tag
-;; on the class slot definition itself.  Ie, `ebdb-record-user-fields'
-;; and `ebdb-record-cache'.
+;; TODO: Use :accessor tags for the simple cases.
 
 (defun ebdb-record-cache (record)
   (slot-value record 'cache))
@@ -3639,313 +4001,6 @@ addresses."
       mails)))
 
 
-;;; Record editing
-
-;; The following two options should be obviated by ebdb-i18n.el
-;; See http://en.wikipedia.org/wiki/Postal_address
-;; http://www.upu.int/en/activities/addressing/postal-addressing-systems-in-member-countstateries.html
-(defcustom ebdb-address-format-list
-  '(((arg) "splrc" "@%s\n@%p, @%l@, %r@\n%c@" "@%l@")
-    ((aus) "slrpc" "@%s\n@%l@ %r@ %p@\n%c@" "@%l@")
-    ((aut due esp che)
-     "splrc" "@%s\n@%p @%l@ (%r)@\n%c@" "@%l@")
-    ((can) "slrcp" "@%s\n@%l@, %r@\n%c@ %p@" "@%l@")
-    ((chn) "slprc" "@%s\n@%l@\n%p@ %r@\n%c@" "@%l@") ; English format
-    ; (("China") "cprls" "@%c @%p\n@%r @%l@ %s@" "@%l@") ; Chinese format
-    ((ind) "slprc" "@%s\n@%l@ %p@ (%r)@\n%c@" "@%l@")
-    ((usa) "slrpc" "@%s\n@%l@, %r@ %p@\n%c@" "@%l@")
-    (t ebdb-edit-address-default ebdb-format-address-default "@%l@"))
-  "List of address editing and formatting rules for EBDB.
-Each rule is a list (IDENTIFIER EDIT FORMAT FORMAT).
-The first rule for which IDENTIFIER matches an address is used for editing
-and formatting the address.
-
-IDENTIFIER may be a list of countries.
-IDENTIFIER may also be a function that is called with one arg, the address
-to be used.  The rule applies if the function returns non-nil.
-See `ebdb-address-continental-p' for an example.
-If IDENTIFIER is t, this rule always applies.  Usually, this should be
-the last rule that becomes a fall-back (default).
-
-EDIT may be a function that is called with one argument, the address.
-See `ebdb-edit-address-default' for an example.
-
-EDIT may also be an editting format string.  It is a string containing
-the five letters s, c, p, S, and C that specify the order for editing
-the five elements of an address:
-
-s  streets
-l  locality
-p  postcode
-r  region
-c  country
-
-The first FORMAT of each rule is used for multi-line layout, the second FORMAT
-is used for one-line layout.
-
-FORMAT may be a function that is called with one argument, the address.
-See `ebdb-format-address-default' for an example.
-
-FORMAT may also be a format string.  It consists of formatting elements
-separated by a delimiter defined via the first (and last) character of FORMAT.
-Each formatting element may contain one of the following format specifiers:
-
-%s  streets (used repeatedly for each street part)
-%l  locality
-%p  postcode
-%r  region
-%c  country
-
-A formatting element will be applied only if the corresponding part
-of the address is a non-empty string.
-
-See also `ebdb-print-address-format-list'."
-  :group 'ebdb-record-edit
-  :type '(repeat (list (choice (const :tag "Default" t)
-                               (function :tag "Function")
-                               (repeat (string)))
-                       (choice (string)
-                               (function :tag "Function"))
-                       (choice (string)
-                               (function :tag "Function"))
-                       (choice (string)
-                               (function :tag "Function")))))
-
-(defcustom ebdb-continental-postcode-regexp
-  "^\\s *[A-Z][A-Z]?\\s *-\\s *[0-9][0-9][0-9]"
-  "Regexp matching continental postcodes.
-Used by address format identifier `ebdb-address-continental-p'.
-The regexp should match postcodes of the form CH-8052, NL-2300RA,
-and SE-132 54."
-  :group 'ebdb-record-edit
-  :type 'regexp)
-
-(defcustom ebdb-default-separator '("[,;]" ", ")
-  "The default field separator.  It is a list (SPLIT-RE JOIN).
-This is used for fields which do not have an entry in `ebdb-separator-alist'."
-  :group 'ebdb-record-edit
-  :type '(list regexp string))
-
-(defcustom ebdb-separator-alist
-  '((record "\n\n" "\n\n") ; used by `ebdb-copy-fields-as-kill'
-    (name-first-last "[ ,;]" " ")
-    (name-last-first "[ ,;]" ", ")
-    (name-field ":\n" ":\n") ; used by `ebdb-copy-fields-as-kill'
-    (phone "[,;]" ", ")
-    (address ";\n" ";\n")
-    (organization "[,;]" ", ")
-    (affix "[,;]"  ", ")
-    (aka "[,;]" ", ")
-    (mail "[,;]" ", ")
-    (mail-alias "[,;]" ", ")
-    (vm-folder "[,;]" ", ")
-    (birthday "\n" "\n")
-    (wedding "\n" "\n")
-    (anniversary "\n" "\n")
-    (notes "\n" "\n"))
-  "Alist of field separators.
-Each element is of the form (FIELD SPLIT-RE JOIN).
-For fields lacking an entry here `ebdb-default-separator' is used instead."
-  :group 'ebdb-record-edit
-  :type '(repeat (list symbol regexp string)))
-
-(defcustom ebdb-image-path nil
-  "List of directories to search for `ebdb-image'."
-  :group 'ebdb-record-edit
-  :type '(repeat (directory)))
-
-(defcustom ebdb-image-suffixes '(".png" ".jpg" ".gif" ".xpm")
-  "List of file name suffixes searched for `ebdb-image'."
-  :group 'ebdb-record-edit
-  :type '(repeat (string :tag "File suffix")))
-
-(defcustom ebdb-read-name-articulate nil
-  "Specify how to read record names.
-
-If nil, read full names as single strings, and parse them
-accordingly.  If t, the user will be prompted separately for each
-field of the name.
-
-If this option is nil, and the user enters a single string, the
-resulting name field will be an instance of
-`ebdb-field-name-simple'.  Even if this option is t, the user can
-still trigger the creation of a simple name field by entering a
-single string for the surname, and nothing else."
-  :group 'ebdb-record-edit
-  :type 'boolean)
-
-(defcustom ebdb-lastname-prefixes
- '("von" "de" "di")
-  "List of lastname prefixes recognized in name fields.
-Used to enhance dividing name strings into firstname and lastname parts.
-Case is ignored."
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
-(defcustom ebdb-lastname-re
-  (concat "[- \t]*\\(\\(?:\\<"
-          (regexp-opt ebdb-lastname-prefixes)
-          ;; multiple last names concatenated by `-'
-          "\\>[- \t]+\\)?\\(?:\\w+[ \t]*-[ \t]*\\)*\\w+\\)\\'")
-  "Regexp matching the last name of a full name.
-Its first parenthetical subexpression becomes the last name."
-  :group 'ebdb-record-edit
-  :type 'regexp)
-
-(defcustom ebdb-lastname-suffixes
- '("Jr" "Sr" "II" "III")
-  "List of lastname suffixes recognized in name fields.
-Used to dividing name strings into firstname and lastname parts.
-All suffixes are complemented by optional `.'.  Case is ignored."
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
-(defcustom ebdb-lastname-suffix-re
-  (concat "[-,. \t/\\]+\\("
-          (regexp-opt ebdb-lastname-suffixes)
-          ;; suffices are complemented by optional `.'.
-          "\\.?\\)\\W*\\'")
-  "Regexp matching the suffix of a last name.
-Its first parenthetical subexpression becomes the suffix."
-  :group 'ebdb-record-edit
-  :type 'regexp)
-
-(defcustom ebdb-default-domain nil
-  "Default domain to append when reading a new mail address.
-If a mail address does not contain `[@%!]', append @`ebdb-default-domain' to it.
-
-The address is not altered if `ebdb-default-domain' is nil
-or if a prefix argument is given to the command `ebdb-insert-field'."
-  :group 'ebdb-record-edit
-  :type '(choice (const :tag "none" nil)
-                 (string :tag "Default Domain")))
-
-(defcustom ebdb-allow-duplicates nil
-  "When non-nil EBDB allows records with duplicate names and email addresses.
-In rare cases, this may lead to confusion with EBDB's MUA interface."
-  :group 'ebdb-record-edit
-  :type 'boolean)
-
-(defcustom ebdb-default-label-list '("home" "work" "other")
-  "Default list of labels for Address and Phone fields."
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
-(defcustom ebdb-address-label-list ebdb-default-label-list
-  "List of labels for Address field."
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
-(defcustom ebdb-phone-label-list '("home" "work" "cell" "fax" "other")
-  "List of labels for Phone field."
-  :group 'ebdb-record-edit
-  :type '(repeat string))
-
-(defcustom ebdb-default-country "Emacs";; what do you mean, it's not a country?
-  "Default country to use if none is specified."
-  :group 'ebdb-record-edit
-  :type '(choice (const :tag "None" nil)
-                 (string :tag "Default Country")))
-
-(defcustom ebdb-check-postcode t
-  "If non-nil, require legal postcodes when entering an address.
-The format of legal postcodes is determined by the variable
-`ebdb-legal-postcodes'."
-  :group 'ebdb-record-edit
-  :type 'boolean)
-
-(defcustom ebdb-legal-postcodes
-  '(;; empty string
-    "^$"
-    ;; Matches 1 to 6 digits.
-    "^[ \t\n]*[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[ \t\n]*$"
-    ;; Matches 5 digits and 3 or 4 digits.
-    "^[ \t\n]*\\([0-9][0-9][0-9][0-9][0-9]\\)[ \t\n]*-?[ \t\n]*\\([0-9][0-9][0-9][0-9]?\\)[ \t\n]*$"
-    ;; Match postcodes for Canada, UK, etc. (result is ("LL47" "U4B")).
-    "^[ \t\n]*\\([A-Za-z0-9]+\\)[ \t\n]+\\([A-Za-z0-9]+\\)[ \t\n]*$"
-    ;; Match postcodes for continental Europe.  Examples "CH-8057"
-    ;; or "F - 83320" (result is ("CH" "8057") or ("F" "83320")).
-    ;; Support for "NL-2300RA" added at request from Carsten Dominik
-    ;; <dominik@astro.uva.nl>
-    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+ ?[A-Z]*\\)[ \t\n]*$"
-    ;; Match postcodes from Sweden where the five digits are grouped 3+2
-    ;; at the request from Mats Lofdahl <MLofdahl@solar.stanford.edu>.
-    ;; (result is ("SE" (133 36)))
-    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+\\)[ \t\n]+\\([0-9]+\\)[ \t\n]*$")
-  "List of regexps that match legal postcodes.
-Whether this is used at all depends on the variable `ebdb-check-postcode'."
-  :group 'ebdb-record-edit
-  :type '(repeat regexp))
-
-(defcustom ebdb-default-user-field 'ebdb-field-notes
-  "Default field when editing EBDB records."
-  :group 'ebdb-record-edit
-  :type '(symbol :tag "Field"))
-
-
-
-(defcustom ebdb-mail-avoid-redundancy nil
-  "How to handle the name part of `ebdb-dwim-mail'.
-
-If nil, always return both name and mail.  If value is mail-only
-never use full name.  Other non-nil values mean do not use full
-name in mail address when same as mail.
-"
-  :group 'ebdb-sendmail
-  :type '(choice (const :tag "Allow redundancy" nil)
-                 (const :tag "Never use full name" mail-only)
-                 (const :tag "Avoid redundancy" t)))
-
-(defcustom ebdb-complete-mail t
-  "If t MUA insinuation provides key binding for command `ebdb-complete-mail'."
-  :group 'ebdb-sendmail
-  :type 'boolean)
-
-(defcustom ebdb-completion-list t
-  "Controls the behaviour of `ebdb-complete-mail'.
-If a list of symbols, it specifies which fields to complete.  Symbols include
-  name (= record's display name)
-  alt-names (= any other names the record has)
-  organization
-  mail (= all email addresses of each record)
-  primary (= first email address of each record)
-If t, completion is done for all of the above.
-If nil, no completion is offered."
-  ;; These symbols match the fields for which EBDB provides entries in
-  ;; `ebdb-hash-table'.
-  :group 'ebdb-sendmail
-  :type '(choice (const :tag "No Completion" nil)
-                 (const :tag "Complete across all fields" t)
-                 (repeat :tag "Field"
-                         (choice (const name)
-                                 (const alt-names)
-                                 (const organization)
-                                 (const primary)
-                                 (const mail)))))
-
-(defcustom ebdb-complete-mail-allow-cycling nil
-  "If non-nil cycle mail addresses when calling `ebdb-complete-mail'."
-  :group 'ebdb-sendmail
-  :type 'boolean)
-
-(defcustom ebdb-complete-mail-hook nil
-  "List of functions called after a sucessful completion."
-  :group 'ebdb-sendmail
-  :type 'hook)
-
-(defcustom ebdb-mail-abbrev-expand-hook nil
-  ;; Replacement for function `mail-abbrev-expand-hook'.
-  "Function (not hook) run each time an alias is expanded.
-The function is called with two args the alias and the list
-of corresponding mail addresses."
-  :group 'ebdb-sendmail
-  :type 'function)
-
-(defcustom ebdb-completion-display-record t
-  "If non-nil `ebdb-complete-mail' displays the EBDB record after completion."
-  :group 'ebdb-sendmail
-  :type '(choice (const :tag "Update the EBDB buffer" t)
-                 (const :tag "Do not update the EBDB buffer" nil)))
 
 (defun ebdb-dwim-mail (record &optional mail)
   ;; Do What I Mean!
@@ -3996,60 +4051,6 @@ RECORD.  If MAIL is nil use RECORD's primary mail address."
 
 
 ;;; Dialing and texting.
-
-(defcustom ebdb-dial-local-prefix-alist
-  '(((if (integerp ebdb-default-area-code)
-         (format "(%03d)" ebdb-default-area-code)
-       (or ebdb-default-area-code ""))
-     . ""))
-  "Mapping to remove local prefixes from numbers.
-If this is non-nil, it should be an alist of
-\(PREFIX . REPLACEMENT) elements. The first part of a phone number
-matching the regexp returned by evaluating PREFIX will be replaced by
-the corresponding REPLACEMENT when dialing."
-  :group 'ebdb-utilities-dialing
-  :type 'sexp)
-
-(defcustom ebdb-dial-local-prefix nil
-  "Local prefix digits.
-If this is non-nil, it should be a string of digits which your phone
-system requires before making local calls (for example, if your phone system
-requires you to dial 9 before making outside calls.) In EBDB's
-opinion, you're dialing a local number if it starts with a 0 after
-processing `ebdb-dial-local-prefix-alist'."
-  :group 'ebdb-utilities-dialing
-  :type '(choice (const :tag "No digits required" nil)
-                 (string :tag "Dial this first" "9")))
-
-(defcustom ebdb-dial-long-distance-prefix nil
-  "Long distance prefix digits.
-If this is non-nil, it should be a string of digits which your phone
-system requires before making a long distance call (one not in your local
-area code).  For example, in some areas you must dial 1 before an area
-code. Note that this is used to replace the + sign in phone numbers
-when dialling (international dialing prefix.)"
-  :group 'ebdb-utilities-dialing
-  :type '(choice (const :tag "No digits required" nil)
-                 (string :tag "Dial this first" "1")))
-
-(defcustom ebdb-dial-function nil
-  "If non-nil this should be a function used for dialing phone numbers.
-This function is used by `ebdb-dial-number'.  It requires one
-argument which is a string for the number that is dialed.
-If nil then `ebdb-dial-number' uses the tel URI syntax passed to `browse-url'
-to make the call."
-  :group 'ebdb-utilities-dialing
-  :type 'function)
-
-;; Signal integration.
-
-(defcustom ebdb-signal-program (executable-find "signal-cli")
-  "The name of the signal-cli program, if installed.
-
-This program must be present in order to send text messages
-through the Signal service."
-  :group 'ebdb-utilities-dialing
-  :type 'string)
 
 (defun ebdb-signal-get-number (record &optional no-prompt)
   "Extract a usable Signal number from RECORD.
@@ -4113,37 +4114,6 @@ command's docstring for more details."
 	(ebdb--signal-text sender message recipients attachments)
       (message "Please set `ebdb-signal-program'"))))
 
-(defun ebdb-signal-text (sender records message attachments)
-  "Compose and send a text message using the Signal protocol.
-
-SENDER should be a phone number (with leading \"+\") to send
-from.  If `ebdb-record-self' is set, this record will be used as
-the sender, while RECORDS will be used as the list of recipients.
-In both cases, `ebdb-signal-get-number' will be used to find a
-usable number from the record.
-
-MESSAGE is the string to send as the body of the text message.
-ATTACHMENTS is a list of filenames to send as attachments on the
-message."
-  (interactive
-   (list (or (and ebdb-record-self
-		  (ebdb-signal-get-number
-		   (ebdb-gethash ebdb-record-self 'uuid)
-		   t))
-	     (ebdb-read-string
-	      "Number to send from (or set `ebdb-record-self'): "))
-	 (ebdb-do-records)
-	 (ebdb-read-string "Message contents: ")
-	 (ebdb-loop-with-exit
-	  (expand-file-name
-	   (read-file-name "Attach file (C-g when done): "
-			   nil nil nil)))))
-  (let ((recipients
-	 (delq nil (mapcar #'ebdb-signal-get-number records))))
-    (if ebdb-signal-program
-	(ebdb--signal-text sender message recipients attachments)
-      (message "Please set `ebdb-signal-program'"))))
-
 (defun ebdb--signal-text (sender message recipients &optional attachments)
   "Internal function for actually sending the SMS."
   (let ((command
@@ -4159,12 +4129,6 @@ message."
 
 
 ;;; Helper functions
-
-(defun ebdb-warn (&rest args)
-  "Display a message at the bottom of the screen.
-ARGS are passed to `message'."
-  (ding t)
-  (apply 'message args))
 
 (defun ebdb-string-trim (string &optional null)
   "Remove leading and trailing whitespace and all properties from STRING.
@@ -4346,38 +4310,6 @@ and canonical addresses in the mail field of EBDB records."
 
 ;;; Massage of mail addresses
 
-(defcustom ebdb-canonical-hosts
-  ;; Example
-  (regexp-opt '("cs.cmu.edu" "ri.cmu.edu"))
-  "Regexp matching the canonical part of the domain part of a mail address.
-If the domain part of a mail address matches this regexp, the domain
-is replaced by the substring that actually matched this address.
-
-Used by  `ebdb-canonicalize-mail-1'.  See also `ebdb-ignore-redundant-mails'."
-  :group 'ebdb-utilities
-  :type '(regexp :tag "Regexp matching sites"))
-
-
-(defcustom ebdb-canonicalize-mail-function nil
-  "If non-nil, it should be a function of one arg: a mail address string.
-When EBDB is parsing mail addresses, the corresponding mail
-addresses are passed to this function first.  It acts as a kind
-of \"filter\" to transform the mail addresses before they are
-compared against or added to the database.  See
-`ebdb-canonicalize-mail-1' for a more complete example.  If this
-function returns nil, EBDB assumes that there is no mail address.
-
-See also `ebdb-ignore-redundant-mails'."
-  :group 'ebdb-utilities
-  :type 'function)
-
-(defcustom ebdb-message-clean-name-function 'ebdb-message-clean-name-default
-  "Function to clean up the name in the header of a message.
-It takes one argument, the name as extracted by
-`mail-extract-address-components'."
-  :group 'ebdb-utilities
-  :type 'function)
-
 (defun ebdb-canonicalize-mail-1 (address)
   "Example of `ebdb-canonicalize-mail-function'.
 However, this function is too specific to be useful for the general user.
@@ -4488,21 +4420,6 @@ This strips garbage from the user full NAME string."
 ;; When loading the database the hash table is initialized by calling
 ;; `ebdb-hash-record' for each record.  This function is also called
 ;; when new records are added to the database.
-
-(defcustom ebdb-hash-extra-predicates nil
-  "Extra predicates when looking up entries in the EBDB hashtable.
-
-Predicates are used to filter results from the hashtable,
-ensuring that string lookups only return the results they're
-meant to.
-
-This option should be a list of conses, where the car is a
-symbol, and the cdr is a lambda form which accepts the string key
-and a record, and returns t if the key is acceptable for
-returning that record."
-  :group 'ebdb-search
-  :package-version "0.2"
-  :type '(repeat (cons symbol functionp)))
 
 (defun ebdb-puthash (key record)
   "Associate RECORD with KEY in `ebdb-hashtable'.
@@ -4880,7 +4797,7 @@ The formatting rules are defined in `ebdb-address-format-list'."
 (defun ebdb-cite-records (&optional records arg)
   (interactive (list (ebdb-prompt-for-record)
 		     current-prefix-arg))
-  (let ((recs (ebdb-record-list records))
+  (let ((recs (if (listp records) records (list records)))
 	(style (if arg 'list 'inline))
 	usable)
     (dolist (r recs)
@@ -4899,7 +4816,7 @@ differently by different major modes.
 This is a generic function that dispatches on the value of
 `major-mode'.  It only inserts names and mail addresses.")
 
-(cl-defmethod ebdb-records-cite (style records)
+(cl-defmethod ebdb-records-cite (_style records)
   "The fallback catch-all method."
   (when records
     (mapcar (lambda (pair)
@@ -4909,8 +4826,8 @@ This is a generic function that dispatches on the value of
 	    records)))
 
 (cl-defmethod ebdb-records-cite :around ((_style (eql list))
-					      (_records list)
-					      &context (major-mode org-mode))
+					 (_records list)
+					 &context (major-mode org-mode))
   (let ((list (cl-call-next-method)))
     (mapconcat (lambda (elt)
 		 (format "- %s" elt))
@@ -4926,15 +4843,15 @@ This is a generic function that dispatches on the value of
 	  records))
 
 (cl-defmethod ebdb-records-cite :around ((_style (eql list))
-					      (_records list)
-					      &context (major-mode html-mode))
+					 (_records list)
+					 &context (major-mode html-mode))
   (let ((list (cl-call-next-method)))
     (mapconcat (lambda (l)
 		 (format "<li>%s</li>" l))
 	       list "\n")))
 
 (cl-defmethod ebdb-records-cite :around ((_style (eql inline))
-					      (_records list))
+					 (_records list))
   (let ((list (cl-call-next-method)))
     (mapconcat #'identity list " ")))
 
@@ -4978,6 +4895,9 @@ With prefix ARG, insert string at point."
 
 
 ;;; Searching EBDB
+
+(defvar ebdb-search-invert nil
+  "Bind this variable to t in order to invert the result of `ebdb-search'.")
 
 (defun ebdb-message-search (name mail)
   "Return list of EBDB records matching NAME and/or MAIL.
@@ -5051,7 +4971,7 @@ interpreted as t, ie the record passes."
   FIELD.")
 
 (cl-defgeneric ebdb-record-search (record type criterion)
-  "Return t if CRITERION matches RECORD, given STYLE.")
+  "Return t if CRITERION matches RECORD, given TYPE.")
 
 (cl-defmethod ebdb-field-search ((field ebdb-field) (regex string))
   (condition-case nil

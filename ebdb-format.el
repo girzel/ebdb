@@ -27,6 +27,8 @@
 ;;; Code:
 
 (require 'ebdb)
+(declare-function ebdb-do-records "ebdb-com")
+(declare-function ebdb-display-records "ebdb-com")
 ;; qp = quoted-printable, might not end up needing this.
 (require 'qp)
 
@@ -276,7 +278,7 @@ which formats them appropriately."
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
 				       (record ebdb-record-person)
 				       &optional field-list)
-  
+
   (with-slots (exclude include) fmt
     (with-slots (aka organizations relations) record
       (when (and aka

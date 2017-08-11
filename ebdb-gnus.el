@@ -25,7 +25,8 @@
 
 (require 'ebdb-com)
 (require 'ebdb-mua)
-(require 'gnus)
+(require 'gnus-sum)
+(require 'gnus-art)
 
 (autoload 'message-make-domain "message")
 
