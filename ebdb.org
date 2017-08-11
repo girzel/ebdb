@@ -35,7 +35,7 @@ management software, it is enough to call the top-level ~ebdb~
 command.  This will create a new database at the location specified by
 ~ebdb-sources~ (see [[id:9a02f8fb-01e2-4cd8-8166-608814a031f7][The EBDB Database]]), prompt you for a search
 string, fail to find anything (because you don't have any records
-yet), and lastly open a {{{buf(EBDB)}}} buffer where you can start to
+yet), and finally open a {{{buf(EBDB)}}} buffer where you can start to
 make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).
 ** Migration from BBDB
 :PROPERTIES:
@@ -51,7 +51,8 @@ customizations still in place, set ~ebdb-sources~ to a non-existent
 file name, and then run ~ebdb-load~ (or any of the other EBDB entry
 commands).  You'll be prompted to create the new database, and upgrade
 from BBDB.  If any records could not be upgraded, they will be
-displayed in an {{{buf(EBDB Migration)}}} buffer.
+displayed in an {{{buf(EBDB Migration)}}} buffer.  Migration bug
+reports are very welcome.
 *** Variables and Options
 :PROPERTIES:
 
@@ -814,18 +815,19 @@ imperfect: not all fields can be exported correctly.  VCard version
 
 It's possible to write new formatters, documentation is forthcoming.
 * Completion
-There are many Emacs completion frameworks out there, and EBDB comes
-with support for helm, counsel, and company.  See the relevant
-libraries; they provide the commands ~helm-ebdb~, ~counsel-ebdb~, and
+There are many Emacs completion frameworks out there, and libraries
+exist providing EBDB support for helm, counsel, and company---these
+libraries must be loaded from the package repositories.  These
+libraries provide the commands ~helm-ebdb~, ~counsel-ebdb~, and
 ~company-ebdb~, respectively.  Counsel and company are made to be
 hooked into Emacs' existing completion frameworks; the helm command
 must be called explicitly.
 
-Another library, @@texinfo:@file{@@ebdb-complete@@texinfo:}@@, uses an
-ephemeral pop-up {{{buf(EBDB)}}} buffer for record completion.  The
-command ~ebdb-complete~ provides an interactive entry point, or you
-can enable it for "TAB" in ~message-mode~ by calling
-~ebdb-complete-enable~.
+Another built-in library,
+@@texinfo:@file{@@ebdb-complete@@texinfo:}@@, uses an ephemeral pop-up
+{{{buf(EBDB)}}} buffer for record completion.  The command
+~ebdb-complete~ provides an interactive entry point, or you can enable
+it for "TAB" in ~message-mode~ by calling ~ebdb-complete-enable~.
 
 Several native EBDB commands involve selecting a record, or multiple
 records.  At present, the completion interface for these commands is a
@@ -883,17 +885,26 @@ country- and region-specific behavior for certain fields.  This
 functionality is initialized by loading the
 @@texinfo:@file{@@ebdb-i18n@@texinfo:}@@ library.  This library does
 nothing by itself, it simply provides hooks for other country-specific
-libraries, which must be loaded separately.
+libraries.
 
-At present, EBDB comes with only one country-specific library,
-@@texinfo:@file{@@ebdb-chn@@texinfo:}@@, for Chinese-related fields.
-It parses and displays phone numbers and names correctly, and also
-allows users to search on Chinese names using pinyin.  It requires the
-~pyim~ package, available on MELPA.
+Country libraries that do not depend on other external libraries may
+live within the EBDB codebase, in which case they will be loaded
+automatically when ~ebdb-i18n~ is loaded.  Libraries with external
+dependencies may be installed from the package repositories.  Because
+function autoloading doesn't work with generic methods, you'll need to
+require the libraries in addition to simply installing them.
+
+EBDB currently comes with only one country library,
+@@texinfo:@file{@@ebdb-i18n-chn@@texinfo:}@@, for Chinese-related
+fields.  It parses and displays phone numbers and names correctly, and
+also allows users to search on Chinese names using pinyin.  It can be
+installed from ELPA, and requires the ~pyim~ package, available on
+MELPA.
 
 The present dearth of libraries is a result of the author scratching
-his own itch.  Contributions of new libraries are very welcome.  Also
-welcome, though less enthusiastically, are requests for new libraries.
+his own itch.  Contributions of new libraries are very welcome (see
+[[id:5446ff9c-78ca-4e12-89cc-6d4ccd9b2b83][Writing Internationalization Libraries]]).  Also welcome, though less
+enthusiastically, are requests for new libraries.
 
 Internationalization libraries do not modify the database in any way,
 and can be safely unloaded.  They simply alter the way EBDB reads,
@@ -1227,6 +1238,9 @@ quiet: the arguments are necessary for dispatch, but aren't actually
 used in the body of the method.
 
 ** Writing Internationalization Libraries
+:PROPERTIES:
+:ID:       5446ff9c-78ca-4e12-89cc-6d4ccd9b2b83
+:END:
 Writing new internationalization libraries involves using generic
 functions. [[info:elisp#Generic%20Functions][Generic Functions]].  It will also require a bit of
 familiarity with EBDB's internals.
