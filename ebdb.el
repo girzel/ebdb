@@ -5138,12 +5138,6 @@ prompt users for more complex search criteria, if necessary.")
 ;; Might save users some small surprises.
 
 (eieio-defclass-autoload
- 'gnorb-ebdb-field-messages
- 'ebdb-field-user
- "ebdb-gnorb"
- "Gnorb field holding links to Gnus messages.")
-
-(eieio-defclass-autoload
  'ebdb-org-field-tags
  'ebdb-field-user
  "ebdb-org"

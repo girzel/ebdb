@@ -3,6 +3,8 @@
 ;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
+;; Version: 1
+;; Package-Requires: ((gnorb "1.1.0") (ebdb "0.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,6 +28,8 @@
 
 (require 'ebdb-format)
 (require 'ebdb-com)
+(require 'gnorb-org)
+(require 'gnorb-gnus)
 
 ;; Probably we shouldn't use this, EBDB should not have a dependency
 ;; on Org.
@@ -224,5 +228,11 @@ to a message into the record's `gnorb-ebdb-messages-field'."
 	 record field
 	 (make-instance 'gnorb-ebdb-field-messages
 			:messages links))))))
+
+(eieio-defclass-autoload
+ 'gnorb-ebdb-field-messages
+ 'ebdb-field-user
+ "ebdb-gnorb"
+ "Gnorb field holding links to Gnus messages.")
 
 (provide 'ebdb-gnorb)
