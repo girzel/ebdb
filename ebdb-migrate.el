@@ -370,7 +370,6 @@ case someone's going from, say, version 2 to 4 in one jump.
 Assume that the variable `bbdb-file' points to an existing file
 holding valid contacts in a previous BBDB format."
   (require 'url-handlers)
-  (require 'ebdb-gnorb)
   (require 'ebdb-org)
   (require 'ebdb-gnus)
   (with-current-buffer (find-file-noselect bbdb-file)
@@ -559,6 +558,7 @@ holding valid contacts in a previous BBDB format."
 				     :notes val)))
 	 ((eq lab 'messages)
 	  (unless (stringp val)
+	    (require 'ebdb-gnorb)
 	    (setq val
 		  (mapcar
 		   (lambda (s)
