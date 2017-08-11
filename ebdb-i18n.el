@@ -202,7 +202,7 @@ for their symbol representations.")
     (unless (memq script ebdb-i18n-ignorable-scripts)
       (condition-case nil
 	  (setq str (ebdb-string-i18n name script))
-	(cl-no-primary-method nil)))
+	(cl-no-method nil)))
     str))
 
 (cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
