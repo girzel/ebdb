@@ -4731,7 +4731,10 @@ This function is a possible formatting function for
         (streets (ebdb-address-streets address)))
     (when (symbolp country)
       (require 'ebdb-i18n)
-      (setq country (car (rassq country ebdb-i18n-countries))))
+      (setq country (car-safe (rassq
+			       country
+			       (append ebdb-i18n-countries-pref-scripts
+				       ebdb-i18n-countries)))))
     (concat (if streets
                 (concat (mapconcat 'identity streets "\n") "\n"))
             (ebdb-concat ", " (ebdb-address-locality address)
@@ -4751,7 +4754,7 @@ The formatting rules are defined in `ebdb-address-format-list'."
             (format (nth layout elt))
             ;; recognize case for format identifiers
             case-fold-search str)
-        (when (or (eq t identifier) ; default
+        (when (or (eq t identifier)	; default
                   (and (functionp identifier)
                        (funcall identifier address))
                   (and country
@@ -4779,7 +4782,11 @@ The formatting rules are defined in `ebdb-address-format-list'."
                          ((string-match "%c" form) ; country
 			  (when (symbolp country)
 			    (require 'ebdb-i18n)
-			    (setq country (car (rassq country ebdb-i18n-countries))))
+			    (setq country (or (car-safe
+					       (rassq
+						country
+						(append ebdb-i18n-countries-pref-scripts
+							ebdb-i18n-countries))))))
                           (unless (or (not country) (string= "" country))
                             (setq string (concat string (format (replace-regexp-in-string "%c" "%s" form t) country)))))
                          (t (error "Malformed address format element %s" form)))))

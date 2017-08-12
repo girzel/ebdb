@@ -38,14 +38,8 @@ string, fail to find anything (because you don't have any records
 yet), and finally open a {{{buf(EBDB)}}} buffer where you can start to
 make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).
 ** Migration from BBDB
-:PROPERTIES:
-
-:END:
 #+CINDEX: Migrating from BBDB
 *** Record Migration
-:PROPERTIES:
-
-:END:
 It's possible to migrate records from a BBDB file.  With your BBDB
 customizations still in place, set ~ebdb-sources~ to a non-existent
 file name, and then run ~ebdb-load~ (or any of the other EBDB entry
@@ -54,9 +48,6 @@ from BBDB.  If any records could not be upgraded, they will be
 displayed in an {{{buf(EBDB Migration)}}} buffer.  Migration bug
 reports are very welcome.
 *** Variables and Options
-:PROPERTIES:
-
-:END:
 Many of the old BBDB customization options have been changed or
 removed entirely in EBDB.  It's probably best to put your BBDB
 customizations aside, and set new EBDB options as you come across
@@ -174,16 +165,10 @@ You can also tell EBDB which record represents you:
 Currently this option's only use is to serve as a source for
 ~ebdb-user-mail-address-re~.
 ** Record classes
-:PROPERTIES:
-
-:END:
 EBDB comes with two record classes, representing individuals
 (~ebdb-record-person~) and organizations (~ebdb-record-organization~).
 Records can have "roles" at organizations [[id:1398bd78-b380-4f36-ab05-44ea5ca8632f][Role Fields]].
 ** Record names
-:PROPERTIES:
-
-:END:
 EBDB comes with two classes for name fields: "simple" and "complex".
 Simple names are just a single string, complex names are split out
 into surname, given names, suffix, etc.  All records have a single
@@ -211,9 +196,6 @@ field altogether.  For instance, when creating address fields, EBDB
 will allow you to create an arbitrary number of street lines.  When
 you've added enough, either enter a blank string, or hit "C-g".
 ** Editing Existing Fields
-:PROPERTIES:
-
-:END:
 #+CINDEX: Editing fields
 Pressing "e" (~ebdb-edit-field~) with point on a field will allow you
 to edit an existing field, with the previous values as defaults.
@@ -223,9 +205,6 @@ field's values using the Customize interface.  Some fields have slots
 that can only be edited this way; other fields have slots that cannot
 be edited at all once the field is created.
 ** Deleting Records and Fields
-:PROPERTIES:
-
-:END:
 #+CINDEX: Deleting records and fields
 Pressing "C-k" on a field will ask you for confirmation, then delete
 the field.  Pressing "C-k" while point is on or before a record's main
@@ -233,7 +212,6 @@ name will instead prompt to delete the whole record.
 ** Field Types
 :PROPERTIES:
 :ID:       cb2190f4-f2e6-4082-9671-24e11e5cc0c6
-
 :END:
 Fields can be classed in a few different categories.  Some are
 "plumbing" fields, that are present for all records, but not generally
@@ -894,7 +872,7 @@ dependencies may be installed from the package repositories.  Because
 function autoloading doesn't work with generic methods, you'll need to
 require the libraries in addition to simply installing them.
 
-EBDB currently comes with only one country library,
+There is currently only one country library written for EBDB,
 @@texinfo:@file{@@ebdb-i18n-chn@@texinfo:}@@, for Chinese-related
 fields.  It parses and displays phone numbers and names correctly, and
 also allows users to search on Chinese names using pinyin.  It can be
@@ -906,13 +884,32 @@ his own itch.  Contributions of new libraries are very welcome (see
 [[id:5446ff9c-78ca-4e12-89cc-6d4ccd9b2b83][Writing Internationalization Libraries]]).  Also welcome, though less
 enthusiastically, are requests for new libraries.
 
-Internationalization libraries do not modify the database in any way,
-and can be safely unloaded.  They simply alter the way EBDB reads,
-parses and displays field values, and can also store extra information
+Internationalization libraries do not modify the database, and can be
+safely unloaded.  They simply alter the way EBDB reads, parses and
+displays field values, and can also store extra information
 (eg.@@texinfo:@:@@ for searching purposes) in a record's cache.
 Loading this library can (depending on country libraries' behavior)
 increase database load times, though it should not significantly
 affect search or display performance.
+
+Actually, the internationalization library does alter database storage
+in one way: address countries can be either stored as a string
+(non-international-aware), or a three-letter symbol representing the
+country code (international-aware).  EBDB will correctly display the
+country name for either type of storage, regardless of whether the
+internationalization library is loaded or not.
+
+#+VINDEX: ebdb-i18n-countries
+Country names are displayed in English by default, but users can alter
+the display of some country names if they choose.
+
+#+TEXINFO: @defopt ebdb-i18n-countries-pref-scripts
+This is an alist of conses pairing string country names to symbol
+labels---see the value of ~ebdb-i18n-countries~ for how to use it, and
+to find the correct symbol label.  Values set in this option will
+shadow the values in the variable.
+#+TEXINFO: @end defopt
+
 * Diary Integration
 #+CINDEX: Diary integration
 Some EBDB fields hold dates or anniversaries (most notably the

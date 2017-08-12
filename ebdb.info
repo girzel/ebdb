@@ -395,16 +395,16 @@ File: ebdb.info,  Node: Field Types,  Prev: Deleting Records and Fields,  Up: Re
 4.4 Field Types
 ===============
 
-:ID: cb2190f4-f2e6-4082-9671-24e11e5cc0c6 Fields can be classed in a few
-different categories.  Some are “plumbing” fields, that are present for
-all records, but not generally visible or user-editable: these include
-the creation date, timestamp, and UUID. You can view these fields by
-hitting “T” on the record.  Other fields are “built-in”: basic fields
-that get special treatment.  These include the name, mail, phone,
-address, and notes fields.  EBDB comes with default classes for these
-fields: if you would like to use different defaults, you can create new
-classes (inheriting from the existing ones) and use those instead.  See
-*note Hacking EBDB:: for more information.
+Fields can be classed in a few different categories.  Some are
+“plumbing” fields, that are present for all records, but not generally
+visible or user-editable: these include the creation date, timestamp,
+and UUID. You can view these fields by hitting “T” on the record.  Other
+fields are “built-in”: basic fields that get special treatment.  These
+include the name, mail, phone, address, and notes fields.  EBDB comes
+with default classes for these fields: if you would like to use
+different defaults, you can create new classes (inheriting from the
+existing ones) and use those instead.  See *note Hacking EBDB:: for more
+information.
 
    Besides the “plumbing” and “built-in” fields, all other fields are
 “user” fields, and belong to one of two types: ‘ebdb-field-user’ and
@@ -1180,8 +1180,10 @@ country-specific libraries.
 
    Country libraries that do not depend on other external libraries may
 live within the EBDB codebase, in which case they will be loaded
-automatically when ‘ebdb-i18n’ is loaded.  Libraries with extra
-dependencies may be found in the package repositories.
+automatically when ‘ebdb-i18n’ is loaded.  Libraries with external
+dependencies may be installed from the package repositories.  Because
+function autoloading doesn’t work with generic methods, you’ll need to
+require the libraries in addition to simply installing them.
 
    EBDB currently comes with only one country library, ‘ebdb-i18n-chn’,
 for Chinese-related fields.  It parses and displays phone numbers and
@@ -1194,13 +1196,28 @@ his own itch.  Contributions of new libraries are very welcome (see
 *note Writing Internationalization Libraries::).  Also welcome, though
 less enthusiastically, are requests for new libraries.
 
-   Internationalization libraries do not modify the database in any way,
-and can be safely unloaded.  They simply alter the way EBDB reads,
-parses and displays field values, and can also store extra information
-(eg. for searching purposes) in a record’s cache.  Loading this library
-can (depending on country libraries’ behavior) increase database load
-times, though it should not significantly affect search or display
-performance.
+   Internationalization libraries do not modify the database, and can be
+safely unloaded.  They simply alter the way EBDB reads, parses and
+displays field values, and can also store extra information (eg. for
+searching purposes) in a record’s cache.  Loading this library can
+(depending on country libraries’ behavior) increase database load times,
+though it should not significantly affect search or display performance.
+
+   Actually, the internationalization library does alter database
+storage in one way: address countries can be either stored as a string
+(non-international-aware), or a three-letter symbol representing the
+country code (international-aware).  EBDB will correctly display the
+country name for either type of storage, regardless of whether the
+internationalization library is loaded or not.
+
+   Country names are displayed in English by default, but users can
+alter the display of some country names if they choose.
+
+ -- User Option: ebdb-i18n-countries-pref-scripts
+     This is an alist of conses pairing string country names to symbol
+     labels—see the value of ‘ebdb-i18n-countries’ for how to use it,
+     and to find the correct symbol label.  Values set in this option
+     will shadow the values in the variable.
 
 
 File: ebdb.info,  Node: Diary Integration,  Next: Mail Aliases,  Prev: Internationalization,  Up: Top
@@ -1916,42 +1933,42 @@ Node: Inserting New Fields9637
 Node: Editing Existing Fields10433
 Node: Deleting Records and Fields11033
 Node: Field Types11429
-Node: Role Fields13274
-Node: MUA Interaction14965
-Node: Loading MUA Code15489
-Node: Display and Updating16202
-Node: Pop-up Buffers16971
-Node: Auto-Updating Records17836
-Node: Noticing and Automatic Rules20221
-Node: Interactive Commands21564
-Node: EBDB and MUA summary buffers24053
-Node: Sender name display24539
-Node: Summary buffer marks25827
-Node: EBDB Buffers27022
-Node: Searching28215
-Node: Changing Search Behavior29925
-Node: The Basics of ebdb-mode31175
-Node: Marking34539
-Node: Exporting/Formatting34967
-Node: Completion35926
-Node: Snarfing37137
-Node: Internationalization39116
-Node: Diary Integration40848
-Node: Mail Aliases41714
-Node: vCard Support42423
-Node: Org Integration42922
-Node: Citing Records44496
-Node: Hacking EBDB45255
-Node: Field Classes47585
-Node: Init and Delete Methods50522
-Node: The Labeled Field Class52078
-Node: Actions52914
-Node: Custom Field Searching53579
-Node: Formatting in the EBDB Buffer55367
-Node: Writing Internationalization Libraries57366
-Node: Writing Integration For New MUAs61717
-Node: Article snarfing65143
-Node: Index65865
+Node: Role Fields13232
+Node: MUA Interaction14923
+Node: Loading MUA Code15447
+Node: Display and Updating16160
+Node: Pop-up Buffers16929
+Node: Auto-Updating Records17794
+Node: Noticing and Automatic Rules20179
+Node: Interactive Commands21522
+Node: EBDB and MUA summary buffers24011
+Node: Sender name display24497
+Node: Summary buffer marks25785
+Node: EBDB Buffers26980
+Node: Searching28173
+Node: Changing Search Behavior29883
+Node: The Basics of ebdb-mode31133
+Node: Marking34497
+Node: Exporting/Formatting34925
+Node: Completion35884
+Node: Snarfing37095
+Node: Internationalization39074
+Node: Diary Integration41777
+Node: Mail Aliases42643
+Node: vCard Support43352
+Node: Org Integration43851
+Node: Citing Records45425
+Node: Hacking EBDB46184
+Node: Field Classes48514
+Node: Init and Delete Methods51451
+Node: The Labeled Field Class53007
+Node: Actions53843
+Node: Custom Field Searching54508
+Node: Formatting in the EBDB Buffer56296
+Node: Writing Internationalization Libraries58295
+Node: Writing Integration For New MUAs62646
+Node: Article snarfing66072
+Node: Index66794
 
 End Tag Table
 
