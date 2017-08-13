@@ -5109,8 +5109,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (eql database))
 				  (db ebdb-db))
-  (member (slot-value (ebdb-record-cache record) 'database)
-	  db))
+  (member db (slot-value (ebdb-record-cache record) 'database)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (eql record-class))
