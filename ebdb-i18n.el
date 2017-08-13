@@ -680,6 +680,45 @@ for their symbol representations.")
 	     (plist-put slots :country country))))
     (cl-call-next-method class slots obj)))
 
+(cl-defmethod ebdb-string :extra "i18n" ((adr ebdb-field-address))
+  "Internationally-aware version of `ebdb-string' for addresses."
+  (let ((cc (slot-value adr 'country)))
+    (or (and cc
+	     (symbolp cc)
+	     (condition-case nil
+		 (ebdb-string-i18n adr cc)
+	       (cl-no-method nil)))
+	(cl-call-next-method))))
+
+;; This method can be used later.  Probably there will never be a
+;; non-i18n `ebdb-parse' method for addresses, because it's just too
+;; hard to guess if you don't know the country.  At some point there
+;; should be an option called `ebdb-read-address-articulate': if that
+;; is nil, then we should require the user to have loaded `ebdb-i18n',
+;; and only international parse methods will be considered.
+
+;; (cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-address))
+;; 					(str string)
+;; 					&optional slots)
+;;   "Internationally-aware version of `ebdb-parse' for addresses."
+;;   (let ((cc (or (plist-get slots :country)
+;; 		(when (string-match (regexp-opt
+;; 				     (mapcar
+;; 				      (lambda (elt) (car elt))
+;; 				      (append ebdb-i18n-countries-pref-scripts
+;; 					      ebdb-i18n-countries)))
+;; 				    str)
+;; 		  (cdr-safe (assoc-string
+;; 			     (match-string 0 str)
+;; 			     (append ebdb-i18n-countries-pref-scripts
+;; 				     ebdb-i18n-countries)))))))
+;;     (or (and cc
+;; 	     (symbolp cc)
+;; 	     (condition-case nil
+;; 		 (ebdb-parse-i18n class str cc slots)
+;; 	       (cl-no-method nil)))
+;; 	(cl-call-next-method))))
+
 (cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-phone))
 				       &optional slots obj)
   (let ((country
@@ -689,23 +728,23 @@ for their symbol representations.")
 			"Country/Region: "
 			ebdb-i18n-phone-codes nil nil)
 		       ebdb-i18n-phone-codes))))
-	  area-code)
-      ;; Obviously this whole structure thing is just poorly
-      ;; thought-out.
-      (when (consp country)
-	(cond ((numberp (car country))
-	       (setq area-code (cl-second country)
-		     country (car country)))
-	      ((consp (car country))
-	       (setq country (assoc
-			      (string-to-number
-			       (completing-read
-				"Choose: "
+	area-code)
+    ;; Obviously this whole structure thing is just poorly
+    ;; thought-out.
+    (when (consp country)
+      (cond ((numberp (car country))
+	     (setq area-code (cl-second country)
+		   country (car country)))
+	    ((consp (car country))
+	     (setq country (assoc
+			    (string-to-number
+			     (completing-read
+			      "Choose: "
 			      (mapcar (lambda (x)
 					(number-to-string (car x)))
 				      country)))
 			    country)
-		    area-code (cl-second country))))
+		   area-code (cl-second country))))
       (when (consp area-code)
 	(setq area-code (string-to-number
 			 (completing-read
