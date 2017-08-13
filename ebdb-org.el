@@ -125,7 +125,7 @@ potential tags for completion.")
 
 (push '(ebdb-org-field-tags ":" ":") ebdb-separator-alist)
 
-
+;;;###autoload
 (defclass ebdb-org-field-tags (ebdb-field-user)
   ((tags
     :type (list-of string)

@@ -5141,38 +5141,5 @@ prompt users for more complex search criteria, if necessary.")
   (read-string (format "Search records %smatching regexp: "
                        (if ebdb-search-invert "not " ""))))
 
-;; Create autoload statements for fields defined in other files.
-;; Might save users some small surprises.
-
-(eieio-defclass-autoload
- 'ebdb-org-field-tags
- 'ebdb-field-user
- "ebdb-org"
- "Field holding Org-style tags.")
-
-(eieio-defclass-autoload
- 'ebdb-gnus-score-field
- 'ebdb-field-user
- "ebdb-gnus"
- "Gnus field holding record score.")
-
-(eieio-defclass-autoload
- 'ebdb-gnus-private-field
- 'ebdb-field-user
- "ebdb-gnus"
- "Gnus field holding private mailbox name.")
-
-(eieio-defclass-autoload
- 'ebdb-gnus-imap-field
- 'ebdb-field-user
- "ebdb-gnus"
- "Gnus field holding private IMAP mailbox name.")
-
-(eieio-defclass-autoload
- 'ebdb-field-pgp
- 'ebdb-field-user
- "ebdb-pgp"
- "Field holding default pgp action when sending messages to this record.")
-
 (provide 'ebdb)
 ;;; ebdb.el ends here

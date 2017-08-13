@@ -52,6 +52,7 @@
 ;;; Gnus-specific field types.  All should subclass
 ;;; `ebdb-field-user'.
 
+;;;###autoload
 (defclass ebdb-gnus-score-field (ebdb-field-user)
   ((score
     :type (or null number)
@@ -160,8 +161,7 @@ addresses better than the traditionally static global scorefile."
 ;; Imap support (Uwe Brauer)
 ;;
 
-;; Why wouldn't we just use the same "private" field for imap? Why
-;; would this need to be a separate field class?
+;;;###autoload
 (defclass ebdb-gnus-imap-field (ebdb-field-user)
   ((group
     :type string

@@ -105,6 +105,7 @@ See info node `(message)security'."
                        (symbol :tag "Encrypt method")))
   :group 'ebdb-utilities-pgp)
 
+;;;###autoload
 (defclass ebdb-field-pgp (ebdb-field-user)
   ((action
     :initarg :action
