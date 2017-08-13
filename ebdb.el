@@ -1646,9 +1646,9 @@ first one."
 			     (when obj (ebdb-address-locality obj)) ebdb-locality-list)))
 	(region
 	 (if (plist-member slots :region)
-	     (plist-get slots :state)
+	     (plist-get slots :region)
 	   (ebdb-read-string "State/Province: "
-			     (when obj (ebdb-address-region obj)) ebdb-locality-list)))
+			     (when obj (ebdb-address-region obj)) ebdb-region-list)))
 	(postcode
 	 (if (plist-member slots :postcode)
 	     (plist-get slots :postcode)
