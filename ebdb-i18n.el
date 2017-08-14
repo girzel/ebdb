@@ -42,6 +42,7 @@
 ;;; Code:
 
 (require 'ebdb)
+(require 'ebdb-i18n-basic)
 
 (defgroup ebdb-i18n nil
   "Options for EBDB internationalization."
