@@ -2056,10 +2056,10 @@ Eventually this method will go away."
 (defclass ebdb-field-image (ebdb-field)
   ((image
     :type (or null string symbol)
-    :initarg :image))
+    :initarg :image
+    ;; "`," is used to trick EIEIO into evaluating the form.
+    :initform `,ebdb-image))
   :human-readable "image")
-
-(eieio-oset-default 'ebdb-field-image 'image ebdb-image)
 
 (cl-defmethod ebdb-read ((image (subclass ebdb-field-image)) &optional slots obj)
   (let ((existing (when obj (slot-value obj 'image)))
@@ -3378,7 +3378,8 @@ executable.  When a symbol, assume an Elisp function."
     ;; I don't think I can actually set this to `ebdb-record': the
     ;; type needs to be a class, not an instance.  Can I do that?
     :type symbol
-    :initform nil
+    ;; "`," is used to trick EIEIO into evaluating the form.
+    :initform `,ebdb-default-record-class
     :custom symbol
     :documentation
     "The default EIEIO class for records in this database.  Must
@@ -3388,11 +3389,6 @@ executable.  When a symbol, assume an Elisp function."
 not be instantiated directly, subclass it instead."
   :allow-nil-initform t
   :abstract t)
-
-;; I was told not to use this in Gnus, but I don't remember why.  I
-;; suspect it was backward compatibility, and that's obviously already
-;; out the window.
-(oset-default 'ebdb-db record-class ebdb-default-record-class)
 
 (cl-defmethod initialize-instance ((db ebdb-db) &optional slots)
   "Make sure DB has a uuid."
