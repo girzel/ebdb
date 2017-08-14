@@ -662,7 +662,19 @@ This method should return a new instance of CLASS.")
   address fields.
 
 Essentially this just means swapping out the string country names
-for their symbol representations.")
+for their symbol representations."
+  (let ((count 0))
+    (dolist (rec (ebdb-records))
+      (dolist (adr (ebdb-record-address rec))
+	(when (stringp (slot-value adr 'country))
+	  (ignore-errors
+	   (ebdb-record-change-field
+	    rec adr
+	    (clone adr :country
+		   (cdr (assoc-string (slot-value adr 'country)
+				      (ebdb-i18n-countries)))))
+	   (cl-incf count)))))
+    (message "Internationalized %d addresses" count)))
 
 (cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-address))
 				       &optional slots obj)
