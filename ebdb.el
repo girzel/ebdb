@@ -2801,10 +2801,7 @@ If FIELD doesn't specify a year, use the current year."
 (cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
   nil)
 
-;; TODO: This is wrong, it will alter the database after the main body
-;; of `ebdb-record-insert-field' has run.  Can we simply switch it to
-;; :before?
-(cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-entity)
+(cl-defmethod ebdb-record-insert-field :before ((record ebdb-record-entity)
 					       (_mail ebdb-field-mail)
 					       &optional _slot)
   "After giving RECORD a new mail field, sort RECORD's mails by
