@@ -1014,6 +1014,13 @@ keybindings apply.
      Remove the record under point (or marked records) from the buffer
      (does not delete the records).
 
+‘I’     (‘ebdb-cite-records-ebdb’)
+
+     Put a “citation” for the record under point (or marked records)
+     onto the kill ring.  A “citation” is a name-and-mail string for the
+     record.  Prompt for a style, meaning a textual mode.  With a prefix
+     arg, arrange citations in a list, otherwise inline.
+
 ‘w f’     (‘ebdb-copy-fields-as-kill’)
 
      Copy the string value of the field under point to the kill ring.
@@ -1185,11 +1192,11 @@ dependencies may be installed from the package repositories.  Because
 function autoloading doesn’t work with generic methods, you’ll need to
 require the libraries in addition to simply installing them.
 
-   EBDB currently comes with only one country library, ‘ebdb-i18n-chn’,
-for Chinese-related fields.  It parses and displays phone numbers and
-names correctly, and also allows users to search on Chinese names using
-pinyin.  It can be installed from ELPA, and requires the ‘pyim’ package,
-available on MELPA.
+   There is currently only one country library written for EBDB,
+‘ebdb-i18n-chn’, for Chinese-related fields.  It parses and displays
+phone numbers and names correctly, and also allows users to search on
+Chinese names using pinyin.  It can be installed from ELPA, and requires
+the ‘pyim’ package, available on MELPA.
 
    The present dearth of libraries is a result of the author scratching
 his own itch.  Contributions of new libraries are very welcome (see
@@ -1822,14 +1829,16 @@ Index
                                                               (line   6)
 * Diary integration:                     Diary Integration.   (line   6)
 * ebdb-cite-records:                     Citing Records.      (line  11)
+* ebdb-cite-records-ebdb:                The Basics of ebdb-mode.
+                                                              (line  86)
 * ebdb-clone-buffer:                     EBDB Buffers.        (line  19)
 * ebdb-copy-fields-as-kill:              The Basics of ebdb-mode.
-                                                              (line  86)
+                                                              (line  93)
 * ebdb-copy-mail-as-kill:                The Basics of ebdb-mode.
-                                                              (line  95)
+                                                              (line 102)
 * ebdb-copy-record record to-db:         The EBDB Database.   (line  67)
 * ebdb-copy-records-as-kill:             The Basics of ebdb-mode.
-                                                              (line  90)
+                                                              (line  97)
 * ebdb-create-record:                    The Basics of ebdb-mode.
                                                               (line  25)
 * ebdb-create-record-extended:           The Basics of ebdb-mode.
@@ -1851,9 +1860,9 @@ Index
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  14)
 * ebdb-help:                             The Basics of ebdb-mode.
-                                                              (line 107)
+                                                              (line 114)
 * ebdb-info:                             The Basics of ebdb-mode.
-                                                              (line 111)
+                                                              (line 118)
 * ebdb-insert-field:                     The Basics of ebdb-mode.
                                                               (line  33)
 * ebdb-mail:                             The Basics of ebdb-mode.
@@ -1895,7 +1904,7 @@ Index
 * ebdb-reload-database db:               The EBDB Database.   (line  73)
 * ebdb-rename-buffer:                    EBDB Buffers.        (line  24)
 * ebdb-save:                             The Basics of ebdb-mode.
-                                                              (line 115)
+                                                              (line 122)
 * ebdb-search-invert:                    Searching.           (line  46)
 * ebdb-search-pop:                       Searching.           (line  53)
 * ebdb-snarf &optional string start end recs: Snarfing.       (line  15)
@@ -1910,9 +1919,9 @@ Index
 * Mail aliases:                          Mail Aliases.        (line   6)
 * Migrating from BBDB:                   Migration from BBDB. (line   6)
 * quit-window:                           The Basics of ebdb-mode.
-                                                              (line 119)
+                                                              (line 126)
 * revert-buffer:                         The Basics of ebdb-mode.
-                                                              (line 103)
+                                                              (line 110)
 * Searching the EBDB:                    Searching.           (line   6)
 * Snarfing text:                         Snarfing.            (line   6)
 
@@ -1948,27 +1957,27 @@ Node: EBDB Buffers26980
 Node: Searching28173
 Node: Changing Search Behavior29883
 Node: The Basics of ebdb-mode31133
-Node: Marking34497
-Node: Exporting/Formatting34925
-Node: Completion35884
-Node: Snarfing37095
-Node: Internationalization39074
-Node: Diary Integration41777
-Node: Mail Aliases42643
-Node: vCard Support43352
-Node: Org Integration43851
-Node: Citing Records45425
-Node: Hacking EBDB46184
-Node: Field Classes48514
-Node: Init and Delete Methods51451
-Node: The Labeled Field Class53007
-Node: Actions53843
-Node: Custom Field Searching54508
-Node: Formatting in the EBDB Buffer56296
-Node: Writing Internationalization Libraries58295
-Node: Writing Integration For New MUAs62646
-Node: Article snarfing66072
-Node: Index66794
+Node: Marking34822
+Node: Exporting/Formatting35250
+Node: Completion36209
+Node: Snarfing37420
+Node: Internationalization39399
+Node: Diary Integration42112
+Node: Mail Aliases42978
+Node: vCard Support43687
+Node: Org Integration44186
+Node: Citing Records45760
+Node: Hacking EBDB46519
+Node: Field Classes48849
+Node: Init and Delete Methods51786
+Node: The Labeled Field Class53342
+Node: Actions54178
+Node: Custom Field Searching54843
+Node: Formatting in the EBDB Buffer56631
+Node: Writing Internationalization Libraries58630
+Node: Writing Integration For New MUAs62981
+Node: Article snarfing66407
+Node: Index67129
 
 End Tag Table
 

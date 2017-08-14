@@ -719,6 +719,13 @@ keybindings apply.
   Remove the record under point (or marked records) from the buffer
   (does not delete the records).
 
+- Key: I, ebdb-cite-records-ebdb
+
+  Put a "citation" for the record under point (or marked records) onto
+  the kill ring.  A "citation" is a name-and-mail string for the
+  record.  Prompt for a style, meaning a textual mode.  With a prefix
+  arg, arrange citations in a list, otherwise inline.
+
 - Key: w f, ebdb-copy-fields-as-kill
 
   Copy the string value of the field under point to the kill ring.

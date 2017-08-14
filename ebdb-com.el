@@ -261,6 +261,7 @@ display information."
     (define-key km (kbd "r")		'ebdb-reformat-records)
     (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "F")		'ebdb-format-all-records)
+    (define-key km (kbd "I")            'ebdb-cite-records-ebdb)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
     (define-key km (kbd "s")		'ebdb-save)
@@ -2024,6 +2025,21 @@ for `ebdb-field-action'."
 	     records ", ")))
     (unless (string= "" to)
       (ebdb-compose-mail to subject))))
+
+;;; Citing
+
+(defun ebdb-cite-records-ebdb (arg records style)
+  (interactive
+   (list
+    current-prefix-arg
+    (ebdb-do-records)
+    (completing-read "Style: " '("org" "html" "message") nil t)))
+  (with-current-buffer (get-buffer-create "*EBDB Citation*")
+    (pcase style
+      ("org" (org-mode))
+      ("html" (html-mode))
+      (_ (message-mode)))
+    (ebdb-cite-records records arg)))
 
 ;;; completion
 

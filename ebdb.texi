@@ -1102,6 +1102,15 @@ Redisplay the record under point.
 Remove the record under point (or marked records) from the buffer
 (does not delete the records).
 
+@kindex I
+@cindex ebdb-cite-records-ebdb
+@item @kbd{I} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-cite-records-ebdb})
+
+Put a ``citation'' for the record under point (or marked records) onto
+the kill ring.  A ``citation'' is a name-and-mail string for the
+record.  Prompt for a style, meaning a textual mode.  With a prefix
+arg, arrange citations in a list, otherwise inline.
+
 @kindex w f
 @cindex ebdb-copy-fields-as-kill
 @item @kbd{w f} @tie{}@tie{}@tie{}@tie{}(@code{ebdb-copy-fields-as-kill})
@@ -1292,7 +1301,7 @@ dependencies may be installed from the package repositories.  Because
 function autoloading doesn't work with generic methods, you'll need to
 require the libraries in addition to simply installing them.
 
-EBDB currently comes with only one country library,
+There is currently only one country library written for EBDB,
 @file{ebdb-i18n-chn}, for Chinese-related
 fields.  It parses and displays phone numbers and names correctly, and
 also allows users to search on Chinese names using pinyin.  It can be
@@ -1319,7 +1328,6 @@ country code (international-aware).  EBDB will correctly display the
 country name for either type of storage, regardless of whether the
 internationalization library is loaded or not.
 
-@vindex ebdb-i18n-countries-pref-scripts
 @vindex ebdb-i18n-countries
 Country names are displayed in English by default, but users can alter
 the display of some country names if they choose.
