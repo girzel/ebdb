@@ -555,38 +555,6 @@ See also `ebdb-print-address-format-list'."
                        (choice (string)
                                (function :tag "Function")))))
 
-(defcustom ebdb-continental-postcode-regexp
-  "^\\s *[A-Z][A-Z]?\\s *-\\s *[0-9][0-9][0-9]"
-  "Regexp matching continental postcodes.
-Used by address format identifier `ebdb-address-continental-p'.
-The regexp should match postcodes of the form CH-8052, NL-2300RA,
-and SE-132 54."
-  :group 'ebdb-record-edit
-  :type 'regexp)
-
-(defcustom ebdb-legal-postcodes
-  '(;; empty string
-    "^$"
-    ;; Matches 1 to 6 digits.
-    "^[ \t\n]*[0-9][0-9]?[0-9]?[0-9]?[0-9]?[0-9]?[ \t\n]*$"
-    ;; Matches 5 digits and 3 or 4 digits.
-    "^[ \t\n]*\\([0-9][0-9][0-9][0-9][0-9]\\)[ \t\n]*-?[ \t\n]*\\([0-9][0-9][0-9][0-9]?\\)[ \t\n]*$"
-    ;; Match postcodes for Canada, UK, etc. (result is ("LL47" "U4B")).
-    "^[ \t\n]*\\([A-Za-z0-9]+\\)[ \t\n]+\\([A-Za-z0-9]+\\)[ \t\n]*$"
-    ;; Match postcodes for continental Europe.  Examples "CH-8057"
-    ;; or "F - 83320" (result is ("CH" "8057") or ("F" "83320")).
-    ;; Support for "NL-2300RA" added at request from Carsten Dominik
-    ;; <dominik@astro.uva.nl>
-    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+ ?[A-Z]*\\)[ \t\n]*$"
-    ;; Match postcodes from Sweden where the five digits are grouped 3+2
-    ;; at the request from Mats Lofdahl <MLofdahl@solar.stanford.edu>.
-    ;; (result is ("SE" (133 36)))
-    "^[ \t\n]*\\([A-Z]+\\)[ \t\n]*-?[ \t\n]*\\([0-9]+\\)[ \t\n]+\\([0-9]+\\)[ \t\n]*$")
-  "List of regexps that match legal postcodes.
-Whether this is used at all depends on the variable `ebdb-check-postcode'."
-  :group 'ebdb-record-edit
-  :type '(repeat regexp))
-
 (defcustom ebdb-default-separator '("[,;]" ", ")
   "The default field separator.  It is a list (SPLIT-RE JOIN).
 This is used for fields which do not have an entry in `ebdb-separator-alist'."
@@ -698,13 +666,6 @@ In rare cases, this may lead to confusion with EBDB's MUA interface."
   :group 'ebdb-record-edit
   :type '(choice (const :tag "None" nil)
                  (string :tag "Default Country")))
-
-(defcustom ebdb-check-postcode t
-  "If non-nil, require legal postcodes when entering an address.
-The format of legal postcodes is determined by the variable
-`ebdb-legal-postcodes'."
-  :group 'ebdb-record-edit
-  :type 'boolean)
 
 (defcustom ebdb-default-user-field 'ebdb-field-notes
   "Default field when editing EBDB records."
@@ -1689,11 +1650,9 @@ first one."
 	(postcode
 	 (if (plist-member slots :postcode)
 	     (plist-get slots :postcode)
-	   (ebdb-error-retry
-	    (ebdb-parse-postcode
-	     (ebdb-read-string "Postcode: "
-			       (when obj (ebdb-address-postcode obj))
-			       ebdb-postcode-list)))))
+	   (ebdb-read-string "Postcode: "
+			     (when obj (ebdb-address-postcode obj))
+			     ebdb-postcode-list)))
 	(country
 	 (if (plist-member slots :country)
 	     (plist-get slots :country)
@@ -4873,18 +4832,6 @@ be nil."
 		(and first (ebdb-string-trim first))
 		suffix))))
 
-(defun ebdb-parse-postcode (string)
-  "Check whether STRING is a legal postcode.
-Do this only if `ebdb-check-postcode' is non-nil."
-  (if ebdb-check-postcode
-      (let ((postcodes ebdb-legal-postcodes) re done)
-        (while (setq re (pop postcodes))
-          (if (string-match re string)
-              (setq done t postcodes nil)))
-        (if done string
-          (signal 'ebdb-unparseable (list string))))
-    string))
-
 (defsubst ebdb-record-lessp (record1 record2)
   (string< (ebdb-record-sortkey record1)
            (ebdb-record-sortkey record2)))
@@ -5001,15 +4948,6 @@ actual speedup."
        (when (= (mod (cl-incf c) 10) 0)
 	 (thread-yield)))
      (or records ebdb-record-tracker))))
-
-(defun ebdb-address-continental-p (address)
-  "Return non-nil if ADDRESS is a continental address.
-This is done by comparing the postcode to `ebdb-continental-postcode-regexp'.
-
-This is a possible identifying function for
-`ebdb-address-format-list' and `ebdb-print-address-format-list'."
-  (string-match ebdb-continental-postcode-regexp
-                (ebdb-address-postcode address)))
 
 (defvar ebdb-i18n-countries-pref-scripts)
 
