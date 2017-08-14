@@ -277,6 +277,16 @@ case this variable will be ignored."
   :group 'ebdb
   :type '(list-of string))
 
+(defcustom ebdb-default-address-format-function #'ebdb-format-address-default
+  "Default function used to format an address.
+This function produces a string that looks more or less like a US
+address.  Either write a custom function to format all addresses,
+or load `ebdb-i18n' to format addresses based on country-specific
+rules."
+
+  :group 'ebdb
+  :type 'function)
+
 (defcustom ebdb-auto-revert nil
   "If t revert unchanged database without querying.
 
@@ -484,76 +494,6 @@ It takes one argument, the name as extracted by
   :type 'function)
 
 ;;; Record editing
-
-;; The following two options should be obviated by ebdb-i18n.el
-;; See http://en.wikipedia.org/wiki/Postal_address
-;; http://www.upu.int/en/activities/addressing/postal-addressing-systems-in-member-countstateries.html
-(defcustom ebdb-address-format-list
-  '(((arg) "splrc" "@%s\n@%p, @%l@, %r@\n%c@" "@%l@")
-    ((aus) "slrpc" "@%s\n@%l@ %r@ %p@\n%c@" "@%l@")
-    ((aut due esp che)
-     "splrc" "@%s\n@%p @%l@ (%r)@\n%c@" "@%l@")
-    ((can) "slrcp" "@%s\n@%l@, %r@\n%c@ %p@" "@%l@")
-    ((chn) "slprc" "@%s\n@%l@\n%p@ %r@\n%c@" "@%l@") ; English format
-    ; (("China") "cprls" "@%c @%p\n@%r @%l@ %s@" "@%l@") ; Chinese format
-    ((ind) "slprc" "@%s\n@%l@ %p@ (%r)@\n%c@" "@%l@")
-    ((usa) "slrpc" "@%s\n@%l@, %r@ %p@\n%c@" "@%l@")
-    (t ebdb-edit-address-default ebdb-format-address-default "@%l@"))
-  "List of address editing and formatting rules for EBDB.
-Each rule is a list (IDENTIFIER EDIT FORMAT FORMAT).
-The first rule for which IDENTIFIER matches an address is used for editing
-and formatting the address.
-
-IDENTIFIER may be a list of countries.
-IDENTIFIER may also be a function that is called with one arg, the address
-to be used.  The rule applies if the function returns non-nil.
-See `ebdb-address-continental-p' for an example.
-If IDENTIFIER is t, this rule always applies.  Usually, this should be
-the last rule that becomes a fall-back (default).
-
-EDIT may be a function that is called with one argument, the address.
-See `ebdb-edit-address-default' for an example.
-
-EDIT may also be an editting format string.  It is a string containing
-the five letters s, c, p, S, and C that specify the order for editing
-the five elements of an address:
-
-s  streets
-l  locality
-p  postcode
-r  region
-c  country
-
-The first FORMAT of each rule is used for multi-line layout, the second FORMAT
-is used for one-line layout.
-
-FORMAT may be a function that is called with one argument, the address.
-See `ebdb-format-address-default' for an example.
-
-FORMAT may also be a format string.  It consists of formatting elements
-separated by a delimiter defined via the first (and last) character of FORMAT.
-Each formatting element may contain one of the following format specifiers:
-
-%s  streets (used repeatedly for each street part)
-%l  locality
-%p  postcode
-%r  region
-%c  country
-
-A formatting element will be applied only if the corresponding part
-of the address is a non-empty string.
-
-See also `ebdb-print-address-format-list'."
-  :group 'ebdb-record-edit
-  :type '(repeat (list (choice (const :tag "Default" t)
-                               (function :tag "Function")
-                               (repeat (string)))
-                       (choice (string)
-                               (function :tag "Function"))
-                       (choice (string)
-                               (function :tag "Function"))
-                       (choice (string)
-                               (function :tag "Function")))))
 
 (defcustom ebdb-default-separator '("[,;]" ", ")
   "The default field separator.  It is a list (SPLIT-RE JOIN).
@@ -1038,7 +978,8 @@ in."  nil)
     :initarg :object-name
     :custom (choice (const :tag "Empty" nil)
 		    string)
-    :initform nil)
+    :initform nil
+    :documentation "String label")
    (label-list
     :initform nil
     :type (or null symbol)
@@ -1685,14 +1626,32 @@ first one."
       ((ebdb-empty quit) nil))
     (reverse list)))
 
-;; Addresses are displayed using `ebdb-format-address', which is
-;; probably a candidate for refactoring.  In the meantime, provide a
-;; stop-gap `ebdb-string' method for addresses that doesn't go through
-;; the whole formatting routine, and additionally fits on one line.
-;; This should probably get re-thought/re-worked later.
-
 (cl-defmethod ebdb-string ((address ebdb-field-address))
-  (ebdb-format-address address 2))
+  (funcall ebdb-default-address-format-function address))
+
+(defun ebdb-format-address-default (address)
+  "Return formatted ADDRESS as a string.
+This is the default format; it is used in the US, for example.
+The result looks like this:
+       label: street
+              street
+              ...
+              locality, region postcode
+              country."
+  (let ((country (ebdb-address-country address))
+        (streets (ebdb-address-streets address)))
+    (when (symbolp country)
+      (require 'ebdb-i18n)
+      (setq country (car-safe (rassq
+			       country
+			       (ebdb-i18n-countries)))))
+    (concat (if streets
+                (concat (mapconcat 'identity streets "\n") "\n"))
+            (ebdb-concat ", " (ebdb-address-locality address)
+                         (ebdb-concat " " (ebdb-address-region address)
+                                      (ebdb-address-postcode address)))
+            (unless (or (not country) (string= "" country))
+              (concat "\n" country)))))
 
 ;;; Phone fields
 
@@ -4950,87 +4909,6 @@ actual speedup."
      (or records ebdb-record-tracker))))
 
 (defvar ebdb-i18n-countries-pref-scripts)
-
-;; This function can provide some guidance for writing
-;; your own address formatting function
-(defun ebdb-format-address-default (address)
-  "Return formatted ADDRESS as a string.
-This is the default format; it is used in the US, for example.
-The result looks like this:
-       label: street
-              street
-              ...
-              locality, region postcode
-              country.
-
-This function is a possible formatting function for
-`ebdb-address-format-list'."
-  (let ((country (ebdb-address-country address))
-        (streets (ebdb-address-streets address)))
-    (when (symbolp country)
-      (require 'ebdb-i18n)
-      (setq country (car-safe (rassq
-			       country
-			       (ebdb-i18n-countries)))))
-    (concat (if streets
-                (concat (mapconcat 'identity streets "\n") "\n"))
-            (ebdb-concat ", " (ebdb-address-locality address)
-                         (ebdb-concat " " (ebdb-address-region address)
-                                      (ebdb-address-postcode address)))
-            (unless (or (not country) (string= "" country))
-              (concat "\n" country)))))
-
-(defun ebdb-format-address (address layout)
-  "Format ADDRESS using LAYOUT.  Return result as a string.
-The formatting rules are defined in `ebdb-address-format-list'."
-  (let ((list ebdb-address-format-list)
-        (country (ebdb-address-country address))
-        elt string)
-    (while (and (not string) (setq elt (pop list)))
-      (let ((identifier (car elt))
-            (format (nth layout elt))
-            ;; recognize case for format identifiers
-            case-fold-search str)
-        (when (or (eq t identifier)	; default
-                  (and (functionp identifier)
-                       (funcall identifier address))
-                  (and country
-                       (listp identifier)
-                       ;; ignore case for countries
-                       (assq country identifier)))
-          (cond ((functionp format)
-                 (setq string (funcall format address)))
-                ((stringp format)
-                 (setq string "")
-                 (dolist (form (split-string (substring format 1 -1)
-                                             (substring format 0 1) t))
-                   (cond ((string-match "%s" form) ; street
-                          (mapc (lambda (s) (setq string (concat string (format form s))))
-                                (ebdb-address-streets address)))
-                         ((string-match "%l" form) ; locality
-                          (unless (or (not (setq str (ebdb-address-locality address))) (string= "" str))
-                            (setq string (concat string (format (replace-regexp-in-string "%l" "%s" form) str)))))
-                         ((string-match "%p" form) ; postcode
-                          (unless (or (not (setq str (ebdb-address-postcode address))) (string= "" str))
-                            (setq string (concat string (format (replace-regexp-in-string "%p" "%s" form) str)))))
-                         ((string-match "%r" form) ; region
-                          (unless (or (not (setq str (ebdb-address-region address))) (string= "" str))
-                            (setq string (concat string (format (replace-regexp-in-string "%r" "%s" form t) str)))))
-                         ((string-match "%c" form) ; country
-			  (when (symbolp country)
-			    (require 'ebdb-i18n)
-			    (setq country (or (car-safe
-					       (rassq
-						country
-						(append ebdb-i18n-countries-pref-scripts
-							ebdb-i18n-countries))))))
-                          (unless (or (not country) (string= "" country))
-                            (setq string (concat string (format (replace-regexp-in-string "%c" "%s" form t) country)))))
-                         (t (error "Malformed address format element %s" form)))))
-                (t (error "Malformed address format %s" format))))))
-    (unless string
-      (error "No match of `ebdb-address-format-list'"))
-    string))
 
 
 ;;; Citing EBDB records
