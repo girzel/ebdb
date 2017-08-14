@@ -53,6 +53,7 @@
 (require 'eieio-opt)
 
 ;; Pacify the compiler.
+(autoload 'ebdb-i18n-countries "ebdb-i18n")
 (autoload 'widget-group-match "wid-edit")
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")
@@ -5032,8 +5033,7 @@ This function is a possible formatting function for
       (require 'ebdb-i18n)
       (setq country (car-safe (rassq
 			       country
-			       (append ebdb-i18n-countries-pref-scripts
-				       ebdb-i18n-countries)))))
+			       (ebdb-i18n-countries)))))
     (concat (if streets
                 (concat (mapconcat 'identity streets "\n") "\n"))
             (ebdb-concat ", " (ebdb-address-locality address)

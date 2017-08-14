@@ -335,6 +335,10 @@ English version for display."
 English, and a three-letter symbol identifying the country, as
 per ISO 3166-1 alpha 3.")
 
+(defsubst ebdb-i18n-countries ()
+  (append ebdb-i18n-countries-pref-scripts
+	  ebdb-i18n-countries))
+
 ;; Taken from https://en.wikipedia.org/wiki/Telephone_country_codes,
 ;; on Jul 30, 2016
 (defvar ebdb-i18n-phone-codes
@@ -662,16 +666,14 @@ for their symbol representations.")
 
 (cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-address))
 				       &optional slots obj)
-  (let* ((countries (append ebdb-i18n-countries-pref-scripts
-			    ebdb-i18n-countries))
-	 (country
+  (let ((country
 	  (cdr (assoc (completing-read
 		       "Country: "
 		       countries
 		       nil nil
 		       (when obj (car (rassoc (ebdb-address-country obj)
-					      countries))))
-		      ebdb-i18n-countries))))
+					      (ebdb-i18n-countries)))))
+		      (ebdb-i18n-countries)))))
     (setq slots
 	  (condition-case nil
 	      (ebdb-read-i18n class
@@ -705,13 +707,12 @@ for their symbol representations.")
 ;; 		(when (string-match (regexp-opt
 ;; 				     (mapcar
 ;; 				      (lambda (elt) (car elt))
-;; 				      (append ebdb-i18n-countries-pref-scripts
-;; 					      ebdb-i18n-countries)))
+;; 				      (ebdb-i18n-countries)))
 ;; 				    str)
 ;; 		  (cdr-safe (assoc-string
 ;; 			     (match-string 0 str)
-;; 			     (append ebdb-i18n-countries-pref-scripts
-;; 				     ebdb-i18n-countries)))))))
+;; 			     (ebdb-i18n-countries)
+;; 				     ))))))
 ;;     (or (and cc
 ;; 	     (symbolp cc)
 ;; 	     (condition-case nil
