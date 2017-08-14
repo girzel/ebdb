@@ -688,8 +688,8 @@ for their symbol representations."
 		      (ebdb-i18n-countries)))))
     (setq slots
 	  (condition-case nil
-	      (ebdb-read-i18n class
-			      (plist-put slots :country country) obj country)
+	      (ebdb-read-i18n class country
+			      (plist-put slots :country country) obj)
 	    (cl-no-method
 	     (plist-put slots :country country))))
     (cl-call-next-method class slots obj)))
