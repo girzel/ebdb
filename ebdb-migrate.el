@@ -579,22 +579,14 @@ holding valid contacts in a previous BBDB format."
 					 val
 				       (split-string val ";" t " ")))
 		fields))
-	 ((memq lab (list bbdb/gnus-score-field
-			  bbdb/gnus-split-private-field
-			  'imap))
-	  (cond
-	   ((eq lab bbdb/gnus-score-field)
-	    (push (make-instance 'ebdb-gnus-score-field
-				 :score val)
-		  fields))
-	   ((eq lab bbdb/gnus-split-private-field)
-	    (push (make-instance 'ebdb-gnus-private-field
-				 :group val)
-		  fields))
-	   ((eq lab 'imap)
-	    (push (make-instance 'ebdb-gnus-imap-field
-				 :group val)
-		  fields))))
+	 ((eq lab bbdb/gnus-score-field)
+	  (push (make-instance 'ebdb-gnus-score-field
+			       :score val)
+		fields))
+	 ((memq lab (list 'imap bbdb/gnus-split-private-field))
+	  (push (make-instance 'ebdb-field-mail-folder
+			       :folder val)
+		fields))
 	 (t
 	  (push (make-instance 'ebdb-field-user-simple
 			       :object-name (symbol-name (car x))

@@ -69,22 +69,6 @@
 (cl-defmethod ebdb-string ((field ebdb-gnus-score-field))
   (slot-value field 'score))
 
-;; Brian Edmonds' code has been removed (hopefully temporarily), so
-;; this field class won't actually do anything.  It's here mostly for
-;; the migration process, and in hopes we'll get that code back.
-(defclass ebdb-gnus-private-field (ebdb-field-user)
-  ((group
-    :type string
-    :initarg :group))
-  :human-readable "gnus private")
-
-(cl-defmethod ebdb-read ((field (subclass ebdb-gnus-private-field)) &optional slots obj)
-  (let ((group (ebdb-read-string "Group name: " (when obj (slot-value obj 'group)))))
-    (cl-call-next-method field (plist-put slots :group group) obj)))
-
-(cl-defmethod ebdb-string ((field ebdb-gnus-private-field))
-  (slot-value field 'group))
-
 ;; Scoring
 
 (defcustom ebdb/gnus-score-default nil
@@ -157,72 +141,30 @@ addresses better than the traditionally static global scorefile."
                        "))"))))
   ebdb/gnus-score-alist)
 
-;;
-;; Imap support (Uwe Brauer)
-;;
+;;; Gnus splitting support
 
-;;;###autoload
-(defclass ebdb-gnus-imap-field (ebdb-field-user)
-  ((group
-    :type string
-    :initarg :group))
-  :human-readable "gnus imap")
-
-(cl-defmethod ebdb-read ((field (subclass ebdb/gnus-imap-field)) &optional slots obj)
-  (let ((group (ebdb-read-string "Imap group: " (when obj (slot-value obj 'group)))))
-    (cl-call-next-method
-     field
-     (plist-put slots :group group)
-     obj)))
-
-(cl-defmethod ebdb-string ((field ebdb-gnus-imap-field))
-  (slot-value field 'group))
-
-(defun ebdb/gnus-nnimap-folder-list-from-ebdb ()
+(defun ebdb/gnus-split-folders-list ()
   "Return a list of \( \"From\" mail-regexp imap-folder-name\) tuples
-based on the contents of the ebdb.
+based on the contents of the EBDB.
 
-The folder-name is the value of the 'imap attribute of the EBDB record;
-the mail-regexp consists of all the mail addresses for the EBDB record
-concatenated with OR.  Records without an 'imap attribute are ignored.
-
-Here  is an example of a relevant EBDB record:
-
-Uwe Brauer
-           mail: oub@mat.ucm.es
-           imap: testimap
-
-This function uses `regexp-opt' to generate the mail-regexp which automatically
-`regexp-quote's its arguments.  Please note: in order that this will work
-with the `nnimap-split-fancy' method you have to use macros, that is your setting
-will look like:
+Mail address elements are already `regexp-quote'-ed, so we just
+concat them.  Please note: in order that this will work with the
+`nnimap-split-fancy' or `nnmail-split-fancy' methods you have to
+use a backquote template, that is your setting will look like:
 
 \(setq nnimap-split-rule  'nnimap-split-fancy
        nnimap-split-inbox \"INBOX\"
        nnimap-split-fancy
-       `\(| ,@\(ebdb/gnus-nnimap-folder-list-from-ebdb\)
+       `\(| ,@\(ebdb/gnus-split-folders-list\)
             ... \)\)
 
 Note that `\( is the backquote, NOT the quote '\(."
-
-  (let (;; the value of the 'imap attribute of a ebdb record
-        folder-attr
-        ;; a regexp matching all the mail addresses from a ebdb record
-        mail-regexp
-        ;; the list of (folder mail) tuples to return
-        new-elmnt-list)
-    ;; Loop over EBDB records.  If an imap attribute exists for
-    ;; the record, generate a regexp matching all the mail addresses
-    ;; and add a tuple (folder mail-regexp) to the new-elmnt-list
-    (dolist (record (ebdb-records))
-      (when (setq folder-attr (ebdb-record-user-field record 'imap))
-        (setq mail-regexp (regexp-opt (mapcar (lambda (m)
-						(downcase (ebdb-string m)))
-                                              (ebdb-record-mail record))))
-        (unless (string= "" mail-regexp)
-          (push (list "From" mail-regexp folder-attr)
-                new-elmnt-list))))
-    new-elmnt-list))
+  (mapcar
+   (lambda (elt)
+     (list "From"
+	   (mapconcat #'identity (cdr elt) "\\|")
+	   (car elt)))
+   ebdb-mail-folder-list))
 
 ;;
 ;; Insinuation
