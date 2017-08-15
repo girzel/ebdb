@@ -2039,7 +2039,7 @@ for `ebdb-field-action'."
       ("org" (org-mode))
       ("html" (html-mode))
       (_ (message-mode)))
-    (ebdb-cite-records records arg)))
+    (ebdb-cite-records records arg t)))
 
 ;;; completion
 

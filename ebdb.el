@@ -4794,7 +4794,7 @@ The formatting rules are defined in `ebdb-address-format-list'."
 ;; "Citation" means inserting some sort of string representing the
 ;; record(s) into the current buffer.
 
-(defun ebdb-cite-records (&optional records arg insert)
+(defun ebdb-cite-records (&optional records arg kill)
   (interactive (list (ebdb-prompt-for-record)
 		     current-prefix-arg))
   (let ((recs (if (listp records) records (list records)))
@@ -4806,10 +4806,11 @@ The formatting rules are defined in `ebdb-address-format-list'."
 			    (car m)))
 		usable)))
     (setq str (ebdb-records-cite style usable))
-    (if insert
-	(insert str)
-      (kill-new str)
-      (message "Citation added to kill ring"))))
+    (if kill
+	(progn
+	  (kill-new str)
+	  (message "Citation added to kill ring"))
+      (insert str))))
 
 (cl-defgeneric ebdb-records-cite (style records)
   "Insert mode-appropriate mail strings for RECORDS.
