@@ -483,10 +483,81 @@ Currently no other MUAs support this EBDB feature."
   :group 'ebdb-mua
   :type 'string)
 
+(defvar ebdb-mail-folder-list nil
+  "Variable holding lists of mail folder names and mail regexps.
+This is a list of lists: the car of each list element is a string
+folder name, followed by an arbitrary number of strings
+representing regular expressions matching mail addresses.
+
+The value of this variable is usually constructed from instances
+of the `ebdb-field-mail-folder' field.  It's also possible to
+manually add regexps to this list, if for instance the user
+wishes to match mail addresses more broadly.  In this case the
+variable should be set before EBDB is loaded.")
+
+(defclass ebdb-field-mail-folder (ebdb-field-user)
+  ((folder
+    :type string
+    :initarg :folder
+    :custom string
+    :documentation "The folder name to split mail to."))
+  :human-readable "mail folder"
+  :documentation "A field holding the string names of MUA
+  folders.  The MUA packages may perform automatic splitting and
+  filing of messages from records based on the value of this
+  field.")
+
+(cl-defmethod ebdb-string ((f ebdb-field-mail-folder))
+  (slot-value f 'folder))
+
+(cl-defmethod ebdb-read ((c (subclass ebdb-field-mail-folder))
+			 &optional slots obj)
+  (unless (plist-get slots :folder)
+    (setq slots (plist-put slots :folder
+			   (ebdb-read-string
+			    "Folder name: "
+			    (when obj (slot-value obj 'folder))
+			    ebdb-mail-folder-list))))
+  (cl-call-next-method c slots obj))
+
+(cl-defmethod ebdb-parse ((c (subclass ebdb-field-mail-folder))
+			  (str string)
+			  &optional slots)
+  (unless (plist-get slots :folder)
+    (setq slots (plist-put slots :folder str)))
+  (cl-call-next-method c str slots))
+
+(cl-defmethod ebdb-init-field ((f ebdb-field-mail-folder)
+			       &optional record)
+  (when record
+    (let* ((folder (slot-value f 'folder))
+	   (mails (mapcar #'regexp-quote (ebdb-record-mail-canon record)))
+	   (entry (assoc-string folder
+				ebdb-mail-folder-list)))
+      (when mails
+	(if entry
+	    (setcdr (assoc folder ebdb-mail-folder-list)
+		    (delete-dups (append (cdr entry) mails)))
+	  (push (cons folder mails)
+		ebdb-mail-folder-list)))))
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-delete-field ((f ebdb-field-mail-folder)
+				 &optional record unload)
+  (when record
+    (let* ((folder (slot-value f 'folder))
+	   (mails (mapcar #'regexp-quote (ebdb-record-mail-canon record)))
+	   (entry (assoc-string folder
+				ebdb-mail-folder-list)))
+      (when (and mails entry)
+	(setcdr (assoc folder ebdb-mail-folder-list)
+		(seq-difference (cdr entry) mails)))))
+  (cl-call-next-method))
+
 (defsubst ebdb-message-header-re (header regexp)
   "Return non-nil if REGEXP matches value of HEADER."
   (let ((val (ebdb-mua-message-header header))
-        (case-fold-search t)) ; RW: Is this what we want?
+        (case-fold-search t))		; RW: Is this what we want?
     (and val (string-match regexp val))))
 
 (defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
