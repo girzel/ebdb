@@ -1570,13 +1570,16 @@ the record, change the name of the record."
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
   (ebdb-with-record-edits (r (list record))
-    (eieio-customize-object field))
+    (ebdb-record-delete-field r field)
+    (condition-case nil
+	(eieio-customize-object field)
+      (error (ebdb-record-insert-field rec f))))
   (setq ebdb-custom-field-record record))
 
-(cl-defmethod eieio-done-customizing ((_f ebdb-field))
+(cl-defmethod eieio-done-customizing ((f ebdb-field))
   (let ((rec ebdb-custom-field-record))
     (when rec
-      (setf (slot-value rec 'dirty) t)
+      (ebdb-record-insert-field rec f)
       (ebdb-redisplay-records rec 'reformat t))))
 
 ;;;###autoload
