@@ -4856,7 +4856,7 @@ This is a generic function that dispatches on the value of
 					 (_records list)
 					 &context (major-mode org-mode))
   (let ((lst (cl-call-next-method)))
-    (mapconcat #'identity list " ")))
+    (mapconcat #'identity lst " ")))
 
 (cl-defmethod ebdb-records-cite
   (_style (records list) &context (major-mode org-mode))
