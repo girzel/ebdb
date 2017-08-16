@@ -77,7 +77,7 @@
 (defvar ebdb-record-tracker nil
   "A list of all the loaded records")
 
-(defvar ebdb-hashtable (make-hash-table :test 'equal)
+(defvar ebdb-hashtable (make-hash-table :test 'equal :weakness 'value)
   "Hash table for EBDB records.
 Hashes the fields first-last-name, last-first-name, organization, aka,
 and mail.")
