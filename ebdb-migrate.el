@@ -350,6 +350,11 @@ from the list in question."
   :group 'ebdb-mua-gnus-splitting
   :type  'symbol)
 
+(defcustom bbdb/vm-auto-folder-field 'vm-folder
+  "The name of the VM-specific xfield for mail splitting."
+  :group 'ebdb-mua-vm
+  :type 'symbol)
+
 (defcustom bbdb/gnus-score-field 'gnus-score
   "This variable contains the name of the EBDB field which should be
 checked for a score to add to the mail addresses in the same record."
@@ -509,7 +514,7 @@ holding valid contacts in a previous BBDB format."
 				 :mail (cadr bits))
 		  mails))))
       (when mails
-       (oset (car (last mails)) priority 'primary)))
+	(oset (car (last mails)) priority 'primary)))
     (when xfields
       (dolist (x xfields)
 	(setq lab (car x)
@@ -583,7 +588,8 @@ holding valid contacts in a previous BBDB format."
 	  (push (make-instance 'ebdb-gnus-score-field
 			       :score val)
 		fields))
-	 ((memq lab (list 'imap bbdb/gnus-split-private-field))
+	 ((memq lab (list 'imap bbdb/gnus-split-private-field
+			  bbdb/vm-auto-folder-field))
 	  (push (make-instance 'ebdb-field-mail-folder
 			       :folder val)
 		fields))
