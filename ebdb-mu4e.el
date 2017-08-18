@@ -25,12 +25,15 @@
 ;;; Code:
 
 (require 'ebdb-mua)
-(require 'mu4e-view)
+(if t (require 'mu4e-view))
+
+(defvar mu4e~view-buffer-name)
+(defvar mu4e-view-mode-map)
 
 ;; Tackle `mu4e-headers-mode' later
 
-(cl-defmethod ebdb-message-header ((header string)
-				   &context (major-mode mu4e-view-mode))
+(cl-defmethod ebdb-mua-message-header ((header string)
+				       &context (major-mode mu4e-view-mode))
   (set-buffer mu4e~view-buffer-name)
   (message-field-value header))
 
@@ -45,7 +48,7 @@
 
 ;; Why wasn't `ebdb-mua-auto-update' ever hooked in to mu4e?
 
-(add-hook 'mu4e-main-mode-hook 'ebdb-insinuate-mu4e)
+(add-hook 'mu4e-main-mode-hook #'ebdb-insinuate-mu4e)
 
 (provide 'ebdb-mu4e)
 ;;; ebdb-mu4e.el ends here

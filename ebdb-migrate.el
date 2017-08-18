@@ -251,7 +251,7 @@ Formats are changed in timestamp and creation-date fields from
                      (string-to-number (match-string 2 date))
                      (string-to-number (match-string 3 date))))
         ;; This should be fairly loud for GNU Emacs users
-        (ebdb-warn "EBDB is treating %s field value %s as %s %d %d"
+        (message "EBDB is treating %s field value %s as %s %d %d"
                (car field) (cdr field)
                (upcase-initials
                 (downcase (car (rassoc (aref parsed 1)
@@ -263,7 +263,7 @@ Formats are changed in timestamp and creation-date fields from
                      (string-to-number (match-string 1 date))
                      (string-to-number (match-string 2 date))))
         ;; This should be fairly loud for GNU Emacs users
-        (ebdb-warn "EBDB is treating %s field value %s as %s %d %d"
+        (message "EBDB is treating %s field value %s as %s %d %d"
                (car field) (cdr field)
                (upcase-initials
                 (downcase (car (rassoc (aref parsed 1)
@@ -370,7 +370,6 @@ case someone's going from, say, version 2 to 4 in one jump.
 Assume that the variable `bbdb-file' points to an existing file
 holding valid contacts in a previous BBDB format."
   (require 'url-handlers)
-  (require 'ebdb-gnorb)
   (require 'ebdb-org)
   (require 'ebdb-gnus)
   (with-current-buffer (find-file-noselect bbdb-file)
@@ -559,6 +558,7 @@ holding valid contacts in a previous BBDB format."
 				     :notes val)))
 	 ((eq lab 'messages)
 	  (unless (stringp val)
+	    (require 'ebdb-gnorb)
 	    (setq val
 		  (mapcar
 		   (lambda (s)
@@ -651,7 +651,7 @@ holding valid contacts in a previous BBDB format."
 
         ;; Migrate if `bbdb-file' is outdated.
         (if migrate (setq records (ebdb-migrate records file-format)))
-	
+
 	records))))
 
 (provide 'ebdb-migrate)

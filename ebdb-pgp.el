@@ -105,6 +105,7 @@ See info node `(message)security'."
                        (symbol :tag "Encrypt method")))
   :group 'ebdb-utilities-pgp)
 
+;;;###autoload
 (defclass ebdb-field-pgp (ebdb-field-user)
   ((action
     :initarg :action
@@ -184,7 +185,7 @@ use one of the following, as appropriate:
                                   (ebdb-extract-address-components
                                    (mapconcat
                                     (lambda (header)
-                                      (ebdb-message-header header))
+                                      (ebdb-mua-message-header header))
                                     ebdb-pgp-headers ", ")
                                    t)))))))
                  (and ebdb-pgp-default-action

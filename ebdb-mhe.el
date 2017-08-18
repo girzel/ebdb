@@ -62,15 +62,15 @@ Returns the empty string if HEADER is not in the message."
   "Produce a EBDB buffer name associated with mh-hmode."
   (format "*%s-MHE*" ebdb-buffer-name))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode mhe-mode))
   (ebdb/mh-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode mhe-summary-mode))
   (ebdb/mh-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode mhe-folder-mode))
   (ebdb/mh-header header))
 

@@ -80,13 +80,6 @@ Used by `ebdb-mouse-menu'."
   :group 'ebdb-record-display
   :type 'sexp)
 
-;; (defcustom ebdb-mua-auto-snarf-signature nil
-;;   "If t, EBDB will attempt to snarf the mail message signature
-;;   and add additional field information (ie phone or address) to
-;;   the sending record.
-
-;; Valid values are nil, 'query or t, or 'auto.")
-
 (defcustom ebdb-display-hook nil
   "Hook run after the *EBDB* is filled in."
   :group 'ebdb-record-display
@@ -98,6 +91,13 @@ Used by `ebdb-mouse-menu'."
   :group 'ebdb
   :group 'faces)
 
+(defcustom ebdb-name-face-alist '((ebdb-record-person . ebdb-person-name)
+				  (ebdb-record-organization . ebdb-organization-name))
+  "Alist matching record class types to the face that should be
+  used to font-lock their names in the *EBDB* buffer."
+  :group 'ebdb-faces
+  :type '(repeat (cons (ebdb-record :tag "Record type") (face :tag "Face"))))
+
 (defface ebdb-person-name
   '((t (:inherit font-lock-function-name-face)))
   "Face used for EBDB person names."
@@ -107,13 +107,6 @@ Used by `ebdb-mouse-menu'."
   '((t (:inherit font-lock-comment-face)))
   "Face used for EBDB organization names."
   :group 'ebdb-faces)
-
-(defcustom ebdb-name-face-alist '((ebdb-record-person . ebdb-person-name)
-				  (ebdb-record-organization . ebdb-organization-name))
-  "Alist matching record class types to the face that should be
-  used to font-lock their names in the *EBDB* buffer."
-  :group 'ebdb-faces
-  :type '(repeat (cons (ebdb-record :tag "Record type") (face :tag "Face"))))
 
 (defface ebdb-marked
   '((t (:background "LightBlue")))
@@ -200,9 +193,6 @@ If FULL is non-nil, assume that RECORDS include display information."
 ;; Note about EBDB prefix commands: `ebdb-search-invert' is a fake
 ;; prefix commands. They need not precede the main commands.
 
-(defvar ebdb-search-invert nil
-  "Bind this variable to t in order to invert the result of `ebdb-search'.")
-
 (defun ebdb-search-invert-p ()
   "Return variable `ebdb-search-invert' and set it to nil.
 To set it again, use command `ebdb-search-invert'."
@@ -271,6 +261,7 @@ display information."
     (define-key km (kbd "r")		'ebdb-reformat-records)
     (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
     (define-key km (kbd "F")		'ebdb-format-all-records)
+    (define-key km (kbd "I")            'ebdb-cite-records-ebdb)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
     (define-key km (kbd "s")		'ebdb-save)
@@ -1031,68 +1022,8 @@ buffer."
 ;;;###autoload
 (define-derived-mode ebdb-mode special-mode "EBDB"
   "Major mode for viewing and editing the Insidious Big Brother Database.
-Letters no longer insert themselves.  Numbers are prefix arguments.
-You can move around using the usual cursor motion commands.
-\\<ebdb-mode-map>
-\\[ebdb-insert-field]\t Insert a new field into the current record.  \
-Note that this\n\t will let you add new fields of your own as well.
-\\[ebdb-edit-field]\t Edit the field on the current line.
-\\[ebdb-edit-field-customize]\t Edit field using the customize interface.
-\\[ebdb-delete-field-or-record]\t Delete the field on the \
-current line.  If the current line is the\n\t first line of a record, then \
-delete the entire record.
-\\[ebdb-dial]\t Dial the current phone field.
-\\[ebdb-next-record], \\[ebdb-prev-record]\t Move to the next or the previous \
-displayed record, respectively.
-\\[ebdb-next-field], \\[ebdb-prev-field]\t Move to the next or the previous \
-record field.
-\\[ebdb-create-record]\t Create a new record.
-\\[ebdb-create-record-extended]\t Create a new record with extended options.
-\\[ebdb-toggle-records-format]\t Toggle whether the current record is displayed in a \
-one-line\n\t listing, or a full multi-line listing.
-\\[ebdb-copy-fields-as-kill]\t Copy field(s) under point as a kill.
-\\[ebdb-copy-mail-as-kill]\t Copy name+mail of record as a kill.
-\\[ebdb-copy-records-as-kill]\t Copy record(s) as a kill.
-\\[ebdb-fmt-to-tmp-buffer]\t Export records to a different format.
-\\[ebdb-omit-records]\t Remove the current record from the display without \
-deleting it from\n\t the database.
-\\[ebdb-toggle-record-mark]\t Mark or unmark record under point.
-\\[ebdb-toggle-all-record-marks]\t Toggle all record marks
-\\[ebdb-unmark-all-records]\t Unmark all records.
-\\[ebdb-clone-buffer]\t Clone the current EBDB buffer.
-\\[ebdb-rename-buffer]\t Rename the current EBDB buffer.
-\\[ebdb]\t Search for records in the database (on all fields).
-\\[ebdb-search-mail]\t Search for records by mail address.
-\\[ebdb-search-organization]\t Search for records by organization.
-\\[ebdb-search-user-fields]\t Search for records by user fields.
-\\[ebdb-search-name]\t Search for records by name.
-\\[ebdb-search-changed]\t Display records that have changed since the database \
-was saved.
-\\[ebdb-mail]\t Compose mail to the person represented by the \
-current record.
-\\[ebdb-save]\t Save the EBDB file to disk.
-\\[ebdb-info]\t Read the Info documentation for EBDB.
-\\[ebdb-help]\t Display a one line command summary in the echo area.
 
-For address completion using the names and mail addresses in the database:
-\t in Sendmail mode, type \\<mail-mode-map>\\[ebdb-complete-mail].
-\t in Message mode, type \\<message-mode-map>\\[ebdb-complete-mail].
-
-Important variables:
-\t `ebdb-ignore-redundant-mails'
-\t `ebdb-case-fold-search'
-\t `ebdb-completion-list'
-\t `ebdb-default-domain'
-\t `ebdb-sources'
-\t `ebdb-mua-auto-update-p'
-\t `ebdb-add-name'
-\t `ebdb-add-aka'
-\t `ebdb-add-mails'
-\t `ebdb-mua-pop-up'
-\t `ebdb-record-self'
-\t `ebdb-user-mail-address-re'
-
-There are numerous hooks.  M-x apropos ^ebdb.*hook RET
+Derives from `special-mode'; the usual `special-mode' bindings apply.
 
 \\{ebdb-mode-map}"
   (setq truncate-lines t
@@ -1483,16 +1414,6 @@ DATE must be in yyyy-mm-dd format."
    (ebdb-compare-records (ebdb-record-field record 'timestamp)
                          'creation-date 'equal) fmt))
 
-;;; Parsing phone numbers
-;;; XXX this needs expansion to handle international prefixes properly
-;;; i.e. +353-number without discarding the +353 part. Problem being
-;;; that this will necessitate yet another change in the database
-;;; format for people who are using north american numbers.
-
-(defsubst ebdb-subint (string num)
-  "Used for parsing phone numbers."
-  (string-to-number (match-string num string)))
-
 (defmacro ebdb-with-record-edits (spec &rest body)
   "Run BODY on all records listed in the cdr of SPEC.
 
@@ -1649,13 +1570,16 @@ the record, change the name of the record."
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
   (ebdb-with-record-edits (r (list record))
-    (eieio-customize-object field))
+    (ebdb-record-delete-field r field)
+    (condition-case nil
+	(eieio-customize-object field)
+      (error (ebdb-record-insert-field rec f))))
   (setq ebdb-custom-field-record record))
 
-(cl-defmethod eieio-done-customizing ((_f ebdb-field))
+(cl-defmethod eieio-done-customizing ((f ebdb-field))
   (let ((rec ebdb-custom-field-record))
     (when rec
-      (setf (slot-value rec 'dirty) t)
+      (ebdb-record-insert-field rec f)
       (ebdb-redisplay-records rec 'reformat t))))
 
 ;;;###autoload
@@ -2085,10 +2009,6 @@ the record to be displayed or nil otherwise."
 
 ;;; Send-Mail interface
 
-(defun ebdb-compose-mail (&rest args)
-  "Start composing a mail message to send."
-  (apply 'compose-mail args))
-
 ;;;###autoload
 (defun ebdb-mail (records &optional subject arg)
   "Compose a mail message to RECORDS (optional: using SUBJECT).
@@ -2108,6 +2028,21 @@ for `ebdb-field-action'."
 	     records ", ")))
     (unless (string= "" to)
       (ebdb-compose-mail to subject))))
+
+;;; Citing
+
+(defun ebdb-cite-records-ebdb (arg records style)
+  (interactive
+   (list
+    current-prefix-arg
+    (ebdb-do-records)
+    (completing-read "Style: " '("org" "html" "message") nil t)))
+  (with-current-buffer (get-buffer-create "*EBDB Citation*")
+    (pcase style
+      ("org" (org-mode))
+      ("html" (html-mode))
+      (_ (message-mode)))
+    (ebdb-cite-records records arg t)))
 
 ;;; completion
 
@@ -2605,64 +2540,51 @@ actions."
       (funcall action record field)
     (message "No action for field")))
 
-
-;;; Dialing numbers from EBDB
+(defun ebdb-dial ()
+  "Dial the phone number under point, or the first number of record under point."
+  (interactive)
+  (let* ((rec (ebdb-current-record))
+	 (phone (or (when (object-of-class-p (ebdb-current-field)
+					     'ebdb-field-phone)
+		      (ebdb-current-field))
+		    (ebdb-record-phone rec)
+		    (error "No phone to dial"))))
+    (ebdb-field-phone-dial rec phone)))
 
-(defun ebdb-dial-number (phone-string)
-  "Dial the number specified by PHONE-STRING.
-This uses the tel URI syntax passed to `browse-url' to make the call.
-If `ebdb-dial-function' is non-nil then that is called to make the phone call."
-  (interactive "sDial number: ")
-  (if ebdb-dial-function
-      (funcall ebdb-dial-function phone-string)
-    (browse-url (concat "tel:" phone-string))))
+;; This function is in addition to the phone field method
+;; `ebdb-field-phone-signal-text', because that will only allow you to
+;; text the single number, while this will allow texting to multiple
+;; recipients.
+(defun ebdb-signal-text (sender records message attachments)
+  "Compose and send a text message using the Signal protocol.
 
-;;;###autoload
-(defun ebdb-dial (phone force-area-code)
-  "Dial the number at point.
-If the point is at the beginning of a record, dial the first phone number.
-Use rules from `ebdb-dial-local-prefix-alist' unless prefix FORCE-AREA-CODE
-is non-nil.  Do not dial the extension."
-  (interactive (list (ebdb-current-field) current-prefix-arg))
-  (if (eq phone 'ebdb-record-name)
-      (setq phone (car (ebdb-record-phone (ebdb-current-record)))))
-  (or (and (eieio-object-p phone)
-	   (object-of-class-p phone 'ebdb-field-phone))
-      (error "Not on a phone field"))
+SENDER should be a phone number (with leading \"+\") to send
+from.  If `ebdb-record-self' is set, this record will be used as
+the sender, while RECORDS will be used as the list of recipients.
+In both cases, `ebdb-signal-get-number' will be used to find a
+usable number from the record.
 
-  (let ((number (ebdb-string phone))
-        shortnumber)
-
-    ;; cut off the extension
-    (if (string-match "x[0-9]+$" number)
-        (setq number (substring number 0 (match-beginning 0))))
-
-    (unless force-area-code
-      (let ((alist ebdb-dial-local-prefix-alist) prefix)
-        (while (setq prefix (pop alist))
-          (if (string-match (concat "^" (eval (car prefix))) number)
-              (setq shortnumber (concat (cdr prefix)
-                                        (substring number (match-end 0)))
-                    alist nil)))))
-
-    (if shortnumber
-        (setq number shortnumber)
-
-      ;; This is terrifically Americanized...
-      ;; Leading 0 => local number (?)
-      (if (and ebdb-dial-local-prefix
-               (string-match "^0" number))
-          (setq number (concat ebdb-dial-local-prefix number)))
-
-      ;; Leading + => long distance/international number
-      (if (and ebdb-dial-long-distance-prefix
-               (string-match "^\+" number))
-          (setq number (concat ebdb-dial-long-distance-prefix " "
-                               (substring number 1)))))
-
-    (unless ebdb-silent
-      (message "Dialing %s" number))
-    (ebdb-dial-number number)))
+MESSAGE is the string to send as the body of the text message.
+ATTACHMENTS is a list of filenames to send as attachments on the
+message."
+  (interactive
+   (list (or (and ebdb-record-self
+		  (ebdb-signal-get-number
+		   (ebdb-gethash ebdb-record-self 'uuid)
+		   t))
+	     (ebdb-read-string
+	      "Number to send from (or set `ebdb-record-self'): "))
+	 (ebdb-do-records)
+	 (ebdb-read-string "Message contents: ")
+	 (ebdb-loop-with-exit
+	  (expand-file-name
+	   (read-file-name "Attach file (C-g when done): "
+			   nil nil nil)))))
+  (let ((recipients
+	 (delq nil (mapcar #'ebdb-signal-get-number records))))
+    (if ebdb-signal-program
+	(ebdb--signal-text sender message recipients attachments)
+      (message "Please set `ebdb-signal-program'"))))
 
 ;;; Adding urls
 
@@ -2677,8 +2599,8 @@ is non-nil.  Do not dial the extension."
 		       (ebdb-read-string "URL label: "
 					 nil ebdb-url-label-list))))
   (let ((url-field (make-instance 'ebdb-field-url :url url :object-name label)))
-      (ebdb-record-insert-field record url-field 'fields)
-   (ebdb-display-records (list record))))
+    (ebdb-record-insert-field record url-field 'fields)
+    (ebdb-display-records (list record))))
 
 ;;; Copy to kill ring
 

@@ -27,6 +27,8 @@
 ;;; Code:
 
 (require 'ebdb)
+(declare-function ebdb-do-records "ebdb-com")
+(declare-function ebdb-display-records "ebdb-com")
 ;; qp = quoted-printable, might not end up needing this.
 (require 'qp)
 
@@ -38,7 +40,8 @@
    (coding-system
     :type symbol
     :initarg :coding-system
-    :initform nil
+    ;; "`," is used to trick EIEIO into evaluating the form.
+    :initform `,buffer-file-coding-system
     :documentation "The coding system for the formatted
     file/buffer/stream.")
    ;; TODO: Provide for "psuedo field classes" like 'primary-mail and
@@ -90,8 +93,6 @@
   :abstract t
   :documentation "Abstract base class for EBDB formatters.
   Subclass this to produce real formatters.")
-
-(eieio-oset-default 'ebdb-formatter 'coding-system buffer-file-coding-system)
 
 (cl-defmethod ebdb-string ((fmt ebdb-formatter))
   (slot-value fmt 'object-name))
@@ -276,7 +277,7 @@ which formats them appropriately."
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
 				       (record ebdb-record-person)
 				       &optional field-list)
-  
+
   (with-slots (exclude include) fmt
     (with-slots (aka organizations relations) record
       (when (and aka

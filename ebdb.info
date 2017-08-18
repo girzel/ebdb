@@ -63,12 +63,17 @@ Creating Records
 
 Record Fields
 
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 
 
+
+
+Field Types
+
+* Role Fields::
 
 MUA Interaction
 
@@ -103,10 +108,6 @@ Searching
 
 
 
-Internationalization
-
-* Writing Internationalization Libraries::
-
 
 
 
@@ -116,6 +117,8 @@ Internationalization
 Hacking EBDB
 
 * Field Classes::
+* Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 
 Field Classes
 
@@ -124,6 +127,12 @@ Field Classes
 * Actions::
 * Custom Field Searching::
 * Formatting in the EBDB Buffer::
+
+
+
+Writing Integration For New MUAs
+
+* Article snarfing::
 
 
 File: ebdb.info,  Node: Getting Started,  Next: The EBDB Database,  Prev: Top,  Up: Top
@@ -136,7 +145,7 @@ management software, it is enough to call the top-level ‘ebdb’ command.
 This will create a new database at the location specified by
 ‘ebdb-sources’ (see *note The EBDB Database::), prompt you for a search
 string, fail to find anything (because you don’t have any records yet),
-and lastly open a *EBDB* buffer where you can start to make new records
+and finally open a *EBDB* buffer where you can start to make new records
 (see *note Creating Records::).
 
 * Menu:
@@ -165,7 +174,7 @@ customizations still in place, set ‘ebdb-sources’ to a non-existent file
 name, and then run ‘ebdb-load’ (or any of the other EBDB entry
 commands).  You’ll be prompted to create the new database, and upgrade
 from BBDB. If any records could not be upgraded, they will be displayed
-in an *EBDB Migration* buffer.
+in an *EBDB Migration* buffer.  Migration bug reports are very welcome.
 
 
 File: ebdb.info,  Node: Variables and Options,  Prev: Record Migration,  Up: Migration from BBDB
@@ -307,6 +316,7 @@ File: ebdb.info,  Node: Record classes,  Next: Record names,  Up: Creating Recor
 
 EBDB comes with two record classes, representing individuals
 (‘ebdb-record-person’) and organizations (‘ebdb-record-organization’).
+Records can have “roles” at organizations *note Role Fields::.
 
 
 File: ebdb.info,  Node: Record names,  Prev: Record classes,  Up: Creating Records
@@ -333,15 +343,15 @@ File: ebdb.info,  Node: Record Fields,  Next: MUA Interaction,  Prev: Creating R
 
 * Menu:
 
-* Inserting new fields::
-* Editing existing fields::
-* Deleting records and fields::
-* Field types::
+* Inserting New Fields::
+* Editing Existing Fields::
+* Deleting Records and Fields::
+* Field Types::
 
 
-File: ebdb.info,  Node: Inserting new fields,  Next: Editing existing fields,  Up: Record Fields
+File: ebdb.info,  Node: Inserting New Fields,  Next: Editing Existing Fields,  Up: Record Fields
 
-4.1 Inserting new fields
+4.1 Inserting New Fields
 ========================
 
 Pressing “i” (‘ebdb-insert-field’) with point on a record will prompt
@@ -356,9 +366,9 @@ allow you to create an arbitrary number of street lines.  When you’ve
 added enough, either enter a blank string, or hit “C-g”.
 
 
-File: ebdb.info,  Node: Editing existing fields,  Next: Deleting records and fields,  Prev: Inserting new fields,  Up: Record Fields
+File: ebdb.info,  Node: Editing Existing Fields,  Next: Deleting Records and Fields,  Prev: Inserting New Fields,  Up: Record Fields
 
-4.2 Editing existing fields
+4.2 Editing Existing Fields
 ===========================
 
 Pressing “e” (‘ebdb-edit-field’) with point on a field will allow you to
@@ -370,9 +380,9 @@ that can only be edited this way; other fields have slots that cannot be
 edited at all once the field is created.
 
 
-File: ebdb.info,  Node: Deleting records and fields,  Next: Field types,  Prev: Editing existing fields,  Up: Record Fields
+File: ebdb.info,  Node: Deleting Records and Fields,  Next: Field Types,  Prev: Editing Existing Fields,  Up: Record Fields
 
-4.3 Deleting records and fields
+4.3 Deleting Records and Fields
 ===============================
 
 Pressing “C-k” on a field will ask you for confirmation, then delete the
@@ -380,21 +390,21 @@ field.  Pressing “C-k” while point is on or before a record’s main name
 will instead prompt to delete the whole record.
 
 
-File: ebdb.info,  Node: Field types,  Prev: Deleting records and fields,  Up: Record Fields
+File: ebdb.info,  Node: Field Types,  Prev: Deleting Records and Fields,  Up: Record Fields
 
-4.4 Field types
+4.4 Field Types
 ===============
 
-:ID: cb2190f4-f2e6-4082-9671-24e11e5cc0c6 Fields can be classed in a few
-different categories.  Some are “plumbing” fields, that are present for
-all records, but not generally visible or user-editable: these include
-the creation date, timestamp, and UUID. You can view these fields by
-hitting “T” on the record.  Other fields are “built-in”: basic fields
-that get special treatment.  These include the name, mail, phone,
-address, and notes fields.  EBDB comes with default classes for these
-fields: if you would like to use different defaults, you can create new
-classes (inheriting from the existing ones) and use those instead.  See
-*note Hacking EBDB:: for more information.
+Fields can be classed in a few different categories.  Some are
+“plumbing” fields, that are present for all records, but not generally
+visible or user-editable: these include the creation date, timestamp,
+and UUID. You can view these fields by hitting “T” on the record.  Other
+fields are “built-in”: basic fields that get special treatment.  These
+include the name, mail, phone, address, and notes fields.  EBDB comes
+with default classes for these fields: if you would like to use
+different defaults, you can create new classes (inheriting from the
+existing ones) and use those instead.  See *note Hacking EBDB:: for more
+information.
 
    Besides the “plumbing” and “built-in” fields, all other fields are
 “user” fields, and belong to one of two types: ‘ebdb-field-user’ and
@@ -415,6 +425,47 @@ of labels (for instance, anniversary fields may be labeled “birthday”,
 “wedding”, etc).
 
    Loading secondary libraries may make more field types available.
+
+* Menu:
+
+* Role Fields::
+
+
+File: ebdb.info,  Node: Role Fields,  Up: Field Types
+
+4.4.1 Role Fields
+-----------------
+
+One type of field worth mentioning in particular is the role field.
+EBDB records come in two types at present: person and organization.
+People have roles at organizations: jobs, volunteer positions, etc.
+People are also likely to have roles at more than one organization.
+
+   When adding a role field to a record, you’ll be prompted to choose
+the relevant organization role, prompted for a string label denoting eg.
+a job title, and prompted for a mail address that belongs only to this
+role field (ie. an institutional email address).  If the organization
+has a “domain” field type, and the person has an existing mail address
+that matches that domain, you’ll be prompted to move that address to the
+role field.
+
+   When viewing organization records, the role fields for all related
+person records are also displayed as part of the organization record.
+
+   If a person’s role at an organization later comes to an end, the role
+field can be deleted, or marked as “defunct”, if record keeping is
+desired.  This can only be done using the customize-based editing
+interface (the “E” key on the role field).
+
+   In fact, in addition to a mail field, role fields can contain an
+arbitrary number of other fields, representing metadata about the role
+(an employee number, employment start date, etc).  The author has yet to
+come up with a good interface for viewing and manipulating these extra
+fields, however, so the functionality remains hidden.  Suggestions are
+very welcome.
+
+   Manipulating role fields is generally a little clunky, at present.
+This will be addressed in future.
 
 
 File: ebdb.info,  Node: MUA Interaction,  Next: EBDB Buffers,  Prev: Record Fields,  Up: Top
@@ -963,6 +1014,13 @@ keybindings apply.
      Remove the record under point (or marked records) from the buffer
      (does not delete the records).
 
+‘I’     (‘ebdb-cite-records-ebdb’)
+
+     Put a “citation” for the record under point (or marked records)
+     onto the kill ring.  A “citation” is a name-and-mail string for the
+     record.  Prompt for a style, meaning a textual mode.  With a prefix
+     arg, arrange citations in a list, otherwise inline.
+
 ‘w f’     (‘ebdb-copy-fields-as-kill’)
 
      Copy the string value of the field under point to the kill ring.
@@ -1047,16 +1105,17 @@ File: ebdb.info,  Node: Completion,  Next: Snarfing,  Prev: EBDB Buffers,  Up: T
 7 Completion
 ************
 
-There are many Emacs completion frameworks out there, and EBDB comes
-with support for helm, counsel, and company.  See the relevant
-libraries; they provide the commands ‘helm-ebdb’, ‘counsel-ebdb’, and
-‘company-ebdb’, respectively.  Counsel and company are made to be hooked
-into Emacs’ existing completion frameworks; the helm command must be
-called explicitly.
+There are many Emacs completion frameworks out there, and libraries
+exist providing EBDB support for helm, counsel, and company—these
+libraries must be loaded from the package repositories.  These libraries
+provide the commands ‘helm-ebdb’, ‘counsel-ebdb’, and ‘company-ebdb’,
+respectively.  Counsel and company are made to be hooked into Emacs’
+existing completion frameworks; the helm command must be called
+explicitly.
 
-   Another library, ‘ebdb-complete’, uses an ephemeral pop-up *EBDB*
-buffer for record completion.  The command ‘ebdb-complete’ provides an
-interactive entry point, or you can enable it for “TAB” in
+   Another built-in library, ‘ebdb-complete’, uses an ephemeral pop-up
+*EBDB* buffer for record completion.  The command ‘ebdb-complete’
+provides an interactive entry point, or you can enable it for “TAB” in
 ‘message-mode’ by calling ‘ebdb-complete-enable’.
 
    Several native EBDB commands involve selecting a record, or multiple
@@ -1075,11 +1134,11 @@ File: ebdb.info,  Node: Snarfing,  Next: Internationalization,  Prev: Completion
 “Snarfing” refers to scanning free-form text and extracting information
 related to EBDB records from it.  For example, calling ‘ebdb-snarf’
 while the region contains the text “John Doe <j.doe@email.com>” will
-find an existing matching contact, or prompt to create a new contact,
-and then display it.
+find an existing contact or prompt to create a new one, and then display
+that contact.
 
-   Snarfing is a work in progress: at present, only mail addresses (and
-nearby names) are acted upon, and it often doesn’t work correctly.
+   Snarfing is a work in progress: at present, only mail addresses, URLs
+and nearby names are acted upon, and it often doesn’t work correctly.
 
  -- Command: ebdb-snarf &optional string start end recs
 
@@ -1111,7 +1170,8 @@ article headers.
  -- Command: ebdb-mua-snarf-article
 
      Snarf the body of the current article.  This will also snarf the
-     headers of forwarded emails.
+     headers of forwarded emails, and the signature.  With a prefix
+     argument, only snarf the signature.
 
 
 File: ebdb.info,  Node: Internationalization,  Next: Diary Integration,  Prev: Snarfing,  Up: Top
@@ -1123,126 +1183,48 @@ EBDB comes with an internationalization framework that can provide
 country- and region-specific behavior for certain fields.  This
 functionality is initialized by loading the ‘ebdb-i18n’ library.  This
 library does nothing by itself, it simply provides hooks for other
-country-specific libraries, which must be loaded separately.
+country-specific libraries.
 
-   At present, EBDB comes with only one country-specific library,
-‘ebdb-chn’, for Chinese-related fields.  It parses and displays phone
-numbers and names correctly, and also allows users to search on Chinese
-names using pinyin.  It requires the ‘pyim’ package, available on MELPA.
+   Country libraries that do not depend on other external libraries may
+live within the EBDB codebase, in which case they will be loaded
+automatically when ‘ebdb-i18n’ is loaded.  Libraries with external
+dependencies may be installed from the package repositories.  Because
+function autoloading doesn’t work with generic methods, you’ll need to
+require the libraries in addition to simply installing them.
+
+   There is currently only one country library written for EBDB,
+‘ebdb-i18n-chn’, for Chinese-related fields.  It parses and displays
+phone numbers and names correctly, and also allows users to search on
+Chinese names using pinyin.  It can be installed from ELPA, and requires
+the ‘pyim’ package, available on MELPA.
 
    The present dearth of libraries is a result of the author scratching
-his own itch.  Contributions of new libraries are very welcome.  Also
-welcome, though less enthusiastically, are requests for new libraries.
+his own itch.  Contributions of new libraries are very welcome (see
+*note Writing Internationalization Libraries::).  Also welcome, though
+less enthusiastically, are requests for new libraries.
 
-   Internationalization libraries do not modify the database in any way,
-and can be safely unloaded.  They simply alter the way EBDB reads,
-parses and displays field values, and can also store extra information
-(eg.g for searching purposes) in a record’s cache.  Loading this library
-can (depending on country libraries’ behavior) increase database load
-times, though it should not significantly affect search or display
-performance.
+   Internationalization libraries do not modify the database, and can be
+safely unloaded.  They simply alter the way EBDB reads, parses and
+displays field values, and can also store extra information (eg. for
+searching purposes) in a record’s cache.  Loading this library can
+(depending on country libraries’ behavior) increase database load times,
+though it should not significantly affect search or display performance.
 
-* Menu:
+   Actually, the internationalization library does alter database
+storage in one way: address countries can be either stored as a string
+(non-international-aware), or a three-letter symbol representing the
+country code (international-aware).  EBDB will correctly display the
+country name for either type of storage, regardless of whether the
+internationalization library is loaded or not.
 
-* Writing Internationalization Libraries::
+   Country names are displayed in English by default, but users can
+alter the display of some country names if they choose.
 
-
-File: ebdb.info,  Node: Writing Internationalization Libraries,  Up: Internationalization
-
-9.1 Writing Internationalization Libraries
-==========================================
-
-Writing new internationalization libraries involves using generic
-functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
-will also require a bit of familiarity with EBDB’s internals.
-
-   Internationalization affects three different field types: addresses,
-phone numbers, and names.  It works by providing “i18n” versions of
-common methods for those three fields:
-
-Regular method      Internationalized method
------------------------------------------------
-ebdb-read           ebdb-read-i18n
-ebdb-parse          ebdb-parse-i18n
-ebdb-string         ebdb-string-i18n
-ebdb-init-field     ebdb-init-field-i18n
-ebdb-delete-field   ebdb-delete-field-i18n
-
-   When the “ebdb-i18n” library is loaded and the left-column
-(“vanilla”) versions of field methods are called, EBDB first checks to
-see if a valid “internationalized” (right-column) method exists.  If it
-does, that method is used instead of the vanilla one.
-
-   What is a “valid internationalized method”?  That depends on the
-field type.  Each field type uses a different key or “spec” to determine
-the nationality or locality of the field instance.
-
-   • Address fields use a three-character symbol derived from the ISO
-     316601 alpha 3 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3)
-     country codes.  These codes can be found in the variable
-     ‘ebdb-i18n-countries’.
-
-   • Phone fields use the phone number’s numerical country code as a
-     spec.  These codes can be found in the variable
-     ‘ebdb-i18n-phone-codes’.
-
-   • Name fields are keyed to the symbol representing the script used to
-     write them.  Specifically, the first character CHAR of the name is
-     tested in this way: (aref char-script-table CHAR), which returns a
-     symbol.
-
-   How are these “specs” used?  Each internationalized version of the
-above methods accepts the spec as an additional argument, which it is
-able to specialize on.  Every country-specific method should check the
-spec to see if it is relevant to that library.  If so, it handles the
-necessary behavior; if not, it passes by using ‘cl-call-next-method’.
-See the function signatures of each internationalized method to find how
-to handle the extra argument, called SPEC.
-
-   Here’s a concrete example:
-
-   Say we want to make sure all French phone numbers are represented by
-a string that looks like “+33 05 12 34 56 79”.  This is not how they are
-stored in the database, but this is how they should be represented to
-the user.  We need to override the ‘ebdb-string-i18n’ method for the
-phone field class.  This method takes two arguments – the field
-instance, and the country-code spec – and needs to specialize on both
-arguments.  The method signature will look like this:
-
-     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33))))
-
-   See the manual on generic functions for details; suffice it to say
-that this method will only run when the first argument is an instance of
-the ‘ebdb-field-phone’ class (or a subclass), and the second argument is
-the number 33.
-
-   Now we know that this method will only run for French phone numbers,
-so we can format the number correctly:
-
-     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33)))
-       (with-slots (area-code number extension) phone
-         (concat
-          "+33 "
-          (when area-code
-            (format "%02d" area-code))
-          (format "%s%s %s%s %s%s %s%s"
-     	     (split-string number "" t))
-          (when extension
-            (format "X%d" extension)))))
-
-   Again this only affects the display of numbers, not how they are
-stored in the database.
-
-   Note that, while phone numbers themselves are stored as strings (they
-do not represent a quantity, after all), the country and area codes are
-stored as numbers, precisely so that they can be specialized on using
-‘eql’.
-
-   See the signatures of the other internationalized methods for how to
-use them.  The symbol specs for country codes and script names can also
-be specialized on with the ‘eql’ specializer.
+ -- User Option: ebdb-i18n-countries-pref-scripts
+     This is an alist of conses pairing string country names to symbol
+     labels—see the value of ‘ebdb-i18n-countries’ for how to use it,
+     and to find the correct symbol label.  Values set in this option
+     will shadow the values in the variable.
 
 
 File: ebdb.info,  Node: Diary Integration,  Next: Mail Aliases,  Prev: Internationalization,  Up: Top
@@ -1413,9 +1395,11 @@ existing objects.  This may be addressed in the future.
 * Menu:
 
 * Field Classes::
+* Writing Internationalization Libraries::
+* Writing Integration For New MUAs::
 
 
-File: ebdb.info,  Node: Field Classes,  Up: Hacking EBDB
+File: ebdb.info,  Node: Field Classes,  Next: Writing Internationalization Libraries,  Up: Hacking EBDB
 
 15.1 Field Classes
 ==================
@@ -1638,6 +1622,199 @@ quiet: the arguments are necessary for dispatch, but aren’t actually
 used in the body of the method.
 
 
+File: ebdb.info,  Node: Writing Internationalization Libraries,  Next: Writing Integration For New MUAs,  Prev: Field Classes,  Up: Hacking EBDB
+
+15.2 Writing Internationalization Libraries
+===========================================
+
+Writing new internationalization libraries involves using generic
+functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
+will also require a bit of familiarity with EBDB’s internals.
+
+   Internationalization affects three different field types: addresses,
+phone numbers, and names.  It works by providing “i18n” versions of
+common methods for those three fields:
+
+Regular method      Internationalized method
+-----------------------------------------------
+ebdb-read           ebdb-read-i18n
+ebdb-parse          ebdb-parse-i18n
+ebdb-string         ebdb-string-i18n
+ebdb-init-field     ebdb-init-field-i18n
+ebdb-delete-field   ebdb-delete-field-i18n
+
+   When the “ebdb-i18n” library is loaded and the left-column
+(“vanilla”) versions of field methods are called, EBDB first checks to
+see if a valid “internationalized” (right-column) method exists.  If it
+does, that method is used instead of the vanilla one.
+
+   What is a “valid internationalized method”?  That depends on the
+field type.  Each field type uses a different key or “spec” to determine
+the nationality or locality of the field instance.
+
+   • Address fields use a three-character symbol derived from the ISO
+     316601 alpha 3 (https://en.wikipedia.org/wiki/ISO_3166-1_alpha-3)
+     country codes.  These codes can be found in the variable
+     ‘ebdb-i18n-countries’.
+
+   • Phone fields use the phone number’s numerical country code as a
+     spec.  These codes can be found in the variable
+     ‘ebdb-i18n-phone-codes’.
+
+   • Name fields are keyed to the symbol representing the script used to
+     write them.  Specifically, the first character CHAR of the name is
+     tested in this way: ‘(aref char-script-table CHAR)’, which returns
+     a symbol.
+
+   How are these “specs” used?  Each internationalized version of the
+above methods accepts the spec as an additional argument, which it is
+able to specialize on.  Every country-specific method should check the
+spec to see if it is relevant to that library.  If so, it handles the
+necessary behavior; if not, it passes by using ‘cl-call-next-method’.
+See the function signatures of each internationalized method to find how
+to handle the extra argument, called SPEC.
+
+   Here’s a concrete example:
+
+   Say we want to make sure all French phone numbers are represented by
+a string that looks like “+33 05 12 34 56 79”.  This is not how they are
+stored in the database, but this is how they should be represented to
+the user.  We need to override the ‘ebdb-string-i18n’ method for the
+phone field class.  This method takes two arguments – the field
+instance, and the country-code spec – and needs to specialize on both
+arguments.  The method signature will look like this:
+
+     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+     				(_cc (eql 33))))
+
+   See the manual on generic functions for details; suffice it to say
+that this method will only run when the first argument is an instance of
+the ‘ebdb-field-phone’ class (or a subclass), and the second argument is
+the number 33.
+
+   Now we know that this method will only run for French phone numbers,
+so we can format the number correctly:
+
+     (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+     				(_cc (eql 33)))
+       (with-slots (area-code number extension) phone
+         (concat
+          "+33 "
+          (when area-code
+            (format "%02d" area-code))
+          (format "%s%s %s%s %s%s %s%s"
+     	     (split-string number "" t))
+          (when extension
+            (format "X%d" extension)))))
+
+   Again this only affects the display of numbers, not how they are
+stored in the database.
+
+   Note that, while phone numbers themselves are stored as strings (they
+do not represent a quantity, after all), the country and area codes are
+stored as numbers, precisely so that they can be specialized on using
+‘eql’.
+
+   See the signatures of the other internationalized methods for how to
+use them.  The symbol specs for country codes and script names can also
+be specialized on with the ‘eql’ specializer.
+
+
+File: ebdb.info,  Node: Writing Integration For New MUAs,  Prev: Writing Internationalization Libraries,  Up: Hacking EBDB
+
+15.3 Writing Integration For New MUAs
+=====================================
+
+Theoretically EBDB can be incorporated into any Emacs package, but it’s
+most commonly used in conjunction with a mail user agent.  It comes with
+support for a few MUAs out of the box, but integration with a new one
+can be written fairly easily.
+
+   The first step of integration involves hooking the function
+‘ebdb-mua-auto-update’ somewhere into the MUA’s operation.  For most
+MUAs, the appropriate place is when a message or article is opened for
+viewing by the user.  This allows EBDB to act on the information found
+in that message.
+
+   The second step requires providing new versions of a handful of
+generic functions.  All MUA-specific generic functions specialize on the
+current major-mode, using the ‘&context’ specializer.  See below for
+examples.
+
+   When ‘ebdb-mua-auto-update’ runs, it scans the headers of the current
+article/message for name/mail data, and uses that data to locate,
+create, edit, and display records.  It does this by calling the generic
+function ‘ebdb-mua-message-header’ with the string header name; it is
+the responsibility of the MUA to implement this function, and return the
+contents of the appropriate header.  For instance, in Gnus:
+
+     (cl-defmethod ebdb-mua-message-header ((header string)
+     				   &context (major-mode gnus-summary-mode))
+       "Return value of HEADER for current Gnus message."
+       (set-buffer gnus-article-buffer)
+       (gnus-fetch-original-field header))
+
+
+   The first argument is the string header, and the second is the
+specializer on the current major-mode.  Possible header values include
+those found in ‘ebdb-message-headers’.  Note that if you expect this
+function to be called in more than one major-mode, you’ll have to
+provide multiple versions of the function.  The &context specializer
+uses ‘derived-mode-p’ behind the scenes, though, so if all the modes
+derive from a single parent mode (and the behavior should be the same in
+all derived modes) it is enough to specialize on the parent mode.
+
+   Some MUAs might need to do a bit of work to ensure that the article
+in question is opened and set up properly:
+
+ -- Function: ebdb-mua-prepare-article
+     Called with no argument but the mode specializer, this function
+     should do whatever is necessary to prepare the article.
+
+   Providing *EBDB* buffer pop-up support involves implementing two
+separate functions:
+
+ -- Function: ebdb-make-buffer-name
+     Called with no arguments but the mode specializer, this function
+     should return the string name of the *EBDB* buffer to be associated
+     with this MUA. Usually the function body will look like: ‘(format
+     "*%s-<mua>" ebdb-buffer-name)’.
+
+ -- Function: ebdb-popup-window
+     Called with no arguments but the mode specializer, this function
+     should return a list of two elements: the window to be split to
+     make room for the *EBDB* buffer window, and a float value between 0
+     and 1 indicating the size of the new *EBDB* buffer window, as a
+     percentage of the window being split.
+
+   In addition, it might be nice to bind the ‘ebdb-mua-keymap’ in the
+MUA’s mode-map.  This map provides bindings for some commonly-used EBDB
+functions.
+
+* Menu:
+
+* Article snarfing::
+
+
+File: ebdb.info,  Node: Article snarfing,  Up: Writing Integration For New MUAs
+
+15.3.1 Article snarfing
+-----------------------
+
+EBDB can scan articles or messages for likely field information, and
+prompt the user to add the fields to new or existing records—this is
+done by the user with the interactive command ‘ebdb-mua-snarf-article’.
+In order to work, the MUA must be able to provide that function with the
+text of the message body, and the text of the message signature (if
+any).  This is done with two generic functions:
+
+ -- Function: ebdb-mua-article-body
+     Return the text of the article body, or nil.
+
+ -- Function: ebdb-mua-article-signature
+     Return the text of the article signature, or nil.
+
+
 File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
 Index
@@ -1648,18 +1825,20 @@ Index
 
 * Creating a database:                   The EBDB Database.   (line  11)
 * Creating records:                      Creating Records.    (line   6)
-* Deleting records and fields:           Deleting records and fields.
+* Deleting records and fields:           Deleting Records and Fields.
                                                               (line   6)
 * Diary integration:                     Diary Integration.   (line   6)
 * ebdb-cite-records:                     Citing Records.      (line  11)
+* ebdb-cite-records-ebdb:                The Basics of ebdb-mode.
+                                                              (line  86)
 * ebdb-clone-buffer:                     EBDB Buffers.        (line  19)
 * ebdb-copy-fields-as-kill:              The Basics of ebdb-mode.
-                                                              (line  86)
+                                                              (line  93)
 * ebdb-copy-mail-as-kill:                The Basics of ebdb-mode.
-                                                              (line  95)
+                                                              (line 102)
 * ebdb-copy-record record to-db:         The EBDB Database.   (line  67)
 * ebdb-copy-records-as-kill:             The Basics of ebdb-mode.
-                                                              (line  90)
+                                                              (line  97)
 * ebdb-create-record:                    The Basics of ebdb-mode.
                                                               (line  25)
 * ebdb-create-record-extended:           The Basics of ebdb-mode.
@@ -1681,9 +1860,9 @@ Index
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  14)
 * ebdb-help:                             The Basics of ebdb-mode.
-                                                              (line 107)
+                                                              (line 114)
 * ebdb-info:                             The Basics of ebdb-mode.
-                                                              (line 111)
+                                                              (line 118)
 * ebdb-insert-field:                     The Basics of ebdb-mode.
                                                               (line  33)
 * ebdb-mail:                             The Basics of ebdb-mode.
@@ -1725,24 +1904,24 @@ Index
 * ebdb-reload-database db:               The EBDB Database.   (line  73)
 * ebdb-rename-buffer:                    EBDB Buffers.        (line  24)
 * ebdb-save:                             The Basics of ebdb-mode.
-                                                              (line 115)
+                                                              (line 122)
 * ebdb-search-invert:                    Searching.           (line  46)
 * ebdb-search-pop:                       Searching.           (line  53)
 * ebdb-snarf &optional string start end recs: Snarfing.       (line  15)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  69)
-* Editing fields:                        Editing existing fields.
+* Editing fields:                        Editing Existing Fields.
                                                               (line   6)
-* Inserting new fields:                  Inserting new fields.
+* Inserting new fields:                  Inserting New Fields.
                                                               (line   6)
 * Internationalization:                  Internationalization.
                                                               (line   6)
 * Mail aliases:                          Mail Aliases.        (line   6)
 * Migrating from BBDB:                   Migration from BBDB. (line   6)
 * quit-window:                           The Basics of ebdb-mode.
-                                                              (line 119)
+                                                              (line 126)
 * revert-buffer:                         The Basics of ebdb-mode.
-                                                              (line 103)
+                                                              (line 110)
 * Searching the EBDB:                    Searching.           (line   6)
 * Snarfing text:                         Snarfing.            (line   6)
 
@@ -1750,52 +1929,55 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2217
-Node: Migration from BBDB2839
-Node: Record Migration3014
-Node: Variables and Options3551
-Node: The EBDB Database4037
-Node: Creating Records7193
-Node: Record classes8240
-Node: Record names8506
-Node: Record Fields9181
-Node: Inserting new fields9425
-Node: Editing existing fields10221
-Node: Deleting records and fields10821
-Node: Field types11217
-Node: MUA Interaction13036
-Node: Loading MUA Code13560
-Node: Display and Updating14273
-Node: Pop-up Buffers15042
-Node: Auto-Updating Records15907
-Node: Noticing and Automatic Rules18292
-Node: Interactive Commands19635
-Node: EBDB and MUA summary buffers22124
-Node: Sender name display22610
-Node: Summary buffer marks23898
-Node: EBDB Buffers25093
-Node: Searching26286
-Node: Changing Search Behavior27996
-Node: The Basics of ebdb-mode29246
-Node: Marking32610
-Node: Exporting/Formatting33038
-Node: Completion33997
-Node: Snarfing35138
-Node: Internationalization37042
-Node: Writing Internationalization Libraries38521
-Node: Diary Integration42809
-Node: Mail Aliases43675
-Node: vCard Support44384
-Node: Org Integration44883
-Node: Citing Records46457
-Node: Hacking EBDB47216
-Node: Field Classes49466
-Node: Init and Delete Methods52356
-Node: The Labeled Field Class53912
-Node: Actions54748
-Node: Custom Field Searching55413
-Node: Formatting in the EBDB Buffer57201
-Node: Index59200
+Node: Getting Started2320
+Node: Migration from BBDB2943
+Node: Record Migration3118
+Node: Variables and Options3696
+Node: The EBDB Database4182
+Node: Creating Records7338
+Node: Record classes8385
+Node: Record names8718
+Node: Record Fields9393
+Node: Inserting New Fields9637
+Node: Editing Existing Fields10433
+Node: Deleting Records and Fields11033
+Node: Field Types11429
+Node: Role Fields13232
+Node: MUA Interaction14923
+Node: Loading MUA Code15447
+Node: Display and Updating16160
+Node: Pop-up Buffers16929
+Node: Auto-Updating Records17794
+Node: Noticing and Automatic Rules20179
+Node: Interactive Commands21522
+Node: EBDB and MUA summary buffers24011
+Node: Sender name display24497
+Node: Summary buffer marks25785
+Node: EBDB Buffers26980
+Node: Searching28173
+Node: Changing Search Behavior29883
+Node: The Basics of ebdb-mode31133
+Node: Marking34822
+Node: Exporting/Formatting35250
+Node: Completion36209
+Node: Snarfing37420
+Node: Internationalization39399
+Node: Diary Integration42112
+Node: Mail Aliases42978
+Node: vCard Support43687
+Node: Org Integration44186
+Node: Citing Records45760
+Node: Hacking EBDB46519
+Node: Field Classes48849
+Node: Init and Delete Methods51786
+Node: The Labeled Field Class53342
+Node: Actions54178
+Node: Custom Field Searching54843
+Node: Formatting in the EBDB Buffer56631
+Node: Writing Internationalization Libraries58630
+Node: Writing Integration For New MUAs62981
+Node: Article snarfing66407
+Node: Index67129
 
 End Tag Table
 

@@ -43,11 +43,11 @@
         (mail-header (intern-soft (downcase header))
                      (mail-header-extract))))))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode rmail-mode))
   (ebdb/rmail-header header))
 
-(cl-defmethod ebdb-message-header ((header string)
+(cl-defmethod ebdb-mua-message-header ((header string)
 				   &context (major-mode rmail-summary-mode))
   (ebdb/rmail-header header))
 
