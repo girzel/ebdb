@@ -247,7 +247,7 @@ to search for and LABEL is the label to apply."
   :group 'ebdb-mua-vm
   :type 'list)
 
-(defcustom ebdb/vm-auto-add-label-field ebdb-mail-alias-field
+(defcustom ebdb/vm-auto-add-label-field 'ebdb-mail-alias-field
   "Xfields used by `ebdb/vm-auto-add-label' to automatically label messages.
 This is either a single EBDB xfield or a list of xfields that
 `ebdb/vm-auto-add-label' uses to check for labels to apply to a message.
