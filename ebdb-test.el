@@ -27,6 +27,7 @@
 
 (require 'ert)
 (require 'ebdb)
+(require 'ebdb-com)
 (require 'ebdb-snarf)
 (require 'ebdb-vcard)
 
@@ -40,7 +41,7 @@
 						:dirty t))
 	 ebdb-db-list)
      ;; Save sets sync-time.
-     (ebdb-db-save ,(car db-and-filename))
+     (ebdb-db-save ,(car db-and-filename) nil t)
      ;; Load adds to `ebdb-db-list'.
      (ebdb-db-load ,(car db-and-filename))
      (unwind-protect
@@ -52,6 +53,7 @@
   "Don't let EBDB tests pollute `ebdb-record-tracker'."
   (declare (indent 0) (debug t))
   `(let ((ebdb-hashtable (make-hash-table :test 'equal))
+	 (ebdb-org-hashtable (make-hash-table :test 'equal))
 	 ebdb-record-tracker)
      ,@body))
 
@@ -129,6 +131,46 @@
 	   (ebdb-record-insert-field
 	    rec (ebdb-parse 'ebdb-field-mail "none@such.com"))
 	   :type 'ebdb-readonly-db))))))
+
+(ert-deftest ebdb-cant-find-related-role ()
+  "Find org record from a role field.
+If it doesn't exist, raise `ebdb-related-unfound'."
+  (ebdb-test-with-records
+   (let ((rec (make-instance
+	       'ebdb-record-person
+	       :uuid (make-instance 'ebdb-field-uuid :uuid "bob")))
+	 (role
+	  (make-instance
+	   'ebdb-field-role :record-uuid "bob"
+	   :org-uuid "bogus")))
+     (ebdb-record-insert-field rec role)
+     (should-error
+      (ebdb-record-related rec role)
+      :type 'ebdb-related-unfound))))
+
+(ert-deftest ebdb-unload-db-with-relations ()
+  "Cross-db relations break correctly when a db is unloaded."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db1 ebdb-test-database-1)
+      (ebdb-test-with-database (db2 ebdb-test-database-2)
+	(let ((rec1 (make-instance 'ebdb-record-person))
+	      (rec2 (make-instance 'ebdb-record-person))
+	      rel-f)
+	  (ebdb-db-add-record db1 rec1)
+	  (ebdb-db-add-record db2 rec2)
+	  (setq rel-f (make-instance
+		       'ebdb-field-relation :rel-uuid (ebdb-record-uuid rec2)))
+	  (ebdb-record-insert-field rec1 rel-f)
+	  (ebdb-db-unload db2)
+	  (should-error
+	   (ebdb-record-related rec1 rel-f)
+	   :type 'ebdb-related-unfound)
+	  (should
+	   (string=
+	    (ebdb-fmt-field
+	     ebdb-default-multiline-formatter
+	     rel-f 'oneline rec1)
+	    "record not loaded")))))))
 
 (ert-deftest ebdb-test-with-record-edits ()
   "Test the `ebdb-with-record-edits' macro."

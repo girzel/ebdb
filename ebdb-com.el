@@ -471,32 +471,21 @@ property is the field instance itself."
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
 			      _style
-			      (record ebdb-record-organization))
-  (let* ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
-	 (mail (slot-value field 'mail))
-	 (value (if mail
-		    (format "%s (%s)"
-			    (ebdb-string person)
-			    (ebdb-fmt-field fmt mail 'oneline record))
-		  (ebdb-string person))))
-    (if (slot-value field 'defunct)
-	(propertize value 'face 'ebdb-defunct)
-      value)))
-
-(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
-			      (field ebdb-field-role)
-			      _style
-			      (record ebdb-record-person))
-  (let* ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid))
-	 (mail (slot-value field 'mail))
-	 (value (if mail
-		    (format "%s (%s)"
-			    (ebdb-string org)
-			    (ebdb-fmt-field fmt mail 'oneline record))
-		  (ebdb-string org))))
-    (if (slot-value field 'defunct)
-	(propertize value 'face 'ebdb-defunct)
-      value)))
+			      (record ebdb-record))
+  (with-slots (mail defunct) field
+    (let* ((rec-string
+	    (condition-case nil
+		(ebdb-record-name
+		 (ebdb-record-related record field))
+	      (ebdb-related-unfound "record not loaded")))
+	   (value (if mail
+		      (format "%s (%s)"
+			      rec-string
+			      (ebdb-fmt-field fmt mail 'oneline record))
+		    rec-string)))
+      (if defunct
+	  (propertize value 'face 'ebdb-defunct)
+	value))))
 
 (defsubst ebdb-indent-string (string column)
   "Indent nonempty lines in STRING to COLUMN (except first line).
@@ -1192,14 +1181,15 @@ With prefix N move backwards N (sub)fields."
   related record."
   (interactive (list (ebdb-current-record)
 		     (ebdb-current-field)))
-  (let ((related (ebdb-record-related record field)))
-    (if related
-	(ebdb-display-records (cons related
-				    (mapcar #'car ebdb-records))
-			      ebdb-default-multiline-formatter
-			      t)
-      (message "Field %s provides no relationships"
-	       (ebdb-field-readable-name field)))))
+  (condition-case nil
+      (ebdb-display-records
+       (cons (ebdb-record-related record field)
+	     (mapcar #'car ebdb-records))
+       ebdb-default-multiline-formatter
+       t)
+    (ebdb-related-unfound
+     (message "Field %s provides no relationships"
+	      (ebdb-field-readable-name field)))))
 
 (defun ebdb-toggle-record-mark (record &optional mark)
   "Mark or unmark RECORD."

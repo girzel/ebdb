@@ -801,6 +801,8 @@ if you want to call `ebdb-change-hook' and update the record unconditionally.")
 
 (define-error 'ebdb-duplicate-uuid "Duplicate EBDB UUID" 'ebdb-error)
 
+(define-error 'ebdb-related-unfound "Could not find related record" 'ebdb-error)
+
 (define-error 'ebdb-unsynced-db "EBDB DB unsynced" 'ebdb-error)
 
 (define-error 'ebdb-disabled-db "EBDB DB disabled" 'ebdb-error)
@@ -1399,51 +1401,59 @@ first one."
 
 (cl-defmethod ebdb-init-field ((role ebdb-field-role) &optional record)
   (when record
-    (let* ((org-uuid (slot-value role 'org-uuid))
-	   (org (ebdb-gethash org-uuid 'uuid))
-	   (org-string (if org (ebdb-record-name org)
-			 "record not loaded"))
-	   ;; TODO: Guard against org-entry not being found.
-	   (org-entry (gethash org-uuid ebdb-org-hashtable))
-	   (record-uuid (ebdb-record-uuid record))
-	   (role-mail (slot-value role 'mail)))
-      ;; Setting the 'record-uuid slot value when it wasn't set before
-      ;; technically means that the record is now "dirty".  That's
-      ;; okay in our current database implementation, because
-      ;; `ebdb-record-insert-field' first calls
-      ;; `ebdb-db-add-record-field', which sets the record "dirty",
-      ;; and then calls this `ebdb-init' method -- ie, record is
-      ;; "dirty" when we get here.  Theoretically, however, nothing in
-      ;; `ebdb-init-field' should change a record's slots.
-      (unless (slot-value role 'record-uuid)
-	(setf (slot-value role 'record-uuid) record-uuid))
-      (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
-      ;; Init the role mail against the record.
-      (when (and role-mail (slot-value role-mail 'mail))
-	(ebdb-init-field role-mail record))
-      ;; Make sure this role is in the `ebdb-org-hashtable'.
-      (unless (member role org-entry)
-	(push role org-entry))
-      (puthash org-uuid org-entry ebdb-org-hashtable)))
+    (with-slots (org-uuid mail (role-record-uuid record-uuid)) role
+      (let* (;; TODO: Guard against org-entry not being found.
+	     (org-entry (gethash org-uuid ebdb-org-hashtable))
+	     (record-uuid (ebdb-record-uuid record))
+	     (org-string
+	      (condition-case nil
+		  (ebdb-record-name
+		   (ebdb-record-related record role))
+		(ebdb-related-unfound
+		 "record not loaded"))))
+
+	;; Setting the 'record-uuid slot value when it wasn't set before
+	;; technically means that the record is now "dirty".  That's
+	;; okay in our current database implementation, because
+	;; `ebdb-record-insert-field' first calls
+	;; `ebdb-db-add-record-field', which sets the record "dirty",
+	;; and then calls this `ebdb-init' method -- ie, record is
+	;; "dirty" when we get here.  Theoretically, however, nothing in
+	;; `ebdb-init-field' should change a record's slots.
+	(unless role-record-uuid
+	  (setf role-record-uuid record-uuid))
+	(object-add-to-list (ebdb-record-cache record) 'organizations org-string)
+	;; Init the role mail against the record.
+	(when (and mail (slot-value mail 'mail))
+	  (ebdb-init-field mail record))
+	;; Make sure this role is in the `ebdb-org-hashtable'.
+	(unless (member role org-entry)
+	  (push role org-entry))
+	(puthash org-uuid org-entry ebdb-org-hashtable))))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((role ebdb-field-role) &optional record unload)
   (when record
     (let* ((org-uuid (slot-value role 'org-uuid))
-	   (org (ebdb-gethash org-uuid 'uuid))
 	   (org-string
-	    (if org
-		(ebdb-record-name org)
-	      "bogus"))
+	    (condition-case nil
+		(ebdb-record-name
+		 (ebdb-record-related record role))
+	      (ebdb-related-unfound
+	       nil)))
 	   (org-entry (gethash org-uuid ebdb-org-hashtable))
 	   (record-uuid (ebdb-record-uuid record)))
       (setq org-entry (delete role org-entry))
       (if org-entry
 	  (puthash org-uuid org-entry ebdb-org-hashtable)
 	(remhash org-uuid ebdb-org-hashtable))
-      (when (null (assoc-string record-uuid (object-assoc-list 'record-uuid org-entry)))
+      (when (and org-string
+		 (null (assoc-string
+			record-uuid
+			(object-assoc-list 'record-uuid org-entry))))
 	;; RECORD no long has any roles at ORG.
-	(object-remove-from-list (ebdb-record-cache record) 'organizations org-string))))
+	(object-remove-from-list (ebdb-record-cache record)
+				 'organizations org-string))))
   (when (slot-value role 'mail)
     (ebdb-delete-field (slot-value role 'mail) record unload))
   (cl-call-next-method))
@@ -1464,10 +1474,12 @@ first one."
   ;; This is used in person records headers, so it just shows the
   ;; organization name. Perhaps this could have a multi-line option
   ;; later.
-  (let ((org (ebdb-gethash (slot-value role 'org-uuid) 'uuid)))
-    (if org
-	(ebdb-string org)
-      "record not loaded")))
+  (let ((rec (ebdb-gethash (slot-value role 'record-uuid) 'uuid)))
+    (condition-case nil
+	(ebdb-record-name
+	 (ebdb-record-related rec role))
+      (ebdb-related-unfound
+       "record not loaded"))))
 
 ;;; Mail fields.
 
@@ -2596,17 +2608,23 @@ only return fields that are suitable for user editing.")
 (cl-defmethod ebdb-record-alt-names ((record ebdb-record))
   (slot-value (ebdb-record-cache record) 'alt-names))
 
-(cl-defmethod ebdb-record-related ((_record ebdb-record)
-				   (_field ebdb-field))
-  "Provide a base method that does nothing."
-  nil)
-
 (when (fboundp 'cl-print-object)
   (cl-defmethod cl-print-object ((record ebdb-record) stream)
     (princ (format "#<%S %s>"
 		   (eieio-object-class-name record)
 		   (ebdb-string record))
 	   stream)))
+
+(cl-defgeneric ebdb-record-related (record field)
+  "Return the record related to RECORD, according to FIELD.
+This method is implemented for role fields, and relation fields.
+It is responsible for returning the related record as specified
+by the field, or else raising the error `ebdb-related-unfound'.")
+
+(cl-defmethod ebdb-record-related ((_record ebdb-record)
+				   (_field ebdb-field))
+  "Provide a base method that raises `ebdb-related-unfound'."
+  (signal 'ebdb-related-unfound))
 
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
@@ -2958,11 +2976,15 @@ priority."
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
-  (ebdb-gethash (slot-value field 'rel-uuid) 'uuid))
+  (or
+   (ebdb-gethash (slot-value field 'rel-uuid) 'uuid)
+   (signal 'ebdb-related-unfound (list (slot-value field 'rel-uuid)))))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-role))
-  (ebdb-gethash (slot-value field 'org-uuid) 'uuid))
+  (or
+   (ebdb-gethash (slot-value field 'org-uuid) 'uuid)
+   (signal 'ebdb-related-unfound (list (slot-value field 'org-uuid)))))
 
 (cl-defmethod ebdb-record-organizations ((record ebdb-record-person))
   "Return a list of organization string names from RECORD's cache."
@@ -3202,7 +3224,9 @@ appropriate person record."
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-organization)
 				   (field ebdb-field-role))
-  (ebdb-gethash (slot-value field 'record-uuid) 'uuid))
+  (or
+   (ebdb-gethash (slot-value field 'record-uuid) 'uuid)
+   (signal 'ebdb-related-unfound (list (slot-value field 'record-uuid)))))
 
 (cl-defmethod ebdb-record-add-org-role ((record ebdb-record-person)
 				     (org ebdb-record-organization)
