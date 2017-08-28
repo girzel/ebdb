@@ -3650,7 +3650,7 @@ the persistent save, or allow them to propagate.")
 	     (ebdb-db-dirty db))
     (ebdb-db-editable db)))
 
-(cl-defmethod ebdb-db-save ((db ebdb-db-file) &optional _prompt force)
+(cl-defmethod ebdb-db-save ((db ebdb-db) &optional _prompt force)
   "Mark DB and all its records as \"clean\" after saving."
   (let ((recs (ebdb-dirty-records (slot-value db 'records))))
     (when (or force recs (slot-value db 'dirty))
@@ -3658,7 +3658,7 @@ the persistent save, or allow them to propagate.")
       (dolist (r recs)
 	(setf (slot-value r 'dirty) nil))
       (condition-case err
-	  (cl-call-next-method)
+	  (eieio-persistent-save db)
 	(error
 	 (setf (slot-value db 'dirty) t)
 	 (dolist (r recs)
