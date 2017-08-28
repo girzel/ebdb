@@ -54,6 +54,7 @@
 
 (require 'ebdb-com)
 (require 'org)
+(require 'org-agenda)
 
 (if (fboundp 'org-link-set-parameters)
     (org-link-set-parameters "ebdb"
@@ -116,58 +117,39 @@ italicized, in all other cases it is left unchanged."
     (format "<text:span text:style-name=\"Emphasis\">%s</text:span>" desc))
    (t desc)))
 
-(defvar ebdb-org-tags nil
-  "Variable holding tags defined for EBDB records.
-
-This list is added to the result of
-`org-global-tags-completion-table' when producing a list of
-potential tags for completion.")
-
-(push '(ebdb-org-field-tags ":" ":") ebdb-separator-alist)
-
 ;;;###autoload
-(defclass ebdb-org-field-tags (ebdb-field-user)
-  ((tags
-    :type (list-of string)
-    :initarg :tags
-    :custom (repeat string)
-    :initform nil))
+(defclass ebdb-org-field-tags (ebdb-field-tags)
+  nil
   :human-readable "org tags")
 
-(cl-defmethod ebdb-string ((field ebdb-org-field-tags))
-  (ebdb-concat 'ebdb-org-field-tags (slot-value field 'tags)))
-
 (cl-defmethod ebdb-read ((field (subclass ebdb-org-field-tags)) &optional slots obj)
-  (let* ((crm-separator (cadr (assq 'ebdb-org-field-tags ebdb-separator-alist)))
+  (let* ((crm-separator (cadr (assq 'ebdb-field-tags ebdb-separator-alist)))
 	 (val (completing-read-multiple
 	       "Tags: "
 	       (append (org-global-tags-completion-table)
-		       (when ebdb-org-tags
-			 (mapcar #'list ebdb-org-tags)))
+		       (when ebdb-tags
+			 (mapcar #'list ebdb-tags)))
 	       nil nil
 	       (when obj (ebdb-string obj)))))
     (cl-call-next-method field (plist-put slots :tags val))))
 
-(cl-defmethod ebdb-search-read ((_class (subclass ebdb-org-field-tags)))
-  (let ((crm-separator (cadr (assq 'ebdb-org-field-tags ebdb-separator-alist))))
-    (completing-read-multiple
-     "Search for tags: "
-     (append (org-global-tags-completion-table)
-	     (when ebdb-org-tags
-	       (mapcar #'list ebdb-org-tags)))
-     nil nil)))
+;;;###autoload
+(defun ebdb-org-agenda-popup (&optional inter)
+  "Pop up an *EBDB* buffer from an Org Agenda tags search.
+Uses the tags searched for in the Agenda buffer to do an
+equivalent tags search of EBDB records.
 
-(cl-defmethod ebdb-field-search ((field ebdb-org-field-tags) (tag-list list))
-  (catch 'found
-    (dolist (tag (slot-value field 'tags) nil)
-      (dolist (tt tag-list)
-       (when (string-match-p tt tag)
-	 (throw 'found t))))))
-
-(cl-defmethod ebdb-init-field ((field ebdb-org-field-tags) _record)
-  (let ((tags (slot-value field 'tags)))
-    (dolist (tag tags)
-      (add-to-list 'ebdb-org-tags tag))))
+To do this automatically for every search, add this function to
+`org-agenda-mode-hook'."
+  (interactive "p")
+  (if (null (and (derived-mode-p 'org-agenda-mode)
+		 (eql org-agenda-type 'tags)))
+      (when inter
+	(message "Not in an Org Agenda tags search buffer"))
+    (let* ((func (cdr (org-make-tags-matcher org-agenda-query-string)))
+	   (records (ebdb-search (ebdb-records)
+				 `((ebdb-field-tags ,func)))))
+      (ebdb-display-records records nil nil nil (ebdb-popup-window)))))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode org-mode))
   "Use a separate EBDB buffer for Org-related contacts."

@@ -65,6 +65,7 @@
 (autoload 'diary-sexp-entry "diary-lib")
 (autoload 'diary-add-to-list "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
+(autoload 'org-make-tags-matcher "org")
 (defvar ebdb-i18n-countries)
 (defvar calendar-month-name-array)
 
@@ -2179,6 +2180,60 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 
 (cl-defmethod ebdb-string ((field ebdb-field-gender))
   (symbol-name (slot-value field 'gender)))
+
+;; Tags field.
+
+;; This field class holds a list of tags that apply to the record.
+;; The main advantage is custom searching that lets users search on
+;; multiple tags with inclusion and exclusion.
+
+(defvar ebdb-tags nil
+  "Variable holding tags defined for EBDB records.")
+
+(push '(ebdb-field-tags ":" ":") ebdb-separator-alist)
+
+(defclass ebdb-field-tags (ebdb-field-user ebdb-field-singleton)
+  ((tags
+    :initarg :tags
+    :initform nil
+    :type list
+    :custom (repeat string)
+    :documentation
+    "List of string tags."))
+  :documentation "A field class holding a list of string tags
+   for a record.  Also see `ebdb-org-field-tags', which behaves
+   like this class but also completes on tags defined in Org
+   files."
+  :human-readable "tags")
+
+(cl-defmethod ebdb-string ((field ebdb-field-tags))
+  (ebdb-concat 'ebdb-field-tags (slot-value field 'tags)))
+
+(cl-defmethod ebdb-search-read ((_class (subclass ebdb-field-tags)))
+  (cdr
+   ;; Thank you Org!
+   (org-make-tags-matcher
+    (ebdb-read-string
+     "Search for tags (eg +tag1-tag2|tag3): "))))
+
+(cl-defmethod ebdb-field-search ((field ebdb-field-tags)
+				 func)
+  ;; This guard should be a specializer in the arglist, but the
+  ;; "function" specializer doesn't appear to work.
+  (when (functionp func)
+    ;; The t and 1 are bogus arguments to fool the matcher into thinking
+    ;; we're dealing an Org heading.
+    (funcall func t (slot-value field 'tags) 1)))
+
+(cl-defmethod ebdb-field-search ((field ebdb-field-tags)
+				 (tag string))
+  (seq-find (lambda (tg) (string-match-p tag tg))
+	    (slot-value field 'tags)))
+
+(cl-defmethod ebdb-init-field ((field ebdb-field-tags) _record)
+  (let ((tags (slot-value field 'tags)))
+    (dolist (tag tags)
+      (add-to-list 'ebdb-tags tag))))
 
 ;;; Fields that change EBDB's behavior.
 

@@ -310,6 +310,9 @@ display information."
     (define-key km (kbd "/ c")		'ebdb-search-modified)
     (define-key km (kbd "| c")		'ebdb-search-modified)
     (define-key km (kbd "+ c")		'ebdb-search-modified)
+    (define-key km (kbd "/ t")		'ebdb-search-tags)
+    (define-key km (kbd "| t")		'ebdb-search-tags)
+    (define-key km (kbd "+ t")		'ebdb-search-tags)
     (define-key km (kbd "/ C")		'ebdb-search-record-class)
     (define-key km (kbd "/ C")		'ebdb-search-record-class)
     (define-key km (kbd "| C")		'ebdb-search-record-class)
@@ -1911,6 +1914,14 @@ in any field."
   (ebdb-search-display style `((dirty t)) fmt))
 
 ;;;###autoload
+(defun ebdb-search-tags (style tags &optional fmt)
+  "Run a search of record tags."
+  (interactive (list (ebdb-search-style)
+		     (ebdb-search-read 'ebdb-field-tags)
+		     (ebdb-formatter-prefix)))
+  (ebdb-search-display style `((ebdb-field-tags ,tags)) fmt))
+
+;;;###autoload
 (defun ebdb-search-duplicates (&optional fields fmt)
   "Search all records that have duplicate entries for FIELDS.
 The list FIELDS may contain the symbols `name', `mail', and `aka'.
@@ -1937,12 +1948,12 @@ The search results are displayed in the EBDB buffer."
 
       (if (memq 'mail fields)
           (dolist (mail (ebdb-record-mail-canon record))
-              (setq hash (ebdb-gethash mail '(mail)))
-              (when (> (length hash) 1)
-                (setq ret (append hash ret))
-                (message "EBDB record `%s' has duplicate mail `%s'."
-                         (ebdb-record-name record) mail)
-                (sit-for 0))))
+            (setq hash (ebdb-gethash mail '(mail)))
+            (when (> (length hash) 1)
+              (setq ret (append hash ret))
+              (message "EBDB record `%s' has duplicate mail `%s'."
+                       (ebdb-record-name record) mail)
+              (sit-for 0))))
 
       (if (and (memq 'aka fields)
 	       (slot-exists-p record 'aka))
