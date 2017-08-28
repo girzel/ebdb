@@ -3370,7 +3370,8 @@ executable.  When a symbol, assume an Elisp function."
     :initarg :buffer-char
     :type (or null character)
     :initform nil
-    :custom character
+    :custom (choice (const :tag "None" nil)
+		    (character :tag "Character"))
     :documentation
     "A single character used in the *EBDB* buffer to indicate the
     database(s) to which a record belongs.")
