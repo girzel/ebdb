@@ -232,7 +232,8 @@ instead.  If FULL is non-nil, the list of records includes
 display information."
   (let* ((marked (seq-filter (lambda (r) (nth 3 r)) ebdb-records))
 	 (recs (or marked (list (ebdb-current-record t)))))
-   (if full recs (mapcar 'car recs))))
+    (setq recs (seq-filter (lambda (r) (eieio-object-p (car r))) recs))
+    (if full recs (mapcar 'car recs))))
 
 ;;; Keymap
 (defvar ebdb-mode-map
