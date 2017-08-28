@@ -3630,23 +3630,42 @@ of sync but has no local modifications.")
 	    nil
 	  (signal err (list db))))))
 
-(cl-defmethod ebdb-db-save :before ((db ebdb-db) &optional _prompt)
-  "Prepare DB to be saved."
-  (when (ebdb-db-dirty db)
-   (ebdb-db-editable db)))
-
-(cl-defmethod ebdb-db-save ((db ebdb-db) &optional _prompt)
+(cl-defgeneric ebdb-db-save ((db ebdb-db) &optional prompt force)
   "Save DB to its persistence file.
+When PROMPT is non-nil, prompt the user before saving (currently
+unimplemented).  When FORCE is non-nil, save regardless of
+whether the database is dirty or not, and ignore all database
+errors.
 
 This method is only responsible for saving the database
 definition to disk.  Database subclasses are responsible for
 saving or otherwise persisting their records, and setting
 their :records slot to nil before calling this method with
 `cl-call-next-method'.  They can either catch errors thrown by
-the persistent save, or allow them to propagate."
-  (eieio-persistent-save db))
+the persistent save, or allow them to propagate.")
 
-(cl-defmethod ebdb-db-save :after ((db ebdb-db) &optional _prompt)
+(cl-defmethod ebdb-db-save :before ((db ebdb-db) &optional _prompt force)
+  "Prepare DB to be saved."
+  (when (and (null force)
+	     (ebdb-db-dirty db))
+    (ebdb-db-editable db)))
+
+(cl-defmethod ebdb-db-save ((db ebdb-db-file) &optional _prompt force)
+  "Mark DB and all its records as \"clean\" after saving."
+  (let ((recs (ebdb-dirty-records (slot-value db 'records))))
+    (when (or force recs (slot-value db 'dirty))
+      (setf (slot-value db 'dirty) nil)
+      (dolist (r recs)
+	(setf (slot-value r 'dirty) nil))
+      (condition-case err
+	  (cl-call-next-method)
+	(error
+	 (setf (slot-value db 'dirty) t)
+	 (dolist (r recs)
+	   (setf (slot-value r 'dirty) t))
+	 (signal 'error err))))))
+
+(cl-defmethod ebdb-db-save :after ((db ebdb-db) &optional _prompt _force)
   "After saving DB, also delete its auto-save file, if any."
   (let ((auto-save-file
 	 (ebdb-db-make-auto-save-file-name
@@ -3741,26 +3760,6 @@ the persistent save, or allow them to propagate."
 ;; are stored in its persistence file, directly in the :records slot,
 ;; so simply reading the object in with `eieio-persistent-read' does
 ;; all the set up we need.
-
-(cl-defmethod ebdb-db-save ((db ebdb-db-file) &optional _prompt)
-  "Mark DB and all its records as \"clean\" after saving."
-  (let ((recs (ebdb-dirty-records (slot-value db 'records))))
-    ;; Don't do anything if nothing's dirty.  Later we can have a
-    ;; "force" argument.
-    (when (or recs (slot-value db 'dirty))
-      ;; These slots must be set to nil, or else we'll write ":dirty
-      ;; t" slot values to file, which would be nonsensical.
-      (setf (slot-value db 'dirty) nil)
-      (dolist (r recs)
-	(setf (slot-value r 'dirty) nil))
-      (condition-case err
-	  ;; This does the actual writing to file.
-	  (cl-call-next-method)
-	(error
-	 (setf (slot-value db 'dirty) t)
-	 (dolist (r recs)
-	   (setf (slot-value r 'dirty) t))
-	 (signal 'error err))))))
 
 (cl-defmethod initialize-instance ((db ebdb-db-file) &optional slots)
   (let ((object-name (concat "File: " (plist-get slots :file))))
