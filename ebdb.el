@@ -45,6 +45,7 @@
 (require 'timezone)
 (require 'cl-lib)
 (require 'seq)
+(require 'calendar)
 (require 'subr-x)
 (require 'pcase)
 (require 'eieio)
@@ -55,19 +56,11 @@
 (autoload 'widget-group-match "wid-edit")
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")
-(autoload 'calendar-absolute-from-gregorian "calendar")
-(autoload 'calendar-make-alist "calendar")
-(autoload 'calendar-goto-date "calendar")
-(autoload 'calendar-last-day-of-month "calendar")
-(autoload 'calendar- "calendar")
-(autoload 'calendar-read "calendar")
-(autoload 'calendar-read-date "calendar")
 (autoload 'diary-sexp-entry "diary-lib")
 (autoload 'diary-add-to-list "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
 (autoload 'org-make-tags-matcher "org")
 (defvar ebdb-i18n-countries)
-(defvar calendar-month-name-array)
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
