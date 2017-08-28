@@ -3721,10 +3721,14 @@ the persistent save, or allow them to propagate.")
 (cl-defmethod ebdb-string ((db ebdb-db))
   (format "Database: %s" (slot-value db 'file)))
 
+(cl-defgeneric ebdb-db-disable (db)
+  "Disable DB.
+DB will be unconditionally saved to disk as part of the disable
+process.")
+
 (cl-defmethod ebdb-db-disable ((db ebdb-db))
-  (setf (slot-value db 'disabled) t
-	(slot-value db 'dirty) t)
-  (ebdb-db-save db)
+  (setf (slot-value db 'disabled) t)
+  (ebdb-db-save db nil t)
   (ebdb-db-unload db))
 
 (cl-defmethod ebdb-db-customize ((db ebdb-db))
