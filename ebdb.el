@@ -1124,6 +1124,18 @@ process."
   displayed in the *EBDB* buffer.  Use for mildly sensitive
   information.")
 
+;;; The singleton field type.  Records may only have one instance of
+;;; fields of this type.  (Unrelated to `eieio-singleton'.)
+
+;; There's a method of `ebdb-record-insert-field' for this class down
+;; under the definition of `ebdb-record'.
+(defclass ebdb-field-singleton (ebdb-field)
+  nil
+  :abstract t
+  :documentation
+  "A field class mixin that ensures a record can only have one
+  instance of that field class.")
+
 ;;; User-defined fields.  There are two kinds.  The first is
 ;;; `ebdb-field-user', which provides no information about labels or
 ;;; slots, but simply gives us the right to live in the "fields" slot
@@ -2628,6 +2640,17 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
+
+(cl-defmethod ebdb-record-insert-field ((record ebdb-record)
+					(field ebdb-field-singleton)
+					&optional slot)
+  (let ((existing (ebdb-record-field record (eieio-object-class field))))
+    (when existing
+      (ebdb-record-delete-field record existing))
+    (condition-case nil
+	(cl-call-next-method)
+      ;; Put the old one back if something goes wrong.
+      (error (ebdb-record-insert-field record existing)))))
 
 (cl-defmethod ebdb-field-image-get ((field ebdb-field-image) (record ebdb-record))
   "Return the image for image field FIELD.
