@@ -3618,7 +3618,6 @@ records."
 	(time-less-p left-time right-time))))
 
 (cl-defmethod ebdb-db-load :after ((db ebdb-db))
-  (cl-pushnew db ebdb-db-list)
   (setf (slot-value db 'sync-time) (current-time))
   (run-hook-with-args 'ebdb-after-read-db-hook db))
 
@@ -4674,7 +4673,8 @@ important work is done by the `ebdb-db-load' method."
 			(progn (setq s (eieio-persistent-read auto-save-file 'ebdb-db t))
 			       (setf (slot-value s 'file) orig-filename)
 			       (setf (slot-value s 'dirty) t))
-		      (setq s (eieio-persistent-read s 'ebdb-db t))))
+		      (setq s (eieio-persistent-read s 'ebdb-db t)))
+		      (cl-pushnew s ebdb-db-list))
 		;; Handle new/nonexistent databases.
 		(when (yes-or-no-p (format "%s does not exist, create? " s))
 		  (setq s (make-instance 'ebdb-db-file :file s :dirty t))
@@ -4686,7 +4686,10 @@ important work is done by the `ebdb-db-load' method."
       (if (object-of-class-p s 'ebdb-db)
 	  (if (null (slot-value s 'disabled))
 	      (ebdb-db-load s)
-	    (message "Database %s is currently disabled." s)
+	    (message "%s is currently disabled." (ebdb-string s))
+	    ;; Remove this database's records from
+	    ;; `ebdb-record-tracker'.
+	    (mapcar #'delete-instance (slot-value s 'records))
 	    (sit-for 2))
 	(error "Object %s is not a EBDB database" s)))
     (if (and

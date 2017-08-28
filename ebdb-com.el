@@ -817,61 +817,64 @@ displayed records."
 	local-record renumber-index marker end-marker record-number ret)
     (setq records (ebdb-record-list records))
     ;; First check if we've been given any records as uuid strings,
-    ;; rather than actual records.
-    (setq records (mapcar
-		   (lambda (r)
-		     (or (and (stringp r)
-			      (ebdb-gethash r 'uuid))
-			 r))
-		   records))
+    ;; rather than actual records.  If it's a uuid but we can't look
+    ;; it up, then discard it, we can't do anything with it anyway.
+    (setq records
+	  (delq nil
+		(mapcar
+		 (lambda (r)
+		   (if (stringp r)
+		       (ebdb-gethash r 'uuid)
+		     r))
+		 records)))
     (dolist (b bufs)
       (with-current-buffer b
 	(let (renumber buffer-read-only)
-	 (dolist (r records)
-	   (catch 'bail
-	     ;; Find the location of record in this buffer.  The
-	     ;; majority of the time this function will be working on
-	     ;; the single record under point, so short-circuit that
-	     ;; case.  Check if record is present, or if its uuid has
-	     ;; been left behind by some previous redisplay.  If
-	     ;; record isn't in this buffer, then bail.
-	     (setq local-record (cond ((equal r (ignore-errors (ebdb-current-record)))
-				       (ebdb-current-record t))
-				      ((assoc r ebdb-records))
-				      ((assoc (ebdb-record-uuid r) ebdb-records))
-				      (t (throw 'bail nil)))
-		   marker (nth 2 local-record)
-		   end-marker (nth 2 (car (cdr (memq local-record ebdb-records)))))
-	     (unless renumber-index
-	       (setq renumber-index (cl-position local-record ebdb-records)))
-	     ;; If point is inside record, put it at the beginning of the record.
-	     (when (and (<= marker (point))
-			(< (point) (or end-marker (point-max))))
-	       (goto-char marker))
-	     (save-excursion
-	       (goto-char marker)
-	       (setq record-number (get-text-property (point) 'ebdb-record-number))
-	       ;; First insert the reformatted record, then delete the old one,
-	       ;; so that the marker of this record cannot collapse with the
-	       ;; marker of the subsequent record
-	       (setq ret (ebdb-redisplay-record r action local-record))
-	       (put-text-property marker (point) 'ebdb-record-number record-number)
-	       (when (eq ret 'removed)
-		 (setq renumber t))
-	       (when (memq ret '(removed replaced))
-		 (delete-region (point) (or end-marker (point-max)))))))
-	 (when renumber
-	   ;; If we deleted a record we need to update the subsequent
-	   ;; record numbers.
-	   (let* ((markers (append (mapcar (lambda (x) (nth 2 x))
-					   (cl-subseq ebdb-records renumber-index))
-				   (list (point-max))))
-		  (start (pop markers)))
-	     (dolist (end markers)
-	       (put-text-property start end
-				  'ebdb-record-number record-number)
-	       (setq start end
-		     record-number (1+ record-number))))))
+	  (dolist (r records)
+	    (catch 'bail
+	      ;; Find the location of record in this buffer.  The
+	      ;; majority of the time this function will be working on
+	      ;; the single record under point, so short-circuit that
+	      ;; case.  Check if record is present, or if its uuid has
+	      ;; been left behind by some previous redisplay.  If
+	      ;; record isn't in this buffer, then bail.
+	      (setq local-record (cond ((equal r (ignore-errors (ebdb-current-record)))
+					(ebdb-current-record t))
+				       ((assoc r ebdb-records))
+				       ((assoc (ebdb-record-uuid r) ebdb-records))
+				       (t (throw 'bail nil)))
+		    marker (nth 2 local-record)
+		    end-marker (nth 2 (car (cdr (memq local-record ebdb-records)))))
+	      (unless renumber-index
+		(setq renumber-index (cl-position local-record ebdb-records)))
+	      ;; If point is inside record, put it at the beginning of the record.
+	      (when (and (<= marker (point))
+			 (< (point) (or end-marker (point-max))))
+		(goto-char marker))
+	      (save-excursion
+		(goto-char marker)
+		(setq record-number (get-text-property (point) 'ebdb-record-number))
+		;; First insert the reformatted record, then delete the old one,
+		;; so that the marker of this record cannot collapse with the
+		;; marker of the subsequent record
+		(setq ret (ebdb-redisplay-record r action local-record))
+		(put-text-property marker (point) 'ebdb-record-number record-number)
+		(when (eq ret 'removed)
+		  (setq renumber t))
+		(when (memq ret '(removed replaced))
+		  (delete-region (point) (or end-marker (point-max)))))))
+	  (when renumber
+	    ;; If we deleted a record we need to update the subsequent
+	    ;; record numbers.
+	    (let* ((markers (append (mapcar (lambda (x) (nth 2 x))
+					    (cl-subseq ebdb-records renumber-index))
+				    (list (point-max))))
+		   (start (pop markers)))
+	      (dolist (end markers)
+		(put-text-property start end
+				   'ebdb-record-number record-number)
+		(setq start end
+		      record-number (1+ record-number))))))
 	(run-hooks 'ebdb-display-hook)))))
 
 (easy-menu-define
