@@ -44,6 +44,9 @@
      (ebdb-db-save ,(car db-and-filename) nil t)
      ;; Load adds to `ebdb-db-list'.
      (ebdb-db-load ,(car db-and-filename))
+     ;; `ebdb-db-load' used to add db to `ebdb-db-list', but now that
+     ;; happens in `edbd-load'.  Do it manually.
+     (push ,(car db-and-filename) ebdb-db-list)
      (unwind-protect
 	 (progn
 	   ,@body)
