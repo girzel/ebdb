@@ -2140,6 +2140,46 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
       (signal 'ebdb-unparseable (list "invalid URL scheme"))))
   (cl-call-next-method class str slots))
 
+;; Gender field
+
+(defclass ebdb-field-gender (ebdb-field-user
+			     ebdb-field-singleton)
+  ((gender
+    :initarg :gender
+    :initform 'unknown
+    :type symbol
+    :custom (choice
+	     ;; Can we make the gender choices a defcustom and
+	     ;; construct this automatically?
+	     (const :tag "Female" female)
+	     (const :tag "Male" male)
+	     (const :tag "Other" other)
+	     (const :tag "Unknown" unknown)
+	     (const :tag "Not applicable" na))))
+  :documentation
+  "A field holding a record's gender."
+  :human-readable "gender")
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-gender)) &optional slots obj)
+  (let* ((choices
+	  '(("female" . female)
+	    ("male" . male)
+	    ("other" . other)
+	    ("unknown" . unknown)
+	    ("not applicable" . na)))
+	 (gender (cdr
+		  (assoc-string
+		   (ebdb-read-string "Gender: "
+				     (when obj (rassoc (slot-value obj 'gender)
+						       choices))
+				     choices
+				     t)
+		   choices))))
+    (cl-call-next-method class (plist-put slots :gender gender) obj)))
+
+(cl-defmethod ebdb-string ((field ebdb-field-gender))
+  (symbol-name (slot-value field 'gender)))
+
 ;;; Fields that change EBDB's behavior.
 
 ;;; Mail aliases
