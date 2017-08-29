@@ -1181,6 +1181,8 @@ If `ebdb-mua-pop-up' is non-nil, EBDB pops up the *EBDB* buffer
 along with the MUA window(s), displaying the matching records."
   (let* ((ebdb-silent-internal t)
 	 records)
+    (when (null ebdb-record-tracker)
+      (ebdb-load))
     (setq records (ebdb-update-records
 		   (ebdb-get-address-components header-class)
 		   (or update-p
