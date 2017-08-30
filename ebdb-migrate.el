@@ -26,6 +26,8 @@
 
 (require 'ebdb)
 (autoload 'calendar-absolute-from-gregorian "calendar")
+(declare-function make-gnorb-ebdb-link "ext:gnorb-ebdb")
+(defvar url-handler-regexp)
 ;;; Migrating the EBDB
 
 ;; Unused

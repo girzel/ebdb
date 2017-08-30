@@ -1570,7 +1570,7 @@ the record, change the name of the record."
     (ebdb-record-delete-field r field)
     (condition-case nil
 	(eieio-customize-object field)
-      (error (ebdb-record-insert-field rec f))))
+      (error (ebdb-record-insert-field r field))))
   (setq ebdb-custom-field-record record))
 
 (cl-defmethod eieio-done-customizing ((f ebdb-field))

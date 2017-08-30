@@ -61,6 +61,7 @@
 (autoload 'org-agenda-list "org-agenda")
 (autoload 'org-make-tags-matcher "org")
 (defvar ebdb-i18n-countries)
+(defvar ebdb-i18n-countries-pref-scripts)
 
 ;; These are the most important internal variables, holding EBDB's
 ;; data structures.
@@ -2727,7 +2728,7 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 
 (cl-defmethod ebdb-record-insert-field ((record ebdb-record)
 					(field ebdb-field-singleton)
-					&optional slot)
+					&optional _slot)
   (let ((existing (ebdb-record-field record (eieio-object-class field))))
     (when existing
       (ebdb-record-delete-field record existing))
