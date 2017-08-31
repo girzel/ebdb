@@ -5155,7 +5155,8 @@ interpreted as t, ie the record passes."
 (cl-defmethod ebdb-field-search ((field ebdb-field-labeled)
 				 (regexp string))
   (or (string-match-p regexp (ebdb-string field))
-      (string-match-p regexp (slot-value field 'object-name))
+      (and (stringp (slot-value field 'object-name))
+	   (string-match-p regexp (slot-value field 'object-name)))
       (cl-call-next-method)))
 
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
