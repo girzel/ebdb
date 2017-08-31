@@ -728,7 +728,7 @@ for their symbol representations.")
 			"Country/Region: "
 			ebdb-i18n-phone-codes nil nil)
 		       ebdb-i18n-phone-codes))))
-	area-code)
+	(area-code (when obj (slot-value obj 'area-code))))
     ;; Obviously this whole structure thing is just poorly
     ;; thought-out.
     (when (consp country)

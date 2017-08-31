@@ -1786,6 +1786,8 @@ first one."
 	  (concat "Number"
 		  (when country
 		    (format " +%d" country))
+		  ;; Why aren't we allowing them to change the area
+		  ;; code?
 		  (when area
 		    (format " (%d)" area))
 		  ": "))
