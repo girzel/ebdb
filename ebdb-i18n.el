@@ -705,33 +705,30 @@ for their symbol representations."
 	       (cl-no-method nil)))
 	(cl-call-next-method))))
 
-;; This method can be used later.  Probably there will never be a
-;; non-i18n `ebdb-parse' method for addresses, because it's just too
-;; hard to guess if you don't know the country.  At some point there
-;; should be an option called `ebdb-read-address-articulate': if that
-;; is nil, then we should require the user to have loaded `ebdb-i18n',
-;; and only international parse methods will be considered.
+;; This is not an :extra method, because there will never be a
+;; non-i18n `ebdb-parse' method for addresses.  It's just too hard to
+;; guess if you don't know the country.  This is only used in
+;; snarfing.
 
-;; (cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-address))
-;; 					(str string)
-;; 					&optional slots)
-;;   "Internationally-aware version of `ebdb-parse' for addresses."
-;;   (let ((cc (or (plist-get slots :country)
-;; 		(when (string-match (regexp-opt
-;; 				     (mapcar
-;; 				      (lambda (elt) (car elt))
-;; 				      (ebdb-i18n-countries)))
-;; 				    str)
-;; 		  (cdr-safe (assoc-string
-;; 			     (match-string 0 str)
-;; 			     (ebdb-i18n-countries)
-;; 				     ))))))
-;;     (or (and cc
-;; 	     (symbolp cc)
-;; 	     (condition-case nil
-;; 		 (ebdb-parse-i18n class str cc slots)
-;; 	       (cl-no-method nil)))
-;; 	(cl-call-next-method))))
+(cl-defmethod ebdb-parse ((class (subclass ebdb-field-address))
+			  (str string)
+			  &optional slots)
+  "Internationally-aware version of `ebdb-parse' for addresses."
+  (let ((cc (or (plist-get slots :country)
+		(when (string-match (regexp-opt
+				     (mapcar
+				      (lambda (elt) (car elt))
+				      (ebdb-i18n-countries)))
+				    str)
+		  (cdr-safe (assoc-string
+			     (match-string 0 str)
+			     (ebdb-i18n-countries)))))))
+    (or (and cc
+	     (symbolp cc)
+	     (condition-case nil
+		 (ebdb-parse-i18n class str cc slots)
+	       (cl-no-method nil)))
+	(signal 'ebdb-unparseable (list str)))))
 
 (cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-phone))
 				       &optional slots obj)
