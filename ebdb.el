@@ -5065,6 +5065,66 @@ With prefix ARG, insert string at point."
 (defvar ebdb-search-invert nil
   "Bind this variable to t in order to invert the result of `ebdb-search'.")
 
+;; Char folding: a simplified version of what happens in char-fold.el.
+
+(defconst ebdb-char-fold-table
+  (eval-when-compile
+    (let ((tbl (make-char-table 'char-fold-table))
+	  (uni (unicode-property-table-internal 'decomposition))
+	  ;; Lowercase and uppercase alphabet.
+	  (target-seq (append (number-sequence 65 90)
+			      (number-sequence 97 122))))
+
+      ;; I don't understand what's happening here, but it's necessary.
+      (let ((func (char-table-extra-slot uni 1)))
+	(map-char-table (lambda (char v)
+                          (when (consp char)
+                            (funcall func (car char) v uni)))
+			uni))
+      ;; Create lists of equivalent chars, keyed to the most basic
+      ;; ascii letter.
+      (map-char-table
+       (lambda (char decomp)
+	 (when (consp decomp)
+	   (when (symbolp (car decomp))
+	     (setq decomp (cdr decomp)))
+	   (when (memq (car decomp) target-seq)
+	     (aset tbl (car decomp)
+		   (cons char
+			 (aref tbl (car decomp)))))))
+       uni)
+      ;; Then turn the lists into regexps.
+      (map-char-table
+       (lambda (char dec-list)
+	 (let ((re (regexp-opt (cons (char-to-string char)
+				     (mapcar #'string dec-list)))))
+           (aset tbl char re)))
+       tbl)
+      tbl))
+  "Char-table holding regexps used in char fold searches.
+Keys are characters in the upper- and lower-case ascii ranges.
+Values are a regexp matching all characters that decompose to the
+key character.")
+
+(defun ebdb-char-fold-to-regexp (string)
+  "A highly simplified version of `char-fold-to-regexp'.
+Only converts characters that decompose to the range [a-zA-Z]."
+  (let ((out nil)
+	(end (length string))
+	char
+	(i 0))
+    (while (< i end)
+      (setq char (aref string i))
+      (push
+       (or (aref ebdb-char-fold-table char)
+	   (string char))
+       out)
+      (cl-incf i))
+    (setq out (apply #'concat (nreverse out)))
+    (if (> (length out) 5000)
+        (regexp-quote string)
+      out)))
+
 (defun ebdb-message-search (name mail)
   "Return list of EBDB records matching NAME and/or MAIL.
 First try to find a record matching both NAME and MAIL.
@@ -5114,7 +5174,7 @@ interpreted as t, ie the record passes."
       (dolist (c clauses)
 	(when (and (consp c)
 		   (stringp (cadr c)))
-	  (setf (cadr c) (char-fold-to-regexp (cadr c))))))
+	  (setf (cadr c) (ebdb-char-fold-to-regexp (cadr c))))))
     (seq-filter
      (lambda (r)
        (eql (null invert)
