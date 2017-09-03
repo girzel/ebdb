@@ -2584,7 +2584,7 @@ OLD-FIELD's values as defaults.")
 
 (cl-defmethod ebdb-record-insert-field ((record ebdb-record)
 					(field ebdb-field)
-					&optional (slot symbol))
+					&optional slot)
   "Add FIELD to RECORD's SLOT."
   ;; First, the databases "actually" add the field to the record, ie
   ;; persistence.  The rest of this method is just updating the
@@ -2612,7 +2612,7 @@ OLD-FIELD's values as defaults.")
 
 (cl-defmethod ebdb-record-delete-field ((record ebdb-record)
 					(field ebdb-field)
-					&optional (slot symbol))
+					&optional slot)
   "Delete FIELD from RECORD's SLOT, or set SLOT to nil, if no FIELD."
   ;; We don't use `slot-makeunbound' because that's a huge pain in the
   ;; ass, and why would anyone want those errors?
@@ -4845,6 +4845,8 @@ This is a possible identifying function for
 `ebdb-address-format-list' and `ebdb-print-address-format-list'."
   (string-match ebdb-continental-postcode-regexp
                 (ebdb-address-postcode address)))
+
+(defvar ebdb-i18n-countries-pref-scripts)
 
 ;; This function can provide some guidance for writing
 ;; your own address formatting function
