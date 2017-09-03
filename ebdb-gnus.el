@@ -143,6 +143,28 @@ addresses better than the traditionally static global scorefile."
 
 ;;; Gnus splitting support
 
+;; First, catch and upgrade instances of `ebdb-gnus-private-field' and
+;; `ebdb-gnus-imap-field'.  These upgrade routines were put in place
+;; September 3, 2017.  Give it... a year?  Two?  Then delete them.
+
+;;;###autoload
+(defclass ebdb-gnus-private-field (ebdb-field-user)
+  ((group
+    :initarg :group)))
+
+;;;###autoload
+(defclass ebdb-gnus-imap-field (ebdb-field-user)
+  ((group
+    :initarg :group)))
+
+(cl-defmethod make-instance ((_cls (subclass ebdb-gnus-private-field)) &rest slots)
+  (apply #'make-instance 'ebdb-field-mail-folder
+	 (list :folder (plist-get slots :group))))
+
+(cl-defmethod make-instance ((_cls (subclass ebdb-gnus-imap-field)) &rest slots)
+  (apply #'make-instance 'ebdb-field-mail-folder
+	 (list :folder (plist-get slots :group))))
+
 (defun ebdb/gnus-split-folders-list ()
   "Return a list of \( \"From\" mail-regexp imap-folder-name\) tuples
 based on the contents of the EBDB.
