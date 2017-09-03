@@ -1141,9 +1141,10 @@ alias, then entering that alias in the "To:" or "Cc:" field of a
 message composition buffer will expand to a comma-separated list of
 record addresses.
 
-At present, it's necessary to manually parse existing aliases with the
-{{{kbd(A)}}} key in a {{{buf(EBDB)}}} buffer.  This limitation will be
-removed in the future.
+Mail aliases are updated every time an EBDB buffer is created.  It's
+also possible to force an update using the {{{kbd(A)}}} key in a
+{{{buf(EBDB)}}} buffer.
+
 * vCard Support
 EBDB has rudimentary support for exporting to vCard format; this
 functionality will be expanded in the future.  After loading the

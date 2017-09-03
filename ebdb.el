@@ -52,7 +52,7 @@
 (require 'eieio-base)
 (require 'eieio-opt)
 
-; pacify the compiler.
+;; Pacify the compiler.
 (autoload 'widget-group-match "wid-edit")
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")

@@ -1034,13 +1034,11 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
                               (ebdb-concat " " (elt ebdb-modeline-info 0)
                                            (elt ebdb-modeline-info 1)))))
         mode-line-modified
-        ;; For the mode-line we want to be fast. So we skip the checks
-        ;; performed by `ebdb-with-db-buffer'.
         '(:eval (if (object-assoc t 'dirty ebdb-db-list) "**" "--")))
-  ;; `ebdb-revert-buffer' acts on `ebdb-buffer'.  Yet this command is usually
-  ;; called from the *EBDB* buffer.
   (set (make-local-variable 'revert-buffer-function)
        'ebdb-redisplay-all-records)
+  (when ebdb-mail-alias-alist
+    (ebdb-mail-aliases))
   (add-hook 'post-command-hook 'force-mode-line-update nil t))
 
 
@@ -2456,13 +2454,16 @@ If we are past `fill-column', wrap at the previous comma."
 ;;;###autoload
 (defun ebdb-mail-aliases (&optional noisy)
   "Add aliases from the database to the global alias table.
-
-Give records a \"mail alias\" field to define an alias for that
-record.
+\\<ebdb-mode-map>Give records a \"mail alias\" field to define
+an alias for that record.
 
 If multiple records in the database have the same mail alias,
 then that alias expands to a comma-separated list of the mail addresses
-of all of these people."
+of all of these people.
+
+This function is automatically called each time an EBDB buffer is
+created.  Alternately, use \\[ebdb-mail-aliases] in an *EBDB*
+buffer to force an update."
   (interactive)
 
   ;; Build `mail-aliases' if not yet done.

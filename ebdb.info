@@ -1232,9 +1232,8 @@ more than one.  If multiple records have the same alias, then entering
 that alias in the “To:” or “Cc:” field of a message composition buffer
 will expand to a comma-separated list of record addresses.
 
-   At present, it’s necessary to manually parse existing aliases with
-the ‘A’ key in a *EBDB* buffer.  This limitation will be removed in the
-future.
+   Mail aliases are updated every time an EBDB buffer is created.  It’s
+also possible to force an update using the ‘A’ key in a *EBDB* buffer.
 
 
 File: ebdb.info,  Node: vCard Support,  Next: Org Integration,  Prev: Mail Aliases,  Up: Top
@@ -2162,21 +2161,21 @@ Node: Snarfing38614
 Node: Internationalization40615
 Node: Diary Integration43314
 Node: Mail Aliases44179
-Node: vCard Support44900
-Node: Org Integration45399
-Node: Citing Records47297
-Node: Hacking EBDB48055
-Node: Field Classes50376
-Node: Init and Delete Methods53343
-Node: The Labeled Field Class54850
-Node: The Singleton Field Class55704
-Node: Actions56145
-Node: Custom Field Searching56817
-Node: Formatting in the EBDB Buffer59638
-Node: Writing Internationalization Libraries61661
-Node: Writing Integration For New MUAs66014
-Node: Article snarfing69433
-Node: Index70151
+Node: vCard Support44893
+Node: Org Integration45392
+Node: Citing Records47290
+Node: Hacking EBDB48048
+Node: Field Classes50369
+Node: Init and Delete Methods53336
+Node: The Labeled Field Class54843
+Node: The Singleton Field Class55697
+Node: Actions56138
+Node: Custom Field Searching56810
+Node: Formatting in the EBDB Buffer59631
+Node: Writing Internationalization Libraries61654
+Node: Writing Integration For New MUAs66007
+Node: Article snarfing69426
+Node: Index70144
 
 End Tag Table
 
