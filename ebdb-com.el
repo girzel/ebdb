@@ -515,21 +515,22 @@ This happens in addition to any pre-defined indentation of STRING."
 	 ;; they're not displayed yet!  How do we resolve this...?
 	 (fill-column (window-text-width))
 	 (fill-prefix (make-string (+ 5 indent) ?\s))
-	 (paragraph-start "[^:]+:[^\n]+$"))
+	 (paragraph-start "[^:]+:[^\n]+$")
+	 field-string)
 
     (dolist (c field-list)
       (insert (format label-fmt (car c)))
       (put-text-property (line-beginning-position) (point) 'face 'ebdb-label)
-      (insert
-       (concat
-	": "
-	;; If I understood the mechanics of filling better, I
-	;; could probably do away with `ebdb-indent-string'
-	;; altogether.
-	(ebdb-indent-string (cdr c) (+ indent 5))))
+      (insert (setq field-string
+		    (concat
+		     ": "
+		     ;; If I understood the mechanics of filling better, I
+		     ;; could probably do away with `ebdb-indent-string'
+		     ;; altogether.
+		     (ebdb-indent-string (mapconcat #'identity (cdr c) ", ") (+ indent 5)))))
       ;; If there are newlines in the value string, assume the field
       ;; knows what's it's doing re filling and formatting.
-      (unless (or (string-match-p "\n" (cdr c))
+      (unless (or (string-match-p "\n" field-string)
 		  (null ebdb-fill-field-values))
       	(fill-paragraph))
       (insert "\n"))))
@@ -538,7 +539,10 @@ This happens in addition to any pre-defined indentation of STRING."
 				    (_record ebdb-record)
 				    (field-list list))
   (insert " ")
-  (insert (mapconcat #'cdr field-list ", ")))
+  (insert (mapconcat (lambda (elt)
+		       (mapconcat #'identity
+				  (cdr elt) " "))
+		     field-list ", ")))
 
 (cl-defmethod ebdb-fmt-record-header ((_fmt ebdb-formatter-ebdb)
 				      (record ebdb-record)
@@ -571,7 +575,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	;; differently.  Conveniently, this also allows us to always
 	;; keep the image at the end of the header.
 	(unless (eql (plist-get f :class) 'ebdb-field-image)
-	  (cdr f)))
+	  (mapconcat #'identity (cdr f) " ")))
       field-list
       ", "))
     ;; TODO: Check if image is in field-list, not if it exists!

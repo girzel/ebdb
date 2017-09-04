@@ -162,22 +162,22 @@ The FIELD-PLIST structure is that returned by
 `ebdb-fmt-collect-fields'.  It is a plist with three
 keys: :class, :style, and :inst.
 
-This function passes the class and field instances to FMT,
-which formats them appropriately."
+This function passes the class and field instances to FMT, which
+formats them appropriately, and returns a list of (LABEL
+FIELD-STRING1 FIELD-STRING2 ..)."
   (let* ((style (plist-get field-plist :style))
 	 (inst (plist-get field-plist :inst))
 	 (label (ebdb-fmt-field-label fmt
 				      (if (= 1 (length inst))
 					  (car inst)
-				       (plist-get field-plist :class))
+					(plist-get field-plist :class))
 				      style
 				      record)))
     (cons label
-	  (mapconcat
+	  (mapcar
 	   (lambda (f)
 	     (ebdb-fmt-field fmt f style record))
-	   inst
-	   ", "))))
+	   inst))))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (cls (subclass ebdb-field))
