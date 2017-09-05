@@ -299,8 +299,16 @@ This command (@code{ebdb-disable-database}) disables a database,
 unloading all of its records and essentially ignoring it from now
 on.  The disabled state persists between restarts.  To re-enable
 a database, edit it using @code{ebdb-customize-database}, set
-@code{disabled} to nil, and then reload it with @code{ebdb-reload-database}.
+@code{disabled} to nil, and then reload it with
+@code{ebdb-reload-database}.
 @end table
+
+@cindex Saving the database
+@vindex ebdb-install-save-hook
+Typically, databases are saved using the @kbd{s} binding in
+@code{ebdb-mode} buffers, which runs @code{ebdb-save}.  By default, EBDB also
+installs @code{ebdb-save} as part of the @code{kill-emacs-hook}.  Set
+@code{ebdb-install-save-hook} to nil to prevent this.
 
 @node Creating Records
 @chapter Creating Records
@@ -1630,7 +1638,7 @@ used to hold labels, and pointing to it in the class-allocated
 @subsection The Singleton Field Class
 
 Another abstract mix-in class is the @code{ebdb-field-singleton} class.
-It's only function is to ensure that a record only ever has one
+Its only function is to ensure that a record only ever has one
 instance of the class in question.  If the user tries to add a second
 instance, the existing instance is deleted.
 

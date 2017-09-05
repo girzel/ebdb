@@ -269,6 +269,11 @@ following keys can be used to manipulate databases and their records.
      database, edit it using ‘ebdb-customize-database’, set ‘disabled’
      to nil, and then reload it with ‘ebdb-reload-database’.
 
+   Typically, databases are saved using the ‘s’ binding in ‘ebdb-mode’
+buffers, which runs ‘ebdb-save’.  By default, EBDB also installs
+‘ebdb-save’ as part of the ‘kill-emacs-hook’.  Set
+‘ebdb-install-save-hook’ to nil to prevent this.
+
 
 File: ebdb.info,  Node: Creating Records,  Next: Record Fields,  Prev: The EBDB Database,  Up: Top
 
@@ -1503,7 +1508,7 @@ File: ebdb.info,  Node: The Singleton Field Class,  Next: Actions,  Prev: The La
 15.1.3 The Singleton Field Class
 --------------------------------
 
-Another abstract mix-in class is the ‘ebdb-field-singleton’ class.  It’s
+Another abstract mix-in class is the ‘ebdb-field-singleton’ class.  Its
 only function is to ensure that a record only ever has one instance of
 the class in question.  If the user tries to add a second instance, the
 existing instance is deleted.
@@ -1961,6 +1966,7 @@ Index
                                                               (line   6)
 * ebdb-insert-field <1>:                 The Basics of ebdb-mode.
                                                               (line  30)
+* ebdb-install-save-hook:                The EBDB Database.   (line  78)
 * ebdb-mail:                             The Basics of ebdb-mode.
                                                               (line  56)
 * ebdb-make-buffer-name:                 Writing Integration For New MUAs.
@@ -2106,6 +2112,7 @@ Index
                                                               (line  33)
 * s <1>:                                 The Basics of ebdb-mode.
                                                               (line 108)
+* Saving the database:                   The EBDB Database.   (line  78)
 * Search history:                        Searching.           (line  51)
 * Searching the EBDB:                    Searching.           (line   6)
 * Snarfing text:                         Snarfing.            (line   6)
@@ -2129,53 +2136,53 @@ Node: Migration from BBDB3009
 Node: Record Migration3184
 Node: Variables and Options3762
 Node: The EBDB Database4248
-Node: Creating Records7539
-Node: Record classes8620
-Node: Record names8965
-Node: Record Fields9640
-Node: Inserting New Fields9884
-Node: Editing Existing Fields10680
-Node: Deleting Records and Fields11280
-Node: Field Types11676
-Node: Role fields13867
-Node: Tag field15555
-Node: Mail folder field16199
-Node: MUA Interaction16527
-Node: Loading MUA Code17051
-Node: Display and Updating17760
-Node: Pop-up Buffers18526
-Node: Auto-Updating Records19364
-Node: Noticing and Automatic Rules21764
-Node: Interactive Commands23097
-Node: EBDB and MUA summary buffers25459
-Node: Sender name display25945
-Node: Summary buffer marks27172
-Node: EBDB Buffers28351
-Node: Searching29533
-Node: Changing Search Behavior31195
-Node: The Basics of ebdb-mode32442
-Node: Marking36043
-Node: Exporting/Formatting36467
-Node: Completion37416
-Node: Snarfing38614
-Node: Internationalization40615
-Node: Diary Integration43314
-Node: Mail Aliases44179
-Node: vCard Support44893
-Node: Org Integration45392
-Node: Citing Records47290
-Node: Hacking EBDB48048
-Node: Field Classes50369
-Node: Init and Delete Methods53336
-Node: The Labeled Field Class54843
-Node: The Singleton Field Class55697
-Node: Actions56138
-Node: Custom Field Searching56810
-Node: Formatting in the EBDB Buffer59631
-Node: Writing Internationalization Libraries61654
-Node: Writing Integration For New MUAs66007
-Node: Article snarfing69426
-Node: Index70144
+Node: Creating Records7800
+Node: Record classes8881
+Node: Record names9226
+Node: Record Fields9901
+Node: Inserting New Fields10145
+Node: Editing Existing Fields10941
+Node: Deleting Records and Fields11541
+Node: Field Types11937
+Node: Role fields14128
+Node: Tag field15816
+Node: Mail folder field16460
+Node: MUA Interaction16788
+Node: Loading MUA Code17312
+Node: Display and Updating18021
+Node: Pop-up Buffers18787
+Node: Auto-Updating Records19625
+Node: Noticing and Automatic Rules22025
+Node: Interactive Commands23358
+Node: EBDB and MUA summary buffers25720
+Node: Sender name display26206
+Node: Summary buffer marks27433
+Node: EBDB Buffers28612
+Node: Searching29794
+Node: Changing Search Behavior31456
+Node: The Basics of ebdb-mode32703
+Node: Marking36304
+Node: Exporting/Formatting36728
+Node: Completion37677
+Node: Snarfing38875
+Node: Internationalization40876
+Node: Diary Integration43575
+Node: Mail Aliases44440
+Node: vCard Support45154
+Node: Org Integration45653
+Node: Citing Records47551
+Node: Hacking EBDB48309
+Node: Field Classes50630
+Node: Init and Delete Methods53597
+Node: The Labeled Field Class55104
+Node: The Singleton Field Class55958
+Node: Actions56396
+Node: Custom Field Searching57068
+Node: Formatting in the EBDB Buffer59889
+Node: Writing Internationalization Libraries61912
+Node: Writing Integration For New MUAs66265
+Node: Article snarfing69684
+Node: Index70402
 
 End Tag Table
 

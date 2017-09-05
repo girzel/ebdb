@@ -138,6 +138,11 @@ Future merging strategies may be smarter."
   :group 'ebdb-eieio
   :type 'boolean)
 
+(defcustom ebdb-install-save-hook t
+  "If non-nil, add `ebdb-save' to the hook `kill-emacs-hook'."
+  :group 'ebdb-eieio
+  :type 'boolean)
+
 (defcustom ebdb-default-record-class 'ebdb-record-person
   "The default class to use for new records."
   :group 'ebdb-eieio
@@ -4824,6 +4829,8 @@ important work is done by the `ebdb-db-load' method."
     (run-hooks 'ebdb-after-load-hook)
     (when ebdb-use-diary
       (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
+    (when ebdb-install-save-hook
+      (add-hook 'kill-emacs-hook #'ebdb-save))
     (length ebdb-record-tracker)))
 
 ;; If we wanted to make it seem like EBDB was loading faster, we could
