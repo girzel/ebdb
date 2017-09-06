@@ -2185,6 +2185,110 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-string ((field ebdb-field-gender))
   (symbol-name (slot-value field 'gender)))
 
+;;; Bank account field
+
+(defclass ebdb-field-bank-account (ebdb-field-user)
+  ((bank-name
+    :initarg :bank-name
+    :type string
+    :custom string
+    :documentation "Bank name")
+   (bank-address
+    :initarg :bank-address
+    :type (or ebdb-field-address null)
+    :initform nil
+    :custom ebdb-field-address
+    :documentation "Bank address")
+   (routing-aba
+    :initarg :routing-aba
+    :type (or string null)
+    :initform nil
+    :custom string
+    :documentation "Routing number or ABA")
+   (swift-bic
+    :initarg :swift-bic
+    :type (or string null)
+    :initform nil
+    :custom string
+    :documentation "SWIFT or BIC code, for international transfers")
+   (account-name
+    :initarg :account-name
+    :type string
+    :custom string
+    :documentation "Name of account")
+   (account-numbers
+    :initarg :account-numbers
+    :type list
+    :custom (repeat (cons (string :tag "Account label")
+			  (string :tag "Account number")))
+    :documentation "A list of account labels and numbers/IBANs")
+   (notes
+    :initarg :notes
+    :type (or ebdb-field-notes null)
+    :custom ebdb-field-notes
+    :initform nil
+    :documentation "Additional notes"))
+  :human-readable "bank account"
+  :documentation "A field holding information for a bank account.")
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-bank-account))
+			 &optional slots obj)
+  (let ((bank-name (or (plist-get slots :bank-name)
+		       (ebdb-read-string "Bank name: "
+					 (when obj (slot-value obj 'bank-name)))))
+	(bank-address (or (plist-get slots :bank-address)
+			  (ebdb-with-exit
+			   (ebdb-read 'ebdb-field-address '(:object-name "office")
+				      (when obj (slot-value obj 'bank-address))))))
+	(routing-aba (or (plist-get slots :routing-aba)
+			 (ebdb-with-exit
+			  (ebdb-read-string "Routing or ABA number: "
+					    (when obj (slot-value obj 'routing-aba))))))
+	(swift-bic (or (plist-get slots :swift-bic)
+		       (ebdb-with-exit
+			(ebdb-read-string "SWIFT or BIC code: "
+					  (when obj (slot-value obj 'swift-bic))))))
+	(account-name (or (plist-get slots :account-name)
+			  (ebdb-read-string "Account name: "
+					    (when obj (slot-value obj 'account-name)))))
+	(account-numbers
+	 (or (plist-get slots :account-numbers)
+	     (ebdb-loop-with-exit
+	      (cons (ebdb-read-string "Account label (eg. \"checking\"): ")
+		    (ebdb-read-string "Account number/IBAN: ")))))
+	(notes (or (plist-get slots :notes)
+		   (ebdb-with-exit
+		    (ebdb-read 'ebdb-field-notes nil
+			       (when obj (slot-value obj 'notes)))))))
+    (cl-call-next-method
+     class
+     `(:bank-name ,bank-name
+		  :bank-address ,bank-address
+		  :routing-aba ,routing-aba
+		  :swift-bic ,swift-bic
+		  :account-name ,account-name
+		  :account-numbers ,account-numbers
+		  :notes ,notes)
+     obj)))
+
+(cl-defmethod ebdb-string ((acct ebdb-field-bank-account))
+  (with-slots (bank-name bank-address routing-aba swift-bic
+			 account-name account-numbers notes)
+      acct
+    (concat bank-name "\n\n"
+	    (ebdb-string bank-address) "\n"
+	    (when routing-aba
+	      (format "Routing/ABA: %s\n" routing-aba))
+	    (when swift-bic
+	      (format "SWIFT/BIC: %s\n" swift-bic))
+	    "\n" account-name "\n"
+	    (mapconcat
+	     (lambda (a)
+	       (format "%s: %s" (car a) (cdr a)))
+	     account-numbers "\n")
+	    (when notes
+	      (format "\n%s\n" notes)))))
+
 ;; Tags field.
 
 ;; This field class holds a list of tags that apply to the record.

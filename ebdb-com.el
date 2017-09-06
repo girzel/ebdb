@@ -458,6 +458,13 @@ property is the field instance itself."
   (propertize "HIDDEN" 'face 'ebdb-field-hidden))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field-bank-account)
+			      _style
+			      (_record ebdb-record))
+  (with-slots (bank-name account-name) field
+    (format "%s: %s" bank-name account-name)))
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-mail)
 			      _style
 			      (_record ebdb-record))
