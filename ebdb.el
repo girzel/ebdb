@@ -983,6 +983,12 @@ removed."
 (cl-defmethod delete-instance ((_field ebdb-field) &rest _args)
   t)
 
+(cl-defgeneric ebdb-read (class &optional slots obj)
+  "Prompt the user for values to create an instance of CLASS.
+SLOTS are a plist of slot values; OBJ is an optional existing
+object of type CLASS, from which to draw default values during
+prompting.")
+
 (cl-defmethod ebdb-read ((class (subclass ebdb-field)) &optional slots _obj)
   "Complete the read/object creation process for a field of CLASS.
 
