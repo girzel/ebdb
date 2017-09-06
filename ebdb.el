@@ -2320,11 +2320,13 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
   (ebdb-concat 'ebdb-field-tags (slot-value field 'tags)))
 
 (cl-defmethod ebdb-search-read ((_class (subclass ebdb-field-tags)))
-  (cdr
-   ;; Thank you Org!
-   (org-make-tags-matcher
-    (ebdb-read-string
-     "Search for tags (eg +tag1-tag2|tag3): "))))
+  (let ((search-string (ebdb-read-string
+			"Search for tags (eg +tag1-tag2|tag3): ")))
+    (if (string-match-p "[-+|&]" search-string)
+	(cdr
+	 ;; Thank you Org!
+	 (org-make-tags-matcher search-string))
+      search-string)))
 
 (cl-defmethod ebdb-field-search ((field ebdb-field-tags)
 				 func)
