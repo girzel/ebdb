@@ -2197,7 +2197,8 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     :initarg :bank-address
     :type (or ebdb-field-address null)
     :initform nil
-    :custom ebdb-field-address
+    ;; :custom (choice ebdb-field-address
+    ;; 		    (const :tag "No address" nil))
     :documentation "Bank address")
    (routing-aba
     :initarg :routing-aba
@@ -2225,7 +2226,8 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
    (notes
     :initarg :notes
     :type (or ebdb-field-notes null)
-    :custom ebdb-field-notes
+    ;; :custom (choice ebdb-field-notes
+    ;; 		    (const :tag "No notes" nil))
     :initform nil
     :documentation "Additional notes"))
   :human-readable "bank account"
