@@ -2340,10 +2340,15 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
   (seq-find (lambda (tg) (string-match-p tag tg))
 	    (slot-value field 'tags)))
 
-(cl-defmethod ebdb-init-field ((field ebdb-field-tags) _record)
+(cl-defmethod ebdb-init-field ((field ebdb-field-tags) record)
   (let ((tags (slot-value field 'tags)))
     (dolist (tag tags)
-      (add-to-list 'ebdb-tags tag))))
+      (add-to-list 'ebdb-tags tag)
+      (ebdb-puthash tag record))))
+
+(cl-defmethod ebdb-delete-field ((field ebdb-field-tags) &optional record _unload)
+  (dolist (tag (slot-value field 'tags))
+    (ebdb-remhash tag record)))
 
 ;;; Fields that change EBDB's behavior.
 
