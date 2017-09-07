@@ -1475,6 +1475,41 @@ return value of ~org-make-tags-matcher~.  The first
 The second ~ebdb-field-search~ method handles a string search
 criterion; though no EBDB code would create this search, external code
 conceivably might.
+*** Fast Lookups
+Usually, searches of the database are conducted by looping over all
+the records and testing each search clause against each record.
+Theoretically, this could be a slow process.
+
+#+VINDEX: ebdb-hashtable
+By contrast, "fast lookups" use a central hashtable, the
+~ebdb-hashtable~, to look up search strings quickly.  By default,
+records names, email addresses, and tags are indexed in this central
+hashtable.  To short-circuit the usual slow lookup and use the fast
+hashtable lookup, specify one of those three field names as the ~car~
+of the search criteria, and prefix the string ~cdr~ of the criteria
+with a "^" (the behavior of ~all-completions~ requires a string
+prefix):
+
+#+BEGIN_SRC emacs-lisp
+  (ebdb-search (ebdb-records) '((ebdb-field-tag "^client")))
+#+END_SRC
+
+It's possible to use these fast lookups in interactive searches, when
+selecting a specific field type to search on, but the time spent
+typing a "^" will undoubtedly outweigh the time saved in the search.
+This is mostly useful in non-interactive searches.
+
+It's also possible to specify additional field types which can be used
+with fast lookups.  The first step is to write ~ebdb-init-field~ and
+~ebdb-delete-field~ methods that hash and unhash the record against
+the field string in the ~ebdb-hashtable~.
+
+#+VINDEX: ebdb-hash-extra-predicates
+Next, add an element to the ~ebdb-hash-extra-predicates~ variable.
+The element should be a cons cell where the ~car~ is the field class
+name, as a symbol, and the ~cdr~ is a lambda which accepts the search
+string and a record, and returns ~t~ if the search string does indeed
+match the instance of that field (and not some other field string).
 *** Formatting in the EBDB Buffer
 Most fields will be displayed in the {{{buf(EBDB)}}} buffer simply
 using ~ebdb-string~.  It's possible to customize this display by

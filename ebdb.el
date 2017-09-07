@@ -4708,13 +4708,13 @@ this function returns a single record."
 (defun ebdb-hash-p (key record predicate)
   "Throw `ebdb-hash-ok' non-nil if KEY matches RECORD acording to PREDICATE.
 PREDICATE may take the same values as the elements of `ebdb-completion-list'."
-  (if (and (memq 'fl-name predicate)
+  (if (and (seq-intersection '(fl-name ebdb-field-name) predicate)
            (ebdb-string= key (or (ebdb-record-name record) "")))
       (throw 'ebdb-hash-ok 'fl-name))
   ;; (if (and (memq 'lf-name predicate)
   ;;          (ebdb-string= key (or (ebdb-record-name-lf record) "")))
   ;;     (throw 'ebdb-hash-ok 'lf-name))
-  (if (memq 'organization predicate)
+  (if (seq-intersection '(organization ebdb-field-role) predicate)
       (mapc (lambda (organization) (if (ebdb-string= key organization)
                                        (throw 'ebdb-hash-ok 'organization)))
             (ebdb-record-organization record)))
@@ -4722,10 +4722,10 @@ PREDICATE may take the same values as the elements of `ebdb-completion-list'."
       (mapc (lambda (aka) (if (ebdb-string= key (ebdb-string aka))
                               (throw 'ebdb-hash-ok 'aka)))
             (slot-value record 'aka)))
-  (if (and (memq 'primary predicate)
+  (if (and (seq-intersection '(primary mail-primary) predicate)
            (ebdb-string= key (car (ebdb-record-mail-canon record))))
       (throw 'ebdb-hash-ok 'primary))
-  (if (memq 'mail predicate)
+  (if (seq-intersection '(mail ebdb-field-mail) predicate)
       (mapc (lambda (mail) (if (ebdb-string= key mail)
                                (throw 'ebdb-hash-ok 'mail)))
             (ebdb-record-mail-canon record)))
@@ -5289,36 +5289,78 @@ Each element of CLAUSES is either a two-element list of (symbol
 criteria), which will be used to make a call to
 `ebdb-record-search', or it is a callable, which will be called
 with a record as the argument.  All other values will be
-interpreted as t, ie the record passes."
-  (let ((case-fold-search ebdb-case-fold-search))
+interpreted as t, ie the record passes.
+
+If the car of a clause is one of `ebdb-field-name',
+`ebdb-field-mail', `ebdb-field-tags', or is present in the assoc
+list `ebdb-hash-extra-predicates', this function will try to use
+the `ebdb-hashtable' to do a fast lookup.  The criteria must be a
+string, and must begin with a leading \"^\", ie, the search
+string must be a prefix of the sought string."
+  ;; In the following "fast lookup" means we use the search criteria
+  ;; to pull results from the `ebdb-hashtable'.  "Slow lookup" means
+  ;; we loop over all the records and test each one.
+  (let ((case-fold-search ebdb-case-fold-search)
+	new-clauses completed-strings recs)
+    ;; Fast lookups won't work with INVERT.
+    (unless invert
+      ;; Try the fast lookups.
+      (pcase-dolist (`(,key ,crit) clauses)
+	(or
+	 ;; Either we get some records out the fast lookup...
+	 (and (or (memq key (list 'ebdb-field-name
+				  'ebdb-field-mail
+				  'ebdb-field-tags))
+		  (assoc key ebdb-hash-extra-predicates))
+	      (stringp crit)
+	      (string-prefix-p "^" crit)
+	      (setq completed-strings
+		    (all-completions (substring crit 1) ebdb-hashtable)
+		    recs
+		    (delq nil
+			  (apply
+			   #'append
+			   (cons recs
+				 (mapcar
+				  (lambda (c)
+				    (ebdb-gethash c (list key)))
+				  completed-strings))))))
+	 ;; ...or we leave the clause and do a slow lookup on it.
+	 (push (list key crit) new-clauses))))
     ;; Handle transformations of search strings.
     (when ebdb-search-transform-functions
-      (dolist (c clauses)
+      (dolist (c new-clauses)
 	(when (and (consp c)
 		   (stringp (cadr c)))
 	  (dolist (func ebdb-search-transform-functions)
 	    (setf (cadr c) (funcall func (cadr c)))))))
     (when ebdb-char-fold-search
-      (dolist (c clauses)
+      (dolist (c new-clauses)
 	(when (and (consp c)
 		   (stringp (cadr c)))
 	  (setf (cadr c) (ebdb-char-fold-to-regexp (cadr c))))))
-    (seq-filter
-     (lambda (r)
-       (eql (null invert)
-	    (catch 'found
-	      (condition-case nil
-		  (dolist (c clauses)
-		    (pcase c
-		      (`(,type ,criteria)
-		       (and (ebdb-record-search r type criteria)
-			    (throw 'found t)))
-		      (`,(and func (pred functionp))
-		       (and (funcall func r)
-			    (throw 'found t)))
-		      (_ t)))
-		(cl-no-applicable-method nil)))))
-     records)))
+    (when new-clauses
+      (setq recs
+	    (append
+	     recs
+	     (seq-filter
+	      (lambda (r)
+		(unless (member r recs)
+		  (eql (null invert)
+		       (catch 'found
+			 (condition-case nil
+			     (dolist (c clauses)
+			       (pcase c
+				 (`(,type ,criteria)
+				  (and (ebdb-record-search r type criteria)
+				       (throw 'found t)))
+				 (`,(and func (pred functionp))
+				  (and (funcall func r)
+				       (throw 'found t)))
+				 (_ t)))
+			   (cl-no-applicable-method nil))))))
+	      records))))
+    (delete-dups recs)))
 
 (cl-defgeneric ebdb-field-search (field criterion)
   "Return t if search CRITERION somehow matches the value of
