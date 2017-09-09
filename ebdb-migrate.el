@@ -393,6 +393,7 @@ BBDB sets the default of that option."
 	    (target-db (if (= (length ebdb-db-list) 1)
 			   (car ebdb-db-list)
 			 (ebdb-prompt-for-db)))
+	    (total 0)
 	    c-records duds)
 	(message "Migrating records...")
 	(dolist (r v-records)
@@ -425,7 +426,8 @@ BBDB sets the default of that option."
 		      (ebdb-record-add-org-role c-rec org)
 		      (unless (member org c-records)
 			(push org c-records)))))
-		(push c-rec c-records))
+		(push c-rec c-records)
+		(message "Migrating records... %d" (cl-incf total)))
 	    (error
 	     (push (list r err) duds))))
 	(when duds
@@ -443,7 +445,8 @@ BBDB sets the default of that option."
 	(dolist (r c-records)
 	  (ebdb-init-record r))
 	(eieio-oset target-db 'dirty t)
-	(message "Migrating records... %d records migrated" (length c-records))))))
+	(message "Migrating records... %d records migrated"
+		 (length c-records))))))
 
 (defun ebdb-migrate-vector-to-class (v)
   "Migrate a single vector-style BBDB record to the EIEIO class
