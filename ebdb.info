@@ -129,6 +129,7 @@ Field Classes
 * The Singleton Field Class::
 * Actions::
 * Custom Field Searching::
+* Fast Lookups::
 * Formatting in the EBDB Buffer::
 
 
@@ -172,12 +173,14 @@ File: ebdb.info,  Node: Record Migration,  Next: Variables and Options,  Up: Mig
 1.1.1 Record Migration
 ----------------------
 
-It’s possible to migrate records from a BBDB file.  With your BBDB
-customizations still in place, set ‘ebdb-sources’ to a non-existent file
-name, and then run ‘ebdb-load’ (or any of the other EBDB entry
-commands).  You’ll be prompted to create the new database, and upgrade
-from BBDB. If any records could not be upgraded, they will be displayed
-in an *EBDB Migration* buffer.  Migration bug reports are very welcome.
+It’s possible to migrate records from a BBDB database.  The ‘bbdb-file’
+variable should point to your current BBDB file; alternately EBDB will
+look in the default location, found using ‘(locate-user-emacs-file
+"bbdb" ".bbdb)’.  Then set ‘ebdb-sources’ to a non-existent file name,
+and then run ‘ebdb-load’ (or any of the other EBDB entry commands).
+You’ll be prompted to create the new database, and upgrade from BBDB. If
+any records could not be upgraded, they will be displayed in an *EBDB
+Migration* buffer.  Migration bug reports are very welcome.
 
 
 File: ebdb.info,  Node: Variables and Options,  Prev: Record Migration,  Up: Migration from BBDB
@@ -1443,6 +1446,7 @@ default values for the new object.
 * The Singleton Field Class::
 * Actions::
 * Custom Field Searching::
+* Fast Lookups::
 * Formatting in the EBDB Buffer::
 
 
@@ -1530,7 +1534,7 @@ prefix arg to be prompted for which action to take.
 and the field instance under point.
 
 
-File: ebdb.info,  Node: Custom Field Searching,  Next: Formatting in the EBDB Buffer,  Prev: Actions,  Up: Field Classes
+File: ebdb.info,  Node: Custom Field Searching,  Next: Fast Lookups,  Prev: Actions,  Up: Field Classes
 
 15.1.5 Custom Field Searching
 -----------------------------
@@ -1591,9 +1595,45 @@ method handles that lambda, simply by calling it.  The second
 EBDB code would create this search, external code conceivably might.
 
 
-File: ebdb.info,  Node: Formatting in the EBDB Buffer,  Prev: Custom Field Searching,  Up: Field Classes
+File: ebdb.info,  Node: Fast Lookups,  Next: Formatting in the EBDB Buffer,  Prev: Custom Field Searching,  Up: Field Classes
 
-15.1.6 Formatting in the EBDB Buffer
+15.1.6 Fast Lookups
+-------------------
+
+Usually, searches of the database are conducted by looping over all the
+records and testing each search clause against each record.
+Theoretically, this could be a slow process.
+
+   By contrast, “fast lookups” use a central hashtable, the
+‘ebdb-hashtable’, to look up search strings quickly.  By default,
+records names, email addresses, and tags are indexed in this central
+hashtable.  To short-circuit the usual slow lookup and use the fast
+hashtable lookup, specify one of those three field names as the ‘car’ of
+the search criteria, and prefix the string ‘cdr’ of the criteria with a
+“^” (the behavior of ‘all-completions’ requires a string prefix):
+
+     (ebdb-search (ebdb-records) '((ebdb-field-tag "^client")))
+
+   It’s possible to use these fast lookups in interactive searches, when
+selecting a specific field type to search on, but the time spent typing
+a “^” will undoubtedly outweigh the time saved in the search.  This is
+mostly useful in non-interactive searches.
+
+   It’s also possible to specify additional field types which can be
+used with fast lookups.  The first step is to write ‘ebdb-init-field’
+and ‘ebdb-delete-field’ methods that hash and unhash the record against
+the field string in the ‘ebdb-hashtable’.
+
+   Next, add an element to the ‘ebdb-hash-extra-predicates’ variable.
+The element should be a cons cell where the ‘car’ is the field class
+name, as a symbol, and the ‘cdr’ is a lambda which accepts the search
+string and a record, and returns ‘t’ if the search string does indeed
+match the instance of that field (and not some other field string).
+
+
+File: ebdb.info,  Node: Formatting in the EBDB Buffer,  Prev: Fast Lookups,  Up: Field Classes
+
+15.1.7 Formatting in the EBDB Buffer
 ------------------------------------
 
 Most fields will be displayed in the *EBDB* buffer simply using
@@ -1950,6 +1990,8 @@ Index
                                                               (line  20)
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  15)
+* ebdb-hash-extra-predicates:            Fast Lookups.        (line  30)
+* ebdb-hashtable:                        Fast Lookups.        (line  10)
 * ebdb-help:                             The Basics of ebdb-mode.
                                                               (line 102)
 * ebdb-i18n-countries:                   Internationalization.
@@ -2131,58 +2173,59 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2386
-Node: Migration from BBDB3009
-Node: Record Migration3184
-Node: Variables and Options3762
-Node: The EBDB Database4248
-Node: Creating Records7800
-Node: Record classes8881
-Node: Record names9226
-Node: Record Fields9901
-Node: Inserting New Fields10145
-Node: Editing Existing Fields10941
-Node: Deleting Records and Fields11541
-Node: Field Types11937
-Node: Role fields14128
-Node: Tag field15816
-Node: Mail folder field16460
-Node: MUA Interaction16788
-Node: Loading MUA Code17312
-Node: Display and Updating18021
-Node: Pop-up Buffers18787
-Node: Auto-Updating Records19625
-Node: Noticing and Automatic Rules22025
-Node: Interactive Commands23358
-Node: EBDB and MUA summary buffers25720
-Node: Sender name display26206
-Node: Summary buffer marks27433
-Node: EBDB Buffers28612
-Node: Searching29794
-Node: Changing Search Behavior31456
-Node: The Basics of ebdb-mode32703
-Node: Marking36304
-Node: Exporting/Formatting36728
-Node: Completion37677
-Node: Snarfing38875
-Node: Internationalization40876
-Node: Diary Integration43575
-Node: Mail Aliases44440
-Node: vCard Support45154
-Node: Org Integration45653
-Node: Citing Records47551
-Node: Hacking EBDB48309
-Node: Field Classes50630
-Node: Init and Delete Methods53597
-Node: The Labeled Field Class55104
-Node: The Singleton Field Class55958
-Node: Actions56396
-Node: Custom Field Searching57068
-Node: Formatting in the EBDB Buffer59889
-Node: Writing Internationalization Libraries61912
-Node: Writing Integration For New MUAs66265
-Node: Article snarfing69684
-Node: Index70402
+Node: Getting Started2403
+Node: Migration from BBDB3026
+Node: Record Migration3201
+Node: Variables and Options3921
+Node: The EBDB Database4407
+Node: Creating Records7959
+Node: Record classes9040
+Node: Record names9385
+Node: Record Fields10060
+Node: Inserting New Fields10304
+Node: Editing Existing Fields11100
+Node: Deleting Records and Fields11700
+Node: Field Types12096
+Node: Role fields14287
+Node: Tag field15975
+Node: Mail folder field16619
+Node: MUA Interaction16947
+Node: Loading MUA Code17471
+Node: Display and Updating18180
+Node: Pop-up Buffers18946
+Node: Auto-Updating Records19784
+Node: Noticing and Automatic Rules22184
+Node: Interactive Commands23517
+Node: EBDB and MUA summary buffers25879
+Node: Sender name display26365
+Node: Summary buffer marks27592
+Node: EBDB Buffers28771
+Node: Searching29953
+Node: Changing Search Behavior31615
+Node: The Basics of ebdb-mode32862
+Node: Marking36463
+Node: Exporting/Formatting36887
+Node: Completion37836
+Node: Snarfing39034
+Node: Internationalization41035
+Node: Diary Integration43734
+Node: Mail Aliases44599
+Node: vCard Support45313
+Node: Org Integration45812
+Node: Citing Records47710
+Node: Hacking EBDB48468
+Node: Field Classes50789
+Node: Init and Delete Methods53773
+Node: The Labeled Field Class55280
+Node: The Singleton Field Class56134
+Node: Actions56572
+Node: Custom Field Searching57244
+Node: Fast Lookups60048
+Node: Formatting in the EBDB Buffer61858
+Node: Writing Internationalization Libraries63871
+Node: Writing Integration For New MUAs68224
+Node: Article snarfing71643
+Node: Index72361
 
 End Tag Table
 

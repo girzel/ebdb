@@ -367,19 +367,26 @@ checked for a score to add to the mail addresses in the same record."
   :type 'symbol)
 
 ;;;###autoload
-(defun ebdb-migrate-from-bbdb ()
+(defun ebdb-migrate-from-bbdb (&optional file)
   "Migrate from BBDB to EBDB.
 
 This upgrade is extreme enough that we can't really use the
 existing migration mechanisms.  They are still there, though, in
 case someone's going from, say, version 2 to 4 in one jump.
 
-Assume that the variable `bbdb-file' points to an existing file
-holding valid contacts in a previous BBDB format."
+Migrate from FILE, if non-nil.  Otherwise, assume that the
+variable `bbdb-file' points to an existing file holding valid
+contacts in a previous BBDB format.  If that variable isn't set
+use \(locate-user-emacs-file \"bbdb\" \".bbdb\"\), which is how
+BBDB sets the default of that option."
   (require 'url-handlers)
   (require 'ebdb-org)
   (require 'ebdb-gnus)
-  (with-current-buffer (find-file-noselect bbdb-file)
+  (with-current-buffer (find-file-noselect
+			(or file
+			    (and (bound-and-true-p bbdb-file)
+				 bbdb-file)
+			    (locate-user-emacs-file "bbdb" ".bbdb")))
     (when (and (/= (point-min) (point-max))
 	       (yes-or-no-p "Upgrade from previous version of BBDB? "))
       (let ((v-records (ebdb-migrate-parse-records))

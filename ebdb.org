@@ -42,13 +42,15 @@ make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Record
 ** Migration from BBDB
 #+CINDEX: Migrating from BBDB
 *** Record Migration
-It's possible to migrate records from a BBDB file.  With your BBDB
-customizations still in place, set ~ebdb-sources~ to a non-existent
-file name, and then run ~ebdb-load~ (or any of the other EBDB entry
-commands).  You'll be prompted to create the new database, and upgrade
-from BBDB.  If any records could not be upgraded, they will be
-displayed in an {{{buf(EBDB Migration)}}} buffer.  Migration bug
-reports are very welcome.
+It's possible to migrate records from a BBDB database.  The
+~bbdb-file~ variable should point to your current BBDB file;
+alternately EBDB will look in the default location, found using
+~(locate-user-emacs-file "bbdb" ".bbdb)~.  Then set ~ebdb-sources~ to
+a non-existent file name, and then run ~ebdb-load~ (or any of the
+other EBDB entry commands).  You'll be prompted to create the new
+database, and upgrade from BBDB.  If any records could not be
+upgraded, they will be displayed in an {{{buf(EBDB Migration)}}}
+buffer.  Migration bug reports are very welcome.
 *** Variables and Options
 Many of the old BBDB customization options have been changed or
 removed entirely in EBDB.  It's probably best to put your BBDB

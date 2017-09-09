@@ -152,6 +152,7 @@ Field Classes
 * The Singleton Field Class::
 * Actions::
 * Custom Field Searching::
+* Fast Lookups::
 * Formatting in the EBDB Buffer::
 
 
@@ -190,13 +191,15 @@ make new records (see @ref{Creating Records}).
 @node Record Migration
 @subsection Record Migration
 
-It's possible to migrate records from a BBDB file.  With your BBDB
-customizations still in place, set @code{ebdb-sources} to a non-existent
-file name, and then run @code{ebdb-load} (or any of the other EBDB entry
-commands).  You'll be prompted to create the new database, and upgrade
-from BBDB.  If any records could not be upgraded, they will be
-displayed in an *EBDB Migration* buffer.  Migration bug
-reports are very welcome.
+It's possible to migrate records from a BBDB database.  The
+@code{bbdb-file} variable should point to your current BBDB file;
+alternately EBDB will look in the default location, found using
+@code{(locate-user-emacs-file "bbdb" ".bbdb)}.  Then set @code{ebdb-sources} to
+a non-existent file name, and then run @code{ebdb-load} (or any of the
+other EBDB entry commands).  You'll be prompted to create the new
+database, and upgrade from BBDB.  If any records could not be
+upgraded, they will be displayed in an *EBDB Migration*
+buffer.  Migration bug reports are very welcome.
 
 @node Variables and Options
 @subsection Variables and Options
@@ -1563,6 +1566,7 @@ provide default values for the new object.
 * The Singleton Field Class::
 * Actions::
 * Custom Field Searching::
+* Fast Lookups::
 * Formatting in the EBDB Buffer::
 @end menu
 
@@ -1719,6 +1723,44 @@ return value of @code{org-make-tags-matcher}.  The first
 The second @code{ebdb-field-search} method handles a string search
 criterion; though no EBDB code would create this search, external code
 conceivably might.
+
+@node Fast Lookups
+@subsection Fast Lookups
+
+Usually, searches of the database are conducted by looping over all
+the records and testing each search clause against each record.
+Theoretically, this could be a slow process.
+
+@vindex ebdb-hashtable
+By contrast, ``fast lookups'' use a central hashtable, the
+@code{ebdb-hashtable}, to look up search strings quickly.  By default,
+records names, email addresses, and tags are indexed in this central
+hashtable.  To short-circuit the usual slow lookup and use the fast
+hashtable lookup, specify one of those three field names as the @code{car}
+of the search criteria, and prefix the string @code{cdr} of the criteria
+with a ``^'' (the behavior of @code{all-completions} requires a string
+prefix):
+
+@lisp
+(ebdb-search (ebdb-records) '((ebdb-field-tag "^client")))
+@end lisp
+
+It's possible to use these fast lookups in interactive searches, when
+selecting a specific field type to search on, but the time spent
+typing a ``^'' will undoubtedly outweigh the time saved in the search.
+This is mostly useful in non-interactive searches.
+
+It's also possible to specify additional field types which can be used
+with fast lookups.  The first step is to write @code{ebdb-init-field} and
+@code{ebdb-delete-field} methods that hash and unhash the record against
+the field string in the @code{ebdb-hashtable}.
+
+@vindex ebdb-hash-extra-predicates
+Next, add an element to the @code{ebdb-hash-extra-predicates} variable.
+The element should be a cons cell where the @code{car} is the field class
+name, as a symbol, and the @code{cdr} is a lambda which accepts the search
+string and a record, and returns @code{t} if the search string does indeed
+match the instance of that field (and not some other field string).
 
 @node Formatting in the EBDB Buffer
 @subsection Formatting in the EBDB Buffer

@@ -4897,22 +4897,22 @@ important work is done by the `ebdb-db-load' method."
     (run-hooks 'ebdb-before-load-hook)
     (dolist (s sources)
       (cond ((stringp s)
-	      (if (file-exists-p s)
-		  ;; Handle auto-saved databases.
-		  (let ((auto-save-file (ebdb-db-make-auto-save-file-name s))
-			(orig-filename s))
-		    (if (and (file-exists-p auto-save-file)
-			     (yes-or-no-p (format "Recover auto-save file for %s? " s)))
-			(progn (setq s (eieio-persistent-read auto-save-file 'ebdb-db t))
-			       (setf (slot-value s 'file) orig-filename)
-			       (setf (slot-value s 'dirty) t))
-		      (setq s (eieio-persistent-read s 'ebdb-db t)))
-		      (cl-pushnew s ebdb-db-list))
-		;; Handle new/nonexistent databases.
-		(when (yes-or-no-p (format "%s does not exist, create? " s))
-		  (setq s (make-instance 'ebdb-db-file :file s :dirty t))
-		  ;; Try to get it on disk first.
-		  (ebdb-db-save s))))
+	     (if (file-exists-p s)
+		 ;; Handle auto-saved databases.
+		 (let ((auto-save-file (ebdb-db-make-auto-save-file-name s))
+		       (orig-filename s))
+		   (if (and (file-exists-p auto-save-file)
+			    (yes-or-no-p (format "Recover auto-save file for %s? " s)))
+		       (progn (setq s (eieio-persistent-read auto-save-file 'ebdb-db t))
+			      (setf (slot-value s 'file) orig-filename)
+			      (setf (slot-value s 'dirty) t))
+		     (setq s (eieio-persistent-read s 'ebdb-db t)))
+		   (cl-pushnew s ebdb-db-list))
+	       ;; Handle new/nonexistent databases.
+	       (when (yes-or-no-p (format "%s does not exist, create? " s))
+		 (setq s (make-instance 'ebdb-db-file :file s :dirty t))
+		 ;; Try to get it on disk first.
+		 (ebdb-db-save s))))
 	    ((null (object-of-class-p s 'ebdb-db))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
       ;; Now load it.
@@ -4927,8 +4927,9 @@ important work is done by the `ebdb-db-load' method."
 	(error "Object %s is not a EBDB database" s)))
     (if (and
 	 (null ebdb-record-tracker)
-	 (bound-and-true-p bbdb-file)
-	 (file-exists-p bbdb-file))
+	 (or (and (bound-and-true-p bbdb-file)
+		  (file-exists-p bbdb-file))
+	     (file-exists-p (locate-user-emacs-file "bbdb" ".bbdb"))))
 	;; We're migrating from a version of BBDB.
 	(ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
