@@ -4933,7 +4933,9 @@ important work is done by the `ebdb-db-load' method."
 	;; We're migrating from a version of BBDB.
 	(ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
-    (ebdb-initialize)
+    (if (fboundp 'make-thread)
+	(ebdb-initialize-threadwise)
+      (ebdb-initialize))
     (message "Initializing EBDB records... done")
     ;; Users will expect the same ordering as `ebdb-sources'
     (setq ebdb-db-list (nreverse ebdb-db-list))
@@ -4958,11 +4960,26 @@ important work is done by the `ebdb-db-load' method."
 ;; is searched.
 (defun ebdb-initialize (&optional records)
   "After all databases are loaded, initialize the records.
-
 This results in the creation of all the secondary data
 structures: label lists, `ebdb-org-hashtable', record caches,
 etc."
   (mapcar #'ebdb-init-record (or records ebdb-record-tracker)))
+
+(defun ebdb-initialize-threadwise (&optional records)
+  "Exactly the same as `ebdb-initialize', but yields thread.
+If Emacs has threading, then `ebdb-load' will call this function
+in its own thread, and the thread will be yielded after every ten
+record initializations.  Note that by itself this will have no
+impact whatsoever on EBDB load times.  It's up to the user to
+interleave it with other thread-yielding operations to create an
+actual speedup."
+  (let ((c 0))
+    (mapcar
+     (lambda (r)
+       (ebdb-init-record r)
+       (when (= (mod (cl-incf c) 10) 0)
+	 (thread-yield)))
+     (or records ebdb-record-tracker))))
 
 (defun ebdb-address-continental-p (address)
   "Return non-nil if ADDRESS is a continental address.
