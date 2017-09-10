@@ -4934,7 +4934,8 @@ important work is done by the `ebdb-db-load' method."
 	(ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
     (if (fboundp 'make-thread)
-	(ebdb-initialize-threadwise)
+	(let ((thread (make-thread #'ebdb-initialize-threadwise)))
+	 (thread-join thread))
       (ebdb-initialize))
     (message "Initializing EBDB records... done")
     ;; Users will expect the same ordering as `ebdb-sources'
