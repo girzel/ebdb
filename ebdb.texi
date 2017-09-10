@@ -313,6 +313,16 @@ Typically, databases are saved using the @kbd{s} binding in
 installs @code{ebdb-save} as part of the @code{kill-emacs-hook}.  Set
 @code{ebdb-install-save-hook} to nil to prevent this.
 
+@cindex Loading databases
+@cindex Database load times
+@vindex ebdb-try-speedups
+Loading and initializing the EBDB can be slow for large databases.  If
+you find yourself annoyed by the wait, try setting @code{ebdb-try-speedups}
+to non-nil.  This will disable some checks performed during the object
+creation process, which theoretically shouldn't make a difference.  If
+something does go wrong at load-time, however, try setting this back
+to @code{nil} first.
+
 @node Creating Records
 @chapter Creating Records
 

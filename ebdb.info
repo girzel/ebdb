@@ -277,6 +277,13 @@ buffers, which runs ‘ebdb-save’.  By default, EBDB also installs
 ‘ebdb-save’ as part of the ‘kill-emacs-hook’.  Set
 ‘ebdb-install-save-hook’ to nil to prevent this.
 
+   Loading and initializing the EBDB can be slow for large databases.
+If you find yourself annoyed by the wait, try setting
+‘ebdb-try-speedups’ to non-nil.  This will disable some checks performed
+during the object creation process, which theoretically shouldn’t make a
+difference.  If something does go wrong at load-time, however, try
+setting this back to ‘nil’ first.
+
 
 File: ebdb.info,  Node: Creating Records,  Next: Record Fields,  Prev: The EBDB Database,  Up: Top
 
@@ -1915,6 +1922,7 @@ Index
 * d e:                                   The EBDB Database.   (line  46)
 * d m:                                   The EBDB Database.   (line  57)
 * d r:                                   The EBDB Database.   (line  67)
+* Database load times:                   The EBDB Database.   (line  83)
 * Databases:                             The EBDB Database.   (line  11)
 * Deleting fields:                       Deleting Records and Fields.
                                                               (line   6)
@@ -2093,6 +2101,7 @@ Index
 * ebdb-sources:                          The EBDB Database.   (line  11)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  61)
+* ebdb-try-speedups:                     The EBDB Database.   (line  83)
 * ebdb-use-diary:                        Diary Integration.   (line  13)
 * ebdb-user-name-address-re:             Auto-Updating Records.
                                                               (line  48)
@@ -2120,6 +2129,7 @@ Index
 * Internationalization:                  Internationalization.
                                                               (line   6)
 * Inverting searches:                    Searching.           (line  46)
+* Loading databases:                     The EBDB Database.   (line  83)
 * m:                                     The Basics of ebdb-mode.
                                                               (line  56)
 * Mail aliases:                          Mail Aliases.        (line   6)
@@ -2178,54 +2188,54 @@ Node: Migration from BBDB3026
 Node: Record Migration3201
 Node: Variables and Options3921
 Node: The EBDB Database4407
-Node: Creating Records7959
-Node: Record classes9040
-Node: Record names9385
-Node: Record Fields10060
-Node: Inserting New Fields10304
-Node: Editing Existing Fields11100
-Node: Deleting Records and Fields11700
-Node: Field Types12096
-Node: Role fields14287
-Node: Tag field15975
-Node: Mail folder field16619
-Node: MUA Interaction16947
-Node: Loading MUA Code17471
-Node: Display and Updating18180
-Node: Pop-up Buffers18946
-Node: Auto-Updating Records19784
-Node: Noticing and Automatic Rules22184
-Node: Interactive Commands23517
-Node: EBDB and MUA summary buffers25879
-Node: Sender name display26365
-Node: Summary buffer marks27592
-Node: EBDB Buffers28771
-Node: Searching29953
-Node: Changing Search Behavior31615
-Node: The Basics of ebdb-mode32862
-Node: Marking36463
-Node: Exporting/Formatting36887
-Node: Completion37836
-Node: Snarfing39034
-Node: Internationalization41035
-Node: Diary Integration43734
-Node: Mail Aliases44599
-Node: vCard Support45313
-Node: Org Integration45812
-Node: Citing Records47710
-Node: Hacking EBDB48468
-Node: Field Classes50789
-Node: Init and Delete Methods53773
-Node: The Labeled Field Class55280
-Node: The Singleton Field Class56134
-Node: Actions56572
-Node: Custom Field Searching57244
-Node: Fast Lookups60048
-Node: Formatting in the EBDB Buffer61858
-Node: Writing Internationalization Libraries63871
-Node: Writing Integration For New MUAs68224
-Node: Article snarfing71643
-Node: Index72361
+Node: Creating Records8341
+Node: Record classes9422
+Node: Record names9767
+Node: Record Fields10442
+Node: Inserting New Fields10686
+Node: Editing Existing Fields11482
+Node: Deleting Records and Fields12082
+Node: Field Types12478
+Node: Role fields14669
+Node: Tag field16357
+Node: Mail folder field17001
+Node: MUA Interaction17329
+Node: Loading MUA Code17853
+Node: Display and Updating18562
+Node: Pop-up Buffers19328
+Node: Auto-Updating Records20166
+Node: Noticing and Automatic Rules22566
+Node: Interactive Commands23899
+Node: EBDB and MUA summary buffers26261
+Node: Sender name display26747
+Node: Summary buffer marks27974
+Node: EBDB Buffers29153
+Node: Searching30335
+Node: Changing Search Behavior31997
+Node: The Basics of ebdb-mode33244
+Node: Marking36845
+Node: Exporting/Formatting37269
+Node: Completion38218
+Node: Snarfing39416
+Node: Internationalization41417
+Node: Diary Integration44116
+Node: Mail Aliases44981
+Node: vCard Support45695
+Node: Org Integration46194
+Node: Citing Records48092
+Node: Hacking EBDB48850
+Node: Field Classes51171
+Node: Init and Delete Methods54155
+Node: The Labeled Field Class55662
+Node: The Singleton Field Class56516
+Node: Actions56954
+Node: Custom Field Searching57626
+Node: Fast Lookups60430
+Node: Formatting in the EBDB Buffer62240
+Node: Writing Internationalization Libraries64253
+Node: Writing Integration For New MUAs68606
+Node: Article snarfing72025
+Node: Index72743
 
 End Tag Table
 

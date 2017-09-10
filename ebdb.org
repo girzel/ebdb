@@ -168,6 +168,16 @@ Typically, databases are saved using the {{{kbd(s)}}} binding in
 ~ebdb-mode~ buffers, which runs ~ebdb-save~.  By default, EBDB also
 installs ~ebdb-save~ as part of the ~kill-emacs-hook~.  Set
 ~ebdb-install-save-hook~ to nil to prevent this.
+
+#+CINDEX: Loading databases
+#+CINDEX: Database load times
+#+VINDEX: ebdb-try-speedups
+Loading and initializing the EBDB can be slow for large databases.  If
+you find yourself annoyed by the wait, try setting ~ebdb-try-speedups~
+to non-nil.  This will disable some checks performed during the object
+creation process, which theoretically shouldn't make a difference.  If
+something does go wrong at load-time, however, try setting this back
+to ~nil~ first.
 * Creating Records
 :PROPERTIES:
 :ID:       692cde31-73be-4faf-b436-7eae8a5d02d1

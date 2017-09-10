@@ -176,6 +176,14 @@ Organization names are currently hard-coded to use
   :group 'ebdb-eieio
   :type 'class)
 
+(defcustom ebdb-try-speedups nil
+  "When non-nil, try to speed up loading by disabling checks.
+This will set `eieio-skip-typecheck' when loading databases.  The
+type checks are done for a reason, it's possible this might lead
+to errors or database corruption."
+  :group 'ebdb-eieio
+  :type 'boolean)
+
 (defgroup ebdb nil
   "The Insidious Big Brother Database."
   :group 'news
@@ -4880,13 +4888,21 @@ Do this only if `ebdb-check-postcode' is non-nil."
 
 ;;; Reading and Writing the EBDB
 
+;; Loading and initialization is slow.  Mostly loading.  In my own
+;; case, setting `eieio-skip-typecheck' to t dropped overall load
+;; times from 2.5 seconds to 2 seconds.  Otherwise, if we want to find
+;; further speedups, we could try overriding `object-write' for ebdb
+;; classes and see if it's possible to write an object that can be
+;; read faster.
+
 ;;;###autoload
 (defun ebdb-load ()
   "Load all databases listed in `ebdb-sources'.  All the
 important work is done by the `ebdb-db-load' method."
   (let ((sources (if (listp ebdb-sources)
 		     ebdb-sources
-		   (list ebdb-sources))))
+		   (list ebdb-sources)))
+	(eieio-skip-typecheck ebdb-try-speedups))
     ;; Check if we're re-loading.
     (when (and ebdb-db-list
 	       (object-assoc t 'dirty ebdb-db-list))
