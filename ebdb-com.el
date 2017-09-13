@@ -104,7 +104,7 @@ Used by `ebdb-mouse-menu'."
   :group 'ebdb-faces)
 
 (defface ebdb-organization-name
-  '((t (:inherit font-lock-comment-face)))
+  '((t (:inherit font-lock-type-face)))
   "Face used for EBDB organization names."
   :group 'ebdb-faces)
 
@@ -128,7 +128,7 @@ Used by `ebdb-mouse-menu'."
   "Face used for placeholder text for fields that aren't actually displayed.")
 
 (defface ebdb-defunct
-  '((t (:inherit font-lock-comment-face)))
+  '((t :foreground "gray80"))
   "Face used to display defunct roles and mails."
   :group 'ebdb-faces)
 
