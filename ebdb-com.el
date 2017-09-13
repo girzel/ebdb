@@ -1048,6 +1048,9 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
         '(:eval (if (object-assoc t 'dirty ebdb-db-list) "**" "--")))
   (set (make-local-variable 'revert-buffer-function)
        'ebdb-redisplay-all-records)
+  ;; In newer Emacs, this will make EBDB buffers eligible for save by
+  ;; `save-some-buffers'.
+  (setq write-contents-functions (list #'ebdb-save))
   (when ebdb-mail-alias-alist
     (ebdb-mail-aliases))
   (add-hook 'post-command-hook 'force-mode-line-update nil t))
