@@ -368,19 +368,19 @@ automatically."
 	(push record records)))
     ;; Handle fields in LEFTOVERS.
     (dolist (f (delete-dups leftovers))
-      (when-let ((record
-		  (cond ((yes-or-no-p
-			  (format "Add %s to existing record? "
-				  (ebdb-string f)))
-			 (ebdb-prompt-for-record))
-			((yes-or-no-p
-			  (format "Add %s to new record? "
-				  (ebdb-string f)))
-			 (ebdb-init-record
-			  (ebdb-db-add-record
-			   (car ebdb-db-list)
-			   (ebdb-read ebdb-default-record-class))))
-			(t nil))))
+      (when-let* ((record
+		   (cond ((yes-or-no-p
+			   (format "Add %s to existing record? "
+				   (ebdb-string f)))
+			  (ebdb-prompt-for-record))
+			 ((yes-or-no-p
+			   (format "Add %s to new record? "
+				   (ebdb-string f)))
+			  (ebdb-init-record
+			   (ebdb-db-add-record
+			    (car ebdb-db-list)
+			    (ebdb-read ebdb-default-record-class))))
+			 (t nil))))
 	(condition-case nil
 	    (progn
 	      (ebdb-record-insert-field record f)
