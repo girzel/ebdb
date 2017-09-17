@@ -2203,7 +2203,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     :documentation "Bank name")
    (bank-address
     :initarg :bank-address
-    :type (or ebdb-field-address null)
+    :type (or null ebdb-field-address)
     :initform nil
     ;; :custom (choice ebdb-field-address
     ;; 		    (const :tag "No address" nil))
@@ -2233,7 +2233,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     :documentation "A list of account labels and numbers/IBANs")
    (notes
     :initarg :notes
-    :type (or ebdb-field-notes null)
+    :type (or null ebdb-field-notes)
     ;; :custom (choice ebdb-field-notes
     ;; 		    (const :tag "No notes" nil))
     :initform nil
