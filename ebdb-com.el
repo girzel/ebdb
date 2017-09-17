@@ -1549,10 +1549,13 @@ in `ebdb-db-list', using its default record class.  Use
 	 clone)
       (ebdb-with-record-edits (r records)
 	(setq clone (clone field))
-	(condition-case nil
-	  (ebdb-record-insert-field r clone)
+	(condition-case err
+	    (ebdb-record-insert-field r clone)
 	  (ebdb-unacceptable-field
-	   (message "Record %s cannot accept field %s" (ebdb-string r) field)
+	   (message "Record %s cannot accept field %s" (ebdb-string r) (ebdb-string field))
+	   (sit-for 2))
+	  (error
+	   (message "Error inserting field: %s, %s" (car err) (cdr err))
 	   (sit-for 2)))))))
 
 ;; TODO: Allow editing of multiple record fields simultaneously.
