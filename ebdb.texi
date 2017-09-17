@@ -1,6 +1,6 @@
 \input texinfo    @c -*- texinfo -*-
 @c %**start of header
-@setfilename ./ebdb.info
+@setfilename ebdb.info
 @settitle EBDB Manual
 @documentencoding UTF-8
 @documentlanguage en
@@ -33,7 +33,7 @@ modify this GNU manual.”
 @finalout
 @titlepage
 @title EBDB Manual
-@subtitle This manual is for version 0.2, updated 29 July, 2017
+@subtitle This manual is for version 0.3.2, updated 17 September, 2017
 @page
 @vskip 0pt plus 1filll
 @insertcopying
@@ -1449,7 +1449,7 @@ classes: database, record, and field.  The behavior of EBDB can be
 radically changed by creating new classes, or overriding the existing
 methods of classes, without touching the original source code.  This
 manual won't go into details about Emacs' object-orientation support:
-see @ref{Top,EIEIO,,eieio,} for information on defining classes, and @ref{Generic%20Functions,Generic Functions,,elisp,}
+see @ref{Top,EIEIO,,eieio,} for information on defining classes, and @ref{Generic Functions,Generic Functions,,elisp,}
 for information on writing generic functions and methods.
 
 The simplest customization involves changing the default classes used
@@ -1818,7 +1818,7 @@ used in the body of the method.
 @section Writing Internationalization Libraries
 
 Writing new internationalization libraries involves using generic
-functions. @ref{Generic%20Functions,Generic Functions,,elisp,}.  It will also require a bit of
+functions. @ref{Generic Functions,Generic Functions,,elisp,}.  It will also require a bit of
 familiarity with EBDB's internals.
 
 Internationalization affects three different field types: addresses,

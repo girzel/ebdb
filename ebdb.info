@@ -1335,7 +1335,7 @@ radically changed by creating new classes, or overriding the existing
 methods of classes, without touching the original source code.  This
 manual won’t go into details about Emacs’ object-orientation support:
 see *note EIEIO: (eieio)Top. for information on defining classes, and
-*note Generic Functions: (elisp)Generic%20Functions. for information on
+*note Generic Functions: (elisp)Generic Functions. for information on
 writing generic functions and methods.
 
    The simplest customization involves changing the default classes used
@@ -1687,8 +1687,8 @@ File: ebdb.info,  Node: Writing Internationalization Libraries,  Next: Writing I
 ===========================================
 
 Writing new internationalization libraries involves using generic
-functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
-will also require a bit of familiarity with EBDB’s internals.
+functions.  *note Generic Functions: (elisp)Generic Functions.  It will
+also require a bit of familiarity with EBDB’s internals.
 
    Internationalization affects three different field types: addresses,
 phone numbers, and names.  It works by providing “i18n” versions of
@@ -2224,18 +2224,18 @@ Node: vCard Support45695
 Node: Org Integration46194
 Node: Citing Records48092
 Node: Hacking EBDB48850
-Node: Field Classes51171
-Node: Init and Delete Methods54155
-Node: The Labeled Field Class55662
-Node: The Singleton Field Class56516
-Node: Actions56954
-Node: Custom Field Searching57626
-Node: Fast Lookups60430
-Node: Formatting in the EBDB Buffer62240
-Node: Writing Internationalization Libraries64253
-Node: Writing Integration For New MUAs68606
-Node: Article snarfing72025
-Node: Index72743
+Node: Field Classes51169
+Node: Init and Delete Methods54153
+Node: The Labeled Field Class55660
+Node: The Singleton Field Class56514
+Node: Actions56952
+Node: Custom Field Searching57624
+Node: Fast Lookups60428
+Node: Formatting in the EBDB Buffer62238
+Node: Writing Internationalization Libraries64251
+Node: Writing Integration For New MUAs68602
+Node: Article snarfing72021
+Node: Index72739
 
 End Tag Table
 

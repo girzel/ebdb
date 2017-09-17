@@ -5,7 +5,7 @@
 #+TEXINFO_HEADER: @syncodeindex ky cp
 #+AUTHOR: Eric Abrahamsen <eric@ericabrahamsen.net>
 #+TITLE: EBDB Manual
-#+SUBTITLE: This manual is for version 0.2, updated 29 July, 2017
+#+SUBTITLE: This manual is for version 0.3.2, updated 17 September, 2017
 #+TEXINFO_DIR_CATEGORY: Emacs
 #+TEXINFO_DIR_TITLE: EBDB: (ebdb)
 #+TEXINFO_DIR_DESC: Contact management package
