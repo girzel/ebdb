@@ -2285,8 +2285,9 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
   (with-slots (bank-name bank-address routing-aba swift-bic
 			 account-name account-numbers notes)
       acct
-    (concat bank-name "\n\n"
-	    (ebdb-string bank-address) "\n"
+    (concat bank-name "\n"
+	    (when bank-address (format "%s\n" (ebdb-string bank-address)))
+	    "\n"
 	    (when routing-aba
 	      (format "Routing/ABA: %s\n" routing-aba))
 	    (when swift-bic
@@ -2297,7 +2298,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 	       (format "%s: %s" (car a) (cdr a)))
 	     account-numbers "\n")
 	    (when notes
-	      (format "\n%s\n" notes)))))
+	      (format "\n%s\n" (ebdb-string notes))))))
 
 ;; Tags field.
 
