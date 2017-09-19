@@ -163,11 +163,12 @@ Other database-related commands:
      ~ebdb-reload-database~.
 
 #+CINDEX: Saving the database
-#+VINDEX: ebdb-install-save-hook
+#+VINDEX: ebdb-save-on-exit
 Typically, databases are saved using the {{{kbd(s)}}} binding in
 ~ebdb-mode~ buffers, which runs ~ebdb-save~.  By default, EBDB also
-installs ~ebdb-save~ as part of the ~kill-emacs-hook~.  Set
-~ebdb-install-save-hook~ to nil to prevent this.
+installs ~ebdb-save~ as part of the ~kill-emacs-hook~, so that the
+EBDB is automatically saved before Emacs exit.  Set
+~ebdb-save-on-exit~ to nil to prevent this.
 
 #+CINDEX: Loading databases
 #+CINDEX: Database load times

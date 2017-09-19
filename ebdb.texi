@@ -307,11 +307,12 @@ a database, edit it using @code{ebdb-customize-database}, set
 @end table
 
 @cindex Saving the database
-@vindex ebdb-install-save-hook
+@vindex ebdb-save-on-exit
 Typically, databases are saved using the @kbd{s} binding in
 @code{ebdb-mode} buffers, which runs @code{ebdb-save}.  By default, EBDB also
-installs @code{ebdb-save} as part of the @code{kill-emacs-hook}.  Set
-@code{ebdb-install-save-hook} to nil to prevent this.
+installs @code{ebdb-save} as part of the @code{kill-emacs-hook}, so that the
+EBDB is automatically saved before Emacs exit.  Set
+@code{ebdb-save-on-exit} to nil to prevent this.
 
 @cindex Loading databases
 @cindex Database load times

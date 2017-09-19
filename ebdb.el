@@ -138,8 +138,8 @@ Future merging strategies may be smarter."
   :group 'ebdb-eieio
   :type 'boolean)
 
-(defcustom ebdb-install-save-hook t
-  "If non-nil, add `ebdb-save' to the hook `kill-emacs-hook'."
+(defcustom ebdb-save-on-exit t
+  "If non-nil, automatically save EBDB when exiting Emacs."
   :group 'ebdb-eieio
   :type 'boolean)
 
@@ -4969,7 +4969,7 @@ important work is done by the `ebdb-db-load' method."
     (run-hooks 'ebdb-after-load-hook)
     (when ebdb-use-diary
       (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
-    (when ebdb-install-save-hook
+    (when ebdb-save-on-exit
       (add-hook 'kill-emacs-hook #'ebdb-save))
     (length ebdb-record-tracker)))
 
