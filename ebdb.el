@@ -2212,13 +2212,15 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     :initarg :routing-aba
     :type (or string null)
     :initform nil
-    :custom string
+    :custom (choice string
+		    (const :tag "None" nil))
     :documentation "Routing number or ABA")
    (swift-bic
     :initarg :swift-bic
     :type (or string null)
     :initform nil
-    :custom string
+    :custom (choice string
+		    (const :tag "None" nil))
     :documentation "SWIFT or BIC code, for international transfers")
    (account-name
     :initarg :account-name
