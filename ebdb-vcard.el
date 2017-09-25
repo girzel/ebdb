@@ -71,7 +71,7 @@
 			    ebdb-field-relation
 			    ebdb-field-phone
 			    ebdb-field-notes
-			    ebdb-org-field-tags)
+			    ebdb-field-tags)
 		 :header nil)
   "The default formatter for VCard 4.0 exportation."
   :group 'ebdb-vcard
@@ -93,7 +93,7 @@
 			    ebdb-field-relation
 			    ebdb-field-phone
 			    ebdb-field-notes
-			    ebdb-org-field-tags)
+			    ebdb-field-tags)
 		 :header nil)
   "The default formatter for VCard 3.0 exportation."
   :group 'ebdb-vcard
@@ -107,7 +107,7 @@
     ("EMAIL" . ebdb-field-mail)
     ("TEL" . ebdb-field-phone)
     ("RELATED" . ebdb-field-relation)
-    ("CATEGORIES" . ebdb-org-field-tags)
+    ("CATEGORIES" . ebdb-field-tags)
     ("BDAY" . ebdb-field-anniversary)
     ("ANNIVERSARY" . ebdb-field-anniversary)
     ("URL" . ebdb-field-url)
@@ -371,7 +371,7 @@ method is just responsible for formatting the record name."
   (concat "urn:uuid:" (slot-value rel 'rel-uuid)))
 
 (cl-defmethod ebdb-fmt-field ((_f ebdb-formatter-vcard)
-			      (tags ebdb-org-field-tags)
+			      (tags ebdb-field-tags)
 			      _style
 			      _record)
   (ebdb-concat "," (slot-value tags 'tags)))
