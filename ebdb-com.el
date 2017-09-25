@@ -1050,7 +1050,8 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
        'ebdb-redisplay-all-records)
   ;; In newer Emacs, this will make EBDB buffers eligible for save by
   ;; `save-some-buffers'.
-  (setq write-contents-functions (list #'ebdb-save))
+  (add-hook 'write-contents-functions #'ebdb-save)
+  (setq buffer-offer-save 'always)
   (when ebdb-mail-alias-alist
     (ebdb-mail-aliases))
   (add-hook 'post-command-hook 'force-mode-line-update nil t))
