@@ -174,7 +174,8 @@ use one of the following, as appropriate:
                        (delete-dups
                         (mapcar
                          (lambda (record)
-                           (if-let ((field (car-safe (ebdb-record-field record 'ebdb-field-pgp))))
+                           (if-let* ((field (car-safe (ebdb-record-field
+                           record 'ebdb-field-pgp))))
 			       (slot-value field 'action)))
                          (delete-dups
                           (apply 'nconc

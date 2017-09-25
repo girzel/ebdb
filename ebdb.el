@@ -324,7 +324,7 @@ anniversary date, and the sexp (as a string):
 (defun ebdb-diary-add-entries ()
   "Add anniversaries from EBDB to the diary."
   (pcase-dolist (`(,entry ,sexp) ebdb-diary-entries)
-    (when-let ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
+    (when-let* ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
       (diary-add-to-list original-date parsed sexp))))
 
 (defcustom ebdb-before-load-hook nil
@@ -2521,8 +2521,8 @@ subclasses, or it can be a string, in which case the class of
 RECORD is responsible for parsing it correctly.")
 
 (cl-defmethod ebdb-record-uuid ((record ebdb-record))
-  (if-let ((uuid-field (slot-value record 'uuid)))
-   (slot-value uuid-field 'uuid)))
+  (if-let* ((uuid-field (slot-value record 'uuid)))
+      (slot-value uuid-field 'uuid)))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record)) &optional slots)
   "Create a new record from the values collected into SLOTS."
@@ -4923,7 +4923,7 @@ actual speedup."
 	(style (if arg 'list 'inline))
 	usable str)
     (dolist (r recs)
-      (if-let ((m (ebdb-record-mail r t)))
+      (if-let* ((m (ebdb-record-mail r t)))
 	  (push (cons r (or (object-assoc 'primary 'priority m)
 			    (car m)))
 		usable)))
@@ -5279,7 +5279,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (subclass ebdb-field-notes))
 				  (regexp string))
-  (if-let (notes (slot-value record 'notes))
+  (if-let* ((notes (slot-value record 'notes)))
       (ebdb-field-search notes regexp)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)

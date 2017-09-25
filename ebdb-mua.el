@@ -1219,7 +1219,7 @@ buffer."
 	  (with-current-buffer buffer
             (delq nil
                   (mapcar (lambda (x)
-                            (when-let ((mail (car (ebdb-record-mail (car x) t))))
+                            (when-let* ((mail (car (ebdb-record-mail (car x) t))))
                               (ebdb-dwim-mail (car x) mail)))
                           ebdb-records)))))
     (if (derived-mode-p 'message-mode 'mail-mode)
