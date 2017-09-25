@@ -207,5 +207,21 @@
 		 ebdb-i18n-india-states)))))
   slots)
 
+;;; Russia
+
+(cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+				(_cc (eql 8)))
+  (with-slots (area-code number extension) phone
+    (concat
+     "+8 "
+     (when area-code (format "%d " area-code))
+     (apply #'format
+	    (cl-case (length number)
+	      (5 "%s-%s%s-%s%s")
+	      (6 "%s%s-%s%s-%s%s")
+	      (7 "%s%s%s-%s%s-%s%s"))
+	    (split-string number "" t))
+     (when extension (format " X%s" extension)))))
+
 (provide 'ebdb-i18n-basic)
 ;;; ebdb-i18n-basic.el ends here
