@@ -682,7 +682,7 @@ for their symbol representations."
   (let ((country
 	  (cdr (assoc (completing-read
 		       "Country: "
-		       countries
+		       (ebdb-i18n-countries)
 		       nil nil
 		       (when obj (car (rassoc (ebdb-address-country obj)
 					      (ebdb-i18n-countries)))))
