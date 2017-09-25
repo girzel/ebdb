@@ -5157,7 +5157,8 @@ string must be a prefix of the sought string."
   (let ((case-fold-search ebdb-case-fold-search)
 	new-clauses completed-strings recs)
     ;; Fast lookups won't work with INVERT.
-    (unless invert
+    (if invert
+	(setq new-clauses clauses)
       ;; Try the fast lookups.
       (pcase-dolist (`(,key ,crit) clauses)
 	(or
@@ -5203,7 +5204,7 @@ string must be a prefix of the sought string."
 		  (eql (null invert)
 		       (catch 'found
 			 (condition-case nil
-			     (dolist (c clauses)
+			     (dolist (c new-clauses)
 			       (pcase c
 				 (`(,type ,criteria)
 				  (and (ebdb-record-search r type criteria)
