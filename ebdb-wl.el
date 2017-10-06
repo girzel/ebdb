@@ -59,23 +59,67 @@
 			  (wl-summary-message-number)))
    (intern (downcase header)) 'string))
 
+(cl-defmethod ebdb-mua-prepare-article (&context (major-mode wl-summary-mode))
+  (wl-summary-set-message-buffer-or-redisplay))
+
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode mime-view-mode))
-  (format "*%s-Wl" ebdb-buffer-name))
+  (format "*%s-Wl*" ebdb-buffer-name))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode wl-summary-mode))
-  (format "*%s-Wl" ebdb-buffer-name))
+  (format "*%s-Wl*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-make-buffer-name (&context (major-mode wl-folder-mode))
+  (format "*%s-Wl*" ebdb-buffer-name))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode wl-draft-mode))
-  (format "*%s-Wl-Draft" ebdb-buffer-name))
+  (format "*%s-Wl-Draft*" ebdb-buffer-name))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode mime-view-mode))
   (list (get-buffer-window) 0.3))
+
+(defsubst ebdb-wl-goto-signature (&optional beginning)
+  "Goto the signature in the current message buffer.
+Leaves point at the end (or, with non-nil BEGINNING, the
+beginning) of the signature separator."
+  (re-search-forward
+   (mapconcat
+    #'identity
+    (cons "\n==+\n" wl-highlight-signature-separator)
+    "\\|")
+   (point-max) t)
+  (when beginning
+    (goto-char (match-beginning 0)))
+  (point))
+
+(cl-defmethod ebdb-mua-article-body (&context (major-mode wl-summary-mode))
+  (with-current-buffer wl-message-buffer
+    (when (re-search-forward "^$" (point-max) t)
+      (buffer-substring-no-properties
+       (point)
+       (or (ebdb-wl-goto-signature t)
+	   (point-max))))))
+
+(cl-defmethod ebdb-mua-article-signature (&context (major-mode wl-summary-mode))
+  (with-current-buffer wl-message-buffer
+    (when (re-search-forward "^$" (point-max) t)
+      (or (and (ebdb-wl-goto-signature)
+	       (buffer-substring-no-properties (point) (point-max)))
+	  ""))))
+
+(defun ebdb-wl-quit-window ()
+  "Quit EBDB window when quitting WL summary buffer."
+  ;; This runs in a hook, which are run in no buffer: we need to be in
+  ;; a WL buffer in order to get back the correct EBDB buffer name.
+  (with-current-buffer wl-folder-buffer-name
+    (when-let* ((win (get-buffer-window (ebdb-make-buffer-name))))
+      (quit-window nil win))))
 
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."
   (define-key wl-summary-mode-map ";" ebdb-mua-keymap)
   (when ebdb-wl-use-ebdb-completion
-    (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail)))
+    (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail))
+  (add-hook 'wl-summary-exit-hook #'ebdb-wl-quit-window))
 
 (add-hook 'wl-folder-mode-hook #'ebdb-insinuate-wl)
 

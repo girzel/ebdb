@@ -548,7 +548,7 @@ mail, and Message for sending it, you’ll want two require statements:
    There are other packages that provide other MUA integration: these
 are likewise activated simply by requiring the relevant library, named
 “ebdb-<MUA>”.  MUAs supported by EBDB include gnus, message, mh-e, mu4e,
-and rmail.
+wl, and rmail.
 
 
 File: ebdb.info,  Node: Display and Updating,  Next: EBDB and MUA summary buffers,  Prev: Loading MUA Code,  Up: MUA Interaction
@@ -2202,41 +2202,41 @@ Node: Tag field16411
 Node: Mail folder field17055
 Node: MUA Interaction17383
 Node: Loading MUA Code17907
-Node: Display and Updating18616
-Node: Pop-up Buffers19382
-Node: Auto-Updating Records20220
-Node: Noticing and Automatic Rules22620
-Node: Interactive Commands23953
-Node: EBDB and MUA summary buffers26315
-Node: Sender name display26801
-Node: Summary buffer marks28028
-Node: EBDB Buffers29207
-Node: Searching30389
-Node: Changing Search Behavior32051
-Node: The Basics of ebdb-mode33298
-Node: Marking36899
-Node: Exporting/Formatting37323
-Node: Completion38272
-Node: Snarfing39470
-Node: Internationalization41471
-Node: Diary Integration44170
-Node: Mail Aliases45035
-Node: vCard Support45749
-Node: Org Integration46248
-Node: Citing Records48146
-Node: Hacking EBDB48904
-Node: Field Classes51223
-Node: Init and Delete Methods54207
-Node: The Labeled Field Class55714
-Node: The Singleton Field Class56568
-Node: Actions57006
-Node: Custom Field Searching57678
-Node: Fast Lookups60482
-Node: Formatting in the EBDB Buffer62292
-Node: Writing Internationalization Libraries64305
-Node: Writing Integration For New MUAs68656
-Node: Article snarfing72075
-Node: Index72793
+Node: Display and Updating18620
+Node: Pop-up Buffers19386
+Node: Auto-Updating Records20224
+Node: Noticing and Automatic Rules22624
+Node: Interactive Commands23957
+Node: EBDB and MUA summary buffers26319
+Node: Sender name display26805
+Node: Summary buffer marks28032
+Node: EBDB Buffers29211
+Node: Searching30393
+Node: Changing Search Behavior32055
+Node: The Basics of ebdb-mode33302
+Node: Marking36903
+Node: Exporting/Formatting37327
+Node: Completion38276
+Node: Snarfing39474
+Node: Internationalization41475
+Node: Diary Integration44174
+Node: Mail Aliases45039
+Node: vCard Support45753
+Node: Org Integration46252
+Node: Citing Records48150
+Node: Hacking EBDB48908
+Node: Field Classes51227
+Node: Init and Delete Methods54211
+Node: The Labeled Field Class55718
+Node: The Singleton Field Class56572
+Node: Actions57010
+Node: Custom Field Searching57682
+Node: Fast Lookups60486
+Node: Formatting in the EBDB Buffer62296
+Node: Writing Internationalization Libraries64309
+Node: Writing Integration For New MUAs68660
+Node: Article snarfing72079
+Node: Index72797
 
 End Tag Table
 

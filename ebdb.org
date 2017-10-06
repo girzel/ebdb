@@ -384,7 +384,7 @@ mail, and Message for sending it, you'll want two require statements:
 There are other packages that provide other MUA integration: these are
 likewise activated simply by requiring the relevant library, named
 "ebdb-<MUA>".  MUAs supported by EBDB include gnus, message, mh-e,
-mu4e, and rmail.
+mu4e, wl, and rmail.
 ** Display and Updating
 
 #+CINDEX: MUA Display
