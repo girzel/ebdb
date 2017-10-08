@@ -28,11 +28,15 @@
 (autoload 'elmo-message-entity-field "ext:elmo-msgdb")
 (autoload 'elmo-message-entity "ext:elmo")
 (autoload 'wl-summary-message-number "ext:wl-summary")
+(autoload 'wl-summary-set-message-buffer-or-redisplay "ext:wl-summary")
 
 (defvar wl-current-summary-buffer)
 (defvar wl-summary-buffer-elmo-folder)
 (defvar wl-message-buffer)
 (defvar wl-summary-mode-map)
+(defvar wl-draft-mode-map)
+(defvar wl-folder-buffer-name)
+(defvar wl-highlight-signature-separator)
 
 (defgroup ebdb-wl nil
   "Options for EBDB's interaction with Wanderlust."
