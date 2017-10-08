@@ -464,6 +464,14 @@ property is the field instance itself."
   (with-slots (bank-name account-name) field
     (format "%s: %s" bank-name account-name)))
 
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field-passport)
+			      _style
+			      (_record ebdb-record))
+  (with-slots (country number) field
+    (format "(%s) %s" country number)))
+
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-mail)
 			      _style

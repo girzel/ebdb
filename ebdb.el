@@ -2378,8 +2378,15 @@ record uuids.")
     (cl-call-next-method class slots obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-field-passport))
-  (with-slots (country number) field
-    (format "(%s) %s" country number)))
+  (with-slots (country number issue-date expiration-date) field
+    (format "(%s) %s\nIssued: %s\nExpires: %s"
+	    country number
+	    (format-time-string
+	     "%F" (apply #'encode-time 0 0 0
+			 (calendar-gregorian-from-absolute issue-date)))
+	    (format-time-string
+	     "%F" (apply #'encode-time 0 0 0
+			 (calendar-gregorian-from-absolute expiration-date))))))
 
 ;;; The cache class
 
