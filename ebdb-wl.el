@@ -111,8 +111,9 @@ beginning) of the signature separator."
   ;; This runs in a hook, which are run in no buffer: we need to be in
   ;; a WL buffer in order to get back the correct EBDB buffer name.
   (with-current-buffer wl-folder-buffer-name
-    (when-let* ((win (get-buffer-window (ebdb-make-buffer-name))))
-      (quit-window nil win))))
+    (let ((win (get-buffer-window (ebdb-make-buffer-name))))
+      (when win
+	(quit-window nil win)))))
 
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."

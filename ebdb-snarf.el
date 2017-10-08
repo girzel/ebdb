@@ -251,19 +251,19 @@ existing records that match information in the bundle.  Discard
 redundant fields, or fields that are incompatible with the record
 they're grouped with.  Return the same list of (possibly altered)
 vectors, usually to `ebdb-snarf-query'."
-  (let (output)
+  (let (output rec slot-val)
     (pcase-dolist (`[,record ,names ,fields] input)
       (let (out-fields out-names)
 	(unless record
-	  (if-let* ((rec (car-safe
-			  (ebdb-search
-			   (ebdb-records)
-			   (mapcar
-			    (lambda (f)
-			      (list (eieio-object-class-name f)
-				    (ebdb-string f)))
-			    (append fields names))))))
-	      (setq record rec)))
+	  (when (setq rec (car-safe
+			   (ebdb-search
+			    (ebdb-records)
+			    (mapcar
+			     (lambda (f)
+			       (list (eieio-object-class-name f)
+				     (ebdb-string f)))
+			     (append fields names)))))
+	    (setq record rec)))
 	(if record
 	    (let (slot)
 	      (dolist (f fields)
@@ -274,13 +274,14 @@ vectors, usually to `ebdb-snarf-query'."
 				       `(nil . ,(eieio-object-class f)))))
 		      ;; Make sure that record can accept field, and doesn't
 		      ;; already have it.
-		      (unless (if-let* ((slot-val (ignore-errors
-						    (ebdb-record-field record slot))))
-				  (member (ebdb-string f)
-					  (mapcar #'ebdb-string
-						  (if (listp slot-val)
-						      slot-val
-						    (list slot-val)))))
+		      (unless
+			  (when (setq slot-val (ignore-errors
+						 (ebdb-record-field record slot)))
+			    (member (ebdb-string f)
+				    (mapcar #'ebdb-string
+					    (if (listp slot-val)
+						slot-val
+					      (list slot-val)))))
 			(push f out-fields)))
 		  (ebdb-unacceptable-field nil)))
 	      (dolist (name names)
@@ -298,7 +299,7 @@ vectors, usually to `ebdb-snarf-query'."
 
 Ask about field instances that we haven't been able to handle
 automatically."
-  (let (leftovers records)
+  (let (leftovers records record)
     (pcase-dolist (`[,record ,names ,fields] input)
       (unless record
 	;; There's no record, query-create a new one.
@@ -368,19 +369,19 @@ automatically."
 	(push record records)))
     ;; Handle fields in LEFTOVERS.
     (dolist (f (delete-dups leftovers))
-      (when-let* ((record
-		   (cond ((yes-or-no-p
-			   (format "Add %s to existing record? "
-				   (ebdb-string f)))
-			  (ebdb-prompt-for-record))
-			 ((yes-or-no-p
-			   (format "Add %s to new record? "
-				   (ebdb-string f)))
-			  (ebdb-init-record
-			   (ebdb-db-add-record
-			    (car ebdb-db-list)
-			    (ebdb-read ebdb-default-record-class))))
-			 (t nil))))
+      (when (setq record
+		  (cond ((yes-or-no-p
+			  (format "Add %s to existing record? "
+				  (ebdb-string f)))
+			 (ebdb-prompt-for-record))
+			((yes-or-no-p
+			  (format "Add %s to new record? "
+				  (ebdb-string f)))
+			 (ebdb-init-record
+			  (ebdb-db-add-record
+			   (car ebdb-db-list)
+			   (ebdb-read ebdb-default-record-class))))
+			(t nil)))
 	(condition-case nil
 	    (progn
 	      (ebdb-record-insert-field record f)

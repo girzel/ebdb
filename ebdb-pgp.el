@@ -169,13 +169,15 @@ use one of the following, as appropriate:
       (when mail-aliases
         ;; (sendmail-sync-aliases) ; needed?
         (expand-mail-aliases (point-min) (point-max)))
-      (let ((actions
-             (or (delq nil
+      (let* (field
+	     (actions
+              (or (delq nil
                        (delete-dups
                         (mapcar
                          (lambda (record)
-                           (if-let* ((field (car-safe (ebdb-record-field
-                           record 'ebdb-field-pgp))))
+                           (when (setq
+				    field (car-safe (ebdb-record-field
+						     record 'ebdb-field-pgp)))
 			       (slot-value field 'action)))
                          (delete-dups
                           (apply 'nconc

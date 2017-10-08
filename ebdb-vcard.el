@@ -342,8 +342,9 @@ method is just responsible for formatting the record name."
 			 	    (field ebdb-field-labeled)
 				    _style
 				    _record)
-  (let ((ret (cl-call-next-method)))
-    (if-let* ((lab (slot-value field 'object-name)))
+  (let ((ret (cl-call-next-method))
+	(lab (slot-value field 'object-name)))
+    (if lab
 	(concat ret
 		";TYPE=" (ebdb-vcard-escape lab))
       ret)))

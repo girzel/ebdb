@@ -324,8 +324,9 @@ anniversary date, and the sexp (as a string):
 (defun ebdb-diary-add-entries ()
   "Add anniversaries from EBDB to the diary."
   (pcase-dolist (`(,entry ,sexp) ebdb-diary-entries)
-    (when-let* ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
-      (diary-add-to-list original-date parsed sexp))))
+    (let ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
+      (when parsed
+	(diary-add-to-list original-date parsed sexp)))))
 
 (defcustom ebdb-before-load-hook nil
   "Hook run before loading databases."
@@ -2528,8 +2529,9 @@ subclasses, or it can be a string, in which case the class of
 RECORD is responsible for parsing it correctly.")
 
 (cl-defmethod ebdb-record-uuid ((record ebdb-record))
-  (if-let* ((uuid-field (slot-value record 'uuid)))
-      (slot-value uuid-field 'uuid)))
+  (let ((uuid-field (slot-value record 'uuid)))
+    (when uuid-field
+     (slot-value uuid-field 'uuid))))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record)) &optional slots)
   "Create a new record from the values collected into SLOTS."
@@ -4253,25 +4255,25 @@ for a number.
 The number is returned as a properly-formatted string, with
 leading \"+\"."
 
-  (if-let* ((all-phones (slot-value record 'phone))
-	    (phone
-	     (car-safe
-	      (or (object-assoc "signal" 'object-name all-phones)
-		  (seq-filter
-		   (lambda (p)
-		     (member (slot-value p 'object-name)
-			     '("cell" "mobile")))
-		   all-phones))))
-	    (number
-	     (and phone
-		  (with-slots (country-code area-code number) phone
-		    (concat (format "+%d" country-code)
-			    (and area-code
-				 (number-to-string area-code))
-			    number)))))
-      number
-    (and (null no-prompt)
-	 (ebdb-read-string "Use phone number: "))))
+  (let* ((all-phones (slot-value record 'phone))
+	 (phone
+	  (car-safe
+	   (or (object-assoc "signal" 'object-name all-phones)
+	       (seq-filter
+		(lambda (p)
+		  (member (slot-value p 'object-name)
+			  '("cell" "mobile")))
+		all-phones))))
+	 (number
+	  (and phone
+	       (with-slots (country-code area-code number) phone
+		 (concat (format "+%d" country-code)
+			 (and area-code
+			      (number-to-string area-code))
+			 number)))))
+    (or number
+	(and (null no-prompt)
+	     (ebdb-read-string "Use phone number: ")))))
 
 (cl-defmethod ebdb-field-phone-signal-text ((_record ebdb-record-entity)
 					    (phone-field ebdb-field-phone))
@@ -4928,12 +4930,12 @@ actual speedup."
 		     current-prefix-arg))
   (let ((recs (if (listp records) records (list records)))
 	(style (if arg 'list 'inline))
-	usable str)
+	usable str m)
     (dolist (r recs)
-      (if-let* ((m (ebdb-record-mail r t)))
-	  (push (cons r (or (object-assoc 'primary 'priority m)
-			    (car m)))
-		usable)))
+      (when (setq m (ebdb-record-mail r t))
+	(push (cons r (or (object-assoc 'primary 'priority m)
+			  (car m)))
+	      usable)))
     (setq str (ebdb-records-cite style usable))
     (if kill
 	(progn
@@ -5287,8 +5289,9 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (subclass ebdb-field-notes))
 				  (regexp string))
-  (if-let* ((notes (slot-value record 'notes)))
-      (ebdb-field-search notes regexp)))
+  (let ((notes (slot-value record 'notes)))
+    (when notes
+      (ebdb-field-search notes regexp))))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
 				  (_type (subclass ebdb-field-phone))

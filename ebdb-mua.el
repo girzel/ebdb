@@ -1215,12 +1215,13 @@ buffer."
 				  (with-current-buffer b
 				    (derived-mode-p 'ebdb-mode)))
 				(buffer-list))))))
+	 mail
 	 (addresses
 	  (with-current-buffer buffer
             (delq nil
                   (mapcar (lambda (x)
-                            (when-let* ((mail (car (ebdb-record-mail (car x) t))))
-                              (ebdb-dwim-mail (car x) mail)))
+			    (when (setq mail (car (ebdb-record-mail (car x) t)))
+			      (ebdb-dwim-mail (car x) mail)))
                           ebdb-records)))))
     (if (derived-mode-p 'message-mode 'mail-mode)
 	(when addresses
