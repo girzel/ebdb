@@ -1014,10 +1014,10 @@ buffer."
 	   ;; It's already visible, re-use it.
 	   (or (null select)
 	       (select-window buffer-window)))
-	  ((and (null split-window) (null size))
+	  ((not (or split-window size))
 	   ;; Not splitting, but buffer isn't visible, just take up
 	   ;; the whole window.
-	   (set-window-buffer (selected-window) buf)
+           (pop-to-buffer-same-window buf)
 	   (setq buffer-window (get-buffer-window buf t)))
 	  (t
 	   ;; Otherwise split.

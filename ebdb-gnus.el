@@ -102,10 +102,11 @@ record contains a gnus-score field."
 
 ;;;###autoload
 (defun ebdb/gnus-score (group)
-  "This returns a score alist for Gnus.  A score pair will be made for
-every member of the mail field in records which also have a gnus-score
-field.  This allows the EBDB to serve as a supplemental global score
-file, with the advantage that it can keep up with multiple and changing
+  "Return a score alist for Gnus.
+A score pair will be made for every member of the mail field in
+records which also have a `gnus-score' field.  This allows the
+EBDB to serve as a supplemental global score file, with the
+advantage that it can keep up with multiple and changing
 addresses better than the traditionally static global scorefile."
   (list (list
          (condition-case nil

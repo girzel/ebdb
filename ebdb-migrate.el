@@ -397,7 +397,7 @@ BBDB sets the default of that option."
 	    c-records duds)
 	(message "Migrating records...")
 	(dolist (r v-records)
-	  (condition-case err
+	  (condition-case-unless-debug err
 	      (let ((orgs (ebdb-vrecord-organization r))
 		    (c-rec (ebdb-migrate-vector-to-class r))
 		    org)
@@ -449,8 +449,7 @@ BBDB sets the default of that option."
 		 (length c-records))))))
 
 (defun ebdb-migrate-vector-to-class (v)
-  "Migrate a single vector-style BBDB record to the EIEIO class
-  style used in EBDB."
+  "Migrate a single vector-style BBDB record V to EBDB style EIEIO object."
   ;; In the vector version, vector elements were:
 
   ;; record: firstname lastname affix aka organization phone address mail xfields

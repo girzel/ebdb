@@ -1031,8 +1031,8 @@ process."
   (or (slot-value field 'object-name)
       (ebdb-field-readable-name (eieio-object-class field))))
 
-;;; The obfuscated field type.  This is a little goofy, but might come
-;;; in handy.
+;; The obfuscated field type.  This is a little goofy, but might come
+;; in handy.
 
 (defclass ebdb-field-obfuscated (ebdb-field)
   nil
@@ -1042,8 +1042,8 @@ process."
   displayed in the *EBDB* buffer.  Use for mildly sensitive
   information.")
 
-;;; The singleton field type.  Records may only have one instance of
-;;; fields of this type.  (Unrelated to `eieio-singleton'.)
+;; The singleton field type.  Records may only have one instance of
+;; fields of this type.  (Unrelated to `eieio-singleton'.)
 
 ;; There's a method of `ebdb-record-insert-field' for this class down
 ;; under the definition of `ebdb-record'.
@@ -1054,16 +1054,16 @@ process."
   "A field class mixin that ensures a record can only have one
   instance of that field class.")
 
-;;; User-defined fields.  There are two kinds.  The first is
-;;; `ebdb-field-user', which provides no information about labels or
-;;; slots, but simply gives us the right to live in the "fields" slot
-;;; of records.  It must be subclassed to be useful.
+;; User-defined fields.  There are two kinds.  The first is
+;; `ebdb-field-user', which provides no information about labels or
+;; slots, but simply gives us the right to live in the "fields" slot
+;; of records.  It must be subclassed to be useful.
 
-;;; The second is the `ebdb-field-user-simple', which subclasses
-;;; `ebdb-field-user' and `ebdb-field-labeled'.  This class should
-;;; *not* be subclassed; it's the class that collects all the basic
-;;; label-plus-value fields that users might want to add.  Instances
-;;; have no particular behavior, they're just key-value pairs.
+;; The second is the `ebdb-field-user-simple', which subclasses
+;; `ebdb-field-user' and `ebdb-field-labeled'.  This class should
+;; *not* be subclassed; it's the class that collects all the basic
+;; label-plus-value fields that users might want to add.  Instances
+;; have no particular behavior, they're just key-value pairs.
 
 (defclass ebdb-field-user (ebdb-field)
   nil
@@ -3952,7 +3952,8 @@ process.")
 (cl-defmethod cl-print-object ((db ebdb-db) stream)
   (princ (format "#<%S %s %d records>"
 		 (eieio-object-class-name db)
-		 (slot-value db 'file)
+                 (when (slot-boundp  db 'file)
+                   (slot-value db 'file))
 		 (length (slot-value db 'records)))
 	 stream))
 
@@ -4857,7 +4858,7 @@ important work is done by the `ebdb-db-load' method."
 	(message "%s is currently disabled." (ebdb-string s))
 	;; Remove this database's records from
 	;; `ebdb-record-tracker'.
-	(mapcar #'delete-instance (slot-value s 'records))
+	(mapc #'delete-instance (slot-value s 'records))
 	(sit-for 2)))
     (if (and
 	 (null ebdb-record-tracker)
