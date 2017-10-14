@@ -501,11 +501,6 @@ BBDB sets the default of that option."
 	      (postcode (aref a 4))
 	      (country (aref a 5))
 	      (case-fold-search t))
-	  (when (and country (stringp country))
-	    (dolist (c ebdb-country-list)
-	      (when (and (stringp country)
-			 (string-match-p country (car c)))
-		(setq country (cdr c)))))
 	  (push (make-instance ebdb-default-address-class
 			       :object-name label
 			       :streets streets
