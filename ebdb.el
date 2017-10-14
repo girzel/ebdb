@@ -4848,18 +4848,17 @@ important work is done by the `ebdb-db-load' method."
 		 (setq s (make-instance 'ebdb-db-file :file s :dirty t))
 		 ;; Try to get it on disk first.
 		 (ebdb-db-save s))))
-	    ((null (object-of-class-p s 'ebdb-db))
+	    ((null (and (object-p s)
+			(object-of-class-p s 'ebdb-db)))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
       ;; Now load it.
-      (if (object-of-class-p s 'ebdb-db)
-	  (if (null (slot-value s 'disabled))
-	      (ebdb-db-load s)
-	    (message "%s is currently disabled." (ebdb-string s))
-	    ;; Remove this database's records from
-	    ;; `ebdb-record-tracker'.
-	    (mapcar #'delete-instance (slot-value s 'records))
-	    (sit-for 2))
-	(error "Object %s is not a EBDB database" s)))
+      (if (null (slot-value s 'disabled))
+	  (ebdb-db-load s)
+	(message "%s is currently disabled." (ebdb-string s))
+	;; Remove this database's records from
+	;; `ebdb-record-tracker'.
+	(mapcar #'delete-instance (slot-value s 'records))
+	(sit-for 2)))
     (if (and
 	 (null ebdb-record-tracker)
 	 (or (and (bound-and-true-p bbdb-file)
@@ -4870,7 +4869,7 @@ important work is done by the `ebdb-db-load' method."
     (message "Initializing EBDB records...")
     (if (fboundp 'make-thread)
 	(let ((thread (make-thread #'ebdb-initialize-threadwise)))
-	 (thread-join thread))
+	  (thread-join thread))
       (ebdb-initialize))
     (message "Initializing EBDB records... done")
     ;; Users will expect the same ordering as `ebdb-sources'
