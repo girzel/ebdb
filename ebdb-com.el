@@ -135,7 +135,7 @@ Used by `ebdb-mouse-menu'."
   "Base face used for all address fields."
   :group 'ebdb-faces)
 
-(defface ebdb-mail-default '((t :inherit default :foreground purple))
+(defface ebdb-mail-default '((t :inherit default))
   "Base face used for all mail fields."
   :group 'ebdb-faces)
 
