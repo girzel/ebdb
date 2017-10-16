@@ -118,19 +118,22 @@ lists, respectively.")
   "Format the body of RECORD, using the fields in FIELDS.")
 
 (cl-defgeneric ebdb-fmt-collect-fields (fmt record &optional fields)
-  "Return a list of RECORD's FIELDS to be formatted.
+  "Return a list of RECORD's FIELDS to be formatted.")
 
-Each element of FIELDS is either a single field instance, or a
-list of field instances.  Which fields are present, how they're
-sorted, and how they're combined into lists is determined by the
-\"exclude\" and \"sort\" slots of FMT.")
+(cl-defgeneric ebdb-fmt-process-fields (fmt record &optional fields)
+  "Process the FIELDS belonging to RECORD.
+This means grouping them into lists containing various formatting
+information, mostly drawn from FMT's `combine' and `collapse'
+slots.")
 
-(cl-defgeneric ebdb-fmt-process-fields (fmt record &optional fields))
-
-(cl-defgeneric ebdb-fmt-sort-fields (fmt record &optional fields))
+(cl-defgeneric ebdb-fmt-sort-fields (fmt record &optional fields)
+  "Sort FIELDS belonging to RECORD according to FMT.")
 
 ;; Do we still need this now that formatters and specs are collapsed?
-(cl-defgeneric ebdb-fmt-compose-field (fmt field-cons record))
+(cl-defgeneric ebdb-fmt-compose-field (fmt field-cons record)
+  "Convert the lists produced by `ebdb-fmt-process-fields'.
+The lists of class instances and formatting information are
+turned into lists holding labels strings and instance strings.")
 
 (cl-defgeneric ebdb-fmt-field (fmt field style record)
   "Format FIELD value of RECORD.
@@ -235,88 +238,30 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
 				       (record ebdb-record)
 				       &optional field-list)
-  (let (f-class)
-    (with-slots (fields notes uuid creation-date timestamp) record
-     (with-slots (exclude include) fmt
-       (dolist (f (append fields (list notes uuid creation-date timestamp)))
-	 (when f
-	   (setq f-class (eieio-object-class-name f))
-	   (when (if include
-		     (ebdb-class-in-list-p f-class include)
-		   (null (ebdb-class-in-list-p f-class exclude)))
-	     (push f field-list))))
-       field-list))))
-
-(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
-				       (record ebdb-record-entity)
-				       &optional field-list)
-  (with-slots (include exclude primary) fmt
-    (with-slots (mail phone address) record
-      (when (and mail
-		 (if include
-		     (memq 'ebdb-field-mail include)
-		   (null (memq 'ebdb-field-mail exclude))))
-	(if primary
-	    (push (object-assoc 'primary 'priority mail) field-list)
-	  (dolist (m mail)
-	    (push m field-list))))
-      (when (and phone
-		 (if include
-		     (memq 'ebdb-field-phone include)
-		   (null (memq 'ebdb-field-phone exclude))))
-	(dolist (p phone)
-	  (push p field-list)))
-      (when (and address
-		 (if include
-		     (memq 'ebdb-field-address include)
-		   (null (memq 'ebdb-field-address exclude))))
-	(dolist (a address)
-	  (push a field-list)))
-      (cl-call-next-method fmt record field-list))))
-
-(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
-				       (record ebdb-record-person)
-				       &optional field-list)
-
-  (with-slots (exclude include) fmt
-    (with-slots (aka organizations relations) record
-      (when (and aka
-		 (if include
-		     (memq 'ebdb-field-name include)
-		   (null (memq 'ebdb-field-name exclude))))
-	(dolist (n aka)
-	  (push n field-list)))
-      (when (and organizations
-		 (if include
-		     (memq 'ebdb-field-role include)
-		   (null (memq 'ebdb-field-role exclude))))
-	(dolist (r organizations)
-	  (push r field-list)))
-      (when (and relations
-		 (if include
-		     (memq 'ebdb-field-relation include)
-		   (null (memq 'ebdb-field-relation exclude))))
-	(dolist (r relations)
-	  (push r field-list)))
-      (cl-call-next-method fmt record field-list))))
+  "Collect all fields of RECORD, and filter according to FMT."
+  ;; Remove the `name' slot entry from the list.
+  (let ((fields (append
+		 field-list
+		 (mapcar #'cdr
+			 (seq-remove
+			  (lambda (elt) (eql (car elt) 'name))
+ 			  (ebdb-record-current-fields record nil t)))))
+	f-class)
+    (with-slots (exclude include) fmt
+      (seq-filter
+       (lambda (f)
+	 (setq f-class (eieio-object-class-name f))
+	 (if include
+	     (ebdb-class-in-list-p f-class include)
+	   (null (ebdb-class-in-list-p f-class exclude))))
+       fields))))
 
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
 				       (record ebdb-record-organization)
 				       &optional field-list)
-  (with-slots (exclude include) fmt
-    (when (and (slot-value record 'domain)
-	       (if include
-		   (memq 'ebdb-field-domain include)
-		 (null (memq 'ebdb-field-domain exclude))))
-      (push (slot-value record 'domain) field-list))
-    (let ((roles (gethash (ebdb-record-uuid record) ebdb-org-hashtable)))
-      (when (and roles
-		 (if include
-		     (memq 'ebdb-field-role include)
-		   (null (memq 'ebdb-field-role exclude))))
-	(dolist (r roles)
-	  (push r field-list)))
-      (cl-call-next-method fmt record field-list))))
+  (cl-call-next-method
+   fmt record
+   (append field-list (gethash (ebdb-record-uuid record) ebdb-org-hashtable))))
 
 (cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter)
 				    (_record ebdb-record)
