@@ -127,13 +127,35 @@ Used by `ebdb-mouse-menu'."
   '((t (:inherit font-lock-constant-face)))
   "Face used for placeholder text for fields that aren't actually displayed.")
 
+(defface ebdb-phone-default '((t :inherit default))
+  "Base face used for all phone fields."
+  :group 'ebdb-faces)
+
+(defface ebdb-address-default '((t :inherit default))
+  "Base face used for all address fields."
+  :group 'ebdb-faces)
+
+(defface ebdb-mail-default '((t :inherit default :foreground purple))
+  "Base face used for all mail fields."
+  :group 'ebdb-faces)
+
 (defface ebdb-defunct
   '((t :foreground "gray80"))
-  "Face used to display defunct roles and mails."
+  "Face used to display defunct things."
+  :group 'ebdb-faces)
+
+(defface ebdb-role-defunct
+  '((t :inherit ebdb-defunct))
+  "Face used to display defunct roles."
+  :group 'ebdb-faces)
+
+(defface ebdb-mail-defunct
+  '((t :inherit ebdb-mail-default ebdb-defunct))
+  "Face used to display a defunct mail address."
   :group 'ebdb-faces)
 
 (defface ebdb-mail-primary
-  '((t (:inherit font-lock-builtin-face)))
+  '((t (:inherit ebdb-mail-default font-lock-builtin-face)))
   "Face used to display a record's primary mail address."
   :group 'ebdb-faces)
 
@@ -481,11 +503,25 @@ property is the field instance itself."
 	 (value (ebdb-string field))
 	 (face (cond
 		((eq priority 'primary) 'ebdb-mail-primary)
-		((eq priority 'defunct) 'ebdb-defunct)
-		(t nil))))
+		((eq priority 'defunct) 'ebdb-mail-defunct)
+		(t 'ebdb-mail-default))))
     (if face
 	(propertize value 'face face)
       value)))
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (_field ebdb-field-phone)
+			      _style
+			      (_record ebdb-record))
+  "Add an appropriate face to phones."
+  (propertize (cl-call-next-method) 'face 'ebdb-phone-default))
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (_field ebdb-field-address)
+			      _style
+			      (_record ebdb-record))
+  "Add an appropriate face to addresses."
+  (propertize (cl-call-next-method) 'face 'ebdb-address-default))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-role)
@@ -503,7 +539,7 @@ property is the field instance itself."
 			      (ebdb-fmt-field fmt mail 'oneline record))
 		    rec-string)))
       (if defunct
-	  (propertize value 'face 'ebdb-defunct)
+	  (propertize value 'face 'ebdb-role-defunct)
 	value))))
 
 (defsubst ebdb-indent-string (string column)
