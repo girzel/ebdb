@@ -4849,7 +4849,7 @@ important work is done by the `ebdb-db-load' method."
 		 (setq s (make-instance 'ebdb-db-file :file s :dirty t))
 		 ;; Try to get it on disk first.
 		 (ebdb-db-save s))))
-	    ((null (and (object-p s)
+	    ((null (and (eieio-object-p s)
 			(object-of-class-p s 'ebdb-db)))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
       ;; Now load it.
