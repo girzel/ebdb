@@ -89,7 +89,13 @@
     \"collapsed\". What this means is up to the formatter, but it
     generally indicates that most of the field contents will
     hidden unless the user takes some action, such as clicking or
-    hitting <TAB>.  (Currently unimplemented.)"))
+    hitting <TAB>.  (Currently unimplemented.)")
+   (post-format-function
+    :type (or null function)
+    :initarg :post-format-function
+    :initform nil
+    :documentation "A function to be called after formatting is
+    complete.  Probably a major mode."))
   :abstract t
   :documentation "Abstract base class for EBDB formatters.
   Subclass this to produce real formatters.")
@@ -376,7 +382,9 @@ grouped by field class."
 	(insert (ebdb-fmt-footer formatter records))
 	(set-buffer-file-coding-system fmt-coding)))
     (pop-to-buffer buf)
-    (text-mode)))
+    (let ((f (slot-value formatter 'post-format-function)))
+      (when (fboundp f)
+	(funcall f)))))
 
 ;;;###autoload
 (defun ebdb-format-all-records (&optional formatter)

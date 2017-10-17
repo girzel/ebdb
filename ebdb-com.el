@@ -389,7 +389,10 @@ If FULL is non-nil record includes the display information."
 ;;; *EBDB* formatting
 
 (defclass ebdb-formatter-ebdb (ebdb-formatter)
-  nil
+  ;; This post-format-function only comes into play when the user
+  ;; chooses the EBDB format in `ebdb-format-to-tmp-buffer'.
+  ((post-format-function
+    :initform #'text-mode))
   :documentation
   "Abstract formatter base class for *EBDB* buffer(s)."
   :abstract t)
