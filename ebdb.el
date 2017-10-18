@@ -3217,7 +3217,9 @@ priority."
     :initarg :domain
     :type string
     :initform ""
-    :documentation))
+    :documentation)
+   (actions
+    :initform '(("Browse domain" . ebdb-field-domain-browse))))
   :human-readable "domain"
   :documentation "An organization's domain name.  Useful for
   automatically constructing a homepage for the organization, or
@@ -3335,6 +3337,14 @@ priority."
   (let ((domain (slot-value record 'domain)))
     (or (and domain (string-match-p regexp (ebdb-string domain)))
 	(cl-call-next-method))))
+
+(cl-defmethod ebdb-field-domain-browse ((_record ebdb-record-organization)
+					(domain ebdb-field-domain))
+  "Construct a URL from field DOMAIN, and browse it."
+  ;; Assume http will redirect to https as necessary.  Bad?
+  (let ((domain (slot-value domain 'domain)))
+    (when domain
+      (browse-url (concat "http://" domain)))))
 
 (cl-defmethod ebdb-record-adopt-role-fields ((record ebdb-record-person)
 					     (org ebdb-record-organization)
