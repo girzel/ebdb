@@ -122,6 +122,12 @@ italicized, in all other cases it is left unchanged."
   nil
   :human-readable "org tags")
 
+;; Use fast lookups on org-tags, too.
+(cl-pushnew (cons 'ebdb-org-field-tags
+		  (lambda (str rec)
+		    (ebdb-record-search rec 'ebdb-org-field-tags str)))
+	    ebdb-hash-extra-predicates)
+
 (cl-defmethod ebdb-read ((field (subclass ebdb-org-field-tags)) &optional slots obj)
   (let* ((crm-separator (cadr (assq 'ebdb-field-tags ebdb-separator-alist)))
 	 (val (completing-read-multiple
