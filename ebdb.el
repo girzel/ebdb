@@ -5189,7 +5189,8 @@ string must be a prefix of the sought string."
 	      (stringp crit)
 	      (string-prefix-p "^" crit)
 	      (setq completed-strings
-		    (all-completions (substring crit 1) ebdb-hashtable)
+		    (all-completions (downcase (substring crit 1))
+				     ebdb-hashtable)
 		    recs
 		    (delq nil
 			  (apply
