@@ -26,9 +26,23 @@
 
 (require 'ebdb)
 (autoload 'calendar-absolute-from-gregorian "calendar")
+(autoload 'calendar-gregorian-from-absolute "calendar")
+(autoload 'org-time-string-to-absolute "org")
 (declare-function make-gnorb-ebdb-link "ext:gnorb-ebdb")
+(declare-function org-contacts-db "ext:org-contacts")
 (defvar url-handler-regexp)
 ;;; Migrating the EBDB
+
+;; For org-contacts
+
+(defvar org-contacts-email-property)
+(defvar org-contacts-alias-property)
+(defvar org-contacts-tel-property)
+(defvar org-contacts-address-property)
+(defvar org-contacts-birthday-property)
+(defvar org-contacts-note-property)
+(defvar org-contacts-icon-property)
+(defvar org-contacts-nickname-property)
 
 ;; Unused
 (defconst ebdb-migration-features
@@ -395,7 +409,7 @@ BBDB sets the default of that option."
 			 (ebdb-prompt-for-db)))
 	    (total 0)
 	    c-records duds)
-	(message "Migrating records...")
+	(message "Migrating records from BBDB...")
 	(dolist (r v-records)
 	  (condition-case-unless-debug err
 	      (let ((orgs (ebdb-vrecord-organization r))
@@ -427,7 +441,7 @@ BBDB sets the default of that option."
 		      (unless (member org c-records)
 			(push org c-records)))))
 		(push c-rec c-records)
-		(message "Migrating records... %d" (cl-incf total)))
+		(message "Migrating records from BBDB... %d" (cl-incf total)))
 	    (error
 	     (push (list r err) duds))))
 	(when duds
@@ -445,7 +459,7 @@ BBDB sets the default of that option."
 	(dolist (r c-records)
 	  (ebdb-init-record r))
 	(eieio-oset target-db 'dirty t)
-	(message "Migrating records... %d records migrated"
+	(message "Migrating records from BBDB... %d records migrated"
 		 (length c-records))))))
 
 (defun ebdb-migrate-vector-to-class (v)
@@ -657,6 +671,70 @@ BBDB sets the default of that option."
         (if migrate (setq records (ebdb-migrate records file-format)))
 
 	records))))
+
+(defvar ebdb-migrate-org-simple-correspondences
+  '((org-contacts-email-property . ebdb-default-mail-class)
+    (org-contacts-tel-property . ebdb-default-phone-class)
+    (org-contacts-note-property . ebdb-default-notes-class)
+    (org-contacts-nickname-property . ebdb-field-name-simple)
+    (org-contacts-alias-property . ebdb-default-name-class))
+  "The simplest property-to-field correspondences.
+This variable only holds correspondences for fields that require
+no processing beyond calling `ebdb-parse' on the string values.")
+
+;;;###autoload
+(defun ebdb-migrate-from-org-contacts ()
+  "Migrate contacts from the org-contacts format."
+  (interactive)
+  (require 'org-contacts)
+  (unless ebdb-sources
+    (error "First set `ebdb-sources' to the location of your EBDB database."))
+  (let ((db (ebdb-prompt-for-db))
+	;; Postpone evaluation of the symbols until run time.
+	(prop-fields
+	 (mapcar
+	  (pcase-lambda (`(,prop . ,class))
+	    (cons (symbol-value prop)
+		  (if (class-p class) class (symbol-value class))))
+	  ebdb-migrate-org-simple-correspondences))
+	(count 0)
+	(address-buffer (get-buffer-create "*EBDB Migration Addresses*"))
+	record records f)
+    (with-current-buffer address-buffer
+      (erase-buffer))
+    (message "Migrating records from org-contacts... %d records" count)
+    (pcase-dolist (`(,name ,_ ,fields) (org-contacts-db))
+      (setq record (make-instance ebdb-default-record-class))
+      (ebdb-record-change-name record name)
+      (dolist (field fields)
+	(setq f
+	      (if (assoc-string (car field) prop-fields)
+		  (ebdb-parse (cdr (assoc-string (car field) prop-fields))
+			      (cdr field))
+		(pcase (car field)
+		  ((pred (equal org-contacts-address-property))
+		   (with-current-buffer address-buffer
+		     (insert (format "%s: %s\n" name (cdr field)))))
+		  ((pred (equal org-contacts-birthday-property))
+		   (make-instance 'ebdb-field-anniversary
+				  :date  (calendar-gregorian-from-absolute
+					  (org-time-string-to-absolute
+					   (cdr field)))
+				  :object-name "birthday")))))
+	(when f
+	  (ebdb-record-insert-field record f)))
+      (push record records)
+      (message "Migrating records from org-contacts... %d records"
+	       (cl-incf count)))
+    (dolist (r records)
+      (ebdb-db-add-record db r))
+    (message "Migrating records from org-contacts... %d records"
+	     (length records)))
+  (ebdb-display-records records)
+  (with-current-buffer address-buffer
+    (unless (= (point-min) (point-max))
+      (pop-to-buffer address-buffer
+		     '(display-buffer-pop-up-window . ((width . 50)))))))
 
 (provide 'ebdb-migrate)
 ;;; ebdb-migrate.el ends here
