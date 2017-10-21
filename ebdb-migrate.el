@@ -456,7 +456,7 @@ BBDB sets the default of that option."
 	  (goto-char (point-min)))
 	(dolist (r c-records)
 	  (ebdb-init-record r))
-	(eieio-oset target-db 'dirty t)
+	(setf (slot-value target-db 'dirty) t)
 	(message "Migrating records from BBDB... %d records migrated"
 		 (length c-records))))))
 
@@ -530,7 +530,7 @@ BBDB sets the default of that option."
 				 :mail (cadr bits))
 		  mails))))
       (when mails
-	(oset (car (last mails)) priority 'primary)))
+	(setf (slot-value (car (last mails)) 'priority) 'primary)))
     (when xfields
       (dolist (x xfields)
 	(setq lab (car x)

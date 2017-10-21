@@ -29,6 +29,7 @@
 
 (defvar mu4e~view-buffer-name)
 (defvar mu4e-view-mode-map)
+(declare-function message-field-value "message")
 
 ;; Tackle `mu4e-headers-mode' later
 

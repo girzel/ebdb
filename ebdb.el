@@ -109,18 +109,24 @@ See also `ebdb-silent'.")
   "Options for an EIEIO version of EBDB."
   :group 'ebdb)
 
-(defcustom ebdb-sources "~/.emacs.d/ebdb"
-  "User option specifying where EBDB contacts should be loaded
-from.  It can be a single element, or a list of multiple
-elements.  If an element is a string, it is treated as a
-filename, and used to create an instance of `ebdb-db-file'.
+(defcustom ebdb-sources (locate-user-emacs-file "ebdb")
+  "User option specifying EBDB database sources.
+It can be a single element, or a list of elements.  If an element
+is a string, it is treated as a filename, and used to create an
+instance of `ebdb-db-file'.
 
 Elements can also be instances of subclasses of `ebdb-db'.
 Currently, the only subclass is `ebdb-db-file', though you can
 create your own.  When EBDB is loaded, the `ebdb-db-load' method
 will be called on each of class instances."
   :group 'ebdb-eieio
-  :type 'string)
+  ;; Apparently we can't specify EBDB objects here.
+  :type '(choice (file :tag "File")
+		; (ebdb-db :tag "EBDB database instance")
+		 (repeat (file :tag "File")
+		  ;; (choice (file :tag "File")
+		  ;; 	  (ebdb-db :tag "EBDB database instance"))
+		  )))
 
 (defcustom ebdb-auto-merge-records nil
   "If t, EBDB will automatically merge multiple records with the

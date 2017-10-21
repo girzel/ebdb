@@ -28,6 +28,8 @@
 (require 'message)
 (require 'ebdb-com)
 
+(declare-function ebdb-mua-message-header "ebdb-mua")
+
 (defcustom ebdb-pgp-default-action nil
   "Default action when sending a message and the recipients are not in EBDB.
 This should be one of the following symbols:

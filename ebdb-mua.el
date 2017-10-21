@@ -543,7 +543,7 @@ variable should be set before EBDB is loaded.")
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((f ebdb-field-mail-folder)
-				 &optional record unload)
+				 &optional record _unload)
   (when record
     (let* ((folder (slot-value f 'folder))
 	   (mails (mapcar #'regexp-quote (ebdb-record-mail-canon record)))
