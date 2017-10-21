@@ -2780,7 +2780,7 @@ only return fields that are suitable for user editing.")
 (cl-defmethod cl-print-object ((record ebdb-record) stream)
   (princ (format "#<%S %s>"
 		 (eieio-object-class-name record)
-		 (ebdb-string record))
+		 (ebdb-record-name record))
 	 stream))
 
 (cl-defgeneric ebdb-record-related (record field)
