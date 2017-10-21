@@ -525,7 +525,7 @@ call ~ebdb-mua-display-records~.
 #+attr_texinfo: :indic @kbd
 - : ::
 
-     #+KINDEX: :
+     #+KINDEX: ; :
      #+FINDEX: ebdb-mua-update-records
      If the option ~ebdb-mua-auto-update-p~ is nil, this command
      (~ebdb-mua-update-records~) can be used to do the same thing, and
@@ -533,21 +533,21 @@ call ~ebdb-mua-display-records~.
 
 - ; ::
 
-     #+KINDEX: ;
+     #+KINDEX: ; ;
      #+FINDEX: ebdb-mua-display-all-records
      If the option ~ebdb-mua-pop-up~ is nil, this command can be used
      to do the same thing (~ebdb-mua-display-all-records~).
 
 - ' ::
 
-     #+KINDEX: '
+     #+KINDEX: ; '
      #+FINDEX: ebdb-mua-edit-sender-notes
      Edit the notes field of the message sender
      (~ebdb-mua-edit-sender-notes~).
 
 - @@texinfo:@quotedblright{}@@ ::
 
-     #+KINDEX: "
+     #+KINDEX: ; "
      #+FINDEX: ebdb-mua-in-ebdb-buffer
      This command moves point to the relevant EBDB pop-up buffer
      (popping the buffer up first, if necessary).  You can then issue
@@ -557,7 +557,7 @@ call ~ebdb-mua-display-records~.
 
 - s ::
 
-     #+KINDEX: s
+     #+KINDEX: ; s
      #+FINDEX: ebdb-mua-snarf-article
      This command scans the body text of the current message, and
      attempts to snarf new record information from it.  Email
@@ -566,6 +566,13 @@ call ~ebdb-mua-display-records~.
      the signature will be associated with the sender.  The user is
      always prompted before edits are made.  This functionality is
      highly unreliable, and probably won't work as advertised.
+
+- t ::
+
+     #+KINDEX: ; t
+     #+FINDEX: ebdb-mua-toggle-records-format
+     This command toggles the displayed records between the multiline
+     and oneline display formats.
 
 Other command are not bound by default:
 

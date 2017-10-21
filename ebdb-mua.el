@@ -1139,6 +1139,15 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 	       [?q]))))))
 
 ;;;###autoload
+(defun ebdb-mua-toggle-records-format ()
+  "Toggle format of all records without leaving MUA."
+  (interactive)
+  (let ((buf (get-buffer (ebdb-make-buffer-name))))
+    (when buf
+     (with-current-buffer buf
+       (ebdb-toggle-records-format ebdb-records)))))
+
+;;;###autoload
 (defun ebdb-mua-edit-sender-notes ()
   "Edit the notes field of the EBDB record of the message sender."
   (interactive)
@@ -1278,6 +1287,7 @@ along with the MUA window(s), displaying the matching records."
     (define-key km (kbd "'") #'ebdb-mua-edit-sender-notes)
     (define-key km (kbd "\"") #'ebdb-mua-in-ebdb-buffer)
     (define-key km (kbd "s") #'ebdb-mua-snarf-article)
+    (define-key km (kbd "t") #'ebdb-mua-toggle-records-format)
     km)
   "Common keymap for calling EBDB commands in an MUA.
 

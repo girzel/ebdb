@@ -723,26 +723,26 @@ call @code{ebdb-mua-display-records}.
 
 @table @kbd
 @item :
-@kindex :
+@kindex ; :
 @findex ebdb-mua-update-records
 If the option @code{ebdb-mua-auto-update-p} is nil, this command
 (@code{ebdb-mua-update-records}) can be used to do the same thing, and
 will behave as if that option were set to @code{query}.
 
 @item ;
-@kindex ;
+@kindex ; ;
 @findex ebdb-mua-display-all-records
 If the option @code{ebdb-mua-pop-up} is nil, this command can be used
 to do the same thing (@code{ebdb-mua-display-all-records}).
 
 @item '
-@kindex '
+@kindex ; '
 @findex ebdb-mua-edit-sender-notes
 Edit the notes field of the message sender
 (@code{ebdb-mua-edit-sender-notes}).
 
 @item @quotedblright{}
-@kindex "
+@kindex ; "
 @findex ebdb-mua-in-ebdb-buffer
 This command moves point to the relevant EBDB pop-up buffer
 (popping the buffer up first, if necessary).  You can then issue
@@ -751,7 +751,7 @@ commands in the EBDB buffer as usual, with the exception that
 window, rather than quitting the EBDB buffer.
 
 @item s
-@kindex s
+@kindex ; s
 @findex ebdb-mua-snarf-article
 This command scans the body text of the current message, and
 attempts to snarf new record information from it.  Email
@@ -760,6 +760,12 @@ information in the headers of forwarded mail, and information in
 the signature will be associated with the sender.  The user is
 always prompted before edits are made.  This functionality is
 highly unreliable, and probably won't work as advertised.
+
+@item t
+@kindex ; t
+@findex ebdb-mua-toggle-records-format
+This command toggles the displayed records between the multiline
+and oneline display formats.
 @end table
 
 Other command are not bound by default:

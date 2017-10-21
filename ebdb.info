@@ -721,6 +721,10 @@ binding, and only specifies the further binding.  Ie, press “;:” to call
      before edits are made.  This functionality is highly unreliable,
      and probably won’t work as advertised.
 
+‘t’
+     This command toggles the displayed records between the multiline
+     and oneline display formats.
+
    Other command are not bound by default:
 
  -- Command: ebdb-mua-yank-cc
@@ -1881,17 +1885,21 @@ Index
 * Menu:
 
 * !:                                     Searching.           (line  49)
-* ":                                     Interactive Commands.
-                                                              (line  26)
-* ':                                     Interactive Commands.
-                                                              (line  22)
 * / /:                                   Searching.           (line   6)
-* ::                                     Interactive Commands.
-                                                              (line  13)
-* ;:                                     Interactive Commands.
-                                                              (line  18)
-* ; <1>:                                 The Basics of ebdb-mode.
+* ;:                                     The Basics of ebdb-mode.
                                                               (line  41)
+* ; ":                                   Interactive Commands.
+                                                              (line  26)
+* ; ':                                   Interactive Commands.
+                                                              (line  22)
+* ; ::                                   Interactive Commands.
+                                                              (line  13)
+* ; ;:                                   Interactive Commands.
+                                                              (line  18)
+* ; s:                                   Interactive Commands.
+                                                              (line  33)
+* ; t:                                   Interactive Commands.
+                                                              (line  42)
 * ?:                                     The Basics of ebdb-mode.
                                                               (line 102)
 * ^:                                     Searching.           (line  55)
@@ -2030,13 +2038,13 @@ Index
 * ebdb-mua-auto-update-p:                Auto-Updating Records.
                                                               (line  10)
 * ebdb-mua-display-all-recipients:       Interactive Commands.
-                                                              (line  55)
+                                                              (line  59)
 * ebdb-mua-display-all-records:          Interactive Commands.
                                                               (line  18)
 * ebdb-mua-display-recipients:           Interactive Commands.
-                                                              (line  52)
+                                                              (line  56)
 * ebdb-mua-display-sender:               Interactive Commands.
-                                                              (line  49)
+                                                              (line  53)
 * ebdb-mua-edit-sender-notes:            Interactive Commands.
                                                               (line  22)
 * ebdb-mua-in-ebdb-buffer:               Interactive Commands.
@@ -2058,10 +2066,12 @@ Index
                                                               (line  25)
 * ebdb-mua-summary-unification-list:     Sender name display. (line  22)
 * ebdb-mua-summary-unify-format-letter:  Sender name display. (line  26)
+* ebdb-mua-toggle-records-format:        Interactive Commands.
+                                                              (line  42)
 * ebdb-mua-update-records:               Interactive Commands.
                                                               (line  13)
 * ebdb-mua-yank-cc:                      Interactive Commands.
-                                                              (line  43)
+                                                              (line  47)
 * ebdb-next-field:                       The Basics of ebdb-mode.
                                                               (line  16)
 * ebdb-next-record:                      The Basics of ebdb-mode.
@@ -2161,9 +2171,7 @@ Index
                                                               (line  50)
 * revert-buffer:                         The Basics of ebdb-mode.
                                                               (line  99)
-* s:                                     Interactive Commands.
-                                                              (line  33)
-* s <1>:                                 The Basics of ebdb-mode.
+* s:                                     The Basics of ebdb-mode.
                                                               (line 108)
 * Saving the database:                   The EBDB Database.   (line  78)
 * Search history:                        Searching.           (line  51)
@@ -2207,36 +2215,36 @@ Node: Pop-up Buffers19386
 Node: Auto-Updating Records20224
 Node: Noticing and Automatic Rules22624
 Node: Interactive Commands23957
-Node: EBDB and MUA summary buffers26319
-Node: Sender name display26805
-Node: Summary buffer marks28032
-Node: EBDB Buffers29211
-Node: Searching30393
-Node: Changing Search Behavior32055
-Node: The Basics of ebdb-mode33302
-Node: Marking36903
-Node: Exporting/Formatting37327
-Node: Completion38276
-Node: Snarfing39474
-Node: Internationalization41475
-Node: Diary Integration44174
-Node: Mail Aliases45039
-Node: vCard Support45753
-Node: Org Integration46252
-Node: Citing Records48150
-Node: Hacking EBDB48908
-Node: Field Classes51227
-Node: Init and Delete Methods54211
-Node: The Labeled Field Class55718
-Node: The Singleton Field Class56572
-Node: Actions57010
-Node: Custom Field Searching57682
-Node: Fast Lookups60486
-Node: Formatting in the EBDB Buffer62296
-Node: Writing Internationalization Libraries64309
-Node: Writing Integration For New MUAs68660
-Node: Article snarfing72079
-Node: Index72797
+Node: EBDB and MUA summary buffers26432
+Node: Sender name display26918
+Node: Summary buffer marks28145
+Node: EBDB Buffers29324
+Node: Searching30506
+Node: Changing Search Behavior32168
+Node: The Basics of ebdb-mode33415
+Node: Marking37016
+Node: Exporting/Formatting37440
+Node: Completion38389
+Node: Snarfing39587
+Node: Internationalization41588
+Node: Diary Integration44287
+Node: Mail Aliases45152
+Node: vCard Support45866
+Node: Org Integration46365
+Node: Citing Records48263
+Node: Hacking EBDB49021
+Node: Field Classes51340
+Node: Init and Delete Methods54324
+Node: The Labeled Field Class55831
+Node: The Singleton Field Class56685
+Node: Actions57123
+Node: Custom Field Searching57795
+Node: Fast Lookups60599
+Node: Formatting in the EBDB Buffer62409
+Node: Writing Internationalization Libraries64422
+Node: Writing Integration For New MUAs68773
+Node: Article snarfing72192
+Node: Index72910
 
 End Tag Table
 
