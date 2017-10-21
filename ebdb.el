@@ -3147,6 +3147,11 @@ priority."
       (push `(organizations . ,o) f-list)))
   (cl-call-next-method record f-list all))
 
+(cl-defmethod ebdb-record-change-name ((record ebdb-record-person)
+				       (name-string string))
+  (let ((name (ebdb-parse ebdb-default-name-class name-string)))
+    (ebdb-record-change-name record name)))
+
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-relation))
   (or
@@ -3315,6 +3320,11 @@ priority."
    (append
     '((domain . ebdb-field-domain))
     alist)))
+
+(cl-defmethod ebdb-record-change-name ((record ebdb-record-organization)
+				       (name-string string))
+  (let ((name (ebdb-parse ebdb-field-name-simple name-string)))
+    (ebdb-record-change-name record name)))
 
 (cl-defmethod ebdb-record-current-fields ((record ebdb-record-organization)
 					  &optional f-list all)
