@@ -1573,10 +1573,7 @@ in `ebdb-db-list', using its default record class.  Use
 ;;;###autoload
 (defun ebdb-create-record-extended ()
   (interactive)
-  (let ((db
-	 (if (= 1 (length ebdb-db-list))
-	     (car ebdb-db-list)
-	   (ebdb-prompt-for-db)))
+  (let ((db (ebdb-prompt-for-db nil t))
 	(record-class
 	 (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)))
     (ebdb-create-record db record-class)))

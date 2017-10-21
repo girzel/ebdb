@@ -4118,19 +4118,26 @@ Returns a list of (\"label\" slot . field-class)."
     (or (assoc choice field-list)
 	(list choice (cons 'fields 'ebdb-field-user-simple)))))
 
-(defun ebdb-prompt-for-db (&optional db-list)
+(defun ebdb-prompt-for-db (&optional db-list shortcut)
+  "Prompt the user to choose a database.
+Possible choices come from `ebdb-db-list', or from DB-LIST, if
+that argument is given.  If SHORTCUT is non-nil, don't bother
+prompting if there's only one database."
   (unless (or db-list ebdb-db-list)
     (ebdb-load))
-  (let* ((collection (or db-list ebdb-db-list))
-	 (db-string
-	  (ebdb-read-string "Choose a database: "
-			    nil
-			    (mapcar
-			     (lambda (d)
-			       (slot-value d 'object-name))
-			     collection)
-			    t)))
-    (object-assoc db-string 'object-name collection)))
+  (let ((collection (or db-list ebdb-db-list))
+	db-string)
+    (if (and shortcut (= 1 (length collection)))
+	(car collection)
+      (setq db-string
+	    (ebdb-read-string "Choose a database: "
+			      nil
+			      (mapcar
+			       (lambda (d)
+				 (slot-value d 'object-name))
+			       collection)
+			      t))
+      (object-assoc db-string 'object-name collection))))
 
 (defun ebdb-prompt-for-mail (record)
   (let ((mail-alist (mapcar
