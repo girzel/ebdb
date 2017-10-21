@@ -223,7 +223,7 @@ accordingly."
   (cond ((stringp ebdb-user-mail-address-re)
 	 ebdb-user-mail-address-re)
 	((eq ebdb-user-mail-address-re 'self)
-	 (let ((self-rec (ebdb-gethash ebdb-record-self 'uuid)))
+	 (let ((self-rec (ebdb-record-self)))
 	   (unless self-rec
 	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set."))
 	   (setq ebdb-user-mail-address-re

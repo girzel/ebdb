@@ -2638,7 +2638,7 @@ message."
   (interactive
    (list (or (and ebdb-record-self
 		  (ebdb-signal-get-number
-		   (ebdb-gethash ebdb-record-self 'uuid)
+		   (ebdb-record-self)
 		   t))
 	     (ebdb-read-string
 	      "Number to send from (or set `ebdb-record-self'): "))

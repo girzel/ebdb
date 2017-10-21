@@ -500,6 +500,10 @@ It takes one argument, the name as extracted by
   :group 'ebdb-utilities
   :type 'function)
 
+(defsubst ebdb-record-self ()
+  "Return the \"self\" record"
+  (ebdb-gethash ebdb-record-self 'uuid))
+
 ;;; Record editing
 
 (defcustom ebdb-default-separator '("[,;]" ", ")
@@ -4320,7 +4324,7 @@ command's docstring for more details."
   (let ((sender
 	 (or (and ebdb-record-self
 		  (ebdb-signal-get-number
-		   (ebdb-gethash ebdb-record-self 'uuid)
+		   (ebdb-record-self)
 		   t))
 	     (ebdb-read-string
 	      "Number to send from (or set `ebdb-record-self'): ")))
