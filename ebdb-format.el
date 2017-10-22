@@ -250,7 +250,12 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 		 field-list
 		 (mapcar #'cdr
 			 (seq-remove
-			  (lambda (elt) (eql (car elt) 'name))
+			  ;; The or (null (cdr elt)) is there to
+			  ;; protect against an earlier bug with
+			  ;; timestamps and creation-dates, it could
+			  ;; be removed at some point.
+			  (lambda (elt) (or (eql (car elt) 'name)
+					    (null (cdr elt))))
  			  (ebdb-record-current-fields record nil t)))))
 	f-class)
     (with-slots (exclude include) fmt
