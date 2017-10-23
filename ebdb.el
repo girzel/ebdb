@@ -2572,14 +2572,19 @@ RECORD is responsible for parsing it correctly.")
   ;; created (whether manually or loaded).
   (let ((cache (make-instance 'ebdb-cache)))
     (setq slots (plist-put slots :cache cache))
-    (with-slots (timestamp creation-date) record
-      (unless creation-date
-	(setf creation-date (make-instance 'ebdb-field-creation-date))
-	(ebdb-stamp-time creation-date))
-      (unless timestamp
-	(setf timestamp (make-instance 'ebdb-field-timestamp))
-	(ebdb-stamp-time timestamp))
-      (cl-call-next-method record slots))))
+    (unless (plist-get slots :timestamp)
+      (setq slots
+	    (plist-put slots :timestamp
+		       (make-instance 'ebdb-field-timestamp)))
+      (ebdb-stamp-time (plist-get slots :timestamp))
+      (setf (slot-value record 'dirty) t))
+    (unless (plist-get slots :creation-date)
+      (setq slots
+	    (plist-put slots :creation-date
+		       (make-instance 'ebdb-field-creation-date)))
+      (ebdb-stamp-time (plist-get slots :creation-date))
+      (setf (slot-value record 'dirty) t))
+    (cl-call-next-method record slots)))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record))
   "Initiate a record after loading a database or creating a new

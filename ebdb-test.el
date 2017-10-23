@@ -135,6 +135,39 @@
 	    rec (ebdb-parse 'ebdb-field-mail "none@such.com"))
 	   :type 'ebdb-readonly-db))))))
 
+(ert-deftest ebdb-auto-insert-timestamp-creation ()
+  "Test the creation of timestamp and creation-date fields.
+Actually exercises the `initialize-instance' methods of records."
+  (ebdb-test-with-records
+    (ebdb-test-with-database (db ebdb-test-database-1)
+      (let* ((r1 (make-instance ebdb-default-record-class))
+	     (r2 (make-instance ebdb-default-record-class
+				:timestamp nil
+				:creation-date nil))
+	     (r2-date (slot-value (slot-value r2 'creation-date) 'timestamp)))
+	;; `make-instance' with no :timestamp or :creation-date values
+	;; should get the fields correctly.
+	(should (and (stringp (ebdb-string (slot-value r1 'timestamp)))
+		     (stringp (ebdb-string (slot-value r1 'creation-date)))))
+	(delete-instance r1)
+	;; `make-instance' with tags set to nil should still get
+	;; correct fields (can happen in migration).
+	(should (and (stringp (ebdb-string (slot-value r2 'timestamp)))
+		     (stringp (ebdb-string (slot-value r2 'creation-date)))))
+	;; Creating a record, saving it to the database, then
+	;; re-loading it shouldn't change the creation date.
+	(ebdb-db-add-record db r2)
+	(ebdb-db-save db)
+	(sleep-for 2)
+	(ebdb-db-unload db)
+	(setq db (eieio-persistent-read (slot-value db 'file) 'ebdb-db t))
+	(should (equal r2-date
+		       (slot-value
+			(slot-value
+			 (car ebdb-record-tracker)
+			 'creation-date)
+			'timestamp)))))))
+
 (ert-deftest ebdb-cant-find-related-role ()
   "Find org record from a role field.
 If it doesn't exist, raise `ebdb-related-unfound'."
