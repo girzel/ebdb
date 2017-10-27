@@ -1342,6 +1342,17 @@ reloaded with `ebdb-reload-database'."
       (ebdb-db-disable db)
       (message "Database %s is disabled." (ebdb-string db)))))
 
+(defun ebdb-shutdown ()
+  "Save databases, kill buffers, and clear variables."
+  (interactive)
+  (ebdb-save)
+  (dolist (b (buffer-list))
+    (with-current-buffer b
+      (when (derived-mode-p 'ebdb-mode)
+	(kill-buffer))))
+  (ebdb-clear-vars)
+  (message "EBDB shutdown complete"))
+
 
 ;; clean-up functions
 
