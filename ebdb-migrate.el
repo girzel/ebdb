@@ -393,6 +393,7 @@ variable `bbdb-file' points to an existing file holding valid
 contacts in a previous BBDB format.  If that variable isn't set
 use \(locate-user-emacs-file \"bbdb\" \".bbdb\"\), which is how
 BBDB sets the default of that option."
+  (interactive)
   (require 'url-handlers)
   (require 'ebdb-org)
   (require 'ebdb-gnus)
@@ -444,7 +445,7 @@ BBDB sets the default of that option."
 	     (push (list r err) duds))))
 	(when duds
 	  (pop-to-buffer
-	   (get-buffer-create "*EBDB Migration*")
+	   (get-buffer-create "*EBDB Migration Errors*")
 	   '(nil . ((window-height . 10))))
 	  (insert "The records below could not be migrated:\n\n")
 	  (insert
@@ -674,7 +675,9 @@ BBDB sets the default of that option."
   '((org-contacts-email-property . ebdb-default-mail-class)
     (org-contacts-tel-property . ebdb-default-phone-class)
     (org-contacts-note-property . ebdb-default-notes-class)
-    (org-contacts-nickname-property . ebdb-field-name-simple)
+    ;; NICKNAME is specifically meant for erc nicks, not normal
+    ;; nicknames.
+;    (org-contacts-nickname-property . ebdb-field-name-simple)
     (org-contacts-alias-property . ebdb-default-name-class))
   "The simplest property-to-field correspondences.
 This variable only holds correspondences for fields that require
@@ -687,7 +690,8 @@ no processing beyond calling `ebdb-parse' on the string values.")
   (require 'org-contacts)
   (unless ebdb-sources
     (error "First set `ebdb-sources' to the location of your EBDB database."))
-  (let ((db (ebdb-prompt-for-db))
+
+  (let ((db (ebdb-prompt-for-db nil t))
 	;; Postpone evaluation of the symbols until run time.
 	(prop-fields
 	 (mapcar
@@ -696,43 +700,59 @@ no processing beyond calling `ebdb-parse' on the string values.")
 		  (if (class-p class) class (symbol-value class))))
 	  ebdb-migrate-org-simple-correspondences))
 	(count 0)
-	(address-buffer (get-buffer-create "*EBDB Migration Addresses*"))
-	record records f)
-    (with-current-buffer address-buffer
-      (erase-buffer))
+	(dud-fields '())
+	record records)
+
     (message "Migrating records from org-contacts... %d records" count)
+
     (pcase-dolist (`(,name ,_ ,fields) (org-contacts-db))
       (setq record (make-instance ebdb-default-record-class))
       (ebdb-record-change-name record name)
-      (dolist (field fields)
-	(setq f
-	      (if (assoc-string (car field) prop-fields)
-		  (ebdb-parse (cdr (assoc-string (car field) prop-fields))
-			      (cdr field))
-		(pcase (car field)
-		  ((pred (equal org-contacts-address-property))
-		   (with-current-buffer address-buffer
-		     (insert (format "%s: %s\n" name (cdr field)))))
-		  ((pred (equal org-contacts-birthday-property))
-		   (make-instance 'ebdb-field-anniversary
-				  :date  (calendar-gregorian-from-absolute
-					  (org-time-string-to-absolute
-					   (cdr field)))
-				  :object-name "birthday")))))
-	(when f
-	  (ebdb-record-insert-field record f)))
+      (pcase-dolist (`(,field-label . ,value) fields)
+	(condition-case nil
+	    (let ((f (if (assoc-string field-label prop-fields)
+			 (ebdb-parse (cdr (assoc-string field-label prop-fields))
+				     value)
+		       (pcase field-label
+			 ((pred (equal org-contacts-address-property))
+			  (signal 'ebdb-unparseable (list value)))
+			 ((pred (equal org-contacts-birthday-property))
+			  (make-instance 'ebdb-field-anniversary
+					 :date  (calendar-gregorian-from-absolute
+						 (org-time-string-to-absolute
+						  value))
+					 :object-name "birthday"))))))
+	      (when f
+		(ebdb-record-insert-field record f)))
+	  (ebdb-unparseable
+	   (push (cons field-label value)
+		 (alist-get name dud-fields '() nil #'equal)))))
       (push record records)
       (message "Migrating records from org-contacts... %d records"
 	       (cl-incf count)))
+
     (dolist (r records)
       (ebdb-db-add-record db r))
+
     (message "Migrating records from org-contacts... %d records"
-	     (length records)))
-  (ebdb-display-records records)
-  (with-current-buffer address-buffer
-    (unless (= (point-min) (point-max))
-      (pop-to-buffer address-buffer
-		     '(display-buffer-pop-up-window . ((width . 50)))))))
+	     (length records))
+
+    (ebdb-display-records records)
+
+    (when dud-fields
+      (pop-to-buffer (get-buffer-create "*EBDB Migration Errors*")
+		     '(display-buffer-pop-up-window . ((width . 50))))
+      (goto-char (point-min))
+      (pcase-dolist (`(,name . ,fields) dud-fields)
+	(insert (format "* [[ebdb:uuid/%s][%s]]\n"
+			(ebdb-record-uuid (car (ebdb-gethash name '(fl-name))))
+			name))
+	(pcase-dolist (`(,field-label . ,value) fields)
+	  (insert (format "%s: %s\n" field-label value)))
+	(insert "\n"))
+      (goto-char (point-min))
+      (org-mode)
+      (message "Some field values could not be parsed"))))
 
 (provide 'ebdb-migrate)
 ;;; ebdb-migrate.el ends here

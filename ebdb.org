@@ -40,7 +40,7 @@ string, fail to find anything (because you don't have any records
 yet), and finally open a {{{buf(EBDB)}}} buffer where you can start to
 make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).
 ** Migration from BBDB
-#+CINDEX: Migrating from BBDB
+#+CINDEX: Migration from BBDB
 *** Record Migration
 It's possible to migrate records from a BBDB database.  The
 ~bbdb-file~ variable should point to your current BBDB file;
@@ -49,15 +49,31 @@ alternately EBDB will look in the default location, found using
 a non-existent file name, and then run ~ebdb-load~ (or any of the
 other EBDB entry commands).  You'll be prompted to create the new
 database, and upgrade from BBDB.  If any records could not be
-upgraded, they will be displayed in an {{{buf(EBDB Migration)}}}
+upgraded, they will be displayed in an {{{buf(EBDB Migration Errors)}}}
 buffer.  Migration bug reports are very welcome.
+
+#+FINDEX: ebdb-migrate-from-bbdb
+You can also call the command ~ebdb-migrate-from-bbdb~ at any time.
 *** Variables and Options
 Many of the old BBDB customization options have been changed or
 removed entirely in EBDB.  It's probably best to put your BBDB
 customizations aside, and set new EBDB options as you come across
 them.  The most important options are detailed in this manual, you can
 also customize the "EBDB" group to see what's available.
+** Migration from Org Contacts
+#+CINDEX: Migration from Org Contacts
+#+FINDEX: ebdb-migrate-from-org-contacts
+EBDB also provides limited support for migrating from Org Contacts:
+simply call the command ~ebdb-migrate-from-org-contacts~.  Your
+contacts database will be scanned, and all contacts will be migrated.
+Any field values that could not be migrated will be displayed in a
+{{{buf(EBDB Migration Errors)}}} buffer.
 
+At present, addresses cannot be migrated automatically.  Org Contacts
+stores addresses as a free-form string, which is simply too difficult
+to parse accurately.  Address values will be inserted into the
+migration errors buffer, and will have to be added to the records
+manually.
 * The EBDB Database
 :PROPERTIES:
 :ID:       9a02f8fb-01e2-4cd8-8166-608814a031f7

@@ -70,6 +70,7 @@ modify this GNU manual.”
 Getting Started
 
 * Migration from BBDB::
+* Migration from Org Contacts::
 
 Migration from BBDB
 
@@ -176,12 +177,13 @@ make new records (see @ref{Creating Records}).
 
 @menu
 * Migration from BBDB::
+* Migration from Org Contacts::
 @end menu
 
 @node Migration from BBDB
 @section Migration from BBDB
 
-@cindex Migrating from BBDB
+@cindex Migration from BBDB
 
 @menu
 * Record Migration::
@@ -198,8 +200,11 @@ alternately EBDB will look in the default location, found using
 a non-existent file name, and then run @code{ebdb-load} (or any of the
 other EBDB entry commands).  You'll be prompted to create the new
 database, and upgrade from BBDB.  If any records could not be
-upgraded, they will be displayed in an *EBDB Migration*
+upgraded, they will be displayed in an *EBDB Migration Errors*
 buffer.  Migration bug reports are very welcome.
+
+@findex ebdb-migrate-from-bbdb
+You can also call the command @code{ebdb-migrate-from-bbdb} at any time.
 
 @node Variables and Options
 @subsection Variables and Options
@@ -209,6 +214,23 @@ removed entirely in EBDB.  It's probably best to put your BBDB
 customizations aside, and set new EBDB options as you come across
 them.  The most important options are detailed in this manual, you can
 also customize the ``EBDB'' group to see what's available.
+
+@node Migration from Org Contacts
+@section Migration from Org Contacts
+
+@cindex Migration from Org Contacts
+@findex ebdb-migrate-from-org-contacts
+EBDB also provides limited support for migrating from Org Contacts:
+simply call the command @code{ebdb-migrate-from-org-contacts}.  Your
+contacts database will be scanned, and all contacts will be migrated.
+Any field values that could not be migrated will be displayed in a
+*EBDB Migration Errors* buffer.
+
+At present, addresses cannot be migrated automatically.  Org Contacts
+stores addresses as a free-form string, which is simply too difficult
+to parse accurately.  Address values will be inserted into the
+migration errors buffer, and will have to be added to the records
+manually.
 
 @node The EBDB Database
 @chapter The EBDB Database
