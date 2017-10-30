@@ -79,8 +79,8 @@
         (ispell-send-string "#\n^hello\n")
         (while (progn
                  (ispell-accept-output)
-                 (not (string= "" (car ispell-filter))))))))
-  (message "Exporting %d words to personal dictionary...done" count))
+                 (not (string= "" (car ispell-filter)))))))
+    (message "Exporting %d words to personal dictionary...done" count)))
 
 (defun ebdb-ispell-collect-words (strings)
   "Find all individual words in STRINGS and filter.
