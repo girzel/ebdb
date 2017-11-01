@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
 
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -4884,13 +4884,13 @@ important work is done by the `ebdb-db-load' method."
 		       (progn (setq s (eieio-persistent-read auto-save-file 'ebdb-db t))
 			      (setf (slot-value s 'file) orig-filename)
 			      (setf (slot-value s 'dirty) t))
-		     (setq s (eieio-persistent-read s 'ebdb-db t)))
-		   (cl-pushnew s ebdb-db-list))
+		     (setq s (eieio-persistent-read s 'ebdb-db t))))
 	       ;; Handle new/nonexistent databases.
 	       (when (yes-or-no-p (format "%s does not exist, create? " s))
 		 (setq s (make-instance 'ebdb-db-file :file s :dirty t))
 		 ;; Try to get it on disk first.
-		 (ebdb-db-save s))))
+		 (ebdb-db-save s)))
+	     (cl-pushnew s ebdb-db-list))
 	    ((null (and (eieio-object-p s)
 			(object-of-class-p s 'ebdb-db)))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
