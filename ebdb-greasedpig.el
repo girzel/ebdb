@@ -111,14 +111,14 @@ follows that all slots must be written, if only as a nil or an
 	(princ "(")
 	(mapcar #'ebdb-greasedpig-object-write lst)
 	(princ ")"))
-    (cl-prin1 lst)))
+    (princ lst)))
 
 (cl-defgeneric ebdb-greasedpig-object-write
     ((cls (subclass eieio-default-superclass)))
   (princ (eieio-class-name cls)))
 
 (cl-defgeneric ebdb-greasedpig-object-write (obj)
-  (cl-prin1 obj))
+  (princ obj))
 
 (cl-defmethod ebdb-greasedpig-object-write :around ((obj ebdb-record))
   "Write an `ebdb-record', sans cache."
