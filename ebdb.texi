@@ -495,10 +495,11 @@ labeled ``birthday'' or ``wedding'', and URL fields might be labeled
 ``homepage'' or ``file-sharing''.
 
 In the case of fields with labels, you'll first choose the general
-field (``anniversary'') and then be prompted to choose the label
-(``birthday'').  Again, if you choose a label that hasn't been seen
-before, EBDB will first prompt for confirmation, then define the label
-for future use.
+field (``anniversary''), then enter the field data, and lastly choose a
+label (``birthday'').  Again, if you choose a label that hasn't been
+seen before, EBDB will first prompt for confirmation, then define the
+label for future use.  You can also enter an empty string or hit
+@kbd{C-g} to omit the label altogether.
 
 Loading secondary libraries may make more field types available.
 
@@ -1552,11 +1553,11 @@ the class type.  As an example:
     :initform unknown
     :type symbol
     :custom (choice
-	     (const :tag "Female" female)
-	     (const :tag "Male" male)
-	     (const :tag "Other" other)
-	     (const :tag "Unknown" unknown)
-	     (const :tag "None/Not Applicable" none))))
+             (const :tag "Female" female)
+             (const :tag "Male" male)
+             (const :tag "Other" other)
+             (const :tag "Unknown" unknown)
+             (const :tag "None/Not Applicable" none))))
   :human-readable "gender"
   :documentation "A field holding gender information about this record.")
 @end lisp
@@ -1579,19 +1580,19 @@ provide default values for the new object.
 
 @lisp
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-gender))
-			 &optional slots obj)
+                         &optional slots obj)
   (unless (plist-get slots :gender)
     (let ((gender (intern (completing-read
-			   "Gender: " '(female male other unknown none)
-			   nil t
-			   (when obj (symbol-name (slot-value obj :gender)))))))
+                           "Gender: " '(female male other unknown none)
+                           nil t
+                           (when obj (symbol-name (slot-value obj :gender)))))))
       (setq slots (plist-put slots :gender gender))))
   (cl-call-next-method class slots obj))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
-			  str &optional slots)
+                          str &optional slots)
   (when (and (null (plist-get slots :gender))
-	     (member str '("female" "male" "other" "unknown" "none")))
+             (member str '("female" "male" "other" "unknown" "none")))
     (setq slots (plist-put slots :gender (intern str)))
   (cl-call-next-method class str slots))
 
@@ -1746,14 +1747,14 @@ search methods for the @code{ebdb-field-tags} class.
      "Search for tags (eg +tag1-tag2|tag3): "))))
 
 (cl-defmethod ebdb-field-search ((field ebdb-field-tags)
-				 func)
+                                 func)
   (when (functionp func)
     (funcall func t (slot-value field 'tags) 1)))
 
 (cl-defmethod ebdb-field-search ((field ebdb-field-tags)
-				 (tag string))
+                                 (tag string))
   (seq-find (lambda (tg) (string-match-p tag tg))
-	    (slot-value field 'tags)))
+            (slot-value field 'tags)))
 @end lisp
 
 The @code{ebdb-search-read} method returns a lambda (the @code{cdr} of the
@@ -1830,9 +1831,9 @@ achieve that by overriding the @code{collapse} style like so:
 
 @lisp
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
-			      (field ebdb-field-address)
-			      (_style (eql collapse))
-			      (_record ebdb-record))
+                              (field ebdb-field-address)
+                              (_style (eql collapse))
+                              (_record ebdb-record))
   "Give address fields a special 'collapse formatting."
   (with-slots (streets locality country) field
    (format "%s (%s, %s)" (car streets) locality country)))
@@ -1914,7 +1915,7 @@ arguments.  The method signature will look like this:
 
 @lisp
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-				(_cc (eql 33))))
+                                (_cc (eql 33))))
 @end lisp
 
 See the manual on generic functions for details; suffice it to say
@@ -1927,14 +1928,14 @@ can format the number correctly:
 
 @lisp
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-				(_cc (eql 33)))
+                                (_cc (eql 33)))
   (with-slots (area-code number extension) phone
     (concat
      "+33 "
      (when area-code
        (format "%02d" area-code))
      (format "%s%s %s%s %s%s %s%s"
-	     (split-string number "" t))
+             (split-string number "" t))
      (when extension
        (format "X%d" extension)))))
 @end lisp
@@ -1981,7 +1982,7 @@ return the contents of the appropriate header.  For instance, in Gnus:
 
 @lisp
 (cl-defmethod ebdb-mua-message-header ((header string)
-				   &context (major-mode gnus-summary-mode))
+                                   &context (major-mode gnus-summary-mode))
   "Return value of HEADER for current Gnus message."
   (set-buffer gnus-article-buffer)
   (gnus-fetch-original-field header))

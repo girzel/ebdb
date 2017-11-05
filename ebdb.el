@@ -1015,21 +1015,23 @@ an empty string as a label, which allows interruption of the read
 process."
   ;; This is an :around method so the field label can be prompted for
   ;; before the value.
-  (let* ((labels (symbol-value (oref-default class label-list)))
+  (let* ((field (cl-call-next-method class slots obj))
+	 (labels (symbol-value (oref-default class label-list)))
 	 (human-readable (ebdb-field-readable-name class))
-	 (label (plist-get slots :object-name)))
-    (unless label
-      (setq label (ebdb-read-string
-		   (if (stringp human-readable)
-		       (format "%s label: " (capitalize human-readable))
-		     "Label: ")
-		   (and obj (slot-value obj 'object-name))
-		   labels nil)
-	    slots (plist-put slots :object-name label)))
-    (if (or (member label labels)
-	    (yes-or-no-p (format "%s is not a known label, define it? " label)))
-	(cl-call-next-method class slots obj)
-      (signal 'ebdb-empty (list class)))))
+	 (label (slot-value field 'object-name)))
+    (setq label (ebdb-with-exit
+		    (ebdb-read-string
+		     (if (stringp human-readable)
+			 (format "%s label: " (capitalize human-readable))
+		       "Label: ")
+		     label labels nil)))
+    (when (and label
+	       (or
+		(member label labels)
+		(yes-or-no-p
+		 (format "%s is not a known label, define it? " label))))
+      (setf (slot-value field 'object-name) label))
+    field))
 
 (cl-defmethod ebdb-init-field ((field ebdb-field-labeled) &optional _record)
   (let ((label-var (slot-value field 'label-list)))
@@ -4438,7 +4440,7 @@ COLLECTION and REQUIRE-MATCH have the same meaning as in `completing-read'."
                 map)))
          (completing-read prompt collection nil require-match init))
      (let ((string (read-string prompt init)))
-       (if (string= "" string)
+       (if (string-empty-p string)
 	   (signal 'ebdb-empty (list prompt))
 	 string)))))
 

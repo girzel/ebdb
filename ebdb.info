@@ -458,10 +458,11 @@ labeled “birthday” or “wedding”, and URL fields might be labeled
 “homepage” or “file-sharing”.
 
    In the case of fields with labels, you’ll first choose the general
-field (“anniversary”) and then be prompted to choose the label
-(“birthday”).  Again, if you choose a label that hasn’t been seen
+field (“anniversary”), then enter the field data, and lastly choose a
+label (“birthday”).  Again, if you choose a label that hasn’t been seen
 before, EBDB will first prompt for confirmation, then define the label
-for future use.
+for future use.  You can also enter an empty string or hit ‘C-g’ to omit
+the label altogether.
 
    Loading secondary libraries may make more field types available.
 
@@ -1429,11 +1430,11 @@ the class type.  As an example:
          :initform unknown
          :type symbol
          :custom (choice
-     	     (const :tag "Female" female)
-     	     (const :tag "Male" male)
-     	     (const :tag "Other" other)
-     	     (const :tag "Unknown" unknown)
-     	     (const :tag "None/Not Applicable" none))))
+                  (const :tag "Female" female)
+                  (const :tag "Male" male)
+                  (const :tag "Other" other)
+                  (const :tag "Unknown" unknown)
+                  (const :tag "None/Not Applicable" none))))
        :human-readable "gender"
        :documentation "A field holding gender information about this record.")
 
@@ -1453,19 +1454,19 @@ present, is an existing field instance that can be used to provide
 default values for the new object.
 
      (cl-defmethod ebdb-read ((class (subclass ebdb-field-gender))
-     			 &optional slots obj)
+                              &optional slots obj)
        (unless (plist-get slots :gender)
          (let ((gender (intern (completing-read
-     			   "Gender: " '(female male other unknown none)
-     			   nil t
-     			   (when obj (symbol-name (slot-value obj :gender)))))))
+                                "Gender: " '(female male other unknown none)
+                                nil t
+                                (when obj (symbol-name (slot-value obj :gender)))))))
            (setq slots (plist-put slots :gender gender))))
        (cl-call-next-method class slots obj))
 
      (cl-defmethod ebdb-parse ((class (subclass ebdb-field-gender))
-     			  str &optional slots)
+                               str &optional slots)
        (when (and (null (plist-get slots :gender))
-     	     (member str '("female" "male" "other" "unknown" "none")))
+                  (member str '("female" "male" "other" "unknown" "none")))
          (setq slots (plist-put slots :gender (intern str)))
        (cl-call-next-method class str slots))
 
@@ -1612,14 +1613,14 @@ search methods for the ‘ebdb-field-tags’ class.
           "Search for tags (eg +tag1-tag2|tag3): "))))
 
      (cl-defmethod ebdb-field-search ((field ebdb-field-tags)
-     				 func)
+                                      func)
        (when (functionp func)
          (funcall func t (slot-value field 'tags) 1)))
 
      (cl-defmethod ebdb-field-search ((field ebdb-field-tags)
-     				 (tag string))
+                                      (tag string))
        (seq-find (lambda (tg) (string-match-p tag tg))
-     	    (slot-value field 'tags)))
+                 (slot-value field 'tags)))
 
    The ‘ebdb-search-read’ method returns a lambda (the ‘cdr’ of the
 return value of ‘org-make-tags-matcher’.  The first ‘ebdb-field-search’
@@ -1694,9 +1695,9 @@ of the street addresses, plus the city, plus the country.  You could
 achieve that by overriding the ‘collapse’ style like so:
 
      (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
-     			      (field ebdb-field-address)
-     			      (_style (eql collapse))
-     			      (_record ebdb-record))
+                                   (field ebdb-field-address)
+                                   (_style (eql collapse))
+                                   (_record ebdb-record))
        "Give address fields a special 'collapse formatting."
        (with-slots (streets locality country) field
         (format "%s (%s, %s)" (car streets) locality country)))
@@ -1768,7 +1769,7 @@ and the country-code spec—and needs to specialize on both arguments.
 The method signature will look like this:
 
      (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33))))
+                                     (_cc (eql 33))))
 
    See the manual on generic functions for details; suffice it to say
 that this method will only run when the first argument is an instance of
@@ -1779,14 +1780,14 @@ the ‘ebdb-field-phone’ class (or a subclass), and the second argument is
 we can format the number correctly:
 
      (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
-     				(_cc (eql 33)))
+                                     (_cc (eql 33)))
        (with-slots (area-code number extension) phone
          (concat
           "+33 "
           (when area-code
             (format "%02d" area-code))
           (format "%s%s %s%s %s%s %s%s"
-     	     (split-string number "" t))
+                  (split-string number "" t))
           (when extension
             (format "X%d" extension)))))
 
@@ -1832,7 +1833,7 @@ the responsibility of the MUA to implement this function, and return the
 contents of the appropriate header.  For instance, in Gnus:
 
      (cl-defmethod ebdb-mua-message-header ((header string)
-     				   &context (major-mode gnus-summary-mode))
+                                        &context (major-mode gnus-summary-mode))
        "Return value of HEADER for current Gnus message."
        (set-buffer gnus-article-buffer)
        (gnus-fetch-original-field header))
@@ -2232,46 +2233,46 @@ Node: Inserting New Fields11683
 Node: Editing Existing Fields12479
 Node: Deleting Records and Fields13079
 Node: Field Types13475
-Node: Role fields15666
-Node: Tag field17354
-Node: Mail folder field17998
-Node: MUA Interaction18326
-Node: Loading MUA Code18850
-Node: Display and Updating19563
-Node: Pop-up Buffers20329
-Node: Auto-Updating Records21167
-Node: Noticing and Automatic Rules23567
-Node: Interactive Commands24900
-Node: EBDB and MUA summary buffers27375
-Node: Sender name display27861
-Node: Summary buffer marks29088
-Node: EBDB Buffers30267
-Node: Searching31449
-Node: Changing Search Behavior33111
-Node: The Basics of ebdb-mode34358
-Node: Marking37959
-Node: Exporting/Formatting38383
-Node: Completion39332
-Node: Snarfing40530
-Node: Internationalization42531
-Node: Diary Integration45230
-Node: Mail Aliases46095
-Node: vCard Support46809
-Node: Org Integration47308
-Node: Citing Records49206
-Node: Hacking EBDB49964
-Node: Field Classes52283
-Node: Init and Delete Methods55267
-Node: The Labeled Field Class56774
-Node: The Singleton Field Class57628
-Node: Actions58066
-Node: Custom Field Searching58738
-Node: Fast Lookups61542
-Node: Formatting in the EBDB Buffer63352
-Node: Writing Internationalization Libraries65365
-Node: Writing Integration For New MUAs69716
-Node: Article snarfing73135
-Node: Index73853
+Node: Role fields15762
+Node: Tag field17450
+Node: Mail folder field18094
+Node: MUA Interaction18422
+Node: Loading MUA Code18946
+Node: Display and Updating19659
+Node: Pop-up Buffers20425
+Node: Auto-Updating Records21263
+Node: Noticing and Automatic Rules23663
+Node: Interactive Commands24996
+Node: EBDB and MUA summary buffers27471
+Node: Sender name display27957
+Node: Summary buffer marks29184
+Node: EBDB Buffers30363
+Node: Searching31545
+Node: Changing Search Behavior33207
+Node: The Basics of ebdb-mode34454
+Node: Marking38055
+Node: Exporting/Formatting38479
+Node: Completion39428
+Node: Snarfing40626
+Node: Internationalization42627
+Node: Diary Integration45326
+Node: Mail Aliases46191
+Node: vCard Support46905
+Node: Org Integration47404
+Node: Citing Records49302
+Node: Hacking EBDB50060
+Node: Field Classes52379
+Node: Init and Delete Methods55510
+Node: The Labeled Field Class57017
+Node: The Singleton Field Class57871
+Node: Actions58309
+Node: Custom Field Searching58981
+Node: Fast Lookups61848
+Node: Formatting in the EBDB Buffer63658
+Node: Writing Internationalization Libraries65734
+Node: Writing Integration For New MUAs70148
+Node: Article snarfing73595
+Node: Index74313
 
 End Tag Table
 

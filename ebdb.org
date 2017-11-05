@@ -321,10 +321,11 @@ labeled "birthday" or "wedding", and URL fields might be labeled
 "homepage" or "file-sharing".
 
 In the case of fields with labels, you'll first choose the general
-field ("anniversary") and then be prompted to choose the label
-("birthday").  Again, if you choose a label that hasn't been seen
-before, EBDB will first prompt for confirmation, then define the label
-for future use.
+field ("anniversary"), then enter the field data, and lastly choose a
+label ("birthday").  Again, if you choose a label that hasn't been
+seen before, EBDB will first prompt for confirmation, then define the
+label for future use.  You can also enter an empty string or hit
+{{{kbd(C-g)}}} to omit the label altogether.
 
 Loading secondary libraries may make more field types available.
 *** Role fields
