@@ -60,8 +60,6 @@ Creating Records
 * Record classes::
 * Record names::
 
-
-
 Record Fields
 
 * Inserting New Fields::
@@ -69,21 +67,18 @@ Record Fields
 * Deleting Records and Fields::
 * Field Types::
 
-
-
-
 Field Types
 
 * Role fields::
 * Tag field::
 * Mail folder field::
 
+
 MUA Interaction
 
 * Loading MUA Code::
 * Display and Updating::
 * EBDB and MUA summary buffers::
-
 
 Display and Updating
 
@@ -98,6 +93,7 @@ EBDB and MUA summary buffers
 * Sender name display::
 * Summary buffer marks::
 
+
 EBDB Buffers
 
 * Searching::
@@ -108,13 +104,6 @@ EBDB Buffers
 Searching
 
 * Changing Search Behavior::
-
-
-
-
-
-
-
 
 
 Hacking EBDB
@@ -134,10 +123,11 @@ Field Classes
 * Formatting in the EBDB Buffer::
 
 
-
 Writing Integration For New MUAs
 
 * Article snarfing::
+
+
 
 
 File: ebdb.info,  Node: Getting Started,  Next: The EBDB Database,  Prev: Top,  Up: Top
@@ -613,10 +603,18 @@ command, or by cloning or renaming existing buffers.
      possible to manually create the buffer using interactive commands
      (see below).
 
-   At present, there are _no_ user customization options controlling the
-size and layout of MUA pop-up buffers: each MUA creates the pop-up
-according to hard-coded rules.  This will likely change in the future:
-please complain to the author.
+   EBDB can also integrate with atomic windows (*Note (elisp)Atomic
+Windows::).
+
+ -- User Option: ebdb-join-atomic-windows
+     When non-nil (the defaul), EBDB buffers that are popped up within
+     existing atomic windows will become part of the atomic buffer.
+     Otherwise they will be opened to one side of the atomic window.
+
+   At present, there are _no_ other user customization options
+controlling the size and layout of MUA pop-up buffers: each MUA creates
+the pop-up according to hard-coded rules.  This will likely change in
+the future: please complain to the author.
 
 
 File: ebdb.info,  Node: Auto-Updating Records,  Next: Noticing and Automatic Rules,  Prev: Pop-up Buffers,  Up: Display and Updating
@@ -2047,6 +2045,7 @@ Index
                                                               (line   6)
 * ebdb-insert-field <1>:                 The Basics of ebdb-mode.
                                                               (line  30)
+* ebdb-join-atomic-windows:              Pop-up Buffers.      (line  19)
 * ebdb-mail:                             The Basics of ebdb-mode.
                                                               (line  56)
 * ebdb-make-buffer-name:                 Writing Integration For New MUAs.
@@ -2219,60 +2218,60 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2435
-Node: Migration from BBDB3090
-Node: Record Migration3301
-Node: Variables and Options4104
-Node: Migration from Org Contacts4590
-Node: The EBDB Database5350
-Node: Creating Records9338
-Node: Record classes10419
-Node: Record names10764
-Node: Record Fields11439
-Node: Inserting New Fields11683
-Node: Editing Existing Fields12479
-Node: Deleting Records and Fields13079
-Node: Field Types13475
-Node: Role fields15762
-Node: Tag field17450
-Node: Mail folder field18094
-Node: MUA Interaction18422
-Node: Loading MUA Code18946
-Node: Display and Updating19659
-Node: Pop-up Buffers20425
-Node: Auto-Updating Records21263
-Node: Noticing and Automatic Rules23663
-Node: Interactive Commands24996
-Node: EBDB and MUA summary buffers27471
-Node: Sender name display27957
-Node: Summary buffer marks29184
-Node: EBDB Buffers30363
-Node: Searching31545
-Node: Changing Search Behavior33207
-Node: The Basics of ebdb-mode34454
-Node: Marking38055
-Node: Exporting/Formatting38479
-Node: Completion39428
-Node: Snarfing40626
-Node: Internationalization42627
-Node: Diary Integration45326
-Node: Mail Aliases46191
-Node: vCard Support46905
-Node: Org Integration47404
-Node: Citing Records49302
-Node: Hacking EBDB50060
-Node: Field Classes52379
-Node: Init and Delete Methods55510
-Node: The Labeled Field Class57017
-Node: The Singleton Field Class57871
-Node: Actions58309
-Node: Custom Field Searching58981
-Node: Fast Lookups61848
-Node: Formatting in the EBDB Buffer63658
-Node: Writing Internationalization Libraries65734
-Node: Writing Integration For New MUAs70148
-Node: Article snarfing73595
-Node: Index74313
+Node: Getting Started2425
+Node: Migration from BBDB3080
+Node: Record Migration3291
+Node: Variables and Options4094
+Node: Migration from Org Contacts4580
+Node: The EBDB Database5340
+Node: Creating Records9328
+Node: Record classes10409
+Node: Record names10754
+Node: Record Fields11429
+Node: Inserting New Fields11673
+Node: Editing Existing Fields12469
+Node: Deleting Records and Fields13069
+Node: Field Types13465
+Node: Role fields15752
+Node: Tag field17440
+Node: Mail folder field18084
+Node: MUA Interaction18412
+Node: Loading MUA Code18936
+Node: Display and Updating19649
+Node: Pop-up Buffers20415
+Node: Auto-Updating Records21591
+Node: Noticing and Automatic Rules23991
+Node: Interactive Commands25324
+Node: EBDB and MUA summary buffers27799
+Node: Sender name display28285
+Node: Summary buffer marks29512
+Node: EBDB Buffers30691
+Node: Searching31873
+Node: Changing Search Behavior33535
+Node: The Basics of ebdb-mode34782
+Node: Marking38383
+Node: Exporting/Formatting38807
+Node: Completion39756
+Node: Snarfing40954
+Node: Internationalization42955
+Node: Diary Integration45654
+Node: Mail Aliases46519
+Node: vCard Support47233
+Node: Org Integration47732
+Node: Citing Records49630
+Node: Hacking EBDB50388
+Node: Field Classes52707
+Node: Init and Delete Methods55838
+Node: The Labeled Field Class57345
+Node: The Singleton Field Class58199
+Node: Actions58637
+Node: Custom Field Searching59309
+Node: Fast Lookups62176
+Node: Formatting in the EBDB Buffer63986
+Node: Writing Internationalization Libraries66062
+Node: Writing Integration For New MUAs70476
+Node: Article snarfing73923
+Node: Index74641
 
 End Tag Table
 

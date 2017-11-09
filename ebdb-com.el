@@ -64,6 +64,13 @@ and t (strongly dedicated)."
                  (const :tag "EBDB window weakly dedicated" ebdb)
                  (const :tag "EBDB window strongly dedicated" t)))
 
+(defcustom ebdb-join-atomic-windows t
+  "When non-nil, have EBDB buffers join atomic windows.
+Atomic windows are window groups that are treated as single
+windows by other splitting/display code."
+  :group 'ebdb-record-display
+  :type 'boolean)
+
 (defcustom ebdb-fill-field-values 't
   "If t, fill particularly long field values so that they fit
 within the *EBDB* buffer."
@@ -356,7 +363,7 @@ display information."
                                     (ebdb-toggle-records-format
                                      (ebdb-do-records t) current-prefix-arg))))
     km)
-  "Keymap for Insidious Big Brother Database.
+  "Keymap for EBDB.
 This is a child of `special-mode-map'.")
 
 (defun ebdb-current-record (&optional full)
@@ -782,7 +789,7 @@ current buffer."
     (when buf
       (with-current-buffer buf
 	(when (eq major-mode 'ebdb-mode)
-	  (let (buffer-read-only)
+	  (let ((inhibit-read-only t))
 	    (erase-buffer))
 	  (setq ebdb-records nil)
 	  (set-buffer-modified-p nil))))))
@@ -1023,26 +1030,35 @@ displayed records."
 ;;; dedicated windows, and doesn't have very robust error checking.
 (defun ebdb-pop-up-window (buf &optional select pop)
   "Display *EBDB* buffer BUF by popping up a new window.
+If SELECT is non-nil, select the new window after creation.
 
-POP is typically a three-element list of (window split
-horiz/vert), where WINDOW is the window to be split, SPLIT says
-to split it by how much, and HORIZ/VERT says whether to split it
-vertically or horizontally.  If HORIZ/VERT is nil, split the
-longest way.  If SPLIT is nil, split 0.5.
+POP is a list of (window split direction), where \"window\" is
+the window to be split, \"split\" says to split it by how much,
+and \"direction\" is one of the symbols left, right, above or
+below.
 
-If the whole POP argument is nil, just re-use the current
-buffer."
+Any of the three elements can be nil.  If \"window\" is nil, use
+the current window.  If \"direction\" is nil, split either below
+or right, depending on which dimension is longest.  If \"split\"
+is nil, split 0.5.
+
+If the whole POP argument is nil, re-use the current window.
+
+If the option `ebdb-join-atomic-windows' is non-nil, a popped-up
+buffer window will become part of whichever atomic window it was
+popped up from."
   (let* ((buf (get-buffer buf))
 	 (split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (horiz/vert (or (caddr pop)
-			 (if (> (window-total-width split-window)
-				(window-total-height split-window))
-			     'horiz
-			   'vert)))
+	 (direction (or (caddr pop)
+			(if (> (window-total-width split-window)
+			       (window-total-height split-window))
+			    'right
+			  'below)))
 	 (size (cond ((null pop)
 		      nil)
-		     ((integerp (cadr pop)))
+		     ((integerp (cadr pop))
+		      (cadr pop3))
 		     (t
 		      (let ((ratio (- 1 (or (cadr pop) 0.5)))
 			    (dimension (max (window-total-width split-window)
@@ -1051,8 +1067,8 @@ buffer."
 
     (cond (buffer-window
 	   ;; It's already visible, re-use it.
-	   (or (null select)
-	       (select-window buffer-window)))
+	   (when select
+	     (select-window buffer-window)))
 	  ((not (or split-window size))
 	   ;; Not splitting, but buffer isn't visible, just take up
 	   ;; the whole window.
@@ -1060,10 +1076,20 @@ buffer."
 	   (setq buffer-window (get-buffer-window buf t)))
 	  (t
 	   ;; Otherwise split.
-	   (setq buffer-window (split-window split-window size
-					     (if (eql horiz/vert 'vert)
-						 'below
-					       'right)))
+	   (setq
+	    buffer-window
+	    ;;   If the window we're splitting is an atomic window,
+	    ;; maybe make our buffer part of the atom.
+	    (if (and ebdb-join-atomic-windows
+		     (window-atom-root split-window))
+		(display-buffer-in-atom-window
+		 buf `((window . ,split-window)
+		       (side . ,direction)
+		       ,(if (eq direction 'below)
+			    `(window-height . ,size)
+			  `(window-width . ,size))))
+	      (split-window
+	       split-window size direction)))
 	   (set-window-buffer buffer-window buf)))
     (display-buffer-record-window 'window buffer-window buf)
     (set-window-prev-buffers buffer-window nil)

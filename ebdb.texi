@@ -83,8 +83,6 @@ Creating Records
 * Record classes::
 * Record names::
 
-
-
 Record Fields
 
 * Inserting New Fields::
@@ -92,21 +90,18 @@ Record Fields
 * Deleting Records and Fields::
 * Field Types::
 
-
-
-
 Field Types
 
 * Role fields::
 * Tag field::
 * Mail folder field::
 
+
 MUA Interaction
 
 * Loading MUA Code::
 * Display and Updating::
 * EBDB and MUA summary buffers::
-
 
 Display and Updating
 
@@ -121,6 +116,7 @@ EBDB and MUA summary buffers
 * Sender name display::
 * Summary buffer marks::
 
+
 EBDB Buffers
 
 * Searching::
@@ -131,13 +127,6 @@ EBDB Buffers
 Searching
 
 * Changing Search Behavior::
-
-
-
-
-
-
-
 
 
 Hacking EBDB
@@ -157,10 +146,11 @@ Field Classes
 * Formatting in the EBDB Buffer::
 
 
-
 Writing Integration For New MUAs
 
 * Article snarfing::
+
+
 @end detailmenu
 @end menu
 
@@ -641,10 +631,19 @@ possible to manually create the buffer using interactive commands (see
 below).
 @end defopt
 
-At present, there are _no_ user customization options controlling the
-size and layout of MUA pop-up buffers: each MUA creates the pop-up
-according to hard-coded rules.  This will likely change in the future:
-please complain to the author.
+EBDB can also integrate with atomic windows (@xref{Atomic
+Windows,,,elisp}).
+
+@defopt ebdb-join-atomic-windows
+When non-nil (the defaul), EBDB buffers that are popped up within
+existing atomic windows will become part of the atomic buffer.
+Otherwise they will be opened to one side of the atomic window.
+@end defopt
+
+At present, there are _no_ other user customization options
+controlling the size and layout of MUA pop-up buffers: each MUA
+creates the pop-up according to hard-coded rules.  This will likely
+change in the future: please complain to the author.
 
 @node Auto-Updating Records
 @subsection Auto-Updating Records
