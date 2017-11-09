@@ -1058,7 +1058,7 @@ popped up from."
 	 (size (cond ((null pop)
 		      nil)
 		     ((integerp (cadr pop))
-		      (cadr pop3))
+		      (cadr pop))
 		     (t
 		      (let ((ratio (- 1 (or (cadr pop) 0.5)))
 			    (dimension (max (window-total-width split-window)
