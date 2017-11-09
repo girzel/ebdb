@@ -878,10 +878,10 @@ SORT is t, usually because RECORDS have new sortkeys, re-sort the
 displayed records."
   (let ((bufs (if all-buffers
 		  (seq-filter (lambda (b)
-				(eq (buffer-local-value 'major-mode b)
-				    'ebdb-mode))
+				(with-current-buffer b
+				  (derived-mode-p 'ebdb-mode)))
 			      (buffer-list))
-		(and (eq major-mode 'ebdb-mode)
+		(and (derived-mode-p 'ebdb-mode)
 		     (list (current-buffer)))))
 	local-record renumber-index marker end-marker record-number ret)
     (setq records (ebdb-record-list records))
