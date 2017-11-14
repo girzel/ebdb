@@ -191,6 +191,17 @@ to errors or database corruption."
   :group 'ebdb-eieio
   :type 'boolean)
 
+;; Do not use this to prevent writing of object-names via
+;; `eieio-print-object-names', older Emacs will choke if it's not
+;; present.
+(defcustom ebdb-vacuum-databases t
+  "When non-nil, minimize the size of database files.
+This option only has an effect in Emacs>27.  At present it
+prevents indentation from being written to the persistence files;
+in the future more shrinkage may be possible."
+  :group 'ebdb-eieio
+  :type 'boolean)
+
 (defgroup ebdb nil
   "The Insidious Big Brother Database."
   :group 'news
@@ -3886,7 +3897,8 @@ the persistent save, or allow them to propagate.")
 
 (cl-defmethod ebdb-db-save ((db ebdb-db) &optional _prompt force)
   "Mark DB and all its records as \"clean\" after saving."
-  (let ((recs (ebdb-dirty-records (slot-value db 'records))))
+  (let ((recs (ebdb-dirty-records (slot-value db 'records)))
+	(eieio-print-indentation (null ebdb-vacuum-databases)))
     (when (or force recs (slot-value db 'dirty))
       (setf (slot-value db 'dirty) nil)
       (dolist (r recs)
