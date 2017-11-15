@@ -477,6 +477,18 @@ property is the field instance itself."
   (propertize (cl-call-next-method) 'ebdb-field field))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field)
+			      (_style (eql oneline))
+			      (_record ebdb-record))
+  "Handle the `oneline' style in EBDB buffers.
+Print the first line, add an ellipsis, and add a tooltip."
+  (pcase-let* ((full (ebdb-string field))
+	       (`(,head . ,tail) (split-string full "\n")))
+    (concat (propertize head 'help-echo full)
+	    (when tail
+	     (propertize "…" 'cursor-intangible t)))))
+
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-url)
 			      _style
 			      (_record ebdb-record))
