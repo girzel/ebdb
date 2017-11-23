@@ -93,12 +93,6 @@ of the `ebdb-field-role' field class.")
     "Enable debugging if non-nil during compile time.
 You really should not disable debugging.  But it will speed things up."))
 
-(defvar ebdb-version "e"
-  "EBDB version.")
-
-(defvar ebdb-version-date "October 15, 2016"
-  "Date this version of EBDB was released.")
-
 (defvar ebdb-silent-internal nil
   "Bind this to t to quiet things down - do not set it.
 See also `ebdb-silent'.")
@@ -5096,22 +5090,11 @@ If PROMPT is non-nil prompt before saving."
 	(set-buffer-modified-p nil))))
   (message "Saving the EBDB... done"))
 
-;;;###autoload
-(defun ebdb-version (&optional arg)
-  "Return string describing the version of EBDB.
-With prefix ARG, insert string at point."
-  (interactive (list (or (and current-prefix-arg 1) t)))
-  (let ((version-string (format "EBDB version %s (%s)"
-                                ebdb-version ebdb-version-date)))
-    (cond ((numberp arg) (insert (message version-string)))
-          ((eq t arg) (message version-string))
-          (t version-string))))
-
 
 ;;; Searching EBDB
 
 (defvar ebdb-search-invert nil
-  "Bind this variable to t in order to invert the result of `ebdb-search'.")
+  "Bind to t to invert the result of `ebdb-search'.")
 
 ;; Char folding: a simplified version of what happens in char-fold.el.
 

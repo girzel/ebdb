@@ -642,8 +642,8 @@ BBDB sets the default of that option."
         (unless file-format ; current file-format, but no file-format: line.
           (error "BBDB corrupted: no file-format line"))
         (if (> file-format ebdb-file-format)
-            (error "EBDB version %s understands file format %s but not %s."
-                   ebdb-version ebdb-file-format file-format)
+            (error "EBDB understands file format %s but not %s."
+                   ebdb-file-format file-format)
           (setq migrate (< file-format ebdb-file-format)))
 	(unless (re-search-forward "^\\[" nil t)
 	  (error "Unreadabe BBDB file: no contacts found"))
