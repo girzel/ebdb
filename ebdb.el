@@ -4903,8 +4903,7 @@ important work is done by the `ebdb-db-load' method."
 	       (when (yes-or-no-p (format "%s does not exist, create? " s))
 		 (setq s (make-instance 'ebdb-db-file :file s :dirty t))
 		 ;; Try to get it on disk first.
-		 (ebdb-db-save s)))
-	     (cl-pushnew s ebdb-db-list))
+		 (ebdb-db-save s))))
 	    ((null (and (eieio-object-p s)
 			(object-of-class-p s 'ebdb-db)))
 	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
@@ -4915,14 +4914,16 @@ important work is done by the `ebdb-db-load' method."
 	;; Remove this database's records from
 	;; `ebdb-record-tracker'.
 	(mapc #'delete-instance (slot-value s 'records))
-	(sit-for 2)))
-    (if (and
-	 (null ebdb-record-tracker)
-	 (or (and (bound-and-true-p bbdb-file)
-		  (file-exists-p bbdb-file))
-	     (file-exists-p (locate-user-emacs-file "bbdb" ".bbdb"))))
-	;; We're migrating from a version of BBDB.
-	(ebdb-migrate-from-bbdb))
+	(sit-for 2))
+      (cl-pushnew s ebdb-db-list))
+
+    (when (and
+	   (null ebdb-record-tracker)
+	   (or (and (bound-and-true-p bbdb-file)
+		    (file-exists-p bbdb-file))
+	       (file-exists-p (locate-user-emacs-file "bbdb" ".bbdb"))))
+      ;; We're migrating from a version of BBDB.
+      (ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
     (if (fboundp 'make-thread)
 	(let ((thread (make-thread #'ebdb-initialize-threadwise)))
