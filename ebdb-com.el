@@ -71,9 +71,8 @@ windows by other splitting/display code."
   :group 'ebdb-record-display
   :type 'boolean)
 
-(defcustom ebdb-fill-field-values 't
-  "If t, fill particularly long field values so that they fit
-within the *EBDB* buffer."
+(defcustom ebdb-fill-field-values t
+  "When non-nil, fill long field values."
   :group 'ebdb-record-display
   :type '(choice (const :tag "Always fill" nil)
                  (const :tag "Never fill" t)))
@@ -100,8 +99,8 @@ Used by `ebdb-mouse-menu'."
 
 (defcustom ebdb-name-face-alist '((ebdb-record-person . ebdb-person-name)
 				  (ebdb-record-organization . ebdb-organization-name))
-  "Alist matching record class types to the face that should be
-  used to font-lock their names in the *EBDB* buffer."
+  "Alist of record class types to the face names.
+Faces are used to font-lock their names in the *EBDB* buffer."
   :group 'ebdb-faces
   :type '(repeat (cons (ebdb-record :tag "Record type") (face :tag "Face"))))
 
@@ -177,13 +176,11 @@ Used by `ebdb-mouse-menu'."
 ;;; Buffer-local variables for the database.
 (defvar-local ebdb-records nil
   "EBDB records list.
-
 In the *EBDB* buffers it includes the records that are actually displayed
 and its elements are (RECORD DISPLAY-FORMAT MARKER-POS MARK).")
 
 (defvar-local ebdb-search-history nil
   "A list of lists of previously-displayed EBDB records in this buffer.
-
 For each search in a user-initiated EBDB buffer, the
 previously-displayed EBDB records are pushed here, as a list of
 UUIDs.  ebdb-mode keybindings make it possible to pop back to
@@ -193,11 +190,12 @@ previous records.")
   "Precalculated mode line info for EBDB commands.
 This is a vector [INVERT-M INVERT].
 
-INVERT-M is the mode line info if `ebdb-search-invert' is non-nil.")
+INVERT-M is the mode line info if variable `ebdb-search-invert' is non-nil.")
 
 (defun ebdb-get-records (prompt)
   "If inside the *EBDB* buffer get the current records.
-In other buffers ask the user."
+In other buffers ask the user.
+Argument PROMPT is passed to `ebdb-completing-read-records'."
   (if (eql major-mode 'ebdb-mode)
       (ebdb-do-records)
     (ebdb-completing-read-records prompt)))
@@ -367,10 +365,11 @@ display information."
 This is a child of `special-mode-map'.")
 
 (defun ebdb-current-record (&optional full)
-  "Return the record point is at.
-If FULL is non-nil record includes the display information."
+  "Return the record under point.
+If FULL is non-nil, return a list of (record formatter
+position-marker mark)."
   (unless (eq major-mode 'ebdb-mode)
-    (error "This only works while in EBDB buffers."))
+    (error "This only works while in EBDB buffers"))
   (let ((num (get-text-property (if (and (not (bobp)) (eobp))
                                     (1- (point)) (point))
                                 'ebdb-record-number))
@@ -380,7 +379,7 @@ If FULL is non-nil record includes the display information."
     (if full record (car record))))
 
 (defun ebdb-current-field ()
-  "Return current field point is on."
+  "Return record field under point."
   (unless (ebdb-current-record) (error "Not a EBDB record"))
   (or (get-text-property (point) 'ebdb-field)
       (get-text-property
@@ -431,7 +430,6 @@ If FULL is non-nil record includes the display information."
 
 (defun ebdb-available-ebdb-formatters ()
   "A list of formatters available in the *EBDB* buffer.
-
 This list is also used for toggling layouts."
   (seq-filter
    (lambda (f) (object-of-class-p f 'ebdb-formatter-ebdb))
@@ -445,6 +443,7 @@ This list is also used for toggling layouts."
 ;; *EBDB* buffer formatting.
 
 (cl-defmethod ebdb-record-db-char-string ((record ebdb-record))
+  "Return a char string indicating RECORDs databases."
   (let* ((dbs (slot-value (ebdb-record-cache record) 'database))
 	 (char-string
 	  (concat
@@ -1113,7 +1112,7 @@ popped up from."
 
 ;;;###autoload
 (define-derived-mode ebdb-mode special-mode "EBDB"
-  "Major mode for viewing and editing the Insidious Big Brother Database.
+  "Major mode for viewing and editing EBDB records.
 
 Derives from `special-mode'; the usual `special-mode' bindings apply.
 
@@ -1188,7 +1187,7 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
 	  (eieio-object-class record)))))
 
 (defun ebdb-mouse-menu (event)
-  "EBDB mouse menu for EVENT,"
+  "EBDB mouse menu for EVENT."
   (interactive "e")
   (mouse-set-point event)
   (let* ((record (ebdb-current-record))
@@ -1282,8 +1281,7 @@ With prefix N move backwards N (sub)fields."
   (ebdb-next-field (- n)))
 
 (defun ebdb-follow-related (record field)
-  "If point is on a role or relationship field, display the
-  related record."
+  "Display RECORD's related record from FIELD under point."
   (interactive (list (ebdb-current-record)
 		     (ebdb-current-field)))
   (condition-case nil
@@ -1297,7 +1295,8 @@ With prefix N move backwards N (sub)fields."
 	      (ebdb-field-readable-name field)))))
 
 (defun ebdb-toggle-record-mark (record &optional mark)
-  "Mark or unmark RECORD."
+  "Mark or unmark RECORD.
+Use the symbol `mark', or the mark provided by MARK."
   (interactive
    (list (ebdb-current-record)
 	 'mark))
@@ -1310,7 +1309,7 @@ With prefix N move backwards N (sub)fields."
   (ebdb-redisplay-records (mapcar #'car ebdb-records) (list 'toggle-mark 'mark)))
 
 (defun ebdb-unmark-all-records (records)
-  "Remove the mark from all records."
+  "Remove the mark from RECORDS."
   (interactive (list (seq-filter (lambda (r) (nth 3 r))
 				 ebdb-records)))
   (ebdb-redisplay-records (mapcar #'car records) 'unmark))
@@ -1336,7 +1335,7 @@ With prefix N move backwards N (sub)fields."
 
 ;;;###autoload
 (defun ebdb-rename-buffer (new-name)
-  "Rename current *EBDB* buffer."
+  "Rename current *EBDB* buffer to NEW-NAME."
   (interactive (list (read-string "New buffer name: ")))
   (when (eql major-mode 'ebdb-mode)
     (rename-buffer
@@ -1347,7 +1346,7 @@ With prefix N move backwards N (sub)fields."
 ;; Unloading/Reloading/Disabling
 
 (defun ebdb-reload-database (db)
-  "Reload all records from one database."
+  "Reload all records from database DB."
   (interactive (list (ebdb-prompt-for-db)))
   (let ((db-str (ebdb-string db))
 	(rec-uuids (mapcar #'ebdb-record-uuid (slot-value db 'records))))
@@ -1449,7 +1448,7 @@ which is probably more suited for your needs."
                           (mapconcat #'ebdb-string (nreverse redundant) ", "))))
         (when (and redundant
                    (or (not query)
-                       (y-or-n-p (format "Delete %s: " form))))
+                       (y-or-n-p (format "Delete %s? " form))))
           (unless query (message "Deleting %s" form))
 	  (dolist (m okay)
 	    (ebdb-record-insert-field record m 'mail))
@@ -1480,7 +1479,8 @@ is the value of field LABEL of RECORD."
 ;;;###autoload
 (defun ebdb-timestamp-older (date &optional fmt)
   "Display records with timestamp older than DATE.
-DATE must be in yyyy-mm-dd format."
+DATE must be in yyyy-mm-dd format.  Records are displayed using
+formatter FMT."
   (interactive (list (read-string "Older than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
   (ebdb-search-prog (ebdb-compare-records date 'timestamp #'time-less-p) fmt))
@@ -1488,7 +1488,8 @@ DATE must be in yyyy-mm-dd format."
 ;;;###autoload
 (defun ebdb-timestamp-newer (date &optional fmt)
   "Display records with timestamp newer than DATE.
-DATE must be in yyyy-mm-dd format."
+DATE must be in yyyy-mm-dd format.  Records are displayed using
+formatter FMT."
   (interactive (list (read-string "Newer than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
   (ebdb-search-prog (ebdb-compare-records date 'timestamp
@@ -1498,7 +1499,8 @@ DATE must be in yyyy-mm-dd format."
 ;;;###autoload
 (defun ebdb-creation-older (date &optional fmt)
   "Display records with creation-date older than DATE.
-DATE must be in yyyy-mm-dd format."
+DATE must be in yyyy-mm-dd format.  Records are displayed using
+formatter FMT."
   (interactive (list (read-string "Older than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
   (ebdb-search-prog (ebdb-compare-records date 'creation-date #'string<) fmt))
@@ -1506,14 +1508,16 @@ DATE must be in yyyy-mm-dd format."
 ;;;###autoload
 (defun ebdb-creation-newer (date &optional fmt)
   "Display records with creation-date newer than DATE.
-DATE must be in yyyy-mm-dd format."
+DATE must be in yyyy-mm-dd format.  Records are displayed using
+formatter FMT."
   (interactive (list (read-string "Newer than date (yyyy-mm-dd): ")
                      (ebdb-formatter-prefix)))
   (ebdb-search-prog (ebdb-compare-records date 'creation-date #'ebdb-string>) fmt))
 
 ;;;###autoload
 (defun ebdb-creation-no-change (&optional fmt)
-  "Display records that have the same timestamp and creation-date."
+  "Display records that have the same timestamp and creation-date.
+Records are displayed using formatter FMT."
   (interactive (list (ebdb-formatter-prefix)))
   (ebdb-search-prog
    ;; RECORD is bound in `ebdb-search-prog'.
@@ -1524,7 +1528,7 @@ DATE must be in yyyy-mm-dd format."
   "Run BODY on all records listed in the cdr of SPEC.
 
 This macro checks that each record is editable; ie, that it
-doesn't belong to a read-only database. It also throws an error
+doesn't belong to a read-only database.  It also throws an error
 and bails out if any of the database are unsynced.
 
 Then bind each editable record to the car of SPEC in turn, run
@@ -1592,10 +1596,10 @@ actually-editable records."
 ;;;###autoload
 (defun ebdb-create-record (db &optional record-class)
   "Create a new EBDB record.
-
-Assume that we're creating a record in the first database found
-in `ebdb-db-list', using its default record class.  Use
-`ebdb-create-record-extended' to be prompted for these values."
+Add record to DB, which defaults to the first database found in
+`ebdb-db-list', using its default record class, or else
+RECORD-CLASS.  Use `ebdb-create-record-extended' to be prompted
+for these values."
   (interactive
    (list (car ebdb-db-list)))
   (unless record-class
@@ -1621,6 +1625,7 @@ in `ebdb-db-list', using its default record class.  Use
 
 ;;;###autoload
 (defun ebdb-create-record-extended ()
+  "Create a record, prompting for database and record class."
   (interactive)
   (let ((db (ebdb-prompt-for-db nil t))
 	(record-class
@@ -1629,6 +1634,7 @@ in `ebdb-db-list', using its default record class.  Use
 
 ;;;###autoload
 (defun ebdb-insert-field (records)
+  "Prompt to create a field and insert it into RECORDS."
   (interactive
    (list (ebdb-do-records)))
   (pcase-let
@@ -1655,8 +1661,9 @@ in `ebdb-db-list', using its default record class.  Use
 ;; TODO: Allow editing of multiple record fields simultaneously.
 ;;;###autoload
 (defun ebdb-edit-field (record field)
-  "Edit the field under point.  If point is on the name header of
-the record, change the name of the record."
+  "Edit RECORD's FIELD under point.
+If point is on the name header of the record, change the name of
+the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
@@ -1672,6 +1679,7 @@ the record, change the name of the record."
 
 ;;;###autoload
 (defun ebdb-edit-field-customize (record field)
+  "Use the customize interface to edit FIELD of RECORD."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
@@ -1741,7 +1749,7 @@ I and J start with zero.  Return the modified LIST."
       (setq a (nthcdr i list)
             b (nthcdr (- j i) a)
             c (car b))
-      (unless b (error "Args %i, %i beyond length of list." i j))
+      (unless b (error "Args %i, %i beyond length of list" i j))
       (setcar b (car a))
       (setcar a c)
       list)))
@@ -1781,6 +1789,8 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
 
 ;;;###autoload
 (defun ebdb-move-records (records db)
+  "Move all RECORDS to database DB.
+This removes the records from their current database."
   (interactive (list (ebdb-do-records)
 		     (ebdb-prompt-for-db)))
   (ebdb-with-record-edits (r records)
@@ -1788,6 +1798,8 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
 
 ;;;###autoload
 (defun ebdb-copy-records (records db)
+  "Copy RECORDS to database DB.
+The records also remain in their present database(s)."
   (interactive (list (ebdb-do-records)
 		     (ebdb-prompt-for-db)))
   (ebdb-with-record-edits (r records)
@@ -1796,8 +1808,9 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
 ;;;###autoload
 (defun ebdb-display-all-records (&optional fmt)
   "Show all records.
-If invoked in a *EBDB* buffer point stays on the currently visible record.
-Inverse of `ebdb-display-current-record'."
+If invoked in a *EBDB* buffer point stays on the currently
+visible record.  Inverse of `ebdb-display-current-record'.
+Display using formatter FMT."
   (interactive (list (ebdb-formatter-prefix)))
   (let ((current (ignore-errors (ebdb-current-record))))
     (ebdb-display-records (ebdb-records) fmt)
@@ -1808,7 +1821,9 @@ Inverse of `ebdb-display-current-record'."
 
 ;;;###autoload
 (defun ebdb-display-current-record (&optional fmt)
-  "Narrow to current record.  Inverse of `ebdb-display-all-records'."
+  "Narrow to current record.
+Inverse of `ebdb-display-all-records'.  Display record using
+formatter FMT."
   (interactive (list (ebdb-formatter-prefix)))
   (ebdb-display-records (list (ebdb-current-record)) fmt))
 
@@ -1848,7 +1863,7 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 
 ;;;###autoload
 (defun ebdb-display-records-with-fmt (records fmt)
-  "Display RECORDS using FMT. "
+  "Display RECORDS using FMT."
   (interactive
    (list (ebdb-do-records t)
          (cdr (assoc-string
@@ -1862,7 +1877,7 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 
 ;;;###autoload
 (defun ebdb-omit-records (records)
-  "Remove current record from the display without deleting it from EBDB.
+  "Remove RECORDS from the display without deleting them from EBDB.
 With prefix N, omit the next N records.  If negative, omit backwards."
   (interactive (list (ebdb-do-records)))
   (ebdb-redisplay-records records 'remove))
@@ -1884,12 +1899,11 @@ results -- it does this by checking `this-command-keys'."
 
 (defun ebdb-search-display (style clauses &optional fmt)
   "Common routine for interactive searches in the *EBDB* buffer.
-
 STYLE indicates whether the results are being displayed straight,
 appended to existing records, or filtered from existing records.
-TYPE is the type of search being conducted (ie, 'name, 'mail,
-'address, etc).  CRIT is the search criteria; often a regexp, but
-not necessarily.  FMT is the optional formatter to use."
+CLAUSES is a list of search clauses, each one holding a field
+class to search on, and a search criterion to use.  FMT is the
+optional formatter to use."
   (let* ((prev (mapcar #'car ebdb-records))
 	 (pool (if (eql style 'filter)
 		   prev
@@ -1912,8 +1926,9 @@ not necessarily.  FMT is the optional formatter to use."
 
 ;;;###autoload
 (defun ebdb (style regexp &optional fmt)
-  "Display all records in the EBDB matching REGEXP
-in any field."
+  "Display all records in the EBDB matching REGEXP.
+Search all fields, and display using formatter FMT, using style
+STYLE: meaning display, append, or filter."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read 'all)
 		     (ebdb-formatter-prefix)))
@@ -1928,8 +1943,8 @@ in any field."
 
 ;;;###autoload
 (defun ebdb-search-name (style regexp &optional fmt)
-  "Display all records in the EBDB matching REGEXP in the name
-\(or ``alternate'' names\)."
+  "Display all records in the EBDB with name matching REGEXP.
+Searches the main name, and alternate names."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read "names")
 		     (ebdb-formatter-prefix)))
@@ -2025,7 +2040,7 @@ in any field."
 
 ;;;###autoload
 (defun ebdb-search-tags (style tags &optional fmt)
-  "Run a search of record tags."
+  "Run a search of record TAGS."
   (interactive (list (ebdb-search-style)
 		     (ebdb-search-read 'ebdb-field-tags)
 		     (ebdb-formatter-prefix)))
@@ -2036,7 +2051,7 @@ in any field."
   "Search all records that have duplicate entries for FIELDS.
 The list FIELDS may contain the symbols `name', `mail', and `aka'.
 If FIELDS is nil use all these fields.  With prefix, query for FIELDS.
-The search results are displayed in the EBDB buffer."
+The search results are displayed in the EBDB buffer using formatter FMT."
   (interactive (list (if current-prefix-arg
                          (list (intern (completing-read "Field: "
                                                         '("name" "mail" "aka")
@@ -2082,7 +2097,7 @@ The search results are displayed in the EBDB buffer."
 
 ;;;###autoload
 (defun ebdb-search-database (style db &optional fmt)
-  "Select a database and show all records from that database."
+  "Select a database DB and show all records from that database."
   (interactive
    (list (ebdb-search-style)
 	 (ebdb-prompt-for-db)
@@ -2091,7 +2106,7 @@ The search results are displayed in the EBDB buffer."
 
 ;;;###autoload
 (defun ebdb-search-record-class (style class &optional fmt)
-  "Prompt for a record class and display all records of that class."
+  "Prompt for a record CLASS and display all records of that class."
   (interactive (list (ebdb-search-style)
 		     (eieio-read-subclass
 		      "Use which record class? " 'ebdb-record nil t)
@@ -2100,7 +2115,7 @@ The search results are displayed in the EBDB buffer."
 
 ;;;###autoload
 (defun ebdb-search-single-record (record &optional fmt)
-  "Prompt for a single record, and display it."
+  "Prompt for a single RECORD, and display it."
   (interactive (list (ebdb-completing-read-records "Display records: ")
                      (ebdb-formatter-prefix)))
   (ebdb-display-records record fmt))
@@ -2126,7 +2141,6 @@ the record to be displayed or nil otherwise."
 ;;;###autoload
 (defun ebdb-mail (records &optional subject arg)
   "Compose a mail message to RECORDS (optional: using SUBJECT).
-
 If ARG (interactively, the prefix arg) is nil, use the first mail
 address of each record.  If it is t, prompt the user for which
 address to use.
@@ -2146,6 +2160,9 @@ for `ebdb-field-action'."
 ;;; Citing
 
 (defun ebdb-cite-records-ebdb (arg records style)
+  "Prompt for a STYLE, and use it to cite RECORDS.
+With prefix arg ARG display the citations as a vertical list,
+otherwise inline."
   (interactive
    (list
     current-prefix-arg
@@ -2162,7 +2179,8 @@ for `ebdb-field-action'."
 
 ;;;###autoload
 (defun ebdb-completion-predicate (key records)
-  "For use as the third argument to `completing-read'.
+  "Check if KEY is a value key to return RECORDS.
+For use as the third argument to `completing-read'.
 Obey `ebdb-completion-list'."
   (cond ((null ebdb-completion-list)
          nil)
@@ -2176,8 +2194,10 @@ Obey `ebdb-completion-list'."
 
 (defun ebdb-completing-read-records (prompt &optional omit-records)
   "Read and return list of records from the ebdb.
-Completion is done according to `ebdb-completion-list'.  If the user
-just hits return, nil is returned.  Otherwise, a valid response is forced."
+Completion is done according to `ebdb-completion-list', with
+prompt PROMPT.  If the user just hits return, nil is returned.
+Otherwise, a valid response is forced.  Optional argument
+OMIT-RECORDS is a list of records that should never be returned."
   (unless ebdb-record-tracker
     (ebdb-load))
   (let* ((completion-ignore-case t)
@@ -2193,11 +2213,12 @@ just hits return, nil is returned.  Otherwise, a valid response is forced."
 
 
 (defun ebdb-completing-read-record (prompt &optional omit-records)
-  "Prompt for and return a single record from the ebdb;
-completion is done according to `ebdb-completion-list'.  If the user
-just hits return, nil is returned. Otherwise, a valid response is forced.
-If OMIT-RECORDS is non-nil it should be a list of records to dis-allow
-completion with."
+  "Prompt for and return a single record from the ebdb.
+Completion is done according to `ebdb-completion-list', with
+prompt PROMPT.  If the user just hits return, nil is
+returned.  Otherwise, a valid response is forced.  If OMIT-RECORDS
+is non-nil it should be a list of records to dis-allow completion
+with."
   (let ((records (ebdb-completing-read-records prompt omit-records)))
     (cond ((eq (length records) 1)
            (car records))
@@ -2212,7 +2233,7 @@ completion with."
 
 ;;;###autoload
 (defun ebdb-completing-read-mails (prompt &optional init)
-  "Like `read-string', but allows `ebdb-complete-mail' style completion."
+  "Like `read-string', but with `ebdb-complete-mail' completion."
   (read-from-minibuffer prompt init
                         ebdb-completing-read-mails-map))
 
@@ -2221,7 +2242,7 @@ completion with."
     (modify-syntax-entry ?\\ "\\" st)
     (modify-syntax-entry ?\" "\"" st)
     st)
-  "Syntax-table to parse matched quotes.  Used by `ebdb-complete-mail'.")
+  "Syntax-table to parse matched quotes.  Used by function `ebdb-complete-mail'.")
 
 ;;;###autoload
 (defun ebdb-complete-mail (&optional beg cycle-completion-buffer)
@@ -2574,7 +2595,8 @@ of all of these people.
 
 This function is automatically called each time an EBDB buffer is
 created.  Alternately, use \\[ebdb-mail-aliases] in an *EBDB*
-buffer to force an update."
+buffer to force an update.  With optional argument NOISY, print a
+message when updating is done."
   (interactive)
 
   ;; Build `mail-aliases' if not yet done.
@@ -2603,7 +2625,7 @@ buffer to force an update."
       ;; `mail-abbrev-expand-hook'.  We replace this with
       ;; `ebdb-mail-abbrev-expand-hook'
       (unless (eq (symbol-function f-alias) 'mail-abbrev-expand-hook)
-	(error "mail-aliases contains unexpected hook %s"
+	(error "Mail-aliases contains unexpected hook %s"
 	       (symbol-function f-alias)))
       (fset f-alias `(lambda ()
 		       (ebdb-mail-abbrev-expand-hook
@@ -2614,7 +2636,8 @@ buffer to force an update."
   (if noisy (message "EBDB mail alias: rebuilding done")))
 
 (defun ebdb-mail-abbrev-expand-hook (_alias records)
-;  (run-hook-with-args 'ebdb-mail-abbrev-expand-hook alias records)
+  "Function substituted for `mail-abbrev-expand-hook' when expanding RECORDS.
+That hook is also run."
   (mail-abbrev-expand-hook)
   (when ebdb-completion-display-record
     (let ((ebdb-silent-internal t))
@@ -2676,7 +2699,7 @@ actions."
   "Compose and send a text message using the Signal protocol.
 
 SENDER should be a phone number (with leading \"+\") to send
-from.  If `ebdb-record-self' is set, this record will be used as
+from.  If option `ebdb-record-self' is set, this record will be used as
 the sender, while RECORDS will be used as the list of recipients.
 In both cases, `ebdb-signal-get-number' will be used to find a
 usable number from the record.
@@ -2804,11 +2827,13 @@ With prefix argument ARG, prompt for which mail address to use."
 
 ;;;###autoload
 (defun ebdb-info ()
+  "Start reading the EBDB Info manual."
   (interactive)
   (info (format "(%s)Top" (or ebdb-info-file "ebdb"))))
 
 ;;;###autoload
 (defun ebdb-help ()
+  "Print a short help message."
   (interactive)
   (message (substitute-command-keys "\\<ebdb-mode-map>\
 new field: \\[ebdb-insert-field]; \

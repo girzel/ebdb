@@ -71,17 +71,15 @@
   "The list of currently-loaded EBDB databases.")
 
 (defvar ebdb-record-tracker nil
-  "A list of all the loaded records")
+  "A list of all the loaded records.")
 
-(defvar ebdb-hashtable (make-hash-table :test 'equal)
+(defvar ebdb-hashtable (make-hash-table :test #'equal)
   "Hash table for EBDB records.
 Hashes the fields first-last-name, last-first-name, organization, aka,
 and mail.")
 
-(defvar ebdb-org-hashtable (make-hash-table :size 500 :test 'equal)
-  "Hash table holding relationships between organizations and
-  member records.
-
+(defvar ebdb-org-hashtable (make-hash-table :size 500 :test #'equal)
+  "Hash table of role relationships.
 Keys are string UUIDs of organizations. Values are lists
 of (record-uuid . role-field). Hashtable entries are created and
 deleted by the `ebdb-init-field' and `ebdb-delete-field' methods
@@ -123,9 +121,7 @@ will be called on each of class instances."
 		  )))
 
 (defcustom ebdb-auto-merge-records nil
-  "If t, EBDB will automatically merge multiple records with the
-same UUID.
-
+  "If non-nil, automatically merge multiple records with the same UUID.
 If you are using multiple databases, and intend to keep some
 records in more than one database at once, you can set this to t
 to have EBDB treat records with identical UUIDs as \"the same\"
@@ -197,12 +193,12 @@ in the future more shrinkage may be possible."
   :type 'boolean)
 
 (defgroup ebdb nil
-  "The Insidious Big Brother Database."
+  "EBDB customizations"
   :group 'news
   :group 'mail)
 
 (defgroup ebdb-record-edit nil
-  "Variables that affect the editing of EBDB records"
+  "Variables that affect the editing of EBDB records."
   :group 'ebdb)
 
 (defgroup ebdb-sendmail nil
@@ -210,7 +206,7 @@ in the future more shrinkage may be possible."
   :group 'ebdb)
 
 (defgroup ebdb-snarf nil
-  "Customizations for EBDB snarf"
+  "Customizations for EBDB snarf."
   :group 'ebdb)
 (put 'ebdb-snarf-snarf 'custom-loads '(ebdb-snarf))
 
@@ -219,11 +215,11 @@ in the future more shrinkage may be possible."
   :group 'ebdb)
 
 (defgroup ebdb-utilities nil
-  "Customizations for EBDB Utilities"
+  "Customizations for EBDB utilities."
   :group 'ebdb)
 
 (defgroup ebdb-utilities-dialing nil
-  "EBDB Customizations for phone number dialing"
+  "EBDB customizations for phone number dialing."
   :group 'ebdb-utilities)
 
 (defgroup ebdb-utilities-ispell nil
@@ -239,7 +235,6 @@ in the future more shrinkage may be possible."
 ;;; Customizable variables
 (defcustom ebdb-image nil
   "The default method for displaying record images.
-
 If a record is given a `ebdb-field-image' field, the value of
 that field specifies how or where to find the image for the
 record.  This option provides a default for that value.
@@ -264,7 +259,6 @@ function should return either a filename, or actual image data."
 
 (defcustom ebdb-uuid-function "uuidgen"
   "Function used for creating a UUID for records.
-
 If a string, assume a system executable.  If a symbol, assume an
 elisp function for creating UUIDs.  For instance, `org-id-uuid'
 is a good candidate."
@@ -273,14 +267,12 @@ is a good candidate."
 
 (defcustom ebdb-record-self nil
   "The UUID of the record representing the user.
-
 See the docstring of `ebdb-user-mail-address-re' for possible uses."
   :group 'ebdb
   :type 'string)
 
 (defcustom ebdb-country-list nil
   "A list of country names known to EBDB.
-
 This is a list of simple strings, which do not change EBDB's
 behavior in any way.  You can also require the \"ebdb-i18n\"
 library for more internationally-aware functionality, in which
@@ -327,7 +319,7 @@ class, and added with the `ebdb-diary-add-entries' function.
 Each entry is a two-element list: a string representation of the
 anniversary date, and the sexp (as a string):
 
-(diary-anniversary MM DD YYYY) (the year is optional)")
+\(diary-anniversary MM DD YYYY) (the year is optional)")
 
 ;; Dynamic var needed by `diary-sexp-entry'.
 (defvar original-date)
@@ -365,8 +357,8 @@ is modified.  If a new ebdb record is created, `ebdb-create-hook' is called
 first, followed by a call of this hook.")
 
 (defcustom ebdb-time-format "%Y-%m-%d %T %z"
-  "The EBDB time stamp format.  Used for human-readable display
-of timestamp values."
+  "The EBDB time stamp format.
+Used for human-readable display of timestamp values."
   :group 'ebdb
   :type 'string)
 
@@ -413,9 +405,7 @@ Lisp Hackers: See also `ebdb-silent-internal'."
                  (const :tag "Disable silent running" nil)))
 
 (defcustom ebdb-search-transform-functions nil
-  "A list of functions used to transform strings during
-  searching.
-
+  "Functions used to transform strings during searching.
 Each time the user enters a search search string during
 interactive search, that string will be passed through each of
 the functions in this list, which have a chance to modify the
@@ -506,7 +496,7 @@ It takes one argument, the name as extracted by
   :type 'function)
 
 (defsubst ebdb-record-self ()
-  "Return the \"self\" record"
+  "Return the \"self\" record."
   (ebdb-gethash ebdb-record-self 'uuid))
 
 ;;; Record editing
@@ -629,9 +619,7 @@ In rare cases, this may lead to confusion with EBDB's MUA interface."
   :type '(symbol :tag "Field"))
 
 (defcustom ebdb-url-valid-schemes '("http:" "https:" "irc:")
-  "A list of strings matching schemes acceptable to
-  `ebdb-field-url' instances.
-
+  "Strings matching acceptable URL schemes.
 Strings should not be regular expressions.  They should include
 the colon character."
 
@@ -643,8 +631,7 @@ the colon character."
 
 If nil, always return both name and mail.  If value is mail-only
 never use full name.  Other non-nil values mean do not use full
-name in mail address when same as mail.
-"
+name in mail address when same as mail."
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Allow redundancy" nil)
                  (const :tag "Never use full name" mail-only)
@@ -656,7 +643,7 @@ name in mail address when same as mail.
   :type 'boolean)
 
 (defcustom ebdb-completion-list t
-  "Controls the behaviour of `ebdb-complete-mail'.
+  "Controls the behaviour of function `ebdb-complete-mail'.
 If a list of symbols, it specifies which fields to complete.  Symbols include
   name (= record's display name)
   alt-names (= any other names the record has)
@@ -678,7 +665,7 @@ If nil, no completion is offered."
                                  (const mail)))))
 
 (defcustom ebdb-complete-mail-allow-cycling nil
-  "If non-nil cycle mail addresses when calling `ebdb-complete-mail'."
+  "If non-nil cycle mail addresses when calling function `ebdb-complete-mail'."
   :group 'ebdb-sendmail
   :type 'boolean)
 
@@ -696,7 +683,7 @@ of corresponding mail addresses."
   :type 'function)
 
 (defcustom ebdb-completion-display-record t
-  "If non-nil `ebdb-complete-mail' displays the EBDB record after completion."
+  "If non-nil function `ebdb-complete-mail' displays the EBDB record after completion."
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Update the EBDB buffer" t)
                  (const :tag "Do not update the EBDB buffer" nil)))
@@ -773,14 +760,16 @@ if CHILD-P is non-nil, one of its subclasses."
 	  (sit-for 2))))))
 
 (defmacro ebdb-with-exit (&rest body)
+  "Execute BODY, returning nil on quit or an empty value."
   `(condition-case nil
        ,@body
      ((quit ebdb-empty)
       nil)))
 
 (defmacro ebdb-loop-with-exit (&rest body)
-  "Repeat BODY, accumulating the results in a list, until the
-user either hits C-g, or enters an empty field label."
+  "Repeat BODY, accumulating the results in a list.
+\\<minibuffer-mode-map>Return when the user either hits
+\\[keyboard-quit], or enters an empty field value."
   `(let (acc)
      (catch '--ebdb-loop-exit--
        (condition-case nil
@@ -813,7 +802,6 @@ You really should not disable debugging.  But it will speed things up."
 
 (cl-defgeneric ebdb-init-field (field record)
   "Initialize FIELD.
-
 What this means is entirely dependent upon the field class in
 question.  Often it involves manipulating secondary data
 structures such as label lists.  If RECORD is given, it may also
@@ -821,7 +809,6 @@ involve using FIELD as a hash value to get to RECORD.")
 
 (cl-defmethod ebdb-init-field (_field-value _record)
   "Catch-all `ebdb-init-field' method for fields.
-
 This method may also get called on field values that aren't
 actually `ebdb-field' instances -- for instance, plain strings.
 In those cases, assume we don't need to do anything."
@@ -829,7 +816,6 @@ In those cases, assume we don't need to do anything."
 
 (cl-defmethod ebdb-field-readable-name ((field (subclass ebdb-field)))
   "Return a human-readable string label for this class.
-
 Mostly used for allowing users to pick which field type they want
 to add to a record."
   ;; Why is there no non-private access to this?  The `class-option'
@@ -844,7 +830,6 @@ to add to a record."
 
 (cl-defgeneric ebdb-parse (field-class str &optional slots)
   "Attempt to construct an instance of FIELD-CLASS using STR.
-
 Implementations should extract information from STR and put it
 into SLOTS, provided that SLOTS does not already contain relevant
 values (ie, parsing should not override what's already in SLOTS).
@@ -889,7 +874,6 @@ Then call `cl-call-next-method' with the new values.")
 
 (cl-defgeneric ebdb-delete-field (field &optional record unload)
   "Delete FIELD.
-
 Often involves un-hashing RECORD against the field value, or
 removing labels from label lists.
 
@@ -898,7 +882,6 @@ unloaded, not actually deleted.")
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field) &optional _record _unload)
   "User-level deletion routine for FIELD.
-
 Override this to do any necessary cleanup work after FIELD is
 removed."
   (delete-instance field))
@@ -917,7 +900,6 @@ prompting.")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field)) &optional slots _obj)
   "Complete the read/object creation process for a field of CLASS.
-
 Earlier subclasses of `ebdb-field' will have read all the
 necessary values into SLOTS; this base method is simply
 responsible for creating the field object.
@@ -935,10 +917,9 @@ it, and if this process is successful it will get deleted."
 ;; base method.
 
 (cl-defmethod ebdb-action ((field ebdb-field) record &optional idx)
-  "Do an \"action\" based on one of the functions listed in FIELD's action slot.
-
+  "Perform an \"action\" from those listed in FIELD's action slot.
 If IDX is provided, it is an index indicating which of the action
-functions to call. Otherwise, call the car of the list."
+functions to call.  Otherwise, call the car of the list."
   (let* ((actions (slot-value field 'actions))
 	 (pair (when actions
 		 (if idx (or (nth idx actions) (last actions)) (car actions)))))
@@ -947,7 +928,6 @@ functions to call. Otherwise, call the car of the list."
 
 (cl-defgeneric ebdb-notice-field (field &optional type record)
   "\"Notice\" FIELD.
-
 This means that a message involving RECORD has been viewed, or
 that a MUA has otherwise decided that something significant to
 RECORD has taken place.  It is up to the class of FIELD to decide
@@ -959,12 +939,12 @@ MUAs it is one of the symbols 'sender or 'recipient.")
 (cl-defmethod ebdb-notice-field ((_field ebdb-field)
 				 &optional _type _record)
   "Ask FIELD of RECORD to react to RECORD being \"noticed\".
-
 When the user receives an email from or cc'd to RECORD, that
 record will call `ebdb-notice' on all its fields, and give them a
 chance to react somehow.  TYPE is one of the symbols 'sender or
 'recipient, indicating which message header the record was found
-in."  nil)
+in."
+  nil)
 
 ;;; The UUID field.
 
@@ -1007,8 +987,8 @@ in."  nil)
   :documentation "A field with a string label.")
 
 (cl-defmethod ebdb-read :around ((class (subclass ebdb-field-labeled)) &optional slots obj)
-  "Prompt for a label for a new object of class CLASS, using OBJ
-  as a default, and store the result in SLOTS.
+  "Prompt for a label for a new object of class CLASS.
+OBJ is used as as a default, and the results are stored in SLOTS.
 
 All subclasses of `ebdb-field-labeled' should have a 'label-list
 slot pointing to a var holding known labels for that class.  This
@@ -1018,8 +998,8 @@ if it isn't.
 This method also signals the 'ebdb-empty error if the user gives
 an empty string as a label, which allows interruption of the read
 process."
-  ;; This is an :around method so the field label can be prompted for
-  ;; before the value.
+  ;; FIXME: Now that labels are read after the main class, this should
+  ;; be an :after method.
   (let* ((field (cl-call-next-method class slots obj))
 	 (labels (symbol-value (oref-default class label-list)))
 	 (human-readable (ebdb-field-readable-name class))
@@ -1039,6 +1019,7 @@ process."
     field))
 
 (cl-defmethod ebdb-init-field ((field ebdb-field-labeled) &optional _record)
+  "Add FIELD's label to its class label list."
   (let ((label-var (slot-value field 'label-list)))
     (ebdb-add-to-list label-var (slot-value field 'object-name))
     (cl-call-next-method)))
@@ -1130,7 +1111,6 @@ process."
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name)) str &optional slots)
   "Examine STR and try to interpret it as a name.
-
 This method dispatches to the equivalent method of either the
 simple or complex name class."
   ;; Right now, all we do is send the input to field-name-simple if
@@ -1220,7 +1200,6 @@ simple or complex name class."
 
 (cl-defmethod ebdb-name-given ((name ebdb-field-name-complex) &optional full)
   "Return the given names of this name field.
-
 If FULL is t, return all the given names, otherwise just the
 first one."
   (let ((given (slot-value name 'given-names)))
@@ -1520,9 +1499,8 @@ first one."
     (cl-call-next-method class str slots)))
 
 (defun ebdb-sort-mails (mails)
-  "Sort MAILS (being instances of `ebdb-field-mail') by their
-  priority slot.  Primary sorts before normal sorts before
-  defunct."
+  "Sort MAILS by their priority slot.
+Primary sorts before normal sorts before defunct."
   (sort
    mails
    (lambda (l r)
@@ -1899,7 +1877,6 @@ The result looks like this:
 
 (cl-defmethod initialize-instance ((field ebdb-field-anniversary) &optional slots)
   "Migrate from previous single-integer date value to (day month year) list.
-
 This allows for anniversaries where we don't know the year.
 Eventually this method will go away."
   (when (integerp (plist-get slots :date))
@@ -2082,7 +2059,6 @@ Eventually this method will go away."
 			  (str string)
 			  &optional slots)
   "Parse a URL.
-
 See `ebdb-url-valid-schemes' for a list of acceptable schemes."
   (when (null (plist-get slots :url))
     (if (string-match-p (regexp-opt ebdb-url-valid-schemes) str)
@@ -2310,7 +2286,6 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 
 (defvar ebdb-mail-alias-alist nil
   "An alist holding all alias definitions from EBDB.
-
 Each element looks like: (alias (rec1 addr1) (rec2 addr2) ...).
 
 Instead of actual records, the rec1, rec2 elements can also be
@@ -2417,7 +2392,7 @@ record uuids.")
 ;; record for information, and the cache method intercepts the call,
 ;; returns the value if it has it, and if not then asks the record for
 ;; the value then stores it.  Ie, a real cache.  Not all the cache
-;; slots would work that way, of course -- for instance. a record has
+;; slots would work that way, of course -- for instance, a record has
 ;; no way of knowing its databases except via the cache.
 
 (defclass ebdb-cache ()
@@ -2458,8 +2433,6 @@ record uuids.")
     :initform nil
     :documentation
     "The database(s) this record belongs to."))
-  ;; I'm not sure if a marker slot is still going to be necessary in
-  ;; this setup.
   :allow-nil-initform t)
 
 ;;; Records
@@ -2489,7 +2462,7 @@ record uuids.")
     :type (list-of ebdb-field-user)
     :initform nil
     :documentation "This slot contains all record fields except
-    those built-in to record subclasses.")
+    those built in to record subclasses.")
    (image
     :initarg :image
     :type (or null ebdb-field-image)
@@ -2508,7 +2481,6 @@ record uuids.")
     :initarg :cache
     :type (or null ebdb-cache)
     :initform nil
-					;:accessor ebdb-record-cache
     ))
   :abstract t
   :allow-nil-initform t
@@ -2517,7 +2489,6 @@ record uuids.")
 
 (cl-defgeneric ebdb-init-record (record)
   "Initialize RECORD.
-
 Specific behavior is determined by subclass, but usually involves
 setting up RECORD's cache, and calling `ebdb-init-field' on the
 record's fields.
@@ -2528,7 +2499,6 @@ database(s).")
 
 (cl-defgeneric ebdb-delete-record (record &optional db unload)
   "Delete RECORD.
-
 This goes through a series of deletion routines, removing RECORD
 from its respective databases, un-hashing its uuid, running
 `ebdb-delete-field' on its fields, etc.
@@ -2540,7 +2510,6 @@ altogether.")
 
 (cl-defgeneric ebdb-record-change-name (record name)
   "Change RECORD's name to NAME.
-
 NAME can be an instance of `ebdb-field-name' or one of its
 subclasses, or it can be a string, in which case the class of
 RECORD is responsible for parsing it correctly.")
@@ -2551,7 +2520,7 @@ RECORD is responsible for parsing it correctly.")
      (slot-value uuid-field 'uuid))))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record)) &optional slots)
-  "Create a new record from the values collected into SLOTS."
+  "Create a new record of class CLASS from the values in SLOTS."
   ;; All the other `ebdb-read' methods for record subclasses "bottom
   ;; out" here, and create a record.
   (let ((notes (ebdb-with-exit (ebdb-read ebdb-default-notes-class))))
@@ -2594,8 +2563,7 @@ RECORD is responsible for parsing it correctly.")
     (cl-call-next-method record slots)))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record))
-  "Initiate a record after loading a database or creating a new
-record."
+  "Initiate RECORD after loading or creation."
   (dolist (field (ebdb-record-user-fields record))
     (ebdb-init-field field record))
   (ebdb-record-set-sortkey record))
@@ -2636,7 +2604,6 @@ record."
 
 (cl-defgeneric ebdb-record-field-slot-query (record-class &optional query alist)
   "Ask RECORD-CLASS for information about its interactively-settable fields.
-
 If QUERY is nil, simply return ALIST, which is a full list of
 acceptable fields.  Each list element is a cons of the form (SLOT
 . FIELDCLASS), meaning that RECORD-CLASS can accept fields of
@@ -2650,19 +2617,16 @@ either case is a cons with both slot and fieldclass filled in.")
 
 (cl-defgeneric ebdb-record-insert-field (record field &optional slot)
   "Insert FIELD into RECORD.
-
 If SLOT is given, insert FIELD into that slot.  Otherwise, the
 slot will be found programmatically.")
 
 (cl-defgeneric ebdb-record-delete-field (record field &optional slot)
   "Delete FIELD from RECORD.
-
 If SLOT is given, delete FIELD from that slot.  Otherwise, the
 slot will be found programmatically.")
 
 (cl-defgeneric ebdb-record-change-field (record old-field &optional new-field)
   "Change RECORD's field OLD-FIELD.
-
 If NEW-FIELD is given, OLD-FIELD will be replaced with NEW-FIELD.
 Otherwise, the user will be prompted to create a new field, using
 OLD-FIELD's values as defaults.")
@@ -2679,6 +2643,8 @@ OLD-FIELD's values as defaults.")
       (setq field (ebdb-db-add-record-field db record slot field))))
   (when field
     (condition-case nil
+	;; We don't know if slot holds a single field, or a list of
+	;; fields.  This is a hack.
 	(object-add-to-list record slot field)
       (invalid-slot-type
        (setf (slot-value record slot) field)))
@@ -2756,7 +2722,6 @@ OLD-FIELD's values as defaults.")
 
 (cl-defgeneric ebdb-record-current-fields (record &optional f-list all)
   "Return an alist of all RECORD's current fields.
-
 Each element of the alist is a cons of (slot-name
 . field-instance), where slot-name is a symbol, and
 field-instance is an instance of a subclass of `ebdb-field'.
@@ -2816,6 +2781,7 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 (cl-defmethod ebdb-record-insert-field ((record ebdb-record)
 					(field ebdb-field-singleton)
 					&optional _slot)
+  "Prevent RECORD from having more than one instance of FIELD."
   (let ((existing (ebdb-record-field record (eieio-object-class field))))
     (when existing
       (ebdb-record-delete-field record existing))
@@ -2826,7 +2792,6 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 
 (cl-defmethod ebdb-field-image-get ((field ebdb-field-image) (record ebdb-record))
   "Return the image for image field FIELD.
-
 This function returns an actual image, suitable for display with
 `insert-image'."
   (let* ((image-slot (slot-value field 'image))
@@ -2848,7 +2813,6 @@ This function returns an actual image, suitable for display with
 
 (cl-defmethod ebdb-field-image-function ((_field ebdb-field-image) (_record ebdb-record))
   "Return image data for RECORD from image field FIELD.
-
 The return value of this function will be passed to
 `create-image', which see.  It can either be an image file name,
 or actual image data."
@@ -2875,7 +2839,6 @@ or actual image data."
 (cl-defmethod ebdb-field-anniversary-calendar ((_record ebdb-record)
 					       (field ebdb-field-anniversary))
   "Go to the date of anniversary FIELD in the calendar.
-
 If FIELD doesn't specify a year, use the current year."
   ;; This and the next function should be rethought.  Do people really
   ;; want to look at the original date?  Won't they usually want to
@@ -2892,7 +2855,6 @@ If FIELD doesn't specify a year, use the current year."
 (cl-defmethod ebdb-field-anniversary-agenda ((_record ebdb-record)
 					     (field ebdb-field-anniversary))
   "Go to the date of anniversary FIELD in the Org agenda.
-
 If FIELD doesn't specify a year, use the current year."
   (let ((date (slot-value field 'date)))
     (org-agenda-list
@@ -3023,7 +2985,8 @@ priority."
     (setf (slot-value record 'mail) sorted)))
 
 (defun ebdb-compose-mail (&rest args)
-  "Start composing a mail message to send."
+  "Start composing a mail message to send.
+ARGS is passed to `compose-mail'."
   (apply 'compose-mail args))
 
 (cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
@@ -3470,7 +3433,7 @@ instances to add as part of the role."
   :documentation "A record class representing a mailing list.")
 
 (cl-defmethod ebdb-read ((_class (subclass ebdb-record-mailing-list)) &optional _db _slots)
-  (error "Mailing list records haven't been implemented yet."))
+  (error "Mailing list records haven't been implemented yet"))
 
 ;;; Merging
 
@@ -3483,8 +3446,9 @@ instances to add as part of the role."
 ;; 'timestamp
 
 (defun ebdb-check-uuid (uuid)
-  "Ensure that UUID hasn't been seen before.  If it has, raise an
-error containing the record that already has that uuid."
+  "Ensure that UUID hasn't been seen before.
+If it has, raise an error containing the record that already has
+that uuid."
   (let ((dup (ebdb-gethash uuid 'uuid)))
     (when dup
       (signal 'ebdb-duplicate-uuid
@@ -3492,10 +3456,11 @@ error containing the record that already has that uuid."
 
 (defun ebdb-make-uuid (&optional prefix)
   "Create and return a new UUID.
-
 This depends on the value of `ebdb-uuid-function'.  When that
 variable is a string, assume the string refers to a system
-executable.  When a symbol, assume an Elisp function."
+executable.  When a symbol, assume an Elisp function.  If
+optional argument PREFIX is given, add that prefix to the uuid
+string."
   (let ((prefix-string (unless (string-empty-p prefix)
 			 (concat prefix "-")))
 	(uid
@@ -3670,7 +3635,6 @@ not be instantiated directly, subclass it instead."
 
 (defun ebdb-auto-save-databases ()
   "Auto-save all EBDB databases.
-
 Run as a hook in the `auto-save-hook"
   (dolist (d ebdb-db-list)
     (with-slots (auto-save disabled read-only) d
@@ -3689,7 +3653,8 @@ Run as a hook in the `auto-save-hook"
 ;;; should call `cl-call-next-method' to run the methods below.
 
 (cl-defmethod ebdb-db-unsynced ((db ebdb-db))
-  "Return t if DB's persistence file has been accessed since the
+  "Check if DB is out of sync.
+Returns t if DB's persistence file has been accessed since the
 last time DB was loaded.
 
 This is the base implementation, which only checks if DB's
@@ -3725,7 +3690,6 @@ overwrite data somewhere."
 
 (cl-defgeneric ebdb-db-load-records (db records)
   "Load RECORDS into DB.
-
 This method is responsible for adding DB to records' caches,
 checking their uuid, and hashing the uuid.  It happens at two
 different points: after loading DB, and when adding a record to
@@ -3799,7 +3763,6 @@ DB.")
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
   "Unload database DB.
-
 This involves going through DB's records and removing each one
 that doesn't belong to a different database."
   (dolist (r (slot-value db 'records))
@@ -3811,7 +3774,6 @@ that doesn't belong to a different database."
 
 (defun ebdb-db-reload (db)
   "Reload DB.
-
 This consists of unloading all DB's records, re-reading its
 database definition from file, and then reloading all the
 records."
@@ -3842,9 +3804,8 @@ records."
   (run-hook-with-args 'ebdb-before-read-db-hook db))
 
 (cl-defgeneric ebdb-db-editable (db &optional noerror reload)
-  "Check that DB is in an editable state, and signal an error if
-it isn't.  This method is called before most operations that
-would alter DB.
+  "If DB can't be edited, signal an error.
+This method is called before most operations that would alter DB.
 
 With optional argument NOERROR, return nil instead of signalling
 an error.  With optional argument RELOAD, reload DB if it is out
@@ -4066,7 +4027,6 @@ process.")
 
 (defun ebdb-class-in-list-p (class list)
   "Check if CLASS is a member of LIST.
-
 Both CLASS and the members of LIST should be class-name symbols.
 CLASS is \"in\" list if the symbol appears directly in the list,
 or if CLASS is a subclass of one of the classes in LIST.  The
@@ -4099,7 +4059,7 @@ in the second."
 
 (defun ebdb-prompt-for-record (&optional records class)
   "Prompt for a single record, and return it.
-If RECORDS is a list of records, offer choices from that list. If
+If RECORDS is a list of records, offer choices from that list.  If
 CLASS is given, only offer choices that are an instance of that
 class, or its subclasses."
   (let* ((recs (or records (ebdb-records)))
@@ -4125,7 +4085,6 @@ class, or its subclasses."
 
 (defun ebdb-prompt-for-field-type (fields)
   "Prompt the user for a field from FIELDS.
-
 Returns a list of (\"label\" slot . field-class)."
   ;; Fields that have labels will provide those labels as a sort of
   ;; "second level" of choice. So our top-level choices should be:
@@ -4173,6 +4132,8 @@ prompting if there's only one database."
       (object-assoc db-string 'object-name collection))))
 
 (defun ebdb-prompt-for-mail (record)
+  "Prompt for one of RECORD's mail addresses.
+If RECORD only has one address, return that directly."
   (let ((mail-alist (mapcar
 		     (lambda (m) (cons (ebdb-string m) m))
 		     (ebdb-record-mail record t))))
@@ -4185,7 +4146,6 @@ prompting if there's only one database."
 
 (defun ebdb-dirty-records (&optional records)
   "Return all records with unsaved changes.
-
 If RECORDS are given, only search those records."
   (seq-filter
    (lambda (r)
@@ -4222,7 +4182,6 @@ If RECORDS are given, only search those records."
 
 (defun ebdb-record-mail (record &optional roles label defunct)
   "Return a list of all RECORD's mail fields.
-
 If ROLES is non-nil, also consider mail fields from RECORD's
 roles.  If LABEL is a string, return the mail with that label.
 If DEFUNCT is non-nil, also consider RECORD's defunct mail
@@ -4248,7 +4207,6 @@ addresses."
 (defun ebdb-dwim-mail (record &optional mail)
   ;; Do What I Mean!
   "Return a string to use as the mail address of RECORD.
-
 However, if both the first name and last name are constituents of
 the address as in John.Doe@Some.Host, and
 `ebdb-mail-avoid-redundancy' is non-nil, then the address is used
@@ -4297,7 +4255,6 @@ RECORD.  If MAIL is nil use RECORD's primary mail address."
 
 (defun ebdb-signal-get-number (record &optional no-prompt)
   "Extract a usable Signal number from RECORD.
-
 If any of RECORD's phone numbers have \"signal\" label, use that.
 Alternately, if there is only one phone labeled \"cell\" or
 \"mobile\", use that.  Alternately, if NO-PROMPT is nil, prompt
@@ -4328,8 +4285,7 @@ leading \"+\"."
 
 (cl-defmethod ebdb-field-phone-signal-text ((_record ebdb-record-entity)
 					    (phone-field ebdb-field-phone))
-  "Use the Signal protocol to compose a text message to RECORD.
-
+  "Use the Signal protocol to compose a text message.
 PHONE-FIELD will be the number used as the recipient.
 
 This is a field action version of `ebdb-signal-text', see that
@@ -4358,7 +4314,9 @@ command's docstring for more details."
       (message "Please set `ebdb-signal-program'"))))
 
 (defun ebdb--signal-text (sender message recipients &optional attachments)
-  "Internal function for actually sending the SMS."
+  "Internal function for actually sending the SMS.
+Arguments SENDER, MESSAGE, RECIPIENTS and optional ATTACHMENTS
+are passed directly to the Signal executable."
   (let ((command
 	 (concat ebdb-signal-program
 		 (format " -u %s -m %s" sender message)
@@ -4416,7 +4374,8 @@ The inverse function of `ebdb-split'."
   (mapconcat 'identity
              (delete "" (apply 'append (mapcar (lambda (x) (if (stringp x)
                                                                (list x) x))
-                                               strings))) separator))
+                                               strings)))
+	     separator))
 
 (defun ebdb-list-strings (list)
   "Remove all elements from LIST which are not non-empty strings."
@@ -4428,9 +4387,9 @@ The inverse function of `ebdb-split'."
 
 (defun ebdb-read-string (prompt &optional init collection require-match)
   "Read a string, trimming whitespace and text properties.
-PROMPT is a string to prompt with.
-INIT appears as initial input which is useful for editing existing records.
-COLLECTION and REQUIRE-MATCH have the same meaning as in `completing-read'."
+PROMPT is a string to prompt with.  INIT appears as initial input
+which is useful for editing existing records.  COLLECTION and
+REQUIRE-MATCH have the same meaning as in `completing-read'."
   (ebdb-string-trim
    (if collection
        ;; Hack: In `minibuffer-local-completion-map' remove
@@ -4462,6 +4421,7 @@ The return value is the new value of LIST-VAR."
       (symbol-value list-var)
     (set list-var (cons element (symbol-value list-var)))))
 
+;; FIXME: Get rid of this add-job and eval-spec stuff.
 (defsubst ebdb-add-job (spec record string)
   "Internal function: Evaluate SPEC for RECORD and STRING.
 If SPEC is a function call it with args RECORD and STRING.  Return value.
@@ -4503,7 +4463,10 @@ and CANONICAL-ADDRESS through `ebdb-canonicalize-mail-function'."
   "Given an RFC-822 address ADDRESS, extract full name and canonical address.
 This function behaves like `mail-extract-address-components', but it passes
 its return value through `ebdb-clean-address-components'.
-See also `ebdb-decompose-ebdb-address'."
+See also `ebdb-decompose-ebdb-address'.
+
+If optional argument ALL is non-nil, pass it to
+`mail-extract-address-components' to extract multiple addresses."
   (if all
       (mapcar 'ebdb-clean-address-components
               (mail-extract-address-components address t))
@@ -4554,9 +4517,10 @@ and canonical addresses in the mail field of EBDB records."
 ;;; Massage of mail addresses
 
 (defun ebdb-canonicalize-mail-1 (address)
-  "Example of `ebdb-canonicalize-mail-function'.
-However, this function is too specific to be useful for the general user.
-Take it as a source of inspiration for what can be done."
+  "Canonicalize ADDRESS.
+This is an example of `ebdb-canonicalize-mail-function'.  It's
+probably too specific to be useful for the general user, but can
+be taken as a source of inspiration for what's possible."
   (setq address (ebdb-string-trim address))
   (cond
    ;; Rewrite mail-drop hosts.
@@ -4675,11 +4639,11 @@ KEY must be a string or nil.  Empty strings and nil are ignored."
 		 ebdb-hashtable))))
 
 (defun ebdb-gethash (key &optional predicate)
-  "Return list of records associated with KEY in
-`ebdb-hashtable'.  KEY must be a string or nil.  Empty strings
-and nil are ignored.  PREDICATE may take the same values as
-`ebdb-completion-list'.  If predicate is the single symbol uuid,
-this function returns a single record."
+  "Return records associated with KEY in `ebdb-hashtable'.
+KEY must be a string or nil.  Empty strings and nil are ignored.
+PREDICATE may take the same values as `ebdb-completion-list'.  If
+predicate is the single symbol uuid, this function returns a
+single record, otherwise returns a list."
   (when (and key (not (string-empty-p key)))
     (let* ((key (downcase key))
            (all-records (gethash key ebdb-hashtable))
@@ -4738,8 +4702,8 @@ KEY must be a string or nil.  Empty strings and nil are ignored."
             (remhash key ebdb-hashtable))))))
 
 (defun ebdb-hash-update (record old new)
-  "Update hash for RECORD.  Remove OLD, insert NEW.
-Both OLD and NEW are lists of values."
+  "Update hash for RECORD.
+Remove OLD, insert NEW.  Both OLD and NEW are lists of values."
   (dolist (elt old)
     (ebdb-remhash elt record))
   (dolist (elt new)
@@ -4777,7 +4741,6 @@ Set and store it if necessary."
 
 (cl-defgeneric ebdb-record-field (record field)
   "For RECORD return the value of FIELD.
-
 FIELD may be a slot-name symbol, in which case the value of that
 slot, if any, is returned.  It can be a string, in which case it
 is interpreted as a label for one of RECORD's user fields.  It
@@ -4812,17 +4775,17 @@ also be one of the special symbols below.
 	   (slot-value record field)))))
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
-				 (field (subclass ebdb-field-user)))
-  "If FIELD is a class name subclassing `ebdb-user-field', return
- all instances of that field."
+				 (f-class (subclass ebdb-field-user)))
+  "Return all RECORD's fields that are of class F-CLASS."
   (seq-filter
    (lambda (f)
-     (object-of-class-p f field))
+     (object-of-class-p f f-class))
    (ebdb-record-user-fields record)))
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
-				 (field string))
-  (ebdb-record-user-field record field))
+				 (label string))
+  "Return all RECORD's fields that have label LABEL."
+  (ebdb-record-user-field record label))
 
 ;;; Parsing other things
 
@@ -4867,8 +4830,8 @@ be nil."
 
 ;;;###autoload
 (defun ebdb-load ()
-  "Load all databases listed in `ebdb-sources'.  All the
-important work is done by the `ebdb-db-load' method."
+  "Load all databases listed in `ebdb-sources'.
+All the important work is done by the `ebdb-db-load' method."
   (let ((sources (if (listp ebdb-sources)
 		     ebdb-sources
 		   (list ebdb-sources)))
@@ -4877,7 +4840,7 @@ important work is done by the `ebdb-db-load' method."
     (when (and ebdb-db-list
 	       (object-assoc t 'dirty ebdb-db-list))
       ;; Later we'll give users the option to discard unsaved data.
-      (error "Databases have unsaved data, save first."))
+      (error "Databases have unsaved data, save first"))
     (message "Loading EBDB sources...")
     (ebdb-clear-vars)
     (run-hooks 'ebdb-before-load-hook)
@@ -4900,7 +4863,7 @@ important work is done by the `ebdb-db-load' method."
 		 (ebdb-db-save s))))
 	    ((null (and (eieio-object-p s)
 			(object-of-class-p s 'ebdb-db)))
-	     (error "Source %s must be a filename or instance of `ebdb-db'." s)))
+	     (error "Source %s must be a filename or instance of `ebdb-db'" s)))
       ;; Now load it.
       (if (null (slot-value s 'disabled))
 	  (ebdb-db-load s)
@@ -4949,7 +4912,8 @@ important work is done by the `ebdb-db-load' method."
   "After all databases are loaded, initialize the records.
 This results in the creation of all the secondary data
 structures: label lists, `ebdb-org-hashtable', record caches,
-etc."
+etc.  If optional argument RECORDS is given, only initialize
+those records."
   (mapcar #'ebdb-init-record (or records ebdb-record-tracker)))
 
 (defun ebdb-initialize-threadwise (&optional records)
@@ -4959,7 +4923,8 @@ in its own thread, and the thread will be yielded after every ten
 record initializations.  Note that by itself this will have no
 impact whatsoever on EBDB load times.  It's up to the user to
 interleave it with other thread-yielding operations to create an
-actual speedup."
+actual speedup.  If optional argument RECORDS is given, only
+initialize those records."
   (let ((c 0))
     (mapcar
      (lambda (r)
@@ -4977,6 +4942,11 @@ actual speedup."
 ;; record(s) into the current buffer.
 
 (defun ebdb-cite-records (&optional records arg kill)
+  "Insert a string representation of RECORDS at point.
+If ARG (the prefix arg) is given, strings are in \"list style\",
+ie separated by newlines.  Otherwise they are \"inline style\".
+If KILL is non-nil, put the string on the kill ring instead of
+inserting it."
   (interactive (list (ebdb-prompt-for-record)
 		     current-prefix-arg))
   (let ((recs (if (listp records) records (list records)))
@@ -4995,8 +4965,7 @@ actual speedup."
       (insert str))))
 
 (cl-defgeneric ebdb-records-cite (style records)
-  "Insert mode-appropriate mail strings for RECORDS.
-
+  "Return mode-appropriate mail strings for RECORDS.
 STYLE is a symbol, one of 'inline or 'list.  This is interpreted
 differently by different major modes.
 
@@ -5077,7 +5046,7 @@ This is a generic function that dispatches on the value of
 
 (defun ebdb-save (&optional prompt)
   "Save the EBDB if it is modified.
-If PROMPT is non-nil prompt before saving."
+If PROMPT is non-nil, prompt before saving."
   (interactive (list nil))
   ;; TODO: Reimplement ebdb-remote-file, or otherwise do something
   ;; about that.
@@ -5139,7 +5108,8 @@ key character.")
 
 (defun ebdb-char-fold-to-regexp (string)
   "A highly simplified version of `char-fold-to-regexp'.
-Only converts characters that decompose to the range [a-zA-Z]."
+Only converts characters in STRING that decompose to the range
+[a-zA-Z]."
   (let ((out nil)
 	(end (length string))
 	char
@@ -5187,7 +5157,6 @@ See `ebdb-search' for searching records with regexps."
 
 (defun ebdb-search (records clauses &optional invert)
   "Search RECORDS for records matching CLAUSES.
-
 Each element of CLAUSES is either a two-element list of (symbol
 criteria), which will be used to make a call to
 `ebdb-record-search', or it is a callable, which will be called
@@ -5199,7 +5168,9 @@ If the car of a clause is one of `ebdb-field-name',
 list `ebdb-hash-extra-predicates', this function will try to use
 the `ebdb-hashtable' to do a fast lookup.  The criteria must be a
 string, and must begin with a leading \"^\", ie, the search
-string must be a prefix of the sought string."
+string must be a prefix of the sought string.
+
+With optional argument INVERT, invert the search results."
   ;; In the following "fast lookup" means we use the search criteria
   ;; to pull results from the `ebdb-hashtable'.  "Slow lookup" means
   ;; we loop over all the records and test each one.
@@ -5298,7 +5269,6 @@ string must be a prefix of the sought string."
 
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)
   "Short-circuit the plain field search for names.
-
 The record itself performs more complex searches on cached name
 values, by default the search is not handed to the name field itself."
   nil)
@@ -5414,9 +5384,7 @@ values, by default the search is not handed to the name field itself."
 
 
 (cl-defgeneric ebdb-search-read (field-class)
-  "Prompt the user for a search string to match against instances
-  of FIELD-CLASS.
-
+  "Prompt user for a string to match against instances of FIELD-CLASS.
 In most cases this is a simple regexp, but field classes can
 prompt users for more complex search criteria, if necessary.")
 

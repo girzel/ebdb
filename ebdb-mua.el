@@ -63,17 +63,15 @@
   "For communication between `ebdb-update-records' and `ebdb-query-create'.")
 
 (defvar ebdb-update-records-p nil
-  "For communication between `ebdb-update-records' and
-  `ebdb-query-create'.")
+  "For communication between `ebdb-update-records' and `ebdb-query-create'.")
 
 (defvar ebdb-update-records-address nil
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
 
 (defcustom ebdb-mua-auto-update-p 'existing
-  "This option governs how EBDB handles addresses found in
-  incoming mail messages.  It can take one of the following
-  values:
+  "Specify how EBDB handles addresses in mail messages.
+It can take one of the following values:
 
  nil          Do nothing.
  existing     Find existing records matching ADDRESS.
@@ -202,7 +200,7 @@ This option can be directly set to a regexp.  It can also be the
 symbol 'message, in which case the value of
 `message-alternative-emails' will be used, or the symbol 'self,
 in which case the value will be constructed from the mail
-addresses of the record pointed to by `ebdb-record-self'.
+addresses of the record pointed to by option `ebdb-record-self'.
 Several EBDB commands extract either the sender or the
 recipients' email addresses from a message according to
 `ebdb-message-headers'.  Yet an email address will be ignored if
@@ -225,7 +223,7 @@ accordingly."
 	((eq ebdb-user-mail-address-re 'self)
 	 (let ((self-rec (ebdb-record-self)))
 	   (unless self-rec
-	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set."))
+	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set.? "))
 	   (setq ebdb-user-mail-address-re
 		 (regexp-opt (slot-value
 			      (ebdb-record-cache self-rec)
@@ -404,13 +402,16 @@ are not \"noticed\", nor is the timestamp updated."
 (defcustom ebdb-mua-summary-unification-list
   '(name mail message-name message-mail message-address)
   "List of FIELDs considered by `ebdb-mua-summary-unify'.
-For the RECORD matching the address of a message, `ebdb-mua-summary-unify'
-returns the first non-empty field value matching an element FIELD from this list.
-Each element FIELD may be a valid argument of `ebdb-record-field' for RECORD.
-In addition, this list may also include the following elements:
+For the RECORD matching the address of a message,
+`ebdb-mua-summary-unify' returns the first non-empty field value
+matching an element FIELD from this list.  Each element FIELD may
+be a valid argument of `ebdb-record-field' for RECORD.  In
+addition, this list may also include the following elements:
+
   message-name     The name in the address of the message
   message-mail     The mail in the address of the message
   message-address  The complete address of the message
+
 These provide a fallback if a message does not have a matching RECORD
 or if some FIELD of RECORD is empty."
   :group 'ebdb-mua
@@ -453,33 +454,37 @@ or if some FIELD of RECORD is empty."
 (defcustom ebdb-mua-summary-mark "+"
   "Default mark for message addresses known to EBDB.
 If nil do not mark message addresses known to EBDB.
-See `ebdb-mua-summary-mark' and `ebdb-mua-summary-unify'.
+See variable `ebdb-mua-summary-mark' and `ebdb-mua-summary-unify'.
 See also the field class `ebdb-field-summary-mark'."
   :group 'ebdb-mua
   :type '(choice (string :tag "Mark used")
                  (const :tag "Do not mark known posters" nil)))
 
 (defcustom ebdb-mua-summary-unify-format-letter "E"
-  "Letter required for `ebdb-mua-summary-unify' in the MUA Summary format string.
-For Gnus, combine it with the %u specifier in `gnus-summary-line-format'
-\(see there), for example use \"%U%R%z%I%(%[%4L: %-23,23uB%]%) %s\\n\".
-For VM, combine it with the %U specifier in `vm-summary-format' (see there),
-for example, use \"%n %*%a %-17.17UB %-3.3m %2d %4l/%-5c %I\\\"%s\\\"\\n\".
-This customization of `gnus-summary-line-format' / `vm-summary-format'
-is required to use `ebdb-mua-summary-unify'.
-Currently no other MUAs support this EBDB feature."
+  "Letter used by `ebdb-mua-summary-unify' in the MUA summary format string.
+For Gnus, combine it with the %u specifier in
+`gnus-summary-line-format' see there), for example use
+\"%U%R%z%I%(%[%4L: %-23,23uB%]%) %s\\n\".  For VM, combine it
+with the %U specifier in `vm-summary-format' (see there), for
+example, use \"%n %*%a %-17.17UB %-3.3m %2d %4l/%-5c
+%I\\\"%s\\\"\\n\".  This customization of
+`gnus-summary-line-format' / `vm-summary-format' is required to
+use `ebdb-mua-summary-unify'.  Currently no other MUAs support
+this EBDB feature."
   :group 'ebdb-mua
   :type 'string)
 
 (defcustom ebdb-mua-summary-mark-format-letter "e"
-  "Letter required for `ebdb-mua-summary-mark' in the MUA Summary format string.
-For Gnus, combine it with the %u specifier in `gnus-summary-line-format'
-\(see there), for example, use \"%U%R%z%I%(%[%4L: %ue%-23,23f%]%) %s\\n\".
-For VM, combine it with the %U specifier in `vm-summary-format' (see there),
-for example, use \"%n %*%a %Ue%-17.17F %-3.3m %2d %4l/%-5c %I\\\"%s\\\"\\n\".
-This customization of `gnus-summary-line-format' / `vm-summary-format'
-is required to use `ebdb-mua-summary-mark'.
-Currently no other MUAs support this EBDB feature."
+  "Letter used by function `ebdb-mua-summary-mark' when formatting MUA summary.
+For Gnus, combine it with the %u specifier in
+`gnus-summary-line-format' (see there), for example, use
+\"%U%R%z%I%(%[%4L: %ue%-23,23f%]%) %s\\n\".  For VM, combine it
+with the %U specifier in `vm-summary-format' (see there), for
+example, use \"%n %*%a %Ue%-17.17F %-3.3m %2d %4l/%-5c
+%I\\\"%s\\\"\\n\".  This customization of
+`gnus-summary-line-format' / `vm-summary-format' is required to
+use function `ebdb-mua-summary-mark'.  Currently no other MUAs
+support this EBDB feature."
   :group 'ebdb-mua
   :type 'string)
 
@@ -561,6 +566,8 @@ variable should be set before EBDB is loaded.")
     (and val (string-match regexp val))))
 
 (defsubst ebdb-mua-check-header (header-type address-parts &optional invert)
+  "Check if ADDRESS-PARTS is acceptable in position HEADER-TYPE.
+When optional INVERT is non-nil, invert the sense of the check."
   (let ((rest (if invert
 		  ebdb-ignore-header-alist
 		ebdb-accept-header-alist))
@@ -580,10 +587,11 @@ variable should be set before EBDB is loaded.")
       (throw 'done t))))
 
 (defun ebdb-mua-test-headers (header-type address-parts &optional ignore-address)
-  "Decide if the address in ADDRESS-PARTS should be ignored or
-  acted upon.  Return t if the header \"passes\".
+  "Decide if the address in ADDRESS-PARTS should be acted upon.
+Return t if the header \"passes\".
 
-Takes into consideration the IGNORE-ADDRESS argument, as well the
+Takes into consideration where the address was seen, as
+HEADER-TYPE, as well as the IGNORE-ADDRESS argument, and the
 variables `ebdb-user-mail-address-re',
 `ebdb-accept-header-alist', and `ebdb-ignore-header-alist'."
   (let ((name (car address-parts))
@@ -740,7 +748,7 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 ;;; This whole thing could probably be replaced by `map-y-or-n-p'
 (defun ebdb-query-create ()
   "Interactive query used by `ebdb-update-records'.
-Return t if the record should be created or `nil' otherwise.
+Return t if the record should be created or nil otherwise.
 Honor previous answers such as `!'."
   (let ((task ebdb-offer-to-create))
     ;; If we have remembered what the user typed previously,
@@ -916,7 +924,7 @@ Return the records matching ADDRESS or nil."
                            (sit-for ignore-redundant)))
                         ((or (eq t ignore-redundant)
                              ebdb-silent
-                             (y-or-n-p (format "Ignore redundant mail %s?" mail)))
+                             (y-or-n-p (format "Ignore redundant mail %s? " mail)))
                          (setq mail redundant))))))
 	(setq mail (make-instance ebdb-default-mail-class :mail mail))
         ;; Analyze the mail part of the new records
@@ -971,7 +979,7 @@ Return the records matching ADDRESS or nil."
                                       (sit-for ignore-redundant)))
                                    ((or (eq t ignore-redundant)
                                         ebdb-silent
-                                        (y-or-n-p (format "Delete %s: " form)))
+                                        (y-or-n-p (format "Delete %s? " form)))
                                     (if (eq t ignore-redundant)
                                         (message "%s: deleting %s" name form))
                                     (setq mails okay)))))))
@@ -1035,6 +1043,9 @@ article text.  This is typically used for snarfing.")
 ;;;###autoload
 (defun ebdb-mua-update-records (&optional header-class all)
   "Update all records associated with the message under point.
+When HEADER-CLASS is present, only update records for addresses
+found in that header.  When ALL is non-nil, behave as if
+`ebdb-message-all-addresses' was non-nil.
 
 This command is meant for manually updating records when
 `ebdb-mua-auto-update-p' is nil: it behaves as if that option
@@ -1162,7 +1173,6 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 ;;;###autoload
 (defun ebdb-mua-snarf-article (&optional arg)
   "Snarf the body of the current article.
-
 This snarfs all available record information in the article,
 first attempting to associate it with the senders and recipients
 of the article, afterwards prompting for the creation of new
@@ -1171,7 +1181,7 @@ records.
 In addition, if a signature is present, snarf it and attempt at
 associate field information in it with the article sender.
 
-With a prefix arg, only snarf the signature."
+With a prefix arg ARG, only snarf the signature."
   (interactive "P")
   (ebdb-mua-prepare-article)
   (condition-case nil
@@ -1292,15 +1302,15 @@ Keys have been chosen assuming that the keymap will be bound to
 
 (defun ebdb-mua-summary-unify (address)
   "Unify mail ADDRESS displayed for a message in the MUA Summary buffer.
-Typically ADDRESS refers to the value of the From header of a message.
-If ADDRESS matches a record in EBDB display a unified name instead of ADDRESS
-in the MUA Summary buffer.
+Typically ADDRESS refers to the value of the From header of a
+message.  If ADDRESS matches a record in EBDB display a unified
+name instead of ADDRESS in the MUA Summary buffer.
 
 Unification uses `ebdb-mua-summary-unification-list' (see there).
 The first match in this list becomes the text string displayed
-for a message in the MUA Summary buffer instead of ADDRESS.
-If variable `ebdb-mua-summary-mark' is non-nil use it to precede known addresses.
-Return the unified mail address.
+for a message in the MUA Summary buffer instead of ADDRESS.  If
+variable `ebdb-mua-summary-mark' is non-nil use it to precede
+known addresses.  Return the unified mail address.
 
 Currently this works with Gnus and VM.  It requires the EBDB insinuation
 of these MUAs.  Also, the MUA Summary format string must use
@@ -1333,7 +1343,7 @@ of these MUAs.  Also, the MUA Summary format string must use
   "In the MUA Summary buffer mark messages matching a EBDB record.
 ADDRESS typically refers to the value of the From header of a message.
 If ADDRESS matches a record in EBDB return a mark, \" \" otherwise.
-The mark itself is the value of `ebdb-mua-summary-mark'."
+The mark itself is the value of option `ebdb-mua-summary-mark'."
   (if (not ebdb-mua-summary-mark)
       "" ; for consistency
     ;; ADDRESS is analyzed as in `ebdb-get-address-components'.
