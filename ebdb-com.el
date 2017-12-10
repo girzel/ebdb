@@ -428,6 +428,14 @@ position-marker mark)."
   :type 'ebdb-formatter-ebdb-oneline
   :group 'ebdb-record-display)
 
+(defconst ebdb-full-formatter
+  (make-instance 'ebdb-formatter-ebdb-multiline
+		 :include nil :exclude nil
+		 :combine nil :collapse nil
+		 :object-name "full formatter")
+  "Formatter used for displaying all values of a record.
+This formatter should not be changed.")
+
 (defun ebdb-available-ebdb-formatters ()
   "A list of formatters available in the *EBDB* buffer.
 This list is also used for toggling layouts."
@@ -1852,14 +1860,9 @@ With any other non-nil ARG, RECORDS are displayed expanded."
 
 ;;;###autoload
 (defun ebdb-display-records-completely (records)
-  "Display RECORDS using layout `full-multi-line' (i.e., display all fields)."
+  "Display all fields of RECORDS."
   (interactive (list (ebdb-do-records)))
-  (let* ((record (ebdb-current-record t))
-         (current-fmt (nth 1 record))
-	 ;; TODO: Something weird happens with duplication of
-	 ;; formatter objects when we do this.
-         (fmt (clone current-fmt :include nil :exclude nil)))
-    (ebdb-redisplay-records records fmt)))
+  (ebdb-redisplay-records records ebdb-full-formatter))
 
 ;;;###autoload
 (defun ebdb-display-records-with-fmt (records fmt)
