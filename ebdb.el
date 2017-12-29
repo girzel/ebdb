@@ -182,13 +182,25 @@ to errors or database corruption."
   :type 'boolean)
 
 ;; Do not use this to prevent writing of object-names via
-;; `eieio-print-object-names', older Emacs will choke if it's not
+;; `eieio-print-object-name', older Emacs will choke if it's not
 ;; present.
 (defcustom ebdb-vacuum-databases t
   "When non-nil, minimize the size of database files.
 This option only has an effect in Emacs>27.  At present it
 prevents indentation from being written to the persistence files;
 in the future more shrinkage may be possible."
+  :group 'ebdb-eieio
+  :type 'boolean)
+
+(defcustom ebdb-print-object-name t
+  "When non-nil, print object names in the database files.
+This is an EBDB-specific version of the option
+`eieio-print-object-name', which only exists in Emacs 27 or
+higher.  It will have no effect in earlier versions of Emacs, but
+do note that Emacs 26 or lower REQUIRES that the name be present,
+and will raise an error if it is not.  If there's a chance that a
+database might be written by a newer Emacs, and read by an older,
+do not set this to nil."
   :group 'ebdb-eieio
   :type 'boolean)
 
@@ -3853,7 +3865,8 @@ the persistent save, or allow them to propagate.")
 (cl-defmethod ebdb-db-save ((db ebdb-db) &optional _prompt force)
   "Mark DB and all its records as \"clean\" after saving."
   (let ((recs (ebdb-dirty-records (slot-value db 'records)))
-	(eieio-print-indentation (null ebdb-vacuum-databases)))
+	(eieio-print-indentation (null ebdb-vacuum-databases))
+	(eieio-print-object-name ebdb-print-object-name))
     (when (or force recs (slot-value db 'dirty))
       (setf (slot-value db 'dirty) nil)
       (dolist (r recs)
