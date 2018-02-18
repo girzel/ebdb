@@ -4980,79 +4980,66 @@ inserting it."
 (cl-defgeneric ebdb-records-cite (style records)
   "Return mode-appropriate mail strings for RECORDS.
 STYLE is a symbol, one of 'inline or 'list.  This is interpreted
-differently by different major modes.
+differently by different major modes; the default looks like
+\"Firstname Lastname <email@address.com>\".
 
 This is a generic function that dispatches on the value of
 `major-mode'.  It only inserts names and mail addresses.")
 
+(cl-defmethod ebdb-records-cite ((_style (eql list))
+				 (records list))
+  (mapconcat (lambda (pair)
+	       (format "%s <%s>"
+		       ;; TODO: Wrap non-ASCII record names in double
+		       ;; quotes?
+		       (ebdb-string (car pair))
+		       (ebdb-string (cdr pair))))
+	     records "\n"))
+
+(cl-defmethod ebdb-records-cite ((_style (eql inline))
+				 (records list))
+  (mapconcat (lambda (pair)
+	       (format "%s <%s>"
+		       (ebdb-string (car pair))
+		       (ebdb-string (cdr pair))))
+	     records ", "))
+
+(cl-defmethod ebdb-records-cite ((_style (eql list))
+				 (records list)
+				 &context (major-mode org-mode))
+  (mapconcat (lambda (pair)
+	       (format "- [[mailto:%s][%s]]"
+		       (slot-value (cdr pair) 'mail)
+		       (ebdb-string (car pair))))
+	     records "\n"))
+
 (cl-defmethod ebdb-records-cite ((_style (eql inline))
 				 (records list)
-				 &context (major-mode message-mode))
-  (when records
-    (mapcar (lambda (pair)
-	      (format "%s <%s>"
-		      (ebdb-string (car pair))
-		      (ebdb-string (cdr pair))))
-	    records)))
+				 &context (major-mode org-mode))
+  (mapconcat (lambda (pair)
+	       (format "[[mailto:%s][%s]]"
+		       (slot-value (cdr pair) 'mail)
+		       (ebdb-string (car pair))))
+	     records ", "))
 
-(cl-defmethod ebdb-records-cite :around ((_style (eql inline))
-					 (_records list)
-					 &context (major-mode message-mode))
-  (let ((lst (cl-call-next-method)))
-    (mapconcat #'identity lst ", ")))
+(cl-defmethod ebdb-records-cite ((_style (eql list))
+				 (records list)
+				 &context (major-mode html-mode))
+  (mapconcat (lambda (pair)
+	       (format "<li><a href=\"mailto:%s>%s</a></li>"
+		       (slot-value (cdr pair) 'mail)
+		       (ebdb-string (car pair))))
+	     records "\n"))
 
+(cl-defmethod ebdb-records-cite ((_style (eql inline))
+				 (records list)
+				 &context (major-mode html-mode))
+  (mapconcat (lambda (pair)
+	       (format "<a href=\"mailto:%s>%s</a>"
+		       (slot-value (cdr pair) 'mail)
+		       (ebdb-string (car pair))))
+	     records ", "))
 
-(cl-defmethod ebdb-records-cite :around ((_style (eql list))
-					 (_records list)
-					 &context (major-mode message-mode))
-  (let ((lst (cl-call-next-method)))
-    (mapconcat #'identity lst "\n")))
-
-(cl-defmethod ebdb-records-cite :around ((_style (eql list))
-					 (_records list)
-					 &context (major-mode org-mode))
-  (let ((list (cl-call-next-method)))
-    (mapconcat (lambda (elt)
-		 (format "- %s" elt))
-	       list "\n")))
-
-(cl-defmethod ebdb-records-cite :around ((_style (eql inline))
-					 (_records list)
-					 &context (major-mode org-mode))
-  (let ((lst (cl-call-next-method)))
-    (mapconcat #'identity lst " ")))
-
-(cl-defmethod ebdb-records-cite
-  (_style (records list) &context (major-mode org-mode))
-  "Insert RECORDS as a list of org links."
-  (mapcar (lambda (pair)
-	    (format "[[mailto:%s][%s]]"
-		    (slot-value (cdr pair) 'mail)
-		    (ebdb-string (car pair))))
-	  records))
-
-(cl-defmethod ebdb-records-cite :around ((_style (eql list))
-					 (_records list)
-					 &context (major-mode html-mode))
-  (let ((list (cl-call-next-method)))
-    (mapconcat (lambda (l)
-		 (format "<li>%s</li>" l))
-	       list "\n")))
-
-(cl-defmethod ebdb-records-cite :around ((_style (eql inline))
-					 (_records list)
-					 &context (major-mode html-mode))
-  (let ((list (cl-call-next-method)))
-    (mapconcat #'identity list " ")))
-
-(cl-defmethod ebdb-records-cite
-    (_style (records list) &context (major-mode html-mode))
-  (mapcar
-   (lambda (pair)
-     (format "<a href=\"mailto:%s>%s</a>"
-	     (slot-value (cdr pair) 'mail)
-	     (ebdb-string (car pair))))
-   records))
 
 
 ;;; Loading and saving EBDB
