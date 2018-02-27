@@ -2176,7 +2176,7 @@ otherwise inline."
       ("org" (org-mode))
       ("html" (html-mode))
       (_ (message-mode)))
-    (ebdb-cite-records records arg t)))
+    (ebdb-cite-records records arg)))
 
 ;;; completion
 
