@@ -2171,12 +2171,14 @@ otherwise inline."
     current-prefix-arg
     (ebdb-do-records)
     (completing-read "Style: " '("org" "html" "message") nil t)))
-  (with-current-buffer (get-buffer-create "*EBDB Citation*")
-    (pcase style
-      ("org" (org-mode))
-      ("html" (html-mode))
-      (_ (message-mode)))
-    (ebdb-cite-records records arg)))
+  (let ((buf (get-buffer-create "*EBDB Citation*")))
+    (with-current-buffer buf
+      (pcase style
+	("org" (org-mode))
+	("html" (html-mode))
+	(_ (message-mode)))
+      (ebdb-cite-records records arg))
+    (pop-to-buffer buf)))
 
 ;;; completion
 
