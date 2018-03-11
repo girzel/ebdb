@@ -2118,6 +2118,30 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-string ((field ebdb-field-gender))
   (symbol-name (slot-value field 'gender)))
 
+;; Language field
+
+;; People should be able to put anything they want in here, but
+;; ideally we'd do something special for the ISO 639-1 codes:
+
+;; https://en.wikipedia.org/wiki/List_of_ISO_639-1_codes
+
+(defclass ebdb-field-language (ebdb-field-user)
+  ((language
+    :initarg :language
+    :type string
+    :custom string))
+  :human-readable "language"
+  :documentation "A field specifying a language that can be used
+  to communication with this contact.")
+
+(cl-defmethod ebdb-string ((field ebdb-field-language))
+  (slot-value field 'language))
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-language)) &optional slots obj)
+  (let ((lang (ebdb-read-string
+	       "Language: " (when obj (slot-value obj 'language)) nil nil)))
+    (cl-call-next-method class (plist-put slots :language lang) obj)))
+
 ;;; Bank account field
 
 (defclass ebdb-field-bank-account (ebdb-field-user)
