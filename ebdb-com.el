@@ -591,8 +591,6 @@ This happens in addition to any pre-defined indentation of STRING."
 				   field-list))
 	    0))
 	 (label-fmt (format "   %%%ds" indent))
-	 ;; `window-text-width' doesn't work for pop-up buffers,
-	 ;; they're not displayed yet!  How do we resolve this...?
 	 (fill-column (window-text-width))
 	 (fill-prefix (make-string (+ 5 indent) ?\s))
 	 (paragraph-start "[^:]+:[^\n]+$")
@@ -777,6 +775,8 @@ name based on the current major mode."
 		      (list r fmt (make-marker) nil))
 		    records))
 
+      (ebdb-pop-up-window target-buffer select pop)
+
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
       (let ((record-number 0)
@@ -795,7 +795,6 @@ name based on the current major mode."
         (message "Formatting EBDB...done."))
       (set-buffer-modified-p nil)
 
-      (ebdb-pop-up-window target-buffer select pop)
       (goto-char (point-min))
       (set-window-start (get-buffer-window (current-buffer)) (point)))))
 
