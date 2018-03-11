@@ -35,6 +35,26 @@
   :group 'ebdb-mua)
 (put 'ebdb-mua-message 'custom-loads '(ebdb-message))
 
+(defcustom ebdb-message-reply-window-config
+  '(reply
+    (horizontal 1.0
+		(message 1.0 point)
+		(ebdb-message 0.4)))
+  "Message reply window configuration to show EBDB.
+See Gnus' manual for details."
+  :group 'ebdb-mua-message
+  :type 'list)
+
+(defcustom ebdb-message-reply-yank-window-config
+  '(reply-yank
+     (horizontal 1.0
+		 (message 1.0 point)
+		 (ebdb-message 0.4)))
+  "Message reply-yank window configuration to show EBDB.
+See Gnus' manual for details."
+  :group 'ebdb-mua-message
+  :type 'list)
+
 ;; Suggestions welcome: What are good keybindings for the following
 ;; commands that do not collide with existing bindings?
 ;; (define-key message-mode-map "'" 'ebdb-mua-display-recipients)
@@ -102,20 +122,15 @@
 ;; The gnus window configuration stanza makes sure it's displayed
 ;; after the message buffer is set up.
 (with-eval-after-load 'gnus-win
-  (add-to-list 'gnus-window-to-buffer `(ebdb . ,(ebdb-message-buffer-name)))
+  (add-to-list 'gnus-window-to-buffer
+	       `(ebdb-message . ,(ebdb-message-buffer-name)))
   (add-hook 'message-header-setup-hook 'ebdb-mua-auto-update)
 
   (gnus-add-configuration
-   '(reply
-     (horizontal 1.0
-		 (message 1.0 point)
-		 (ebdb 0.4))))
+   ebdb-message-reply-window-config)
 
   (gnus-add-configuration
-   '(reply-yank
-     (horizontal 1.0
-		 (message 1.0 point)
-		 (ebdb 0.4)))))
+   ebdb-message-reply-yank-window-config))
 
 (provide 'ebdb-message)
 ;;; ebdb-message.el ends here
