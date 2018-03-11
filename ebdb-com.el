@@ -2589,7 +2589,7 @@ If we are past `fill-column', wrap at the previous comma."
 ;;; interface to mail-abbrevs.el.
 
 ;;;###autoload
-(defun ebdb-mail-aliases (&optional noisy)
+(defun ebdb-mail-aliases ()
   "Add aliases from the database to the global alias table.
 \\<ebdb-mode-map>Give records a \"mail alias\" field to define
 an alias for that record.
@@ -2600,8 +2600,7 @@ of all of these people.
 
 This function is automatically called each time an EBDB buffer is
 created.  Alternately, use \\[ebdb-mail-aliases] in an *EBDB*
-buffer to force an update.  With optional argument NOISY, print a
-message when updating is done."
+buffer to force an update."
   (interactive)
 
   ;; Build `mail-aliases' if not yet done.
@@ -2638,7 +2637,8 @@ message when updating is done."
 			',(mapcar (lambda (r) (ebdb-record-uuid (car r)))
 				  (cdr entry)))))))
 
-  (if noisy (message "EBDB mail alias: rebuilding done")))
+  (when (called-interactively-p 'any)
+    (message "EBDB mail alias: rebuilding done")))
 
 (defun ebdb-mail-abbrev-expand-hook (_alias records)
   "Function substituted for `mail-abbrev-expand-hook' when expanding RECORDS.
