@@ -35,6 +35,28 @@
   :group 'ebdb-mua)
 (put 'ebdb-mua-gnus 'custom-loads '(ebdb-gnus))
 
+(defcustom ebdb-gnus-window-configuration
+  `(article
+    ,(cond
+      (gnus-use-trees
+       '(vertical 1.0
+		  (summary 0.25 point)
+		  (tree 0.25)
+		  (horizontal 1.0
+			      (article 1.0)
+			      (ebdb-gnus 0.4))))
+      (t
+       '(vertical 1.0
+		  (summary 0.25 point)
+		  (horizontal 1.0
+			      (article 1.0)
+			      (ebdb-gnus 0.4))))))
+  "Gnus window configuration to include EBDB.
+By default, this adds the *EBDB-Gnus* window to the right of the
+article buffer, taking up 40% of the horizontal space."
+  :group 'ebdb-mua-gnus
+  :type 'list)
+
 (defgroup ebdb-mua-gnus-scoring nil
   "Gnus-specific scoring EBDB customizations"
   :group 'ebdb-mua-gnus)
@@ -189,12 +211,18 @@ Note that `\( is the backquote, NOT the quote '\(."
 ;; Insinuation
 ;;
 
-(add-hook 'gnus-article-prepare-hook 'ebdb-mua-auto-update)
+(add-hook 'gnus-article-prepare-hook #'ebdb-mua-auto-update)
 
-(add-hook 'gnus-startup-hook 'ebdb-insinuate-gnus)
+(add-hook 'gnus-startup-hook #'ebdb-insinuate-gnus)
 
 (defsubst ebdb-gnus-buffer-name ()
   (format "*%s-Gnus*" ebdb-buffer-name))
+
+;; Tell Gnus how to display the *EBDB-Gnus* buffer.
+(with-eval-after-load "gnus-win"
+  (add-to-list 'gnus-window-to-buffer
+	       `(ebdb-gnus . ,(ebdb-gnus-buffer-name)))
+  (gnus-add-configuration ebdb-gnus-window-configuration))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode gnus-summary-mode))
   "Produce a EBDB buffer name associated with Gnus."
