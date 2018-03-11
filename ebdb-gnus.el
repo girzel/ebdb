@@ -30,10 +30,6 @@
 
 (autoload 'message-make-domain "message")
 
-(defgroup ebdb-mua nil
-  "Variables that specify the EBDB-MUA interface"
-  :group 'ebdb)
-
 (defgroup ebdb-mua-gnus nil
   "Gnus-specific EBDB customizations"
   :group 'ebdb-mua)

@@ -69,6 +69,10 @@
   "For communication between `ebdb-update-records' and `ebdb-query-create'.
 It is a list with elements (NAME MAIL HEADER HEADER-CLASS MUA).")
 
+(defgroup ebdb-mua nil
+  "Variables that specify the EBDB-MUA interface"
+  :group 'ebdb)
+
 (defcustom ebdb-mua-auto-update-p 'existing
   "Specify how EBDB handles addresses in mail messages.
 It can take one of the following values:
