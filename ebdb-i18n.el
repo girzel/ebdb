@@ -681,7 +681,7 @@ for their symbol representations."
 				       &optional slots obj)
   (let ((country
 	  (cdr (assoc (completing-read
-		       "Country: "
+		       "Address country: "
 		       (ebdb-i18n-countries)
 		       nil nil
 		       (when obj (car (rassoc (ebdb-address-country obj)
@@ -736,7 +736,7 @@ for their symbol representations."
 	 (if obj
 	     (slot-value obj 'country-code)
 	   (cdr (assoc (completing-read
-			"Country/Region: "
+			"Phone number country/region: "
 			ebdb-i18n-phone-codes nil nil)
 		       ebdb-i18n-phone-codes))))
 	(area-code (when obj (slot-value obj 'area-code))))
