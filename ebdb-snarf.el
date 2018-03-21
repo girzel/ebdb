@@ -265,29 +265,24 @@ vectors, usually to `ebdb-snarf-query'."
 			     (append fields names)))))
 	    (setq record rec)))
 	(if record
-	    (let (slot)
-	      (dolist (f fields)
-		(condition-case nil
-		    (progn
-		      (setq slot (car (ebdb-record-field-slot-query
-				       (eieio-object-class record)
-				       `(nil . ,(eieio-object-class f)))))
-		      ;; Make sure that record can accept field, and doesn't
-		      ;; already have it.
-		      (unless
-			  (when (setq slot-val (ignore-errors
-						 (ebdb-record-field record slot)))
-			    (member (ebdb-string f)
-				    (mapcar #'ebdb-string
-					    (if (listp slot-val)
-						slot-val
-					      (list slot-val)))))
-			(push f out-fields)))
-		  (ebdb-unacceptable-field nil)))
-	      (dolist (name names)
-		(unless (ebdb-record-search
-			 record 'ebdb-field-name (ebdb-string name))
-		  (push name out-names))))
+	    (dolist (f fields)
+	      (condition-case nil
+		  (progn
+		    ;; Make sure that record can accept field, and doesn't
+		    ;; already have it.
+		    (when (and (car-safe (ebdb-record-field-slot-query
+					  (eieio-object-class record)
+					  `(nil . ,(eieio-object-class f))))
+			       (null (ebdb-record-search
+				      record
+				      (eieio-object-class f)
+				      (ebdb-string f))))
+		      (push f out-fields)))
+		(ebdb-unacceptable-field nil)))
+	  (dolist (name names)
+	    (unless (ebdb-record-search
+		     record 'ebdb-field-name (ebdb-string name))
+	      (push name out-names)))
 	  (setq out-names names
 		out-fields fields))
 	(push (vector record out-names out-fields) output)))
