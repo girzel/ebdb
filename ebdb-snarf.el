@@ -149,17 +149,15 @@ list of other field instances.  Any element can be nil."
 
 	;; (Also see the snarfing tests in ebdb-test.el.)
 
-	;; The tactic is: Make a big regexp that finds any probable
-	;; field data.  Once there's a hit, search *backwards* for a
-	;; name, and *forwards* for more fields.  All contiguous field
-	;; data is grouped into the same bundle.  If the first field
-	;; found is at bol, assume "block" style data, as in the third
-	;; example above.  If it is not at bol, assume "inline" style
-	;; data, as in the second example.
+	;; The tactic is: Make a big regexp that finds a big blob of
+	;; probable field data.  Once there's a hit, search
+	;; *backwards* for a name, and *forwards* for more fields.
+	;; All contiguous field data is grouped into the same bundle.
 
 	;; Snarfing mail message data is very common, it would be nice
 	;; to somehow disregard left-hand quotation characters and
-	;; indendation.  A problem for another day.
+	;; indentation.  See `mail-citation-prefix-regexp'.  A problem
+	;; for another day.
 	(big-re
 	 (concat
 	  "\\(?:"
@@ -169,73 +167,68 @@ list of other field instances.  Any element can be nil."
 		 (cadr r)
 	       (mapconcat #'identity (cadr r) "\\|")))
 	   ebdb-snarf-routines
-	   "\\|")
-	  "\\)"))
-	bundle block name)
+	   "\\|*")
+	  "\\)+"))
+	(name-re (concat
+		  "\\("
+		  (mapconcat #'identity
+			     ebdb-snarf-name-re "\\|")
+		  "\\)[-\n ,:]*")))
 
     (with-temp-buffer
       (insert str)
       (goto-char (point-min))
       (while (re-search-forward big-re nil t)
-	(goto-char (match-beginning 0))
-	(setq block (= (point) (point-at-bol)))
-	(when (setq name
-		    (save-excursion
-		      (when (re-search-backward
-			     (concat
-			      "\\("
-			      (mapconcat #'identity
-					 ebdb-snarf-name-re "\\|")
-			      "\\)")
-			     (save-excursion
-			       (if block
-				   (progn (forward-line -1)
-					  (line-beginning-position))
-				 (point-at-bol)))
-			     t)
-			;; If something goes wrong with the
-			;; name, don't worry about it.
-			(ignore-errors
-			  (ebdb-parse
-			   'ebdb-field-name
-			   (string-trim (match-string-no-properties 0)))))))
-	  ;; If NAME matches one of the records that are already in
-	  ;; BUNDLES, then assume we should be working with that record.
-	  (dolist (b bundles)
-	    (when (and (aref b 0)
-		       (string-match-p (ebdb-string name)
-				       (ebdb-string (aref b 0))))
-	      (setq bundle b))))
+	(let* ((start (goto-char (match-beginning 0)))
+	       (bound (match-end 0))
+	       (name (save-excursion
+		       (when (re-search-backward
+			      name-re
+			      (if (bolp)
+				  (line-beginning-position 0)
+				(point-at-bol))
+			      t)
+			 ;; If something goes wrong with the
+			 ;; name, don't worry about it.
+			 (ignore-errors
+			   (ebdb-parse
+			    'ebdb-field-name
+			    (string-trim (match-string-no-properties 0)))))))
+	       (bundle (or (and
+			    name
+			    ;; If NAME matches one of the records that
+			    ;; are already in BUNDLES, then assume we
+			    ;; should be working with that record.
+			    (catch 'match
+			      (dolist (b bundles)
+				(when (and (aref b 0)
+					   (ebdb-record-search
+					    (aref b 0)
+					    'ebdb-field-name
+					    (ebdb-string name)))
+				  (throw 'match b)))))
+			   (make-vector 3 nil))))
 
-	(unless bundle
-	  (setq bundle (make-vector 3 nil))
-	  (when name
-	    (push name (aref bundle 1))))
+	  (when (and name (null (aref bundle 0)))
+	    (push name (aref bundle 1)))
 
-	(dolist (class ebdb-snarf-routines)
-	  (dolist (re (cdr class))
-	    (while (re-search-forward re (if block
-					     (save-excursion
-					       (forward-line)
-					       (line-end-position))
-					   (point-at-eol))
-				      t)
-	      (condition-case nil
-		  (push (ebdb-parse
-			 (car class)
-			 (match-string-no-properties 1))
-			(aref bundle 2))
+	  (dolist (class ebdb-snarf-routines)
+	    (dolist (re (cdr class))
+	      (save-excursion
+		(while (re-search-forward re bound t)
+		  (condition-case nil
+		      (push (ebdb-parse
+			     (car class)
+			     (match-string-no-properties 1))
+			    (aref bundle 2))
 
-		;; If a regular expression matches but the result is
-		;; unparseable, that means the regexp is bad and should be
-		;; changed.  Later, report these errors if `ebdb-debug' is
-		;; true.
-		(ebdb-unparseable nil)))))
-	(when bundle
+		    ;; If a regular expression matches but the result is
+		    ;; unparseable, that means the regexp is bad and should be
+		    ;; changed.  Later, report these errors if `ebdb-debug' is
+		    ;; true.
+		    (ebdb-unparseable nil))))))
 	  (push bundle bundles)
-	  (setq bundle nil))
-	(when block
-	  (beginning-of-line 2))))
+	  (goto-char bound))))
     bundles))
 
 (defun ebdb-snarf-collapse (input)
