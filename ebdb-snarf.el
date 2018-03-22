@@ -176,7 +176,11 @@ list of other field instances.  Any element can be nil."
 		  "\\)[-\n ,:]*")))
 
     (with-temp-buffer
-      (insert str)
+      ;; Snarfing mail buffers is very common, try deleting citation
+      ;; prefixes from the buffer first.
+      (insert (replace-regexp-in-string
+	       (concat "^" mail-citation-prefix-regexp "[:blank:]+")
+	       "" str))
       (goto-char (point-min))
       (while (re-search-forward big-re nil t)
 	(let* ((start (goto-char (match-beginning 0)))
