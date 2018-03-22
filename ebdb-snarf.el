@@ -50,7 +50,7 @@
     (ebdb-field-url ,(concat "\\("
 			     (regexp-opt ebdb-url-valid-schemes)
 			     "//[^ \n\t]+\\)"))
-    (ebdb-field-phone "\\(\\+?[[:digit:]]\\{1,3\\}[ )-.]?[[:digit:] -.()]+\\)"))
+    (ebdb-field-phone "\\(\\+?[[:digit:]]\\{1,3\\}[ )-.]?[[:digit:] -.()]\\{6,\\}\\)"))
 
   "An alist of EBDB field classes and related regexps.
 
