@@ -65,7 +65,7 @@ expression should contain at least one parenthetical group: the
   :type 'list)
 
 (defcustom ebdb-snarf-name-re
-  (list "\\(?:[[:upper:]][[:lower:]'-]+[,.[:space:]]*\\)\\{2,\\}")
+  (list "\\(?:[[:upper:]][[:lower:]'-]+[,.[:blank:]]*\\)\\{2,\\}")
 
   "A list of regular expressions matching names.
 
