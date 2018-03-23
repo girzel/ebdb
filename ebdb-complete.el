@@ -56,6 +56,42 @@
 (require 'message)
 (require 'sendmail)
 
+;; Experimental completion-at-point function.  I'm not sure this is a
+;; good idea yet -- with a large enough EBDB database, nearly any
+;; string is completable, meaning the other completion-at-point
+;; functions will rarely get a chance.
+(defun ebdb-completion-at-point-function ()
+  "Try to find an EBDB completion for the text at point.
+For use in `completion-at-point-functions'."
+  ;; Might consider restricting this to text-mode buffers -- would you
+  ;; ever want to complete contact names in prog-mode?
+  (let* ((start (point))
+	 (chunk (buffer-substring
+		 (save-excursion
+		   ;; First try going back two words.
+		   (forward-word -2)
+		   (setq start (point)))
+		 (point)))
+	 (completions (all-completions (downcase chunk) ebdb-hashtable)))
+    (unless completions
+      ;; If that didn't work, try just one word.
+      (setq chunk (buffer-substring
+		   (save-excursion
+		     (forward-word -1)
+		     (setq start (point)))
+		   (point))
+	    completions (all-completions (downcase chunk) ebdb-hashtable)))
+    (when completions
+      (list start (point)
+	    (mapcar
+	     (lambda (str)
+	       ;; Gross.
+	       (if (string-match-p "@" str)
+		   str
+		 (capitalize str)))
+	     completions)
+	    '(:exclusive no)))))
+
 (defvar ebdb-complete-info (make-hash-table)
   "A hashtable, record buffer, buffer-window and window-point")
 
