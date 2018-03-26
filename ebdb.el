@@ -3423,9 +3423,9 @@ appropriate person record."
   (let ((record (ebdb-gethash (slot-value old-field 'record-uuid) 'uuid)))
     (cl-call-next-method record old-field new-field)))
 
-(cl-defmethod ebdb-record-delete-field ((_record ebdb-record-organization)
-					(field ebdb-field-role)
-					&optional slot)
+(cl-defmethod ebdb-record-delete-field :around ((_record ebdb-record-organization)
+						(field ebdb-field-role)
+						&optional slot)
   (let ((record (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
     (cl-call-next-method record field slot)))
 
