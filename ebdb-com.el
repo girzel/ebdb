@@ -1531,74 +1531,38 @@ Records are displayed using formatter FMT."
    (ebdb-compare-records (ebdb-record-field record 'timestamp)
                          'creation-date 'equal) fmt))
 
-(defmacro ebdb-with-record-edits (spec &rest body)
-  "Run BODY on all records listed in the cdr of SPEC.
-
-This macro checks that each record is editable; ie, that it
+(defmacro ebdb-with-record-edits (record &rest body)
+  "Run BODY, containing operations on RECORD.
+This macro checks that the record is editable; ie, that it
 doesn't belong to a read-only database.  It also throws an error
-and bails out if any of the database are unsynced.
+and bails out if any of its databases are unsynced.
 
-Then bind each editable record to the car of SPEC in turn, run
-`ebdb-change-hook' on the record, excecute BODY, run
-`ebdb-after-change-hook', and redisplay the record.
-
-SPEC should look like the first argument to `dolist'.  This macro
-should be called as:
-
-\(ebdb-with-record-edits (r record-list)
-  ...\)
-
-Note that RECORD-LIST will be replaced with the list of
-actually-editable records."
+Then it runs `ebdb-change-hook' on the record, executes BODY,
+runs `ebdb-after-change-hook', and redisplays the record."
   (declare (indent 1) (debug ((symbolp form) body)))
-  (let ((editable-records (cl-gensym))
-	(bad-dbs (cl-gensym))
-	(good-dbs (cl-gensym)))
-    `(let (,editable-records ,bad-dbs ,good-dbs)
-       (dolist (r ,(nth 1 spec))
-	 (unless
-	     ;; "Unless the record has a bum database..."
-	     (catch 'bad
-	       ;; Return nil unless we throw a 'bad.
-	       (condition-case err
-		   (dolist (d (slot-value (ebdb-record-cache r) 'database) nil)
-		     (cond ((object-assoc (slot-value d 'file) 'file ,good-dbs))
-			   ((object-assoc (slot-value d 'file) 'file ,bad-dbs)
-			    (throw 'bad t))
-			   (t
-			    (ebdb-db-editable d)
-			    (push d ,good-dbs))))
-		 (ebdb-unsynced-db
-		  (let ((db (cadr err)))
-		    (if (ebdb-db-dirty db)
-			(error "Database %s is out of sync and has unsaved changes" db)
-		      (if (or ebdb-auto-revert
-			      (yes-or-no-p
-			       (format "Database %s is out of sync, reload?"
-				       (ebdb-string db))))
-			  (progn
-			    (ebdb-reload-database db)
-			    (push db ,good-dbs))
-			(push db ,bad-dbs)
-			(message "Database %s is out of sync" db)
-			(sit-for 1)
-			(throw 'bad t)))))
-		 (ebdb-readonly-db
-		  (push (cadr err) ,bad-dbs)
-		  (message "Database %s is read-only" (cadr err))
-		  (sit-for 1)
-		  (throw 'bad t))))
-	   ;; No bum database, it's okay.
-	   (push r ,editable-records)))
-       (dolist (,(car spec) ,editable-records)
-	 (run-hook-with-args 'ebdb-change-hook ,(car spec))
+  ;; I'm expecting that none of the local variables in this macro
+  ;; (including the "err" arg to `condition-case'), will be exposed
+  ;; within "body".  Hopefully that's not wrong.
+  `(condition-case err
+       (progn
+	 (dolist (d (slot-value (ebdb-record-cache ,record) 'database) nil)
+	   (ebdb-db-editable d))
+	 (run-hook-with-args 'ebdb-change-hook ,record)
 	 ,@body
-	 (run-hook-with-args 'ebdb-after-change-hook ,(car spec)))
-       (dolist (b (buffer-list))
-	 (with-current-buffer b
-	   (when (derived-mode-p 'ebdb-mode)
-	     (set-buffer-modified-p t))))
-       (ebdb-redisplay-records ,editable-records 'reformat))))
+	 (run-hook-with-args 'ebdb-after-change-hook ,record)
+	 (dolist (b (buffer-list))
+	   (with-current-buffer b
+	     (when (derived-mode-p 'ebdb-mode)
+	       (set-buffer-modified-p t))))
+	 (ebdb-redisplay-records ,record 'reformat))
+     (ebdb-unsynced-db
+      (let ((db (cadr err)))
+	(ebdb-reload-database db)
+	(message "Database %s is out of sync" db)
+	(sit-for 1)))
+     (ebdb-readonly-db
+      (message "Database %s is read-only" (cadr err))
+      (sit-for 1))))
 
 ;;;###autoload
 (defun ebdb-create-record (db &optional record-class)
@@ -1654,16 +1618,17 @@ for these values."
 			   (when (equal class 'ebdb-field-user-simple)
 			     `(:object-name ,label))))
 	 clone)
-      (ebdb-with-record-edits (r records)
-	(setq clone (clone field))
-	(condition-case err
-	    (ebdb-record-insert-field r clone)
-	  (ebdb-unacceptable-field
-	   (message "Record %s cannot accept field %s" (ebdb-string r) (ebdb-string field))
-	   (sit-for 2))
-	  (error
-	   (message "Error inserting field: %s, %s" (car err) (cdr err))
-	   (sit-for 2)))))))
+      (dolist (r records)
+       (ebdb-with-record-edits r
+	 (setq clone (clone field))
+	 (condition-case err
+	     (ebdb-record-insert-field r clone)
+	   (ebdb-unacceptable-field
+	    (message "Record %s cannot accept field %s" (ebdb-string r) (ebdb-string field))
+	    (sit-for 2))
+	   (error
+	    (message "Error inserting field: %s, %s" (car err) (cdr err))
+	    (sit-for 2))))))))
 
 ;; TODO: Allow editing of multiple record fields simultaneously.
 ;;;###autoload
@@ -1675,13 +1640,15 @@ the record."
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
   (let ((header-p (get-text-property (point) 'ebdb-record)))
-    (ebdb-with-record-edits (r (list record))
+    (ebdb-with-record-edits record
       (if header-p
-	  (let* ((old-name (slot-value r 'name))
-		 (new-name (ebdb-read (eieio-object-class old-name) nil old-name)))
-	   (ebdb-record-change-name r new-name))
+	  (let* ((old-name (slot-value record 'name))
+		 (new-name (ebdb-read
+			    (eieio-object-class old-name)
+			    nil old-name)))
+	    (ebdb-record-change-name record new-name))
 	(if (eieio-object-p field)
-	    (ebdb-record-change-field r field)
+	    (ebdb-record-change-field record field)
 	  (message "Point not in field"))))))
 
 ;;;###autoload
@@ -1690,11 +1657,11 @@ the record."
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (ebdb-with-record-edits (r (list record))
-    (ebdb-record-delete-field r field)
+  (ebdb-with-record-edits record
+    (ebdb-record-delete-field record field)
     (condition-case nil
 	(eieio-customize-object field)
-      (error (ebdb-record-insert-field r field))))
+      (error (ebdb-record-insert-field record field))))
   (setq ebdb-custom-field-record record))
 
 (cl-defmethod eieio-done-customizing ((f ebdb-field))
@@ -1706,7 +1673,6 @@ the record."
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
   "For RECORD edit some FIELD (mostly interactively).
-
 Interactively, if called without a prefix, edit the notes field
 of RECORD.  When called with a prefix, prompt the user for a
 field to edit."
@@ -1735,7 +1701,7 @@ field to edit."
 		 field-list)))
        (setq field (ebdb-record-field record 'notes)))
      (list record field)))
-  (ebdb-with-record-edits (r (list record))
+  (ebdb-with-record-edits record
     (if field
 	(ebdb-record-change-field record field)
       ;; This is wrong, we need to rework `ebdb-insert-field' so we can
@@ -1764,35 +1730,38 @@ I and J start with zero.  Return the modified LIST."
 ;;;###autoload
 (defun ebdb-delete-field-or-record (records field &optional noprompt)
   "For RECORDS delete FIELD.
-
-If point is on the record header (within the name), delete
-RECORDS from the database.  If prefix NOPROMPT is non-nil, do not
-confirm deletion."
+If point is on the record header (within the name), offer to
+delete all RECORDS from the database.  If prefix NOPROMPT is
+non-nil, do not confirm deletion.  If point is on a field, offer
+to delete that field.  Field deletion only operates on the record
+under point."
   (interactive
    (list (ebdb-do-records) (ebdb-current-field) current-prefix-arg))
   (setq records (ebdb-record-list records))
   (if (get-text-property (point) 'ebdb-record)
       (ebdb-delete-records records noprompt)
-    (ebdb-with-record-edits (record records)
-      (when (or noprompt
-		(y-or-n-p (format "Delete \"%s\" %s (of %s)? "
-				  (ebdb-field-readable-name field)
-				  (car (split-string (ebdb-string field) "\n"))
-				  (ebdb-record-name record))))
-	(ebdb-record-delete-field record field))
-      (ebdb-redisplay-records record 'reformat t))))
+    (let ((record (ebdb-current-record)))
+     (ebdb-with-record-edits record
+       (when (or noprompt
+		 (y-or-n-p (format "Delete \"%s\" %s (of %s)? "
+				   (ebdb-field-readable-name field)
+				   (car (split-string (ebdb-string field) "\n"))
+				   (ebdb-string record))))
+	 (ebdb-record-delete-field record field))
+       (ebdb-redisplay-records record 'reformat t)))))
 
 ;;;###autoload
 (defun ebdb-delete-records (records &optional noprompt)
   "Delete RECORDS.
 If prefix NOPROMPT is non-nil, do not confirm deletion."
   (interactive (list (ebdb-do-records) current-prefix-arg))
-  (ebdb-with-record-edits (r (ebdb-record-list records))
-    (when (or noprompt
-              (y-or-n-p (format "Delete the EBDB record of %s? "
-                                (ebdb-string r))))
-      (ebdb-delete-record r)
-      (ebdb-redisplay-records r 'remove t))))
+  (dolist (r (ebdb-record-list records))
+   (ebdb-with-record-edits r
+     (when (or noprompt
+               (y-or-n-p (format "Delete the EBDB record of %s? "
+                                 (ebdb-string r))))
+       (ebdb-delete-record r)
+       (ebdb-redisplay-records r 'remove t)))))
 
 ;;;###autoload
 (defun ebdb-move-records (records db)
@@ -1800,8 +1769,9 @@ If prefix NOPROMPT is non-nil, do not confirm deletion."
 This removes the records from their current database."
   (interactive (list (ebdb-do-records)
 		     (ebdb-prompt-for-db)))
-  (ebdb-with-record-edits (r records)
-    (ebdb-move-record r db)))
+  (dolist (r records)
+   (ebdb-with-record-edits r
+     (ebdb-move-record r db))))
 
 ;;;###autoload
 (defun ebdb-copy-records (records db)
@@ -1809,8 +1779,9 @@ This removes the records from their current database."
 The records also remain in their present database(s)."
   (interactive (list (ebdb-do-records)
 		     (ebdb-prompt-for-db)))
-  (ebdb-with-record-edits (r records)
-    (ebdb-copy-record r db)))
+  (dolist (r records)
+   (ebdb-with-record-edits r
+     (ebdb-copy-record r db))))
 
 ;;;###autoload
 (defun ebdb-display-all-records (&optional fmt)

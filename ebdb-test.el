@@ -219,11 +219,11 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	  (ebdb-db-add-record db2 rec1)
 	  (ebdb-db-add-record db1 rec2)
 	  (setf (slot-value db2 'read-only) t)
-	  (ebdb-with-record-edits (r (list rec1 rec2))
-	    (ebdb-record-insert-field
-	     r (ebdb-parse 'ebdb-field-mail "none@such.com")))
-	  ;; rec1 should have been excluded from the list of editable
-	  ;; records, but no error should be raised.
+	  (dolist (rec (list rec1 rec2))
+	    (ebdb-with-record-edits rec
+	      (ebdb-record-insert-field
+	       rec (ebdb-parse 'ebdb-field-mail "none@such.com"))))
+	  ;; Field insertion should have silently failed for rec1.
 	  (should-not
 	   (slot-value rec1 'mail)))))))
 
