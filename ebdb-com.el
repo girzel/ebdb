@@ -1605,32 +1605,84 @@ for these values."
 
 ;;;###autoload
 (defun ebdb-insert-field (records)
-  "Prompt to create a field and insert it into RECORDS."
+  "Prompt to create a field and insert it into RECORDS.
+If multiple records are marked, insert instances of the same
+field class into each record, first asking whether each field
+instance should be identical."
   (interactive
    (list (ebdb-do-records)))
-  (pcase-let
+  (pcase-let*
       ((`(,label (,_slot . ,class))
 	(ebdb-prompt-for-field-type
-	 (ebdb-record-field-slot-query
-	  (eieio-object-class (car records))))))
-    (let
-	((field (ebdb-read class
-			   (when (equal class 'ebdb-field-user-simple)
-			     `(:object-name ,label))))
-	 clone)
-      (dolist (r records)
-       (ebdb-with-record-edits r
-	 (setq clone (clone field))
-	 (condition-case err
-	     (ebdb-record-insert-field r clone)
-	   (ebdb-unacceptable-field
-	    (message "Record %s cannot accept field %s" (ebdb-string r) (ebdb-string field))
-	    (sit-for 2))
-	   (error
-	    (message "Error inserting field: %s, %s" (car err) (cdr err))
-	    (sit-for 2))))))))
+	 ;; Currently special-case hacking so that role fields can be
+	 ;; inserted on organization records.  Alternate approach
+	 ;; would be modifying `ebdb-record-field-slot-query' so that
+	 ;; it can return all defined fields.  We shouldn't be
+	 ;; restricting field classes here.
+	 (cons
+	  '(organizations . ebdb-field-role)
+	  (ebdb-record-field-slot-query
+	   (eieio-object-class (car records))))))
+       (slots (when (equal class 'ebdb-field-user-simple)
+		`(:object-name ,label)))
+       (field (when (or (= 1 (length records))
+			(y-or-n-p
+			 "Insert same field values in all records? "))
+		(ebdb-read class slots))))
+    (dolist (r records)
+      (ebdb-with-record-edits r
+	(ebdb-com-insert-field
+	 r (if field (clone field) class) slots)))))
 
-;; TODO: Allow editing of multiple record fields simultaneously.
+(cl-defgeneric ebdb-com-insert-field (record field &optional slots)
+  "Insert FIELD into RECORD.
+For use between the `ebdb-insert-field' command, which is called
+from an *EBDB* buffer and may operate on many records, and the
+lower-level per-record `ebdb-record-insert-field' method.
+
+SLOTS, if present, is passed to any subsequent call to
+`ebdb-read'."
+  (:method ((rec ebdb-record) (field ebdb-field) &optional _slots)
+	   (condition-case err
+	       (ebdb-record-insert-field rec field)
+	     (ebdb-unacceptable-field
+	      (message "Record %s cannot accept field %s"
+		       (ebdb-string rec) (ebdb-string field))
+	      (sit-for 1))
+	     (error
+	      (message "Error inserting field: %s, %s" (car err) (cdr err))
+	      (sit-for 1)))))
+
+(cl-defmethod ebdb-com-insert-field ((rec ebdb-record)
+				     (field-class (subclass ebdb-field))
+				     &optional slots)
+  (let ((field (ebdb-read field-class slots)))
+    (ebdb-com-insert-field rec field)))
+
+(cl-defmethod ebdb-com-insert-field ((org ebdb-record-organization)
+				     (role-class (subclass ebdb-field-role))
+				     &optional slots)
+  (let ((record (ebdb-prompt-for-record))
+	(field (ebdb-read role-class
+			  (plist-put slots :org-uuid (slot-value org 'uuid)))))
+    (ebdb-com-insert-field record field)))
+
+(cl-defmethod ebdb-com-insert-field :after ((record ebdb-record-person)
+					    (field ebdb-field-role)
+					    &optional _slots)
+  (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
+    (when org
+      (ebdb-record-adopt-role-fields record org t))))
+
+(cl-defmethod ebdb-com-insert-field :after ((org ebdb-record-organization)
+					    (_field ebdb-field-domain)
+					    &optional _slot)
+  (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
+	rec)
+    (dolist (r roles)
+      (setq rec (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
+      (ebdb-record-adopt-role-fields rec org t))))
+
 ;;;###autoload
 (defun ebdb-edit-field (record field)
   "Edit RECORD's FIELD under point.
@@ -1648,8 +1700,23 @@ the record."
 			    nil old-name)))
 	    (ebdb-record-change-name record new-name))
 	(if (eieio-object-p field)
-	    (ebdb-record-change-field record field)
+	    (ebdb-com-edit-field record field)
 	  (message "Point not in field"))))))
+
+(cl-defgeneric ebdb-com-edit-field (record field)
+  "Edit field FIELD of RECORD.
+For use between the `ebdb-edit-field' and `ebdb-edit-foo'
+commands, called from an *EBDB* buffer, and the lower-level
+`ebdb-record-change-field' method."
+  (:method ((rec ebdb-record) (field ebdb-field))
+	   (ebdb-record-change-field rec field)))
+
+(cl-defmethod ebdb-com-edit-field ((_rec ebdb-record-organization)
+				   (field ebdb-field-role))
+  (let ((person (ebdb-gethash
+		 (slot-value field 'record-uuid)
+		 'uuid)))
+    (ebdb-record-change-field person field)))
 
 ;;;###autoload
 (defun ebdb-edit-field-customize (record field)
@@ -1703,12 +1770,8 @@ field to edit."
      (list record field)))
   (ebdb-with-record-edits record
     (if field
-	(ebdb-record-change-field record field)
-      ;; This is wrong, we need to rework `ebdb-insert-field' so we can
-      ;; call it with these arguments.  Shouldn't be doing low-level
-      ;; work here.
-      (setq field (ebdb-read ebdb-default-notes-class))
-      (ebdb-record-insert-field record field 'notes))))
+	(ebdb-com-edit-field record field)
+      (ebdb-com-insert-field record 'ebdb-default-notes-class))))
 
 ;; (ebdb-list-transpose '(a b c d) 1 3)
 (defun ebdb-list-transpose (list i j)
@@ -1742,13 +1805,28 @@ under point."
       (ebdb-delete-records records noprompt)
     (let ((record (ebdb-current-record)))
      (ebdb-with-record-edits record
-       (when (or noprompt
-		 (y-or-n-p (format "Delete \"%s\" %s (of %s)? "
-				   (ebdb-field-readable-name field)
-				   (car (split-string (ebdb-string field) "\n"))
-				   (ebdb-string record))))
-	 (ebdb-record-delete-field record field))
-       (ebdb-redisplay-records record 'reformat t)))))
+       (ebdb-com-delete-field record field noprompt)))))
+
+(cl-defgeneric ebdb-com-delete-field (record field noprompt)
+  "Delete FIELD of RECORD.
+For use between the command `ebdb-delete-field-or-record', called
+from an *EBDB* buffer, and the lower-level
+`ebdb-record-delete-field'.  When NOPROMPT is non-nil, don't
+confirm before deleting the field."
+  (:method ((record ebdb-record) (field ebdb-field) noprompt)
+	   (when (or noprompt
+		     (y-or-n-p
+		      (format "Delete \"%s\" %s (of %s)? "
+			      (ebdb-field-readable-name field)
+			      (car (split-string (ebdb-string field) "\n"))
+			      (ebdb-string record))))
+	     (ebdb-record-delete-field record field))))
+
+(cl-defmethod ebdb-com-delete-field ((_record ebdb-record-organization)
+				     (field ebdb-field-role)
+				     noprompt)
+  (let ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
+    (ebdb-com-delete-field person field noprompt)))
 
 ;;;###autoload
 (defun ebdb-delete-records (records &optional noprompt)
@@ -1756,12 +1834,12 @@ under point."
 If prefix NOPROMPT is non-nil, do not confirm deletion."
   (interactive (list (ebdb-do-records) current-prefix-arg))
   (dolist (r (ebdb-record-list records))
-   (ebdb-with-record-edits r
-     (when (or noprompt
-               (y-or-n-p (format "Delete the EBDB record of %s? "
-                                 (ebdb-string r))))
-       (ebdb-delete-record r)
-       (ebdb-redisplay-records r 'remove t)))))
+    (ebdb-with-record-edits r
+      (when (or noprompt
+		(y-or-n-p (format "Delete the EBDB record of %s? "
+                                  (ebdb-string r))))
+	(ebdb-delete-record r)
+	(ebdb-redisplay-records r 'remove t)))))
 
 ;;;###autoload
 (defun ebdb-move-records (records db)

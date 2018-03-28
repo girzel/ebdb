@@ -3405,39 +3405,6 @@ Currently only works for mail fields."
 	    (ebdb-record-delete-field record m)
 	    (ebdb-init-field r record)))))))
 
-(cl-defmethod ebdb-record-insert-field :after ((org ebdb-record-organization)
-					       (_field ebdb-field-domain)
-					       &optional _slot)
-  (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
-	rec)
-    (dolist (r roles)
-      (setq rec (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
-      (ebdb-record-adopt-role-fields rec org t))))
-
-(cl-defmethod ebdb-record-change-field ((_record ebdb-record-organization)
-					(old-field ebdb-field-role)
-					&optional new-field)
-  "Change the values of FIELD belonging to RECORD.
-
-This method exists to allow users to edit a role field from an
-organization record.  It switches the record being edited to the
-appropriate person record."
-  (let ((record (ebdb-gethash (slot-value old-field 'record-uuid) 'uuid)))
-    (cl-call-next-method record old-field new-field)))
-
-(cl-defmethod ebdb-record-delete-field :around ((_record ebdb-record-organization)
-						(field ebdb-field-role)
-						&optional slot)
-  (let ((record (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
-    (cl-call-next-method record field slot)))
-
-(cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-person)
-					       (field ebdb-field-role)
-					       &optional _slot)
-  (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
-    (when org
-      (ebdb-record-adopt-role-fields record org t))))
-
 (cl-defmethod ebdb-record-related ((_record ebdb-record-organization)
 				   (field ebdb-field-role))
   (or
