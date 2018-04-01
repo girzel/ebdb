@@ -1293,8 +1293,7 @@ With prefix N move backwards N (sub)fields."
 		     (ebdb-current-field)))
   (condition-case nil
       (ebdb-display-records
-       (cons (ebdb-record-related record field)
-	     (mapcar #'car ebdb-records))
+       (list (ebdb-record-related record field))
        ebdb-default-multiline-formatter
        t)
     (ebdb-related-unfound
