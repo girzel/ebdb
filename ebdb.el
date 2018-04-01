@@ -3019,13 +3019,14 @@ If FIELD doesn't specify a year, use the current year."
 (cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
   nil)
 
-(cl-defmethod ebdb-record-insert-field :after ((record ebdb-record-entity)
-					       (_mail ebdb-field-mail)
-					       &optional _slot)
-  "After giving RECORD a new mail field, sort RECORD's mails by
-priority."
-  (let ((sorted (ebdb-sort-mails (slot-value record 'mail))))
-    (setf (slot-value record 'mail) sorted)))
+(cl-defmethod ebdb-record-insert-field :before ((record ebdb-record-entity)
+						(mail ebdb-field-mail)
+						&optional _slot)
+  "Possibly set the priority of a newly-added mail address.
+If RECORD has no other primary mail, set MAIL's priority to
+primary."
+  (when (null (object-assoc 'primary 'priority (ebdb-record-mail record)))
+    (setf (slot-value mail 'priority) 'primary)))
 
 (defun ebdb-compose-mail (&rest args)
   "Start composing a mail message to send.
