@@ -3364,7 +3364,7 @@ ARGS is passed to `compose-mail'."
 
 (cl-defmethod ebdb-record-change-name ((record ebdb-record-organization)
 				       (name-string string))
-  (let ((name (ebdb-parse ebdb-field-name-simple name-string)))
+  (let ((name (ebdb-parse 'ebdb-field-name-simple name-string)))
     (ebdb-record-change-name record name)))
 
 (cl-defmethod ebdb-record-current-fields ((record ebdb-record-organization)
