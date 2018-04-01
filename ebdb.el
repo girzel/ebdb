@@ -1396,11 +1396,14 @@ first one."
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((role (subclass ebdb-field-role)) &optional slots obj)
-  (let ((org-id (if obj (slot-value obj 'org-uuid)
-		  (ebdb-record-uuid (ebdb-prompt-for-record nil 'ebdb-record-organization))))
-	(mail (ebdb-with-exit
-	       (ebdb-read ebdb-default-mail-class nil
-			  (when obj (slot-value obj 'mail))))))
+  (let ((org-id (or (plist-get slots 'org-uuid)
+		    (if obj (slot-value obj 'org-uuid)
+		      (ebdb-record-uuid (ebdb-prompt-for-record
+					 nil 'ebdb-record-organization)))))
+	(mail (or (plist-get slots 'mail)
+		  (ebdb-with-exit
+		   (ebdb-read ebdb-default-mail-class nil
+			      (when obj (slot-value obj 'mail)))))))
     (when mail
       (setq slots (plist-put slots :mail mail)))
     (setq slots (plist-put slots :org-uuid org-id))
