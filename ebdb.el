@@ -1327,7 +1327,9 @@ first one."
      :initform nil
      :documentation "If t, this role is considered defunct (ie
      the person left their job, etc).  Fields in the \"fields\"
-     slot will generally be ignored by the rest of EBDB."))
+     slot will generally be ignored by the rest of EBDB.")
+   (actions
+    :initform '(("Display role relation" . ebdb-follow-related))))
   :documentation "This class represents a relationship between
   the record which owns this field, and the
   `ebdb-record-organization' pointed to by the \"organization\"
