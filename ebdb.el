@@ -788,7 +788,7 @@ if CHILD-P is non-nil, one of its subclasses."
 	   (while t
 	     (push ,@body acc))
 	 ((quit ebdb-empty)
-	  (throw '--ebdb-loop-exit-- acc))))))
+	  (throw '--ebdb-loop-exit-- (nreverse acc)))))))
 
 (defmacro ebdb-debug (&rest body)
   "Excecute BODY just like `progn' with debugging capability.
