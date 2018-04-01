@@ -2956,6 +2956,8 @@ If FIELD doesn't specify a year, use the current year."
 		(ebdb-read ebdb-default-phone-class)))
 	(address (ebdb-loop-with-exit
 		  (ebdb-read ebdb-default-address-class))))
+    (when mail
+      (setf (slot-value (car mail) 'priority) 'primary))
     (setq slots (plist-put slots :mail mail))
     (setq slots (plist-put slots :phone phone))
     (setq slots (plist-put slots :address address))
