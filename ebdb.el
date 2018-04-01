@@ -3025,8 +3025,20 @@ If FIELD doesn't specify a year, use the current year."
   "Possibly set the priority of a newly-added mail address.
 If RECORD has no other primary mail, set MAIL's priority to
 primary."
-  (when (null (object-assoc 'primary 'priority (ebdb-record-mail record)))
+  (when (null (object-assoc 'primary 'priority (ebdb-record-mail record t)))
     (setf (slot-value mail 'priority) 'primary)))
+
+(cl-defmethod ebdb-record-delete-field :after ((record ebdb-record-entity)
+					       (mail ebdb-field-mail)
+					       &optional _slot)
+  "Possibly alter the priority of RECORD's remaining mails.
+If there aren't any other primary mails, make the first of the
+remaining mails primary."
+  (let* ((mails (remove mail (ebdb-record-mail record)))
+	 (clone (unless (object-assoc 'primary 'priority mails)
+		  (clone (car mails)))))
+    (when clone
+     (ebdb-record-change-field record (car mails) clone))))
 
 (defun ebdb-compose-mail (&rest args)
   "Start composing a mail message to send.
