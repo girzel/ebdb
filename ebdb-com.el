@@ -1733,8 +1733,29 @@ commands, called from an *EBDB* buffer, and the lower-level
 (cl-defmethod eieio-done-customizing ((f ebdb-field))
   (let ((rec ebdb-custom-field-record))
     (when rec
-      (ebdb-record-insert-field rec f)
-      (ebdb-redisplay-records rec 'reformat t))))
+      (ebdb-record-insert-field rec f))))
+
+(cl-defmethod eieio-done-customizing :after ((f ebdb-field))
+  (ebdb-redisplay-records rec 'reformat t))
+
+(cl-defmethod eieio-done-customizing :after ((mail ebdb-field-mail))
+  "Handle mail priority after customizing.
+Check that some mail is marked as primary after MAIL is edited."
+  (let* ((rec ebdb-custom-field-record)
+	 (all-mails (remove mail (ebdb-record-mail rec)))
+	 (primaries (when rec (seq-filter
+			       (lambda (m)
+				 (eq (slot-value m 'priority) 'primary))
+			       all-mails)))
+	 (prim (eq (slot-value mail 'priority) 'primary)))
+    (cond ((and prim primaries)
+	   (dolist (p primaries)
+	     (ebdb-record-change-field rec p (clone p :priority 'normal))))
+	  ((and (null (or prim primaries))
+		(car-safe all-mails))
+	   (ebdb-record-change-field
+	    rec (car all-mails)
+	    (clone (car all-mails) :priority 'primary))))))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
