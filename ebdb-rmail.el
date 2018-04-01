@@ -1,6 +1,6 @@
 ;;; ebdb-rmail.el --- EBDB interface to Rmail        -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2018  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 

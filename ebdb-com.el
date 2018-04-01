@@ -1,6 +1,6 @@
 ;;; ebdb-com.el --- User-level commands of EBDB      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2018  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: convenience, mail
