@@ -1751,14 +1751,18 @@ field to edit."
 	       (mapcar
 		(lambda (f)
 		  (let ((field (cdr f)))
-		    (cons (concat
-			   (ebdb-field-readable-name field)
-			   (when (slot-exists-p field 'object-name)
-			     (format " (%s)" (slot-value field 'object-name)))
-			   " "
-			   (car (split-string (ebdb-string field) "\n")))
+		    (cons (substring-no-properties
+			   (concat
+			    (ebdb-fmt-field-label
+			     ebdb-default-oneline-formatter
+			     field 'oneline record)
+			    ": "
+			    (ebdb-fmt-field
+			     ebdb-default-oneline-formatter
+			     field 'oneline record)))
 			  (cdr f))))
-		(ebdb-record-current-fields record))
+		(assq-delete-all
+		 'name (ebdb-record-current-fields record)))
 	       field
 	       (cdr
 		(assoc
