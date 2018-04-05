@@ -1736,7 +1736,9 @@ commands, called from an *EBDB* buffer, and the lower-level
       (ebdb-record-insert-field rec f))))
 
 (cl-defmethod eieio-done-customizing :after ((f ebdb-field))
-  (ebdb-redisplay-records rec 'reformat t))
+  (let ((rec ebdb-custom-field-record))
+    (when rec
+     (ebdb-redisplay-records rec 'reformat t))))
 
 (cl-defmethod eieio-done-customizing :after ((mail ebdb-field-mail))
   "Handle mail priority after customizing.
