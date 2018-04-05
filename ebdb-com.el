@@ -1764,8 +1764,8 @@ Interactively, if called without a prefix, edit the notes field
 of RECORD.  When called with a prefix, prompt the user for a
 field to edit."
   (interactive
-   (let* ((record (ebdb-current-record))
-          field field-list)
+   (let ((record (ebdb-current-record))
+         field field-list)
      (if current-prefix-arg
 	 (setq field-list
 	       (mapcar
@@ -1795,7 +1795,7 @@ field to edit."
   (ebdb-with-record-edits record
     (if field
 	(ebdb-com-edit-field record field)
-      (ebdb-com-insert-field record 'ebdb-default-notes-class))))
+      (ebdb-com-insert-field record ebdb-default-notes-class))))
 
 ;; (ebdb-list-transpose '(a b c d) 1 3)
 (defun ebdb-list-transpose (list i j)
