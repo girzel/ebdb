@@ -1538,7 +1538,7 @@ and bails out if any of its databases are unsynced.
 
 Then it runs `ebdb-change-hook' on the record, executes BODY,
 runs `ebdb-after-change-hook', and redisplays the record."
-  (declare (indent 1) (debug ((symbolp form) body)))
+  (declare (indent 1) (debug (symbolp body)))
   ;; I'm expecting that none of the local variables in this macro
   ;; (including the "err" arg to `condition-case'), will be exposed
   ;; within "body".  Hopefully that's not wrong.
