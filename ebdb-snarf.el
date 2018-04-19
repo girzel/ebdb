@@ -261,27 +261,27 @@ vectors, usually to `ebdb-snarf-query'."
 				     (ebdb-string f)))
 			     (append fields names)))))
 	    (setq record rec)))
-	(if record
-	    (dolist (f fields)
-	      (condition-case nil
-		  (progn
-		    ;; Make sure that record can accept field, and doesn't
-		    ;; already have it.
-		    (when (and (car-safe (ebdb-record-field-slot-query
-					  (eieio-object-class record)
-					  `(nil . ,(eieio-object-class f))))
-			       (null (ebdb-record-search
-				      record
-				      (eieio-object-class f)
-				      (ebdb-string f))))
-		      (push f out-fields)))
-		(ebdb-unacceptable-field nil)))
+	(when record
+	  (dolist (f fields)
+	    (condition-case nil
+		(progn
+		  ;; Make sure that record can accept field, and doesn't
+		  ;; already have it.
+		  (when (and (car-safe (ebdb-record-field-slot-query
+					(eieio-object-class record)
+					`(nil . ,(eieio-object-class f))))
+			     (null (ebdb-record-search
+				    record
+				    (eieio-object-class f)
+				    (ebdb-string f))))
+		    (push f out-fields)))
+	      (ebdb-unacceptable-field nil)))
 	  (dolist (name names)
 	    (unless (ebdb-record-search
 		     record 'ebdb-field-name (ebdb-string name))
-	      (push name out-names)))
-	  (setq out-names names
-		out-fields fields))
+	      (push name out-names))))
+	(setq out-names names
+	      out-fields fields)
 	(push (vector record out-names out-fields) output)))
     output))
 
