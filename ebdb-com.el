@@ -756,7 +756,12 @@ name based on the current major mode."
     (setq fmt ebdb-default-multiline-formatter))
   ;; `ebdb-make-buffer-name' is a generic function that
   ;; dispatches on the current major mode.
-  (let ((target-buffer (or buf (ebdb-make-buffer-name))))
+  (let ((target-buffer (or buf (ebdb-make-buffer-name)))
+	;; When appending, we want point to end up on the first of the
+	;; appended records.  Save the uuid, and later point a marker
+	;; at it.  Mostly useful for `follow-related'.
+	(target-record-uuid (ebdb-record-uuid (car records)))
+	target-record-marker)
 
     (with-current-buffer (get-buffer-create target-buffer)
       ;; If we are appending RECORDS to the ones already displayed,
@@ -772,7 +777,11 @@ name based on the current major mode."
 
       (setq ebdb-records
 	    (mapcar (lambda (r)
-		      (list r fmt (make-marker) nil))
+		      (let ((m (make-marker)))
+			(when (string= target-record-uuid
+				       (ebdb-record-uuid r))
+			  (setq target-record-marker m))
+			(list r fmt m nil)))
 		    records))
 
       (ebdb-pop-up-window target-buffer select pop)
@@ -795,8 +804,10 @@ name based on the current major mode."
         (message "Formatting EBDB...done."))
       (set-buffer-modified-p nil)
 
-      (goto-char (point-min))
-      (set-window-start (get-buffer-window (current-buffer)) (point)))))
+      (goto-char (or target-record-marker (point-min)))
+      (when (window-live-p (get-buffer-window))
+	(with-selected-window (get-buffer-window)
+	  (recenter))))))
 
 (defun ebdb-undisplay-records (&optional buffer)
   "Undisplay records in *EBDB* BUFFER, leaving the buffer empty.
