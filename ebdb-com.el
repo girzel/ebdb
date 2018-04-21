@@ -789,7 +789,8 @@ name based on the current major mode."
       (unless (or ebdb-silent-internal ebdb-silent)
         (message "Formatting EBDB..."))
       (let ((record-number 0)
-	    buffer-read-only start)
+	    (inhibit-read-only t)
+	    start)
         (erase-buffer)
 	(insert (ebdb-fmt-header fmt records))
         (dolist (record ebdb-records)
@@ -927,7 +928,8 @@ displayed records."
 		 records)))
     (dolist (b bufs)
       (with-current-buffer b
-	(let (renumber buffer-read-only)
+	(let ((inhibit-read-only t)
+	      renumber)
 	  (dolist (r records)
 	    (catch 'bail
 	      ;; Find the location of record in this buffer.  The
