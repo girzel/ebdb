@@ -3036,9 +3036,10 @@ If there aren't any other primary mails, make the first of the
 remaining mails primary."
   (let* ((mails (remove mail (ebdb-record-mail record)))
 	 (clone (unless (object-assoc 'primary 'priority mails)
-		  (clone (car mails)))))
+		  (when (car mails)
+		    (clone (car mails) :priority 'primary)))))
     (when clone
-     (ebdb-record-change-field record (car mails) clone))))
+      (ebdb-record-change-field record (car mails) clone))))
 
 (defun ebdb-compose-mail (&rest args)
   "Start composing a mail message to send.
