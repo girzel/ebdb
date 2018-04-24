@@ -42,12 +42,11 @@
     map)
   "Keymap used for EBDB crm completions.")
 
-(defvar-local ebdb-custom-field-record nil
-  "Variable local to EBDB field customization buffers, pointing
-to the record that field belongs to.
+(defvar-local ebdb-customization-record nil
+  "Variable holding the record whose field is being customized.")
 
-A hacky bit of bookkeeping that lets us mark the record as dirty
-and redisplay it after the field is edited.")
+(defvar-local ebdb-customization-field nil
+  "Variable holding the field being customized.")
 
 ;; Customizations for display routines
 
@@ -1736,27 +1735,34 @@ commands, called from an *EBDB* buffer, and the lower-level
   (interactive
    (list (ebdb-current-record)
 	 (ebdb-current-field)))
-  (ebdb-with-record-edits record
-    (ebdb-record-delete-field record field)
-    (condition-case nil
-	(eieio-customize-object field)
-      (error (ebdb-record-insert-field record field))))
-  (setq ebdb-custom-field-record record))
+  (let ((new-field (clone field)))
+    (eieio-customize-object new-field)
+    ;; The following two variables are buffer-local, and we're hoping
+    ;; this will make them local to the customization buffer: ie, an
+    ;; arbitrary number of *Customize* buffers can be opened, and the
+    ;; accept/apply options will all behave correctly.
+    (setq ebdb-customization-field field
+	  ebdb-customization-record record)))
 
-(cl-defmethod eieio-done-customizing ((f ebdb-field))
-  (let ((rec ebdb-custom-field-record))
-    (when rec
-      (ebdb-record-insert-field rec f))))
+(cl-defmethod eieio-done-customizing ((new-field ebdb-field))
+  "Do the actual insertion of the newly-customized field."
+  (let ((rec ebdb-customization-record)
+	(old-field ebdb-customization-field))
+    (when (and rec old-field)
+      (ebdb-record-change-field rec old-field new-field))))
 
-(cl-defmethod eieio-done-customizing :after ((f ebdb-field))
-  (let ((rec ebdb-custom-field-record))
+(cl-defmethod eieio-done-customizing :around ((_field ebdb-field))
+  "Check that the record owning FIELD can be edited.
+Also redisplays it after customization."
+  (let ((rec ebdb-customization-record))
     (when rec
-     (ebdb-redisplay-records rec 'reformat t))))
+      (ebdb-with-record-edits rec
+	(cl-call-next-method)))))
 
 (cl-defmethod eieio-done-customizing :after ((mail ebdb-field-mail))
   "Handle mail priority after customizing.
 Check that some mail is marked as primary after MAIL is edited."
-  (let* ((rec ebdb-custom-field-record)
+  (let* ((rec ebdb-customization-record)
 	 (all-mails (remove mail (ebdb-record-mail rec)))
 	 (primaries (when rec (seq-filter
 			       (lambda (m)
@@ -1764,10 +1770,14 @@ Check that some mail is marked as primary after MAIL is edited."
 			       all-mails)))
 	 (prim (eq (slot-value mail 'priority) 'primary)))
     (cond ((and prim primaries)
+	   ;; MAIL is primary, so set all other primary mails to
+	   ;; normal.
 	   (dolist (p primaries)
 	     (ebdb-record-change-field rec p (clone p :priority 'normal))))
 	  ((and (null (or prim primaries))
 		(car-safe all-mails))
+	   ;; Nothing is primary, so try to set some other mail to
+	   ;; primary.
 	   (ebdb-record-change-field
 	    rec (car all-mails)
 	    (clone (car all-mails) :priority 'primary))))))
