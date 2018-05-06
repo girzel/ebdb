@@ -95,8 +95,7 @@ See Gnus' manual for details."
   (when ebdb-complete-mail
     (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
 		message-completion-alist
-		:test #'equal)
-    (define-key message-mode-map (kbd "TAB") 'ebdb-complete-mail))
+		:test #'equal))
   ;; Other MUAs clear the EBDB buffer before displaying (in
   ;; `ebdb-mua-auto-update', the call to `ebdb-display-records' does
   ;; not pass the "append" flag).  Displaying in message-mode does
