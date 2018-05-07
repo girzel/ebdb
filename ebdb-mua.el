@@ -998,8 +998,10 @@ Return the records matching ADDRESS or nil."
                (unless ebdb-silent
                  (if (ebdb-record-name record)
                      (message "created %s's record with address \"%s\""
-                              (ebdb-string record) mail)
-                   (message "created record with naked address \"%s\"" mail)))
+                              (ebdb-string record)
+			      (ebdb-string mail))
+                   (message "created record with naked address \"%s\""
+			    (ebdb-string mail))))
                (ebdb-init-record record))
 
               (change-p
@@ -1008,9 +1010,11 @@ Return the records matching ADDRESS or nil."
                         (message "noticed \"%s\"" (ebdb-string record)))
                        ((ebdb-record-name record)
                         (message "noticed %s's address \"%s\""
-                                 (ebdb-string record) mail))
+                                 (ebdb-string record)
+				 (ebdb-string mail)))
                        (t
-                        (message "noticed naked address \"%s\"" mail))))))
+                        (message "noticed naked address \"%s\""
+				 (ebdb-string mail)))))))
 
         (run-hook-with-args 'ebdb-notice-mail-hook record)
 
