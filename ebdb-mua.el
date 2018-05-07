@@ -1166,12 +1166,13 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 		  'existing))
 	notes)
     (when records
-      (ebdb-with-record-edits (record records)
-	(setq notes (ebdb-record-field record 'notes))
-	(if notes
-	    (ebdb-record-change-field record notes)
-	  (setq notes (ebdb-read ebdb-default-notes-class))
-	  (ebdb-record-insert-field record notes)))
+      (dolist (record records)
+       (ebdb-with-record-edits record
+	 (setq notes (ebdb-record-field record 'notes))
+	 (if notes
+	     (ebdb-record-change-field record notes)
+	   (setq notes (ebdb-read ebdb-default-notes-class))
+	   (ebdb-record-insert-field record notes))))
       (ebdb-redisplay-records records 'reformat t))))
 
 ;;;###autoload
