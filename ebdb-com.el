@@ -1337,7 +1337,9 @@ Use the symbol `mark', or the mark provided by MARK."
   ;; This function ideally wouldn't be necessary, but obviously there
   ;; will be times...
   (interactive (list (ebdb-do-records)))
-  (ebdb-redisplay-records records 'reformat))
+  (message "Redisplaying record")
+  (ebdb-redisplay-records records 'reformat)
+  (message "Redisplaying record... done"))
 
 ;; Buffer manipulation
 
