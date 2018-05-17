@@ -1780,7 +1780,8 @@ Check that some mail is marked as primary after MAIL is edited."
 	   ;; primary.
 	   (ebdb-record-change-field
 	    rec (car all-mails)
-	    (clone (car all-mails) :priority 'primary))))))
+	    (clone (car all-mails) :priority 'primary))))
+    (ebdb-redisplay-records rec 'reformat)))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
