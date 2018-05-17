@@ -958,6 +958,13 @@ chance to react somehow.  TYPE is one of the symbols 'sender or
 in."
   nil)
 
+(cl-defgeneric ebdb-field-compare (field1 field2)
+  "Return non-nil if FIELD1 should be sorted before FIELD2.")
+
+(cl-defmethod ebdb-field-compare (_field1 _field2)
+  "By default, leave order unchanged."
+  nil)
+
 ;;; The UUID field.
 
 ;; This was originally just a string-value slot, but it was such a
@@ -1515,18 +1522,16 @@ first one."
       (setq slots (plist-put slots :aka name)))
     (cl-call-next-method class str slots)))
 
-(defun ebdb-sort-mails (mails)
-  "Sort MAILS by their priority slot.
+(cl-defmethod ebdb-field-compare ((m-left ebdb-field-mail)
+				  (m-right ebdb-field-mail))
+  "Sort M-LEFT and M-RIGHT by their priority slot.
 Primary sorts before normal sorts before defunct."
-  (sort
-   mails
-   (lambda (l r)
-     (let ((l-p (slot-value l 'priority))
-	   (r-p (slot-value r 'priority)))
-       (or (and (eq l-p 'primary)
-		(memq r-p '(normal defunct)))
-	   (and (eq l-p 'normal)
-		(eq r-p 'defunct)))))))
+  (let ((l-p (slot-value m-left 'priority))
+	(r-p (slot-value m-right 'priority)))
+    (or (and (memq r-p '(normal defunct))
+	     (eq l-p 'primary))
+	(and (eq r-p 'defunct)
+	     (eq l-p 'normal)))))
 
 (cl-defmethod cl-print-object ((mail ebdb-field-mail) stream)
   (princ (format "#<%S %s>"

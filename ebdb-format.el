@@ -277,35 +277,28 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 (cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter)
 				    (_record ebdb-record)
 				    field-list)
-  (let ((sort (slot-value fmt 'sort))
-	f acc outlist class)
-    (when sort
-      (dolist (s sort)
-	(if (symbolp s)
-	    (progn
-	      (setq class (cl--find-class s))
-	      (while (setq f (pop field-list))
-		(if (same-class-p f class)
-		    (push f outlist)
-		  (push f acc)))
-	      (setq field-list acc
-		    acc nil))
-	  ;; We assume this is the "_" value.  Actually, anything
-	  ;; would do as a catchall placeholder.
-	  (dolist (fld field-list)
-	    (setq class (eieio-object-class-name fld))
-	    (unless (memq class sort)
-	      ;; This isn't enough -- field still need to be grouped
-	      ;; by field class.
-	      (push fld outlist)))))
-      (setq field-list (nreverse outlist)))
-    field-list))
+  "Sort FIELD-LIST using sort order from FMT.
+First sorts all fields with `ebdb-field-compare', then sorts
+again by the order of each field's class symbol in the 'sort
+slot of FMT."
+  (let* ((sort-order (slot-value fmt 'sort))
+	 (catchall (or (seq-position sort-order "_")
+		       (length sort-order)))
+	 (sorted (seq-sort #'ebdb-field-compare field-list)))
+
+    (when sort-order
+      (setq sorted
+	    (seq-sort-by
+	     (lambda (f)
+	       (or (seq-position sort-order (eieio-object-class-name f))
+		   catchall))
+	     #'< sorted)))
+    sorted))
 
 (cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter)
 				       (_record ebdb-record)
 				       field-list)
   "Process FIELD-LIST for FMT.
-
 At present that means handling the combine and collapse slots of
 FMT.
 
@@ -319,9 +312,10 @@ grouped by field class."
 	  (if (null (ebdb-class-in-list-p cls combine))
 	      (push f outlist)
 	    (push f acc)
-	    (while (and field-list (same-class-p (car field-list) (eieio-object-class f)))
+	    (while (and field-list (same-class-p (car field-list)
+						 (eieio-object-class f)))
 	      (push (setq f (pop field-list)) acc))
-	    (push `(:class ,cls :style compact :inst ,acc) outlist)
+	    (push `(:class ,cls :style compact :inst ,(nreverse acc)) outlist)
 	    (setq acc nil)))
 	(setq field-list (nreverse outlist)
 	      outlist nil))
