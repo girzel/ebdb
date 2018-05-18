@@ -44,30 +44,29 @@
     :initform `,buffer-file-coding-system
     :documentation "The coding system for the formatted
     file/buffer/stream.")
-   ;; TODO: Provide for "psuedo field classes" like 'primary-mail and
-   ;; 'role-mail.
+   ;; The elements of the next two slots, besides field class symbols,
+   ;; can also use some shortcut symbols: mail, phone, address, notes,
+   ;; tags, role, mail-primary, mail-defunct, mail-not-defunct,
+   ;; role-defunct, and role-not-defunct.
    (include
     :type list
     :initarg :include
     :initform nil
-    :documentation "A list of field classes to include.  If
-    \"include\" and \"exclude\" conflict, \"exclude\" loses.")
+    :documentation "A list of field classes to include.")
    (exclude
     :type list
     :initarg :exclude
-    :initform '(ebdb-field-uuid ebdb-field-timestamp ebdb-field-creation-date)
-    :documentation "A list of field classes to exclude.")
+    :initform nil
+    :documentation "A list of field classes to exclude.  This
+    slot is only honored if \"include\" is nil.")
    (sort
     :type list
     :initarg :sort
-    :initform '(ebdb-field-mail ebdb-field-phone ebdb-field-address "_" ebdb-field-notes)
+    :initform '(ebdb-field-mail
+		ebdb-field-phone ebdb-field-address "_" ebdb-field-notes)
     :documentation "How field instances should be sorted.  Field
     classes should be listed in their proper sort order.  A \"_\"
     placeholder indicates where all other fields should go." )
-   (primary
-    :type boolean
-    :initarg :primary
-    :initform nil)
    (header
     :type list
     :initarg :header
@@ -78,13 +77,13 @@
    (combine
     :type list
     :initarg :combine
-    :initform '(ebdb-field-mail ebdb-field-phone)
+    :initform nil
     :documentation "A list of field classes which should be
     output with all instances grouped together.")
    (collapse
     :type list
     :initarg :collapse
-    :initform '(ebdb-field-address)
+    :initform nil
     :documentation "A list of field classes which should be
     \"collapsed\". What this means is up to the formatter, but it
     generally indicates that most of the field contents will
@@ -256,15 +255,13 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 			  ;; be removed at some point.
 			  (lambda (elt) (or (eql (car elt) 'name)
 					    (null (cdr elt))))
- 			  (ebdb-record-current-fields record nil t)))))
-	f-class)
+ 			  (ebdb-record-current-fields record nil t))))))
     (with-slots (exclude include) fmt
       (seq-filter
        (lambda (f)
-	 (setq f-class (eieio-object-class-name f))
 	 (if include
-	     (ebdb-class-in-list-p f-class include)
-	   (null (ebdb-class-in-list-p f-class exclude))))
+	     (ebdb-foo-in-list-p f include)
+	   (null (ebdb-foo-in-list-p f exclude))))
        fields))))
 
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
@@ -304,30 +301,30 @@ FMT.
 
 This method assumes that fields in FIELD-LIST have already been
 grouped by field class."
-  (let (outlist cls f acc)
+  (let (outlist f acc)
     (with-slots (combine collapse) fmt
       (when combine
 	(while (setq f (pop field-list))
-	  (setq cls (eieio-object-class-name f))
-	  (if (null (ebdb-class-in-list-p cls combine))
+	  (if (null (ebdb-foo-in-list-p f combine))
 	      (push f outlist)
 	    (push f acc)
 	    (while (and field-list (same-class-p (car field-list)
 						 (eieio-object-class f)))
 	      (push (setq f (pop field-list)) acc))
-	    (push `(:class ,cls :style compact :inst ,(nreverse acc)) outlist)
+	    (push `(:class ,(eieio-object-class-name f)
+			   :style compact :inst ,(nreverse acc))
+		  outlist)
 	    (setq acc nil)))
 	(setq field-list (nreverse outlist)
 	      outlist nil))
       (dolist (f field-list)
 	(if (listp f)
 	    (push f outlist)
-	  (setq cls (eieio-object-class-name f))
-	  (push (list :class cls
+	  (push (list :class (eieio-object-class-name f)
 		      :inst (list f)
 		      :style
 		      (cond
-		       ((ebdb-class-in-list-p cls collapse) 'collapse)
+		       ((ebdb-foo-in-list-p f collapse) 'collapse)
 		       (t 'normal)))
 		outlist)))
       outlist)))

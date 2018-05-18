@@ -2758,7 +2758,7 @@ OLD-FIELD's values as defaults.")
     (pcase query
       (`(nil . ,cls)
        (or (rassq cls alist)
-	   (rassq (ebdb-class-in-list-p cls (mapcar #'cdr alist))
+	   (rassq (ebdb-foo-in-list-p cls (mapcar #'cdr alist))
 		  alist)
 	   (signal 'ebdb-unacceptable-field (list cls))))
       (`(,slot . nil)
@@ -4055,21 +4055,66 @@ process.")
 
 ;;; Utility functions
 
-(defun ebdb-class-in-list-p (class list)
-  "Check if CLASS is a member of LIST.
-Both CLASS and the members of LIST should be class-name symbols.
-CLASS is \"in\" list if the symbol appears directly in the list,
-or if CLASS is a subclass of one of the classes in LIST.  The
-function returns t in the first case, and the parent class symbol
-in the second."
+(cl-defgeneric ebdb-foo-in-list-p (foo list)
+  "Check if FOO (a class type or class instance) is in LIST.")
+
+(cl-defmethod ebdb-foo-in-list-p ((cls (subclass ebdb-field))
+				  list)
+  "Check if CLS belongs to one of the classes in LIST.
+CLS is \"in\" list if its class name appears directly in the
+list, or if it is a subclass of one of the classes in LIST.
+Return CLS, or nil."
   (catch 'member
-    (progn
-      ;; First, the easy check.
-      (when (memq class list)
-	(throw 'member t))
-      (dolist (c list nil)
-	(when (child-of-class-p class c)
-	  (throw 'member c))))))
+    ;; First the easy check.
+    (when (memq cls list)
+      (throw 'member cls))
+    ;; Then the slightly more exhaustive check.
+    (dolist (c list)
+      (when (and (class-p c)
+		 (child-of-class-p cls c))
+	(throw 'member cls)))))
+
+(cl-defmethod ebdb-foo-in-list-p ((obj ebdb-field)
+				  list)
+  "Check if OBJ belongs to one of the classes in LIST.
+OBJ is \"in\" list if its class name appears directly in the
+list, or if it is a subclass of one of the classes in LIST, or if
+one of the symbols in LIST matches it in some other way.  Return
+the class symbol of OBJ, or nil."
+  (let ((cls-symbol (eieio-object-class-name obj)))
+    ;; First, check the class
+    (or (ebdb-foo-in-list-p cls-symbol list)
+	(catch 'member
+	  ;; Then the full object check.
+	  (when
+	      (or (and (memq 'mail list)
+		       (object-of-class-p obj 'ebdb-field-mail))
+		  (and (memq 'role list)
+		       (object-of-class-p obj 'ebdb-field-role))
+		  (and (memq 'phone list)
+		       (object-of-class-p obj 'ebdb-field-phone))
+		  (and (memq 'address list)
+		       (object-of-class-p obj 'ebdb-field-address))
+		  (and (memq 'notes list)
+		       (object-of-class-p obj 'ebdb-field-notes))
+		  (and (memq 'tags list)
+		       (object-of-class-p obj 'ebdb-field-tags))
+		  (and (memq 'mail-primary list)
+		       (object-of-class-p obj 'ebdb-field-mail)
+		       (eq 'primary (slot-value obj 'priority)))
+		  (and (memq 'mail-defunct list)
+		       (object-of-class-p obj 'ebdb-field-mail)
+		       (eq 'defunct (slot-value obj 'priority)))
+		  (and (memq 'mail-not-defunct list)
+		       (object-of-class-p obj 'ebdb-field-mail)
+		       (null (eq 'defunct (slot-value obj 'priority))))
+		  (and (memq 'role-defunct list)
+		       (object-of-class-p obj 'ebdb-field-role)
+		       (slot-value obj 'defunct))
+		  (and (memq 'role-not-defunct list)
+		       (object-of-class-p obj 'ebdb-field-role)
+		       (null (slot-value obj 'defunct))))
+	    (throw 'member cls-symbol))))))
 
 (defun ebdb-dirty-dbs (&optional dbs)
   "Return all databases marked \"dirty\"."

@@ -412,9 +412,81 @@ position-marker mark)."
   :documentation
   "Multi-line formatter for *EBDB* buffers.")
 
+(defcustom ebdb-default-multiline-include nil
+  "A list of field types to include in multiline display.
+Valid list values include all field class names (ebdb-field-*),
+as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
+and 'role, and the special shortcuts 'mail-primary,
+'mail-defunct, 'mail-not-defunct, 'role-defunct, and
+'role-not-defunct.
+
+If this option is set, *only* fields listed here will be
+displayed.  Also see `ebdb-default-multiline-exclude'."
+  :type 'list
+  :group 'ebdb-record-display)
+
+(defcustom ebdb-default-multiline-exclude
+  '(ebdb-field-uuid
+    ebdb-field-timestamp ebdb-field-creation-date
+    mail-defunct role-defunct)
+  "A list of field types to exclude in multiline display.
+Valid list values include all field class names (ebdb-field-*),
+as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
+and 'role, and the special shortcuts 'mail-primary,
+'mail-defunct, 'mail-not-defunct, 'role-defunct, and
+'role-not-defunct.
+
+If `ebdb-default-multiline-include' is set, this option will be
+ignored."
+  :type 'list
+  :group 'ebdb-record-display)
+
+(defcustom ebdb-default-multiline-include nil
+  "A list of field types to include in multiline display.
+Valid list values include all field class names (ebdb-field-*),
+as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
+and 'role, and the special shortcuts 'mail-primary,
+'mail-defunct, 'mail-not-defunct, 'role-defunct, and
+'role-not-defunct.
+
+If this option is set, *only* fields listed here will be
+displayed.  Also see `ebdb-default-multiline-exclude'."
+  :type 'list
+  :group 'ebdb-record-display)
+
+(defcustom ebdb-default-multiline-combine
+  '(ebdb-field-mail ebdb-field-phone)
+  "A list of field types to combine in the multiline display.
+\"Combine\" means that instances of this field class will all be
+displayed on one line.
+
+Valid list values include all field class names (ebdb-field-*),
+as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
+and 'role, and the special shortcuts 'mail-primary,
+'mail-defunct, 'mail-not-defunct, 'role-defunct, and
+'role-not-defunct."
+  :type 'list
+  :group 'ebdb-record-display)
+
+(defcustom ebdb-default-multiline-collapse
+  '(ebdb-field-address)
+  "A list of field types to collapse in the multiline display.
+\"Collapse\" means that only the first line of instances of this
+field class will be displayed.
+
+Valid list values include all field class names (ebdb-field-*),
+as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
+and 'role, and the special shortcuts 'mail-primary,
+'mail-defunct, 'mail-not-defunct, 'role-defunct, and
+'role-not-defunct."
+  :type 'list
+  :group 'ebdb-record-display)
+
 (defcustom ebdb-default-multiline-formatter
   (make-instance 'ebdb-formatter-ebdb-multiline
-		 :object-name "multiline formatter")
+		 :object-name "multiline formatter"
+		 :include ebdb-default-multiline-include
+		 :exclude ebdb-default-multiline-exclude)
   "The default multiline formatter for *EBDB* buffers."
   :type 'ebdb-formatter-ebdb-multiline
   :group 'ebdb-record-display)
@@ -683,7 +755,7 @@ This happens in addition to any pre-defined indentation of STRING."
 	header-fields body-fields)
     (dolist (f field-plist)
       (push (ebdb-fmt-compose-field fmt f record)
-	    (if (ebdb-class-in-list-p (plist-get f :class) header-classes)
+	    (if (ebdb-foo-in-list-p (plist-get f :class) header-classes)
 		header-fields
 	      body-fields)))
     (ebdb-fmt-record-header
