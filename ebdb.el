@@ -578,8 +578,8 @@ Case is ignored."
 (defcustom ebdb-lastname-re
   (concat "[- \t]*\\(\\(?:\\<"
           (regexp-opt ebdb-lastname-prefixes)
-          ;; multiple last names concatenated by `-'
-          "\\>[- \t]+\\)?\\(?:\\w+[ \t]*-[ \t]*\\)*\\w+\\)\\'")
+          ;; Last names can contain hyphens and apostrophes.
+          "\\>[- \t]+\\)?\\w[[:word:]'-]+\\)\\>")
   "Regexp matching the last name of a full name.
 Its first parenthetical subexpression becomes the last name."
   :group 'ebdb-record-edit
@@ -1296,8 +1296,7 @@ first one."
 	       (ebdb-divide-name str)))
     (unless (plist-get slots :given-names)
       (setq slots (plist-put slots :given-names
-			     (when given-names
-			       (split-string given-names nil t)))))
+			     given-names)))
     (unless (plist-get slots :surname)
       (setq slots (plist-put slots :surname
 			     (or surname ""))))
@@ -4866,27 +4865,42 @@ also be one of the special symbols below.
 
 (defun ebdb-divide-name (string)
   "Divide STRING into its component parts.
-Case is ignored.  Return name as a list of (LAST FIRST SUFFIX).
-LAST is always a string (possibly empty).  FIRST and SUFFIX may
-be nil."
+Return name as a list of (SURNAME GIVEN-NAMES SUFFIX).  SURNAME
+is always a string (possibly empty).  GIVEN-NAMES, if present, is
+a list of first names.  GIVEN-NAMES and SUFFIX may be nil.
+
+During parsing `case-fold-search' is non-nil, with the exception
+that a string of all-upper-case letters will be assumed (a la UN
+usage) to represent the surname."
   (let ((case-fold-search t)
-        first suffix)
+	given suffix)
     ;; Separate a suffix.
-    (if (string-match ebdb-lastname-suffix-re string)
-        (setq suffix (match-string 1 string)
-              string (substring string 0 (match-beginning 0))))
-    (cond ((string-match "\\`\\(.+\\),[ \t\n]*\\(.+\\)\\'" string)
-           ;; If STRING contains a comma, this probably means that STRING
-           ;; is of the form "Last, First".
-           (setq first (match-string 2 string)
-                 string (match-string 1 string)))
-          ((string-match ebdb-lastname-re string)
-           (setq first (and (not (zerop (match-beginning 0)))
-                            (substring string 0 (match-beginning 0)))
-                 string (match-string 1 string))))
+    (when (string-match ebdb-lastname-suffix-re string)
+      (setq suffix (match-string 1 string)
+            string (substring string 0 (match-beginning 0))))
+    (if (let ((case-fold-search nil))
+	  ;; If there's an all-upper-case word, it's the last name.
+	  (string-match
+	   "[ \t\n]*\\([[:upper:]]+[[:upper:]-']+\\)\\>[ \t\n]*"
+	   string))
+	(setq given (concat (substring string 0 (match-beginning 1))
+			    " "
+			    (substring string (match-end 1)))
+	      string (capitalize (match-string 1 string)))
+      (cond ((string-match
+	      (concat "\\`" ebdb-lastname-re ",[ \t\n]*\\(.+\\)\\'")
+	      string)
+             ;; If STRING contains a comma, this probably means that STRING
+             ;; is of the form "Last, First".
+             (setq given (match-string 2 string)
+                   string (match-string 1 string)))
+            ((string-match (concat ebdb-lastname-re "[ ,]*\\'") string)
+             (setq given (and (not (zerop (match-beginning 0)))
+                              (substring string 0 (match-beginning 0)))
+                   string (match-string 1 string)))))
     (delq nil
 	  (list (ebdb-string-trim string)
-		(and first (ebdb-string-trim first))
+		(and given (split-string given nil t))
 		suffix))))
 
 (defsubst ebdb-record-lessp (record1 record2)

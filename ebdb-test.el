@@ -347,7 +347,37 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	   (slot-value
 	    (ebdb-parse 'ebdb-field-name-complex "Eric Abrahamsen, III")
 	    'suffix)
-	   "III")))
+	   "III"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Albus Percival Wulfric Brian Dumbledore")
+	    'given-names)
+	   '("Albus" "Percival" "Wulfric" "Brian")))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "MURAKAMI Haruki")
+	    'surname)
+	   "Murakami"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Fintan O'Toole")
+	    'surname)
+	   "O'Toole"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "O'Toole, Fintan")
+	    'surname)
+	   "O'Toole"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "O'TOOLE Fintan")
+	    'surname)
+	   "O'Toole"))
+  (should (equal
+	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "Daniel Micahel Blake Day-Lewis")
+	    'surname)
+	   "Day-Lewis")))
 
 ;; Snarf testing.
 
