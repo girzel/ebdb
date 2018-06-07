@@ -291,8 +291,8 @@ display information."
     (define-key km (kbd "I")            'ebdb-cite-records-ebdb)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
-    (define-key km (kbd "s")		'ebdb-save)
-    (define-key km (kbd "C-x C-s")	'ebdb-save)
+    (define-key km (kbd "s")		'ebdb-save-ebdb)
+    (define-key km (kbd "C-x C-s")	'ebdb-save-ebdb)
     (define-key km (kbd "t")		'ebdb-toggle-records-format)
     (define-key km (kbd "T")		'ebdb-display-records-completely)
     ;; Marking
@@ -1230,6 +1230,19 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
   (when ebdb-mail-alias-alist
     (ebdb-mail-aliases))
   (add-hook 'post-command-hook 'force-mode-line-update nil t))
+
+(defun ebdb-save-ebdb (&optional some)
+  "Save all EBDB databases interactively.
+Differs from `ebdb-save' in that it also sets all *EBDB* buffers
+as unmodified.  With prefix arg SOME, prompt to save each
+database."
+  (interactive "p")
+  (ebdb-save some)
+  (unless (ebdb-dirty-dbs)
+    (dolist (b (buffer-list))
+      (with-current-buffer b
+	(when (derived-mode-p 'ebdb-mode)
+	  (set-buffer-modified-p nil))))))
 
 
 

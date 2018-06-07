@@ -5120,20 +5120,18 @@ This is a generic function that dispatches on the value of
 
 ;;; Loading and saving EBDB
 
-(defun ebdb-save (&optional prompt)
+(defun ebdb-save (&optional interactive)
   "Save the EBDB if it is modified.
-If PROMPT is non-nil, prompt before saving."
-  (interactive (list nil))
+If INTERACTIVE is non-nil, report progess.  If it is 4,
+additionally prompt to save each database individually."
   ;; TODO: Reimplement ebdb-remote-file, or otherwise do something
   ;; about that.
-  (message "Saving the EBDB...")
+  (when interactive
+   (message "Saving the EBDB..."))
   (dolist (s ebdb-db-list)
-    (ebdb-db-save s prompt))
-  (dolist (b (buffer-list))
-    (with-current-buffer b
-      (when (derived-mode-p 'ebdb-mode)
-	(set-buffer-modified-p nil))))
-  (message "Saving the EBDB... done"))
+    (ebdb-db-save s (eq interactive 4)))
+  (when interactive
+   (message "Saving the EBDB... done")))
 
 
 ;;; Searching EBDB
