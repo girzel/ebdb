@@ -1178,20 +1178,20 @@ simple or complex name class."
   (cl-call-next-method))
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
-			       (record (subclass ebdb-record-person)))
+			       (record ebdb-record-person))
   (object-add-to-list
    (ebdb-record-cache record) 'alt-names
    (concat (ebdb-string name) " "
-	   (slot-value (slot-value record 'name) 'surname)))
+	   (ebdb-name-last (slot-value record 'name))))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
-				 (record (subclass ebdb-record-person))
+				 (record ebdb-record-person)
 				 &optional _unload)
   (object-remove-from-list
    (ebdb-record-cache record) 'alt-names
    (concat (ebdb-string name) " "
-	   (slot-value (slot-value record 'name) 'surname)))
+	   (ebdb-name-last (slot-value record 'name))))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
