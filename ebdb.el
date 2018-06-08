@@ -1168,9 +1168,30 @@ simple or complex name class."
   (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj 'name)))))
     (cl-call-next-method class (plist-put slots :name name) obj)))
 
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) &optional record)
-  (when record
-    (ebdb-puthash (ebdb-string name) record))
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) record)
+  (ebdb-puthash (ebdb-string name) record)
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple) record
+				 &optional _unload)
+  (ebdb-remhash (ebdb-string name) record)
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
+			       (record (subclass ebdb-record-person)))
+  (object-add-to-list
+   (ebdb-record-cache record) 'alt-names
+   (concat (ebdb-string name) " "
+	   (slot-value (slot-value record 'name) 'surname)))
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
+				 (record (subclass ebdb-record-person))
+				 &optional _unload)
+  (object-remove-from-list
+   (ebdb-record-cache record) 'alt-names
+   (concat (ebdb-string name) " "
+	   (slot-value (slot-value record 'name) 'surname)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
@@ -1242,7 +1263,7 @@ first one."
 		 (format "%s " given))
 	       (when prefix
 		 (format "%s " prefix))
-	       (slot-value name 'surname)
+	       (ebdb-name-last name)
 	       (when suffix
 		 (format ", %s" suffix)))))))
 
