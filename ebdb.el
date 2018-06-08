@@ -1286,7 +1286,7 @@ first one."
     (ebdb-puthash fl record)
     (object-add-to-list (ebdb-record-cache record) 'alt-names lf-full)
     (object-add-to-list (ebdb-record-cache record) 'alt-names fl-full)
-    (object-add-to-list (ebdb-record-cache record 'alt-names fl)))
+    (object-add-to-list (ebdb-record-cache record) 'alt-names fl))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) record &optional _unload)
@@ -1298,7 +1298,7 @@ first one."
     (ebdb-remhash fl record)
     (object-remove-from-list (ebdb-record-cache record) 'alt-names lf-full)
     (object-remove-from-list (ebdb-record-cache record) 'alt-names fl-full)
-    (object-remove-from-list (ebdb-record-cache record) 'atl-names fl))
+    (object-remove-from-list (ebdb-record-cache record) 'alt-names fl))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
