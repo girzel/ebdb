@@ -46,14 +46,13 @@
 (require 'ebdb-com)
 
 (defcustom ebdb-snarf-routines
-  `((ebdb-field-mail "[[:blank:]([<\"]*\\([^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+\\)")
+  `((ebdb-field-mail "[[:blank:]([<\"]*\\([[:alnum:]][^[:space:]\":\n<[]+@[^]:[:space:])>\"\n]+[[:alnum:]]\\)")
     (ebdb-field-url ,(concat "\\("
 			     (regexp-opt ebdb-url-valid-schemes)
 			     "//[^ \n\t]+\\)"))
     (ebdb-field-phone "\\(\\+?[[:digit:]]\\{1,3\\}[ )-.]?[[:digit:] -.()]\\{6,\\}\\)"))
 
   "An alist of EBDB field classes and related regexps.
-
 Each alist element is an EBDB field class symbol, followed by a
 list of regular expressions that can be used to produce instances
 of that class when passed to `ebdb-parse'.  Each regular
@@ -68,7 +67,6 @@ expression should contain at least one parenthetical group: the
   (list "\\(?:[[:upper:]][[:lower:]'-]+[,.[:blank:]]*\\)\\{2,\\}")
 
   "A list of regular expressions matching names.
-
 This is a separate option from `ebdb-snarf-routines' because
 snarfing doesn't search for names separately, only in conjunction
 with other field types.
@@ -82,7 +80,6 @@ groups."
 ;;;###autoload
 (defun ebdb-snarf (&optional string start end recs ret)
   "Snarf text and attempt to display/update/create a record from it.
-
 If STRING is given, snarf the string.  If START and END are given
 in addition to STRING, assume they are 0-based indices into it.
 If STRING is nil but START and END are given, assume they are
@@ -119,15 +116,15 @@ If RET is non-nil, return the records.  Otherwise display them."
 
 (defun ebdb-snarf-collect (str &optional records)
   "Collect EBDB record information from string STR.
-
 This function will find everything that looks like field
 information, and do its best to organize it into likely groups.
 If RECORDS is given, it should be a list of records that we think
-have something to do with the text in the buffer.
+have something to do with the text in the string.
 
 This function returns a list of vectors.  Each vector contains
 three elements: a record, a list of name-class instances, and a
-list of other field instances.  Any element can be nil."
+list of other field instances.  Any of the three elements can be
+nil."
   (let ((case-fold-search nil)
 	;; BUNDLES is the list of vectors.  If RECORDS is given, then
 	;; we have something to start with.
@@ -173,7 +170,8 @@ list of other field instances.  Any element can be nil."
 		  "\\("
 		  (mapconcat #'identity
 			     ebdb-snarf-name-re "\\|")
-		  "\\)[-\n ,:]*")))
+		  "\\)[-\n ,:]*"))
+	field seen-fields)
 
     (with-temp-buffer
       ;; Snarfing mail buffers is very common, try deleting citation
@@ -182,9 +180,10 @@ list of other field instances.  Any element can be nil."
 	       (concat "^" mail-citation-prefix-regexp "[:blank:]+")
 	       "" str))
       (goto-char (point-min))
+      ;; SOMETHING from the big-re matched.
       (while (re-search-forward big-re nil t)
-	(let* ((start (goto-char (match-beginning 0)))
-	       (bound (match-end 0))
+	(goto-char (match-beginning 0))
+	(let* ((bound (match-end 0))
 	       (name (save-excursion
 		       (when (re-search-backward
 			      name-re
@@ -216,28 +215,32 @@ list of other field instances.  Any element can be nil."
 	  (when (and name (null (aref bundle 0)))
 	    (push name (aref bundle 1)))
 
+	  ;; Now find out exactly what matched, and make a field.
 	  (dolist (class ebdb-snarf-routines)
 	    (dolist (re (cdr class))
 	      (save-excursion
 		(while (re-search-forward re bound t)
 		  (condition-case nil
-		      (push (ebdb-parse
-			     (car class)
-			     (match-string-no-properties 1))
-			    (aref bundle 2))
+		      (progn
+			;; Discard field if it's been found already.
+			(setq field (ebdb-parse (car class)
+						(match-string-no-properties 1)))
+			(unless (member field seen-fields)
+			  (push field (aref bundle 2))
+			  (push field seen-fields)))
 
 		    ;; If a regular expression matches but the result is
 		    ;; unparseable, that means the regexp is bad and should be
 		    ;; changed.  Later, report these errors if `ebdb-debug' is
 		    ;; true.
 		    (ebdb-unparseable nil))))))
-	  (push bundle bundles)
+	  (when (or (aref bundle 0) (aref bundle 1) (aref bundle 2))
+	    (push bundle bundles))
 	  (goto-char bound))))
     bundles))
 
 (defun ebdb-snarf-collapse (input)
   "Process INPUT, which is a list of bundled field information.
-
 INPUT is probably produced by `ebdb-snarf-collect'.  It should be
 a list of vectors, each with three elements: a single record, a
 list of name field instances, and a list of other field
@@ -248,7 +251,7 @@ existing records that match information in the bundle.  Discard
 redundant fields, or fields that are incompatible with the record
 they're grouped with.  Return the same list of (possibly altered)
 vectors, usually to `ebdb-snarf-query'."
-  (let (output rec slot-val)
+  (let (output rec)
     (pcase-dolist (`[,record ,names ,fields] input)
       (let (out-fields out-names)
 	(unless record
@@ -261,33 +264,37 @@ vectors, usually to `ebdb-snarf-query'."
 				     (ebdb-string f)))
 			     (append fields names)))))
 	    (setq record rec)))
-	(when record
-	  (dolist (f fields)
-	    (condition-case nil
-		(progn
-		  ;; Make sure that record can accept field, and doesn't
-		  ;; already have it.
-		  (when (and (car-safe (ebdb-record-field-slot-query
-					(eieio-object-class record)
-					`(nil . ,(eieio-object-class f))))
-			     (null (ebdb-record-search
-				    record
-				    (eieio-object-class f)
-				    (ebdb-string f))))
-		    (push f out-fields)))
-	      (ebdb-unacceptable-field nil)))
-	  (dolist (name names)
-	    (unless (ebdb-record-search
-		     record 'ebdb-field-name (ebdb-string name))
-	      (push name out-names))))
-	(setq out-names names
-	      out-fields fields)
+	(if record
+	    (progn
+	      ;; If there's a record, make sure the record can accept
+	      ;; the fields and names, and doesn't already have them.
+	      (dolist (f fields)
+		(condition-case nil
+		    (progn
+		      (when (and (car-safe (ebdb-record-field-slot-query
+					    (eieio-object-class record)
+					    `(nil . ,(eieio-object-class f))))
+				 (null (ebdb-record-search
+					record
+					(eieio-object-class f)
+					(ebdb-string f))))
+			(push f out-fields)))
+		  (ebdb-unacceptable-field nil)))
+	      (dolist (name names)
+		(unless (ebdb-record-search
+			 record 'ebdb-field-name (ebdb-string name))
+		  (push name out-names))))
+	  ;; If no record, dump all the fields and names into the
+	  ;; query process.
+	  (setq out-names names
+		out-fields fields))
 	(push (vector record out-names out-fields) output)))
     output))
 
 (defun ebdb-snarf-query (input)
-  "Query the user about INPUT, which is a list of vectors of
-  bundled information representing records.
+  "Query the user about handling INPUT.
+INPUT is a list of vectors of bundled information representing
+records.
 
 Ask about field instances that we haven't been able to handle
 automatically."
