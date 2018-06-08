@@ -1405,7 +1405,7 @@ their fields.
 Initialize @@texinfo:@var{field}@@ against @@texinfo:@var{record}@@.
 #+END_deffn
 
-#+attr_texinfo: :options Method ebdb-delete-field field &optional record unload
+#+attr_texinfo: :options Method ebdb-delete-field field record &optional unload
 #+BEGIN_deffn
 Delete @@texinfo:@var{field}@@ of record @@texinfo:@var{record}@@.  If
 the optional argument @@texinfo:@var{unload}@@ is non-nil, it means

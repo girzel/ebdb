@@ -823,7 +823,7 @@ for their symbol representations."
 	(cl-no-method nil)))
     str))
 
-(cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) &optional record)
+(cl-defmethod ebdb-init-field :extra "i18n" ((name ebdb-field-name) record)
   "Do additional initialization work for international names."
   (let* ((res (cl-call-next-method name record))
 	 (str (ebdb-string name))
@@ -834,7 +834,7 @@ for their symbol representations."
 	(cl-no-method nil)))
     res))
 
-(cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) &optional record unload)
+(cl-defmethod ebdb-delete-field :extra "i18n" ((name ebdb-field-name) record &optional unload)
   "Do additional deletion work for international names."
   (let* ((str (ebdb-string name))
 	 (script (aref char-script-table (aref str 0))))

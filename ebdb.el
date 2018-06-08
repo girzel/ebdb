@@ -1037,7 +1037,7 @@ process."
       (setf (slot-value field 'object-name) label))
     field))
 
-(cl-defmethod ebdb-init-field ((field ebdb-field-labeled) &optional _record)
+(cl-defmethod ebdb-init-field ((field ebdb-field-labeled) _record)
   "Add FIELD's label to its class label list."
   (let ((label-var (slot-value field 'label-list)))
     (ebdb-add-to-list label-var (slot-value field 'object-name))
@@ -1254,30 +1254,30 @@ first one."
   ;; value also gets stored in the cache.
   (ebdb-name-fl name t))
 
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) &optional record)
-  (when record
-    (let ((lf-full (ebdb-name-lf name t))
-	  (fl-full (ebdb-name-fl name t))
-	  (fl (ebdb-name-fl name)))
-	(ebdb-puthash lf-full record)
-	(ebdb-puthash fl-full record)
-	;; Also hash against "first last", as an alternate search
-	;; strategy.
-	(ebdb-puthash fl record)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names lf-full)
-	(object-add-to-list (ebdb-record-cache record) 'alt-names fl-full)))
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-complex) record)
+  (let ((lf-full (ebdb-name-lf name t))
+	(fl-full (ebdb-name-fl name t))
+	(fl (ebdb-name-fl name)))
+    (ebdb-puthash lf-full record)
+    (ebdb-puthash fl-full record)
+    ;; Also hash against "first last", as an alternate search
+    ;; strategy.
+    (ebdb-puthash fl record)
+    (object-add-to-list (ebdb-record-cache record) 'alt-names lf-full)
+    (object-add-to-list (ebdb-record-cache record) 'alt-names fl-full)
+    (object-add-to-list (ebdb-record-cache record 'alt-names fl)))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) &optional record _unload)
-  (when record
-    (let ((lf-full (ebdb-name-lf name t))
-	  (fl-full (ebdb-name-fl name t))
-	  (fl (ebdb-name-fl name)))
-      (ebdb-remhash lf-full record)
-      (ebdb-remhash fl-full record)
-      (ebdb-remhash fl record)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names lf-full)
-      (object-remove-from-list (ebdb-record-cache record) 'alt-names fl-full)))
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) record &optional _unload)
+  (let ((lf-full (ebdb-name-lf name t))
+	(fl-full (ebdb-name-fl name t))
+	(fl (ebdb-name-fl name)))
+    (ebdb-remhash lf-full record)
+    (ebdb-remhash fl-full record)
+    (ebdb-remhash fl record)
+    (object-remove-from-list (ebdb-record-cache record) 'alt-names lf-full)
+    (object-remove-from-list (ebdb-record-cache record) 'alt-names fl-full)
+    (object-remove-from-list (ebdb-record-cache record) 'atl-names fl))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
@@ -1344,61 +1344,59 @@ first one."
   might be relevant to the role."
   :human-readable "role")
 
-(cl-defmethod ebdb-init-field ((role ebdb-field-role) &optional record)
-  (when record
-    (with-slots (org-uuid mail (role-record-uuid record-uuid)) role
-      (let* (;; TODO: Guard against org-entry not being found.
-	     (org-entry (gethash org-uuid ebdb-org-hashtable))
-	     (record-uuid (ebdb-record-uuid record))
-	     (org-string
-	      (condition-case nil
-		  (ebdb-record-name
-		   (ebdb-record-related record role))
-		(ebdb-related-unfound
-		 "record not loaded"))))
-
-	;; Setting the 'record-uuid slot value when it wasn't set before
-	;; technically means that the record is now "dirty".  That's
-	;; okay in our current database implementation, because
-	;; `ebdb-record-insert-field' first calls
-	;; `ebdb-db-add-record-field', which sets the record "dirty",
-	;; and then calls this `ebdb-init' method -- ie, record is
-	;; "dirty" when we get here.  Theoretically, however, nothing in
-	;; `ebdb-init-field' should change a record's slots.
-	(unless role-record-uuid
-	  (setf role-record-uuid record-uuid))
-	(object-add-to-list (ebdb-record-cache record) 'organizations org-string)
-	;; Init the role mail against the record.
-	(when (and mail (slot-value mail 'mail))
-	  (ebdb-init-field mail record))
-	;; Make sure this role is in the `ebdb-org-hashtable'.
-	(unless (member role org-entry)
-	  (push role org-entry))
-	(puthash org-uuid org-entry ebdb-org-hashtable))))
-  (cl-call-next-method))
-
-(cl-defmethod ebdb-delete-field ((role ebdb-field-role) &optional record unload)
-  (when record
-    (let* ((org-uuid (slot-value role 'org-uuid))
+(cl-defmethod ebdb-init-field ((role ebdb-field-role) record)
+  (with-slots (org-uuid mail (role-record-uuid record-uuid)) role
+    (let* (;; TODO: Guard against org-entry not being found.
+	   (org-entry (gethash org-uuid ebdb-org-hashtable))
+	   (record-uuid (ebdb-record-uuid record))
 	   (org-string
 	    (condition-case nil
 		(ebdb-record-name
 		 (ebdb-record-related record role))
 	      (ebdb-related-unfound
-	       nil)))
-	   (org-entry (gethash org-uuid ebdb-org-hashtable))
-	   (record-uuid (ebdb-record-uuid record)))
-      (setq org-entry (delete role org-entry))
-      (if org-entry
-	  (puthash org-uuid org-entry ebdb-org-hashtable)
-	(remhash org-uuid ebdb-org-hashtable))
-      (when (and org-string
-		 (null (assoc-string
-			record-uuid
-			(object-assoc-list 'record-uuid org-entry))))
-	;; RECORD no long has any roles at ORG.
-	(object-remove-from-list (ebdb-record-cache record)
-				 'organizations org-string))))
+	       "record not loaded"))))
+
+      ;; Setting the 'record-uuid slot value when it wasn't set before
+      ;; technically means that the record is now "dirty".  That's
+      ;; okay in our current database implementation, because
+      ;; `ebdb-record-insert-field' first calls
+      ;; `ebdb-db-add-record-field', which sets the record "dirty",
+      ;; and then calls this `ebdb-init' method -- ie, record is
+      ;; "dirty" when we get here.  Theoretically, however, nothing in
+      ;; `ebdb-init-field' should change a record's slots.
+      (unless role-record-uuid
+	(setf role-record-uuid record-uuid))
+      (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
+      ;; Init the role mail against the record.
+      (when (and mail (slot-value mail 'mail))
+	(ebdb-init-field mail record))
+      ;; Make sure this role is in the `ebdb-org-hashtable'.
+      (unless (member role org-entry)
+	(push role org-entry))
+      (puthash org-uuid org-entry ebdb-org-hashtable)))
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-delete-field ((role ebdb-field-role) record &optional unload)
+  (let* ((org-uuid (slot-value role 'org-uuid))
+	 (org-string
+	  (condition-case nil
+	      (ebdb-record-name
+	       (ebdb-record-related record role))
+	    (ebdb-related-unfound
+	     nil)))
+	 (org-entry (gethash org-uuid ebdb-org-hashtable))
+	 (record-uuid (ebdb-record-uuid record)))
+    (setq org-entry (delete role org-entry))
+    (if org-entry
+	(puthash org-uuid org-entry ebdb-org-hashtable)
+      (remhash org-uuid ebdb-org-hashtable))
+    (when (and org-string
+	       (null (assoc-string
+		      record-uuid
+		      (object-assoc-list 'record-uuid org-entry))))
+      ;; RECORD no long has any roles at ORG.
+      (object-remove-from-list (ebdb-record-cache record)
+			       'organizations org-string)))
   (when (slot-value role 'mail)
     (ebdb-delete-field (slot-value role 'mail) record unload))
   (cl-call-next-method))
@@ -1466,7 +1464,7 @@ first one."
   The optional \"object-name\" slot can serve as a mail aka."
   :human-readable "mail")
 
-(cl-defmethod ebdb-init-field ((field ebdb-field-mail) &optional record)
+(cl-defmethod ebdb-init-field ((field ebdb-field-mail) record)
   (with-slots (aka mail) field
     (ebdb-puthash mail record)
     (object-add-to-list (ebdb-record-cache record) 'mail-canon mail)
@@ -1474,14 +1472,13 @@ first one."
       (ebdb-puthash aka record)
       (object-add-to-list (ebdb-record-cache record) 'mail-aka aka))))
 
-(cl-defmethod ebdb-delete-field ((field ebdb-field-mail) &optional record _unload)
+(cl-defmethod ebdb-delete-field ((field ebdb-field-mail) record &optional _unload)
   (with-slots (aka mail) field
-    (when record
-      (when aka
-	(ebdb-remhash aka record)
-	(object-remove-from-list (ebdb-record-cache record) 'mail-aka aka))
-      (ebdb-remhash mail record)
-      (object-remove-from-list (ebdb-record-cache record) 'mail-canon mail)))
+    (when aka
+      (ebdb-remhash aka record)
+      (object-remove-from-list (ebdb-record-cache record) 'mail-aka aka))
+    (ebdb-remhash mail record)
+    (object-remove-from-list (ebdb-record-cache record) 'mail-canon mail))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-string ((mail ebdb-field-mail))
@@ -1580,7 +1577,7 @@ Primary sorts before normal sorts before defunct."
   :documentation "A field representing an address."
   :human-readable "address")
 
-(cl-defmethod ebdb-init-field ((address ebdb-field-address) &optional _record)
+(cl-defmethod ebdb-init-field ((address ebdb-field-address) _record)
   (with-slots (object-name streets locality region postcode country) address
     (dolist (s streets)
       (ebdb-add-to-list 'ebdb-street-list s))
@@ -1940,17 +1937,15 @@ Eventually this method will go away."
     str))
 
 ;; `ebdb-field-anniv-diary-entry' is defined below.
-(cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) &optional record)
-  (when (and ebdb-use-diary
-	     record)
+(cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) record)
+  (when ebdb-use-diary
     (add-to-list
      'ebdb-diary-entries
      (ebdb-field-anniv-diary-entry anniv record))))
 
 (cl-defmethod ebdb-delete-field ((anniv ebdb-field-anniversary)
-				 &optional record _unload)
-  (when (and ebdb-use-diary
-	     record)
+				 record &optional _unload)
+  (when ebdb-use-diary
     (setq
      ebdb-diary-entries
      (delete (ebdb-field-anniv-diary-entry anniv record)
@@ -2317,7 +2312,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
       (add-to-list 'ebdb-tags tag)
       (ebdb-puthash tag record))))
 
-(cl-defmethod ebdb-delete-field ((field ebdb-field-tags) &optional record _unload)
+(cl-defmethod ebdb-delete-field ((field ebdb-field-tags) record &optional _unload)
   (dolist (tag (slot-value field 'tags))
     (ebdb-remhash tag record)))
 
@@ -2364,7 +2359,7 @@ record uuids.")
 	      "%s")
 	    alias (ebdb-string address))))
 
-(cl-defmethod ebdb-init-field ((field ebdb-field-mail-alias) &optional record)
+(cl-defmethod ebdb-init-field ((field ebdb-field-mail-alias) record)
   (with-slots (alias address) field
     (let ((existing (assoc alias ebdb-mail-alias-alist)))
       (if existing
@@ -2372,7 +2367,7 @@ record uuids.")
 	(push (list alias (list record address)) ebdb-mail-alias-alist)))))
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field-mail-alias)
-				 &optional record _unload)
+				 record &optional _unload)
   (with-slots (alias address) field
     (let* ((existing (assoc alias ebdb-mail-alias-alist))
 	   (entry (assq record (cdr-safe existing))))

@@ -536,8 +536,7 @@ variable should be set before EBDB is loaded.")
     (setq slots (plist-put slots :folder str)))
   (cl-call-next-method c str slots))
 
-(cl-defmethod ebdb-init-field ((f ebdb-field-mail-folder)
-			       &optional record)
+(cl-defmethod ebdb-init-field ((f ebdb-field-mail-folder) record)
   (when record
     (let* ((folder (slot-value f 'folder))
 	   (mails (mapcar #'regexp-quote (ebdb-record-mail-canon record)))
@@ -551,8 +550,8 @@ variable should be set before EBDB is loaded.")
 		ebdb-mail-folder-list)))))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete-field ((f ebdb-field-mail-folder)
-				 &optional record _unload)
+(cl-defmethod ebdb-delete-field ((f ebdb-field-mail-folder) record
+				 &optional _unload)
   (when record
     (let* ((folder (slot-value f 'folder))
 	   (mails (mapcar #'regexp-quote (ebdb-record-mail-canon record)))
