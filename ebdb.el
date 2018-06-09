@@ -1177,23 +1177,6 @@ simple or complex name class."
   (ebdb-remhash (ebdb-string name) record)
   (cl-call-next-method))
 
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
-			       (record ebdb-record-person))
-  (object-add-to-list
-   (ebdb-record-cache record) 'alt-names
-   (concat (ebdb-string name) " "
-	   (ebdb-name-last (slot-value record 'name))))
-  (cl-call-next-method))
-
-(cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
-				 (record ebdb-record-person)
-				 &optional _unload)
-  (object-remove-from-list
-   (ebdb-record-cache record) 'alt-names
-   (concat (ebdb-string name) " "
-	   (ebdb-name-last (slot-value record 'name))))
-  (cl-call-next-method))
-
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
   (unless (plist-get slots :name)
     (setq slots (plist-put slots :name str)))
@@ -3230,52 +3213,22 @@ ARGS is passed to `compose-mail'."
   "Return a list of organization string names from RECORD's cache."
   (slot-value (ebdb-record-cache record) 'organizations))
 
-;;; This needs some more thought.
-;; (cl-defmethod ebdb-mail-set-priority ((mail ebdb-field-mail)
-;; 				      (record ebdb-record-person)
-;; 				      &optional priority)
-;;   "Set the priority level for the MAIL address of RECORD to
-;; PRIORITY, if given, or prompt for priority."
-;;   ;; How do we get the symbol choices back out of the :custom
-;;   ;; declaration?  Or is there a better way to keep the values in some
-;;   ;; other central location?
-;;   (let* ((level (or priority
-;; 		    (intern
-;; 		     (completing-read "Set priority to: "
-;; 				      '(normal primary defunct) nil t
-;; 				      (slot-value mail 'priority) ))))
-;; 	 (new-mail (clone mail :priority level))
-;; 	 orig-primary)
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
+			       (record ebdb-record-person))
+  (object-add-to-list
+   (ebdb-record-cache record) 'alt-names
+   (concat (ebdb-string name) " "
+	   (ebdb-name-last (slot-value record 'name))))
+  (cl-call-next-method))
 
-;;     (when (eq level 'primary)
-;;       (setq
-;;        ;; This is horrible
-;;        orig-primary
-;;        (or
-;; 	(dolist (m (slot-value record 'mail) orig-primary)
-;; 	  (when (eq (slot-value m 'priority) 'primary)
-;; 	    (setq orig-primary (cons 'rec m))))
-;; 	(unless orig-primary
-;; 	  (dolist (r (slot-value record 'organizations) orig-primary)
-;; 	    (when (eq (slot-value
-;; 		       (slot-value r 'mail)
-;; 		       'priority)
-;; 		      'primary)
-;; 	      (setq orig-primary (cons 'role (slot-value r 'mail)))))))))
-
-;;     (when (or (null orig-primary)
-;; 	      (yes-or-no-p (format "Switch primary address to %s? " (ebdb-string new-mail))))
-;;       (if role
-;; 	  (let ((new-role (clone role :mail new-mail)))
-;; 	    (ebdb-record-change-field record role new-role))
-;; 	(ebdb-record-change-field record mail new-mail))
-;;       ;; Unset the original primary address
-;;       (when orig-primary
-;; 	(let ((unset-mail (clone (cdr orig-primary) :priority 'normal)))
-;; 	 (if (eq (car orig-primary) 'rec)
-;; 	     (ebdb-record-change-field record mail unset-mail)
-;; 	   (bbbd-record-change-field
-;; 	    record role (clone role :mail unset-mail))))))))
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
+				 (record ebdb-record-person)
+				 &optional _unload)
+  (object-remove-from-list
+   (ebdb-record-cache record) 'alt-names
+   (concat (ebdb-string name) " "
+	   (ebdb-name-last (slot-value record 'name))))
+  (cl-call-next-method))
 
 ;;; other record subclasses.
 
