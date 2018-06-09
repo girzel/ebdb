@@ -14,4 +14,4 @@ subject line, and cc the maintainer.
 
 More EBDB-related packages are available in ELPA.
 
-See the manual for usage details.
+See the [[https://github.com/girzel/ebdb/blob/master/ebdb.org#ebdb-manual][manual]] for usage details.
