@@ -486,7 +486,9 @@ and 'role, and the special shortcuts 'mail-primary,
   (make-instance 'ebdb-formatter-ebdb-multiline
 		 :object-name "multiline formatter"
 		 :include ebdb-default-multiline-include
-		 :exclude ebdb-default-multiline-exclude)
+		 :exclude ebdb-default-multiline-exclude
+		 :combine ebdb-default-multiline-combine
+		 :collapse ebdb-default-multiline-collapse)
   "The default multiline formatter for *EBDB* buffers."
   :type 'ebdb-formatter-ebdb-multiline
   :group 'ebdb-record-display)
@@ -494,7 +496,7 @@ and 'role, and the special shortcuts 'mail-primary,
 (defcustom ebdb-default-oneline-formatter
   (make-instance 'ebdb-formatter-ebdb-oneline
 		 :object-name "oneline formatter"
-		 :include '(ebdb-field-mail))
+		 :include '(mail-primary))
   "The default oneline formatter of *EBDB* buffers."
   :type 'ebdb-formatter-ebdb-oneline
   :group 'ebdb-record-display)
