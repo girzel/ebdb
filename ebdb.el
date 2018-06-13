@@ -1713,14 +1713,14 @@ The result looks like this:
       (when number
 	(let ((numstring (split-string number "" t)))
 	  (push
-	   (eval `(format ,(cl-case (length numstring)
-			    (7
-			     "%s%s%s-%s%s%s%s")
-			    (8
-			     "%s%s%s%s-%s%s%s%s")
-			    (t
-			     number))
-			  ,@numstring))
+	   (apply #'format (cl-case (length numstring)
+			     (7
+			      "%s%s%s-%s%s%s%s")
+			     (8
+			      "%s%s%s%s-%s%s%s%s")
+			     (t
+			      number))
+		  numstring)
 	   outstring)))
       (when area-code
 	(push (format "(%d) " area-code) outstring))
