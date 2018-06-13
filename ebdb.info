@@ -98,6 +98,7 @@ EBDB Buffers
 
 * Searching::
 * The Basics of ebdb-mode::
+* Customizing Record Display::
 * Marking::
 * Exporting/Formatting::
 
@@ -868,6 +869,7 @@ existing EBDB buffers.
 
 * Searching::
 * The Basics of ebdb-mode::
+* Customizing Record Display::
 * Marking::
 * Exporting/Formatting::
 
@@ -963,7 +965,7 @@ process happens _after_ the transform functions have run, so there is a
 possibility for unexpected search behavior.
 
 
-File: ebdb.info,  Node: The Basics of ebdb-mode,  Next: Marking,  Prev: Searching,  Up: EBDB Buffers
+File: ebdb.info,  Node: The Basics of ebdb-mode,  Next: Customizing Record Display,  Prev: Searching,  Up: EBDB Buffers
 
 6.2 The Basics of ebdb-mode
 ===========================
@@ -1023,7 +1025,8 @@ keybindings apply.
      use the record’s primary address.
 
 ‘t’
-     Toggle between a multi-line and one-line display
+     Toggle between a multi-line and one-line display (see *note
+     Customizing Record Display: Customizing Record Display.)
      (‘ebdb-toggle-records-format’).
 
 ‘T’
@@ -1079,9 +1082,106 @@ keybindings apply.
 creation and field manipulation.
 
 
-File: ebdb.info,  Node: Marking,  Next: Exporting/Formatting,  Prev: The Basics of ebdb-mode,  Up: EBDB Buffers
+File: ebdb.info,  Node: Customizing Record Display,  Next: Marking,  Prev: The Basics of ebdb-mode,  Up: EBDB Buffers
 
-6.3 Marking
+6.3 Customizing Record Display
+==============================
+
+The appearance of records in *EBDB* buffers can be customized.  The
+display of records is controlled by objects called formatters, and two
+such objects are provided by default, one creating a multi-line display
+of records (the value of ‘ebdb-default-multiline-formatter’), and
+another creating a single-line display
+(‘ebdb-default-oneline-formatter’).  Some customization options are
+provided to influence the behavior of these formatters (see the
+‘ebdb-record-display’ group), but users familiar with EIEIO objects can
+also manipulate formatter slot-values directly, override display
+methods, or write entirely new formatters.  Any formatter that inherits
+from ‘ebdb-formatter-ebdb’ will be made available for cycling with the
+‘t’ key in *EBDB* buffers.
+
+ -- User Option: ebdb-dedicated-window
+     If non-nil, *EBDB* windows will be dedicated.  Set to ‘ebdb’ to
+     make the window weakly dedicated, and to ‘t’ to make it strongly
+     dedicated.
+
+ -- User Option: ebdb-join-atomic-windows
+     If non-nil, *EBDB* buffers will join atomic windows when popped up
+     from such a window.
+
+ -- User Option: ebdb-fill-field-values
+     If non-nil, long values will be filled in *EBDB* buffers.
+
+   The following options affect how various fields are displayed in
+*EBDB* buffers.  The values of these options are always lists of field
+types as symbols: either the actual names of the field classes
+(‘ebdb-field-*’), or one of the following shortcuts:
+
+   • ‘mail’
+   • ‘phone’
+   • ‘address’
+   • ‘notes’
+   • ‘tags’
+   • ‘role’
+   • ‘mail-primary’
+   • ‘mail-defunct’
+   • ‘mail-not-defunct’
+   • ‘role-defunct’
+   • ‘role-not-defunct’
+
+ -- User Option: ebdb-default-multiline-include
+     A list of field types to include in the multiline formatter.
+
+ -- User Option: ebdb-default-multiline-exclude
+     A list of field types to exclude in the multiline formatter.  If
+     the previous option is set, this one is ignored.  Defaults to a
+     list of the “plumbing” field types such as uuid and creation date,
+     as well as defunct mail and role fields.
+
+ -- User Option: ebdb-default-multiline-combine
+     A list of field types to combine in the multiline formatter.
+     Multiple instances of “combined” field types are gathered onto a
+     single line, instead of one per line.  This defaults to the mail
+     and phone fields.
+
+ -- User Option: ebdb-default-multiline-collapse
+     A list of field types to collapse in the multiline formatter.  The
+     meaning of “collapse” may vary between formatters: in the *EBDB*
+     buffers it means that field values are truncated to a single line;
+     in LaTeX or HTML it might mean the values must be clicked to be
+     displayed completely.  By default, address fields are collapsed.
+     In *EBDB* buffers, it’s still possible to see the complete field
+     value either in a tooltip when mousing over the field, or by
+     putting point on the field and hitting ‘w f’.
+
+ -- User Option: ebdb-default-oneline-include
+     A list of field types to include in the default oneline format.
+     The oneline formatters can handle the same options as the multiline
+     formatters, but because “include” is the only option that really
+     makes sense, it’s the only one that has its own customization
+     option.
+
+   There are also a number of faces that can be manipulated; see the
+‘ebdb-faces’ group.
+
+   Users who wish for more fine-grained control over output can override
+the formatting methods ‘ebdb-fmt-record’, ‘ebdb-fmt-field-label’, and
+‘ebdb-fmt-field’.  It may be necessary to poke around in the source code
+to get things exactly right, but the general signature looks like:
+
+     (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+                                   (field ebdb-field)
+                                   _style
+                                   (_record ebdb-record))
+       (ebdb-string field))
+
+   Possible values for the “style” argument are ‘nil’, ‘oneline’,
+‘compact’, and ‘collapse’.
+
+
+File: ebdb.info,  Node: Marking,  Next: Exporting/Formatting,  Prev: Customizing Record Display,  Up: EBDB Buffers
+
+6.4 Marking
 ===========
 
 Records can be marked and acted on in bulk.  The ‘#’ key will toggle the
@@ -1092,7 +1192,7 @@ Many editing commands can act on multiple marked records.
 
 File: ebdb.info,  Node: Exporting/Formatting,  Prev: Marking,  Up: EBDB Buffers
 
-6.4 Exporting/Formatting
+6.5 Exporting/Formatting
 ========================
 
 It is possible to export (referred to as “formatting”) records in
@@ -1151,8 +1251,9 @@ while the region contains the text “John Doe <j.doe@email.com>” will
 find an existing contact or prompt to create a new one, and then display
 that contact.
 
-   Snarfing is a work in progress: at present, only mail addresses, URLs
-and nearby names are acted upon, and it often doesn’t work correctly.
+   Snarfing is a work in progress: at present, only mail addresses,
+phone numbers, URLs, and nearby names are acted upon, and it often
+doesn’t work correctly.
 
  -- Command: ebdb-snarf &optional string start end recs
      Extract record-related information from a piece of text.  Find,
@@ -1496,7 +1597,7 @@ must not change the database: they may not edit records or their fields.
  -- Method: ebdb-init-field field record
      Initialize FIELD against RECORD.
 
- -- Method: ebdb-delete-field field &optional record unload
+ -- Method: ebdb-delete-field field record &optional unload
      Delete FIELD of record RECORD.  If the optional argument UNLOAD is
      non-nil, it means the record is only being unloaded
 
@@ -1921,9 +2022,9 @@ Index
 * ; t:                                   Interactive Commands.
                                                               (line  42)
 * ?:                                     The Basics of ebdb-mode.
-                                                              (line 102)
+                                                              (line 103)
 * ^:                                     Searching.           (line  55)
-* Article snarfing:                      Snarfing.            (line  35)
+* Article snarfing:                      Snarfing.            (line  36)
 * Article snarfing <1>:                  Article snarfing.    (line   6)
 * auto-save of Database:                 The EBDB Database.   (line  24)
 * Automatic Rules:                       Noticing and Automatic Rules.
@@ -1941,7 +2042,7 @@ Index
                                                               (line   6)
 * C-k <1>:                               The Basics of ebdb-mode.
                                                               (line  45)
-* Command:                               Snarfing.            (line  39)
+* Command:                               Snarfing.            (line  40)
 * Creating a database:                   The EBDB Database.   (line  11)
 * Creating records:                      Creating Records.    (line   6)
 * Customizing search:                    Changing Search Behavior.
@@ -1982,23 +2083,39 @@ Index
                                                               (line  12)
 * ebdb-cite-records:                     Citing Records.      (line  11)
 * ebdb-cite-records-ebdb:                The Basics of ebdb-mode.
-                                                              (line  76)
+                                                              (line  77)
 * ebdb-clone-buffer:                     EBDB Buffers.        (line  19)
 * ebdb-copy-fields-as-kill:              The Basics of ebdb-mode.
-                                                              (line  83)
+                                                              (line  84)
 * ebdb-copy-mail-as-kill:                The Basics of ebdb-mode.
-                                                              (line  92)
+                                                              (line  93)
 * ebdb-copy-records-as-kill:             The Basics of ebdb-mode.
-                                                              (line  88)
+                                                              (line  89)
 * ebdb-create-record:                    Creating Records.    (line   6)
 * ebdb-create-record <1>:                The Basics of ebdb-mode.
                                                               (line  22)
 * ebdb-create-record-extended:           Creating Records.    (line  14)
 * ebdb-create-record-extended <1>:       The Basics of ebdb-mode.
                                                               (line  26)
+* ebdb-dedicated-window:                 Customizing Record Display.
+                                                              (line  19)
 * ebdb-default-address-class:            Hacking EBDB.        (line  38)
 * ebdb-default-mail-class:               Hacking EBDB.        (line  32)
+* ebdb-default-multiline-collapse:       Customizing Record Display.
+                                                              (line  63)
+* ebdb-default-multiline-combine:        Customizing Record Display.
+                                                              (line  57)
+* ebdb-default-multiline-exclude:        Customizing Record Display.
+                                                              (line  51)
+* ebdb-default-multiline-formatter:      Customizing Record Display.
+                                                              (line   6)
+* ebdb-default-multiline-include:        Customizing Record Display.
+                                                              (line  48)
 * ebdb-default-notes-class:              Hacking EBDB.        (line  41)
+* ebdb-default-oneline-formatter:        Customizing Record Display.
+                                                              (line   6)
+* ebdb-default-oneline-include:          Customizing Record Display.
+                                                              (line  73)
 * ebdb-default-phone-class:              Hacking EBDB.        (line  35)
 * ebdb-default-record-class:             Creating Records.    (line  10)
 * ebdb-default-record-class <1>:         Hacking EBDB.        (line  19)
@@ -2010,7 +2127,7 @@ Index
 * ebdb-delete-record-or-field:           Deleting Records and Fields.
                                                               (line   6)
 * ebdb-display-records-completely:       The Basics of ebdb-mode.
-                                                              (line  65)
+                                                              (line  66)
 * ebdb-edit-field:                       Editing Existing Fields.
                                                               (line   6)
 * ebdb-edit-field <1>:                   The Basics of ebdb-mode.
@@ -2023,6 +2140,8 @@ Index
                                                               (line  41)
 * ebdb-field-search:                     Custom Field Searching.
                                                               (line  24)
+* ebdb-fill-field-values:                Customizing Record Display.
+                                                              (line  28)
 * ebdb-format-all-records:               Exporting/Formatting.
                                                               (line  20)
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
@@ -2030,7 +2149,7 @@ Index
 * ebdb-hash-extra-predicates:            Fast Lookups.        (line  30)
 * ebdb-hashtable:                        Fast Lookups.        (line  10)
 * ebdb-help:                             The Basics of ebdb-mode.
-                                                              (line 102)
+                                                              (line 103)
 * ebdb-i18n-countries:                   Internationalization.
                                                               (line  44)
 * ebdb-i18n-countries-pref-scripts:      Internationalization.
@@ -2038,7 +2157,7 @@ Index
 * ebdb-ignore-header-list:               Auto-Updating Records.
                                                               (line  44)
 * ebdb-info:                             The Basics of ebdb-mode.
-                                                              (line 105)
+                                                              (line 106)
 * ebdb-init-field:                       Init and Delete Methods.
                                                               (line  12)
 * ebdb-insert-field:                     Inserting New Fields.
@@ -2046,6 +2165,8 @@ Index
 * ebdb-insert-field <1>:                 The Basics of ebdb-mode.
                                                               (line  30)
 * ebdb-join-atomic-windows:              Pop-up Buffers.      (line  19)
+* ebdb-join-atomic-windows <1>:          Customizing Record Display.
+                                                              (line  24)
 * ebdb-mail:                             The Basics of ebdb-mode.
                                                               (line  56)
 * ebdb-make-buffer-name:                 Writing Integration For New MUAs.
@@ -2107,7 +2228,7 @@ Index
 * ebdb-notice-record-hook:               Noticing and Automatic Rules.
                                                               (line  11)
 * ebdb-omit-records:                     The Basics of ebdb-mode.
-                                                              (line  72)
+                                                              (line  73)
 * ebdb-org-agenda-popup:                 Org Integration.     (line  32)
 * ebdb-popup-window:                     Writing Integration For New MUAs.
                                                               (line  60)
@@ -2119,10 +2240,10 @@ Index
                                                               (line  50)
 * ebdb-record-self:                      Creating Records.    (line  21)
 * ebdb-reformat-records:                 The Basics of ebdb-mode.
-                                                              (line  69)
+                                                              (line  70)
 * ebdb-rename-buffer:                    EBDB Buffers.        (line  23)
 * ebdb-save:                             The Basics of ebdb-mode.
-                                                              (line 108)
+                                                              (line 109)
 * ebdb-save-on-exit:                     The EBDB Database.   (line  78)
 * ebdb-search-invert:                    Searching.           (line  49)
 * ebdb-search-pop:                       Searching.           (line  55)
@@ -2130,9 +2251,9 @@ Index
                                                               (line  18)
 * ebdb-search-transform-functions:       Changing Search Behavior.
                                                               (line  16)
-* ebdb-snarf:                            Snarfing.            (line  15)
-* ebdb-snarf-name-re:                    Snarfing.            (line  30)
-* ebdb-snarf-routines:                   Snarfing.            (line  25)
+* ebdb-snarf:                            Snarfing.            (line  16)
+* ebdb-snarf-name-re:                    Snarfing.            (line  31)
+* ebdb-snarf-routines:                   Snarfing.            (line  26)
 * ebdb-sources:                          The EBDB Database.   (line  11)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  61)
@@ -2150,15 +2271,15 @@ Index
                                                               (line  50)
 * Field actions <1>:                     Actions.             (line   6)
 * g:                                     The Basics of ebdb-mode.
-                                                              (line  99)
+                                                              (line 100)
 * h:                                     The Basics of ebdb-mode.
-                                                              (line 105)
+                                                              (line 106)
 * i:                                     Inserting New Fields.
                                                               (line   6)
 * i <1>:                                 The Basics of ebdb-mode.
                                                               (line  30)
 * I:                                     The Basics of ebdb-mode.
-                                                              (line  76)
+                                                              (line  77)
 * Inserting new fields:                  Inserting New Fields.
                                                               (line   6)
 * Internationalization:                  Internationalization.
@@ -2180,25 +2301,25 @@ Index
 * N:                                     The Basics of ebdb-mode.
                                                               (line  16)
 * o:                                     The Basics of ebdb-mode.
-                                                              (line  72)
+                                                              (line  73)
 * p:                                     The Basics of ebdb-mode.
                                                               (line  13)
 * P:                                     The Basics of ebdb-mode.
                                                               (line  19)
 * q:                                     The Basics of ebdb-mode.
-                                                              (line 111)
+                                                              (line 112)
 * quit-window:                           The Basics of ebdb-mode.
-                                                              (line 111)
+                                                              (line 112)
 * r:                                     The Basics of ebdb-mode.
-                                                              (line  69)
+                                                              (line  70)
 * read-only of Database:                 The EBDB Database.   (line  20)
 * record-class of Database:              The EBDB Database.   (line  37)
 * RET:                                   The Basics of ebdb-mode.
                                                               (line  50)
 * revert-buffer:                         The Basics of ebdb-mode.
-                                                              (line  99)
+                                                              (line 100)
 * s:                                     The Basics of ebdb-mode.
-                                                              (line 108)
+                                                              (line 109)
 * Saving the database:                   The EBDB Database.   (line  78)
 * Search history:                        Searching.           (line  51)
 * Searching the EBDB:                    Searching.           (line   6)
@@ -2206,72 +2327,73 @@ Index
 * t:                                     The Basics of ebdb-mode.
                                                               (line  61)
 * T:                                     The Basics of ebdb-mode.
-                                                              (line  65)
+                                                              (line  66)
 * w f:                                   The Basics of ebdb-mode.
-                                                              (line  83)
+                                                              (line  84)
 * w m:                                   The Basics of ebdb-mode.
-                                                              (line  92)
+                                                              (line  93)
 * w r:                                   The Basics of ebdb-mode.
-                                                              (line  88)
+                                                              (line  89)
 
 
 
 Tag Table:
 Node: Top806
-Node: Getting Started2425
-Node: Migration from BBDB3080
-Node: Record Migration3291
-Node: Variables and Options4094
-Node: Migration from Org Contacts4580
-Node: The EBDB Database5340
-Node: Creating Records9328
-Node: Record classes10409
-Node: Record names10754
-Node: Record Fields11429
-Node: Inserting New Fields11673
-Node: Editing Existing Fields12469
-Node: Deleting Records and Fields13069
-Node: Field Types13465
-Node: Role fields15752
-Node: Tag field17440
-Node: Mail folder field18084
-Node: MUA Interaction18412
-Node: Loading MUA Code18936
-Node: Display and Updating19649
-Node: Pop-up Buffers20415
-Node: Auto-Updating Records21591
-Node: Noticing and Automatic Rules23991
-Node: Interactive Commands25324
-Node: EBDB and MUA summary buffers27799
-Node: Sender name display28285
-Node: Summary buffer marks29512
-Node: EBDB Buffers30691
-Node: Searching31873
-Node: Changing Search Behavior33535
-Node: The Basics of ebdb-mode34782
-Node: Marking38383
-Node: Exporting/Formatting38807
-Node: Completion39756
-Node: Snarfing40954
-Node: Internationalization42955
-Node: Diary Integration45654
-Node: Mail Aliases46519
-Node: vCard Support47233
-Node: Org Integration47732
-Node: Citing Records49630
-Node: Hacking EBDB50388
-Node: Field Classes52707
-Node: Init and Delete Methods55838
-Node: The Labeled Field Class57345
-Node: The Singleton Field Class58199
-Node: Actions58637
-Node: Custom Field Searching59309
-Node: Fast Lookups62176
-Node: Formatting in the EBDB Buffer63986
-Node: Writing Internationalization Libraries66062
-Node: Writing Integration For New MUAs70476
-Node: Article snarfing73923
-Node: Index74641
+Node: Getting Started2456
+Node: Migration from BBDB3111
+Node: Record Migration3322
+Node: Variables and Options4125
+Node: Migration from Org Contacts4611
+Node: The EBDB Database5371
+Node: Creating Records9359
+Node: Record classes10440
+Node: Record names10785
+Node: Record Fields11460
+Node: Inserting New Fields11704
+Node: Editing Existing Fields12500
+Node: Deleting Records and Fields13100
+Node: Field Types13496
+Node: Role fields15783
+Node: Tag field17471
+Node: Mail folder field18115
+Node: MUA Interaction18443
+Node: Loading MUA Code18967
+Node: Display and Updating19680
+Node: Pop-up Buffers20446
+Node: Auto-Updating Records21622
+Node: Noticing and Automatic Rules24022
+Node: Interactive Commands25355
+Node: EBDB and MUA summary buffers27830
+Node: Sender name display28316
+Node: Summary buffer marks29543
+Node: EBDB Buffers30722
+Node: Searching31935
+Node: Changing Search Behavior33597
+Node: The Basics of ebdb-mode34844
+Node: Customizing Record Display38537
+Node: Marking42857
+Node: Exporting/Formatting43284
+Node: Completion44233
+Node: Snarfing45431
+Node: Internationalization47448
+Node: Diary Integration50147
+Node: Mail Aliases51012
+Node: vCard Support51726
+Node: Org Integration52225
+Node: Citing Records54123
+Node: Hacking EBDB54881
+Node: Field Classes57200
+Node: Init and Delete Methods60331
+Node: The Labeled Field Class61838
+Node: The Singleton Field Class62692
+Node: Actions63130
+Node: Custom Field Searching63802
+Node: Fast Lookups66669
+Node: Formatting in the EBDB Buffer68479
+Node: Writing Internationalization Libraries70555
+Node: Writing Integration For New MUAs74969
+Node: Article snarfing78416
+Node: Index79134
 
 End Tag Table
 

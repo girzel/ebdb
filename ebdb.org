@@ -913,8 +913,8 @@ keybindings apply.
 
      #+KINDEX: t
      #+FINDEX: ebdb-toggle-records-format
-     Toggle between a multi-line and one-line display
-     (~ebdb-toggle-records-format~).
+     Toggle between a multi-line and one-line display (see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing
+     Record Display]]) (~ebdb-toggle-records-format~).
 
 - T ::
 
@@ -1003,6 +1003,120 @@ keybindings apply.
 
 [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]] and [[id:4170bd36-64bf-44b4-87d0-29fbed968851][Record Fields]] for more on record creation and
 field manipulation.
+** Customizing Record Display
+:PROPERTIES:
+:ID:       20fc7a2a-55a9-43ef-9534-9e5887682a88
+:END:
+#+VINDEX: ebdb-default-multiline-formatter
+#+VINDEX: ebdb-default-oneline-formatter
+The appearance of records in {{{buf(EBDB)}}} buffers can be
+customized.  The display of records is controlled by objects called
+formatters, and two such objects are provided by default, one creating
+a multi-line display of records (the value of
+~ebdb-default-multiline-formatter~), and another creating a
+single-line display (~ebdb-default-oneline-formatter~).  Some
+customization options are provided to influence the behavior of these
+formatters (see the ~ebdb-record-display~ group), but users familiar
+with EIEIO objects can also manipulate formatter slot-values directly,
+override display methods, or write entirely new formatters.  Any
+formatter that inherits from ~ebdb-formatter-ebdb~ will be made
+available for cycling with the {{{kbd(t)}}} key in {{{buf(EBDB)}}}
+buffers.
+
+#+attr_texinfo: :options ebdb-dedicated-window
+#+BEGIN_defopt
+If non-nil, {{{buf(EBDB)}}} windows will be dedicated.  Set to ~ebdb~
+to make the window weakly dedicated, and to ~t~ to make it strongly
+dedicated.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-join-atomic-windows
+#+BEGIN_defopt
+If non-nil, {{{buf(EBDB)}}} buffers will join atomic windows when
+popped up from such a window.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-fill-field-values
+#+BEGIN_defopt
+If non-nil, long values will be filled in {{{buf(EBDB)}}} buffers.
+#+END_defopt
+
+The following options affect how various fields are displayed in
+{{{buf(EBDB)}}} buffers.  The values of these options are always lists
+of field types as symbols: either the actual names of the field
+classes (~ebdb-field-*~), or one of the following shortcuts:
+
+- ~mail~
+- ~phone~
+- ~address~
+- ~notes~
+- ~tags~
+- ~role~
+- ~mail-primary~
+- ~mail-defunct~
+- ~mail-not-defunct~
+- ~role-defunct~
+- ~role-not-defunct~
+
+#+attr_texinfo: :options ebdb-default-multiline-include
+#+BEGIN_defopt
+A list of field types to include in the multiline formatter.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-default-multiline-exclude
+#+BEGIN_defopt
+A list of field types to exclude in the multiline formatter.  If the
+previous option is set, this one is ignored.  Defaults to a list of
+the "plumbing" field types such as uuid and creation date, as well as
+defunct mail and role fields.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-default-multiline-combine
+#+BEGIN_defopt
+A list of field types to combine in the multiline formatter.  Multiple
+instances of "combined" field types are gathered onto a single line,
+instead of one per line.  This defaults to the mail and phone fields.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-default-multiline-collapse
+#+BEGIN_defopt
+A list of field types to collapse in the multiline formatter.  The
+meaning of "collapse" may vary between formatters: in the
+{{{buf(EBDB)}}} buffers it means that field values are truncated to a
+single line; in LaTeX or HTML it might mean the values must be clicked
+to be displayed completely.  By default, address fields are collapsed.
+In {{{buf(EBDB)}}} buffers, it's still possible to see the complete
+field value either in a tooltip when mousing over the field, or by
+putting point on the field and hitting {{{kbd(w f)}}}.
+#+END_defopt
+
+#+attr_texinfo: :options ebdb-default-oneline-include
+#+BEGIN_defopt
+A list of field types to include in the default oneline format.  The
+oneline formatters can handle the same options as the multiline
+formatters, but because "include" is the only option that really makes
+sense, it's the only one that has its own customization option.
+#+END_defopt
+
+There are also a number of faces that can be manipulated; see the
+~ebdb-faces~ group.
+
+Users who wish for more fine-grained control over output can override
+the formatting methods ~ebdb-fmt-record~, ~ebdb-fmt-field-label~, and
+~ebdb-fmt-field~.  It may be necessary to poke around in the source
+code to get things exactly right, but the general signature looks
+like:
+
+#+BEGIN_SRC elisp
+  (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+                                (field ebdb-field)
+                                _style
+                                (_record ebdb-record))
+    (ebdb-string field))
+#+END_SRC
+
+Possible values for the "style" argument are ~nil~, ~oneline~,
+~compact~, and ~collapse~.
 
 ** Marking
 :PROPERTIES:
@@ -1072,8 +1186,9 @@ information related to EBDB records from it.  For example, calling
 <j.doe@email.com>" will find an existing contact or prompt to create a
 new one, and then display that contact.
 
-Snarfing is a work in progress: at present, only mail addresses, URLs
-and nearby names are acted upon, and it often doesn't work correctly.
+Snarfing is a work in progress: at present, only mail addresses, phone
+numbers, URLs, and nearby names are acted upon, and it often doesn't
+work correctly.
 
 #+attr_texinfo: :options Command ebdb-snarf &optional string start end recs
 #+BEGIN_deffn

@@ -441,19 +441,6 @@ ignored."
   :type 'list
   :group 'ebdb-record-display)
 
-(defcustom ebdb-default-multiline-include nil
-  "A list of field types to include in multiline display.
-Valid list values include all field class names (ebdb-field-*),
-as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
-and 'role, and the special shortcuts 'mail-primary,
-'mail-defunct, 'mail-not-defunct, 'role-defunct, and
-'role-not-defunct.
-
-If this option is set, *only* fields listed here will be
-displayed.  Also see `ebdb-default-multiline-exclude'."
-  :type 'list
-  :group 'ebdb-record-display)
-
 (defcustom ebdb-default-multiline-combine
   '(ebdb-field-mail ebdb-field-phone)
   "A list of field types to combine in the multiline display.
@@ -493,10 +480,15 @@ and 'role, and the special shortcuts 'mail-primary,
   :type 'ebdb-formatter-ebdb-multiline
   :group 'ebdb-record-display)
 
+(defcustom ebdb-default-oneline-include '(mail-primary)
+  "Fields to include in the default oneline view."
+  :type 'list
+  :group 'ebdb-record-display)
+
 (defcustom ebdb-default-oneline-formatter
   (make-instance 'ebdb-formatter-ebdb-oneline
 		 :object-name "oneline formatter"
-		 :include '(mail-primary))
+		 :include ebdb-default-oneline-include)
   "The default oneline formatter of *EBDB* buffers."
   :type 'ebdb-formatter-ebdb-oneline
   :group 'ebdb-record-display)

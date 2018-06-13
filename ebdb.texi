@@ -121,6 +121,7 @@ EBDB Buffers
 
 * Searching::
 * The Basics of ebdb-mode::
+* Customizing Record Display::
 * Marking::
 * Exporting/Formatting::
 
@@ -918,6 +919,7 @@ recreated next time the MUA requests another pop up.
 @menu
 * Searching::
 * The Basics of ebdb-mode::
+* Customizing Record Display::
 * Marking::
 * Exporting/Formatting::
 @end menu
@@ -1118,8 +1120,8 @@ use; otherwise use the record's primary address.
 @item t
 @kindex t
 @findex ebdb-toggle-records-format
-Toggle between a multi-line and one-line display
-(@code{ebdb-toggle-records-format}).
+Toggle between a multi-line and one-line display (see @ref{Customizing Record Display, , Customizing
+Record Display}) (@code{ebdb-toggle-records-format}).
 
 @item T
 @kindex T
@@ -1198,6 +1200,125 @@ Delete the *EBDB* window (@code{quit-window}).
 @ref{Creating Records} and @ref{Record Fields} for more on record creation and
 field manipulation.
 
+@node Customizing Record Display
+@section Customizing Record Display
+
+@vindex ebdb-default-multiline-formatter
+@vindex ebdb-default-oneline-formatter
+The appearance of records in *EBDB* buffers can be
+customized.  The display of records is controlled by objects called
+formatters, and two such objects are provided by default, one creating
+a multi-line display of records (the value of
+@code{ebdb-default-multiline-formatter}), and another creating a
+single-line display (@code{ebdb-default-oneline-formatter}).  Some
+customization options are provided to influence the behavior of these
+formatters (see the @code{ebdb-record-display} group), but users familiar
+with EIEIO objects can also manipulate formatter slot-values directly,
+override display methods, or write entirely new formatters.  Any
+formatter that inherits from @code{ebdb-formatter-ebdb} will be made
+available for cycling with the @kbd{t} key in *EBDB*
+buffers.
+
+@defopt ebdb-dedicated-window
+If non-nil, *EBDB* windows will be dedicated.  Set to @code{ebdb}
+to make the window weakly dedicated, and to @code{t} to make it strongly
+dedicated.
+@end defopt
+
+@defopt ebdb-join-atomic-windows
+If non-nil, *EBDB* buffers will join atomic windows when
+popped up from such a window.
+@end defopt
+
+@defopt ebdb-fill-field-values
+If non-nil, long values will be filled in *EBDB* buffers.
+@end defopt
+
+The following options affect how various fields are displayed in
+*EBDB* buffers.  The values of these options are always lists
+of field types as symbols: either the actual names of the field
+classes (@code{ebdb-field-*}), or one of the following shortcuts:
+
+@itemize
+@item
+@code{mail}
+@item
+@code{phone}
+@item
+@code{address}
+@item
+@code{notes}
+@item
+@code{tags}
+@item
+@code{role}
+@item
+@code{mail-primary}
+@item
+@code{mail-defunct}
+@item
+@code{mail-not-defunct}
+@item
+@code{role-defunct}
+@item
+@code{role-not-defunct}
+@end itemize
+
+@defopt ebdb-default-multiline-include
+A list of field types to include in the multiline formatter.
+@end defopt
+
+@defopt ebdb-default-multiline-exclude
+A list of field types to exclude in the multiline formatter.  If the
+previous option is set, this one is ignored.  Defaults to a list of
+the ``plumbing'' field types such as uuid and creation date, as well as
+defunct mail and role fields.
+@end defopt
+
+@defopt ebdb-default-multiline-combine
+A list of field types to combine in the multiline formatter.  Multiple
+instances of ``combined'' field types are gathered onto a single line,
+instead of one per line.  This defaults to the mail and phone fields.
+@end defopt
+
+@defopt ebdb-default-multiline-collapse
+A list of field types to collapse in the multiline formatter.  The
+meaning of ``collapse'' may vary between formatters: in the
+*EBDB* buffers it means that field values are truncated to a
+single line; in @LaTeX{} or HTML it might mean the values must be clicked
+to be displayed completely.  By default, address fields are collapsed.
+In *EBDB* buffers, it's still possible to see the complete
+field value either in a tooltip when mousing over the field, or by
+putting point on the field and hitting @kbd{w f}.
+@end defopt
+
+@defopt ebdb-default-oneline-include
+A list of field types to include in the default oneline format.  The
+oneline formatters can handle the same options as the multiline
+formatters, but because ``include'' is the only option that really makes
+sense, it's the only one that has its own customization option.
+@end defopt
+
+There are also a number of faces that can be manipulated; see the
+@code{ebdb-faces} group.
+
+Users who wish for more fine-grained control over output can override
+the formatting methods @code{ebdb-fmt-record}, @code{ebdb-fmt-field-label}, and
+@code{ebdb-fmt-field}.  It may be necessary to poke around in the source
+code to get things exactly right, but the general signature looks
+like:
+
+@lisp
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+                              (field ebdb-field)
+                              _style
+                              (_record ebdb-record))
+  (ebdb-string field))
+@end lisp
+
+Possible values for the ``style'' argument are @code{nil}, @code{oneline},
+@code{compact}, and @code{collapse}.
+
 @node Marking
 @section Marking
 
@@ -1270,8 +1391,9 @@ information related to EBDB records from it.  For example, calling
 <j.doe@@email.com>'' will find an existing contact or prompt to create a
 new one, and then display that contact.
 
-Snarfing is a work in progress: at present, only mail addresses, URLs
-and nearby names are acted upon, and it often doesn't work correctly.
+Snarfing is a work in progress: at present, only mail addresses, phone
+numbers, URLs, and nearby names are acted upon, and it often doesn't
+work correctly.
 
 @deffn Command ebdb-snarf &optional string start end recs
 Extract record-related information from a piece of text.  Find,
@@ -1623,7 +1745,7 @@ their fields.
 Initialize @var{field} against @var{record}.
 @end deffn
 
-@deffn Method ebdb-delete-field field &optional record unload
+@deffn Method ebdb-delete-field field record &optional unload
 Delete @var{field} of record @var{record}.  If
 the optional argument @var{unload} is non-nil, it means
 the record is only being unloaded
