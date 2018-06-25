@@ -1219,7 +1219,7 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
        'ebdb-redisplay-all-records)
   ;; In newer Emacs, this will make EBDB buffers eligible for save by
   ;; `save-some-buffers'.
-  (add-hook 'write-contents-functions #'ebdb-save)
+  (add-hook 'write-contents-functions #'ebdb-save-ebdb)
   (setq buffer-offer-save 'always)
   (when ebdb-mail-alias-alist
     (ebdb-mail-aliases))
