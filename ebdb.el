@@ -402,11 +402,6 @@ Run with one argument, the database being loaded."
   :group 'ebdb
   :type 'hook)
 
-(defcustom ebdb-mode-hook nil
-  "Normal hook run when the *EBDB* buffer is created."
-  :group 'ebdb
-  :type 'hook)
-
 (defcustom ebdb-silent nil
   "If t, EBDB suppresses all its informational messages and queries.
 Be very very certain you want to set this to t, because it will suppress
