@@ -1035,7 +1035,7 @@ process."
 (cl-defmethod ebdb-init-field ((field ebdb-field-labeled) _record)
   "Add FIELD's label to its class label list."
   (let ((label-var (slot-value field 'label-list)))
-    (ebdb-add-to-list label-var (slot-value field 'object-name))
+    (ebdb-add-to-list (symbol-value label-var) (slot-value field 'object-name))
     (cl-call-next-method)))
 
 (cl-defmethod eieio-object-name-string ((field ebdb-field-labeled))
@@ -1579,12 +1579,12 @@ Primary sorts before normal sorts before defunct."
 (cl-defmethod ebdb-init-field ((address ebdb-field-address) _record)
   (with-slots (object-name streets locality region postcode country) address
     (dolist (s streets)
-      (ebdb-add-to-list 'ebdb-street-list s))
-    (ebdb-add-to-list 'ebdb-locality-list locality)
+      (ebdb-add-to-list ebdb-street-list s))
+    (ebdb-add-to-list ebdb-locality-list locality)
     (when (stringp country)
-     (ebdb-add-to-list 'ebdb-country-list country))
-    (ebdb-add-to-list 'ebdb-region-list region)
-    (ebdb-add-to-list 'ebdb-postcode-list postcode)))
+     (ebdb-add-to-list ebdb-country-list country))
+    (ebdb-add-to-list ebdb-region-list region)
+    (ebdb-add-to-list ebdb-postcode-list postcode)))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-address)) &optional slots obj)
   (let ((streets
@@ -4447,17 +4447,10 @@ REQUIRE-MATCH have the same meaning as in `completing-read'."
 	   (signal 'ebdb-empty (list prompt))
 	 string)))))
 
-(defun ebdb-add-to-list (list-var element)
+(defmacro ebdb-add-to-list (list-var element)
   "Add ELEMENT to the value of LIST-VAR if it isn't there yet and non-nil.
-The test for presence of ELEMENT is done with `equal'.
-The return value is the new value of LIST-VAR."
-  ;; Unlike `add-to-list' this ignores ELEMENT if it is nil.
-  ;; TO DO: turn this into a faster macro so that we can abandon calls
-  ;; of add-to-list.
-  (if (or (not element)
-          (member element (symbol-value list-var)))
-      (symbol-value list-var)
-    (set list-var (cons element (symbol-value list-var)))))
+The test for presence of ELEMENT is done with `equal'."
+  `(when ,element (cl-pushnew ,element ,list-var :test #'equal)))
 
 ;; FIXME: Get rid of this add-job and eval-spec stuff.
 (defsubst ebdb-add-job (spec record string)
