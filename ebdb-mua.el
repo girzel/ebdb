@@ -227,7 +227,7 @@ accordingly."
 	((eq ebdb-user-mail-address-re 'self)
 	 (let ((self-rec (ebdb-record-self)))
 	   (unless self-rec
-	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set.? "))
+	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set"))
 	   (setq ebdb-user-mail-address-re
 		 (regexp-opt (slot-value
 			      (ebdb-record-cache self-rec)
@@ -598,13 +598,14 @@ HEADER-TYPE, as well as the IGNORE-ADDRESS argument, and the
 variables `ebdb-user-mail-address-re',
 `ebdb-accept-header-alist', and `ebdb-ignore-header-alist'."
   (let ((name (car address-parts))
-	(mail (cadr address-parts)))
+	(mail (cadr address-parts))
+	(user-mail (ebdb-get-user-mail-address-re)))
     (and (null (or (and (stringp ignore-address)
 			(or (and name (string-match-p ignore-address name))
 			    (and mail (string-match-p ignore-address mail))))
-		   (string-match-p
-		    (ebdb-get-user-mail-address-re)
-		    mail)))
+		   (and (stringp user-mail)
+			(null (string-empty-p user-mail))
+			(string-match-p user-mail mail))))
 	 (cond ((null (or ebdb-accept-header-alist
 			  ebdb-ignore-header-alist))
 		t)
