@@ -976,16 +976,11 @@ in."
 (cl-defmethod ebdb-string ((field ebdb-field-uuid))
   (slot-value field 'uuid))
 
-;;; The labeled abstract class.  Can be subclassed, or used as a mixin.
+;;; The labeled abstract class.  Used as a mixin.
 
-;; Probably there's no need to subclass from `ebdb-field'.  Without
-;; this, it will be a pure mixin class.  Probably we can do away with
-;; this inheritance without hurting anything.
-(defclass ebdb-field-labeled (ebdb-field eieio-named)
-  ;; Override the object-name slot from `eieio-named' so we can add a
-  ;; custom declaration to it.
-  ((object-name
-    :initarg :object-name
+(defclass ebdb-field-labeled ()
+  ((label
+    :initarg :label
     :custom (choice (const :tag "Empty" nil)
 		    string)
     :initform nil
@@ -1017,7 +1012,7 @@ process."
   (let* ((field (cl-call-next-method class slots obj))
 	 (labels (symbol-value (oref-default class label-list)))
 	 (human-readable (ebdb-field-readable-name class))
-	 (label (slot-value field 'object-name)))
+	 (label (slot-value field 'label)))
     (setq label (ebdb-with-exit
 		    (ebdb-read-string
 		     (if (stringp human-readable)
@@ -1029,19 +1024,35 @@ process."
 		(member label labels)
 		(yes-or-no-p
 		 (format "%s is not a known label, define it? " label))))
-      (setf (slot-value field 'object-name) label))
+      (setf (slot-value field 'label) label))
     field))
 
 (cl-defmethod ebdb-init-field ((field ebdb-field-labeled) _record)
   "Add FIELD's label to its class label list."
   (let ((label-var (slot-value field 'label-list)))
-    (ebdb-add-to-list (symbol-value label-var) (slot-value field 'object-name))
+    (ebdb-add-to-list (symbol-value label-var) (slot-value field 'label))
     (cl-call-next-method)))
 
 (cl-defmethod eieio-object-name-string ((field ebdb-field-labeled))
   "Return a string which is FIELD's name."
-  (or (slot-value field 'object-name)
+  (or (slot-value field 'label)
       (ebdb-field-readable-name (eieio-object-class field))))
+
+;; Backwards-compatibility upgrade.  `ebdb-field-labeled' used to
+;; subclass `eieio-named', but apparently that was a bit of a misuse,
+;; so we need to upgrade the :object-name slot name to :label instead.
+(cl-defmethod initialize-instance ((field ebdb-field-labeled)
+				   &optional slots)
+  (let ((obj-name (plist-get slots :object-name))
+	p)
+    (when obj-name
+      (while slots
+	(when (not (eq :object-name (car slots)))
+	  (setq p (plist-put p (car slots) (nth 1 slots))))
+	(setq slots (cddr slots)))
+      (when obj-name
+	(setq p (plist-put p :label obj-name))))
+    (cl-call-next-method field (or p slots))))
 
 ;; The obfuscated field type.  This is a little goofy, but might come
 ;; in handy.
@@ -1104,7 +1115,7 @@ process."
   (let ((val (slot-value field 'value)))
     (if (stringp val)
 	val
-      (ebdb-concat (intern-soft (slot-value field 'object-name)) val))))
+      (ebdb-concat (intern-soft (slot-value field 'label)) val))))
 
 ;; TODO: Maybe replicate the ability to insert a lisp sexp directly,
 ;; in interactive mode?
@@ -1459,8 +1470,7 @@ first one."
     be used as the default.  Only one of a record's addresses can
     be set to 'primary.")
    (actions :initform '(("Compose mail" . ebdb-field-mail-compose))))
-  :documentation "A field representing a single email address.
-  The optional \"object-name\" slot can serve as a mail aka."
+  :documentation "A field representing a single email address."
   :human-readable "mail")
 
 (cl-defmethod ebdb-init-field ((field ebdb-field-mail) record)
@@ -1577,7 +1587,7 @@ Primary sorts before normal sorts before defunct."
   :human-readable "address")
 
 (cl-defmethod ebdb-init-field ((address ebdb-field-address) _record)
-  (with-slots (object-name streets locality region postcode country) address
+  (with-slots (streets locality region postcode country) address
     (dolist (s streets)
       (ebdb-add-to-list ebdb-street-list s))
     (ebdb-add-to-list ebdb-locality-list locality)
@@ -1619,7 +1629,7 @@ Primary sorts before normal sorts before defunct."
      class
      `(:streets ,streets
 		:locality ,locality
-		:object-name ,(plist-get slots :object-name)
+		:label ,(plist-get slots :label)
 		:region ,region
 		:postcode ,postcode
 		:country ,country)
@@ -2202,7 +2212,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 					 (when obj (slot-value obj 'bank-name)))))
 	(bank-address (or (plist-get slots :bank-address)
 			  (ebdb-with-exit
-			   (ebdb-read 'ebdb-field-address '(:object-name "office")
+			   (ebdb-read 'ebdb-field-address '(:label "office")
 				      (when obj (slot-value obj 'bank-address))))))
 	(routing-aba (or (plist-get slots :routing-aba)
 			 (ebdb-with-exit
@@ -2913,7 +2923,7 @@ If FIELD doesn't specify a year, use the current year."
 		  (if (nth 2 cal-date)
 		      "%d%s "
 		    "%s ")
-		  (slot-value field 'object-name))
+		  (slot-value field 'label))
 	  (apply #'format (if (nth 2 cal-date)
 			      "(diary-anniversary %s %s %s)"
 			    "(diary-anniversary %s %s)")
@@ -3496,9 +3506,13 @@ string."
 
 ;;; The database class(es)
 
-(defclass ebdb-db (eieio-named eieio-persistent)
+(defclass ebdb-db (eieio-persistent)
   ;; Is there a need for a "remote" slot?
-  ((uuid
+  ((label
+    :initarg :label
+    :initform ""
+    :type string)
+   (uuid
     :initarg :uuid
     :initform nil
     :type (or null ebdb-field-uuid)
@@ -3588,14 +3602,23 @@ not be instantiated directly, subclass it instead."
   :abstract t)
 
 (cl-defmethod initialize-instance ((db ebdb-db) &optional slots)
-  "Make sure DB has a uuid."
-  (unless (and (slot-boundp db 'uuid)
-	       (slot-value db 'uuid))
-    (setf (slot-value db 'uuid)
-	  (make-instance 'ebdb-field-uuid
-			 :uuid (ebdb-make-uuid
-				(slot-value db 'uuid-prefix)))))
-  (cl-call-next-method db slots))
+  "Make sure DB has a uuid.
+Also switch old :object-name slot name to :label."
+  (let ((obj-name (plist-get slots :object-name))
+	p)
+    (unless (and (slot-boundp db 'uuid)
+		 (slot-value db 'uuid))
+      (setf (slot-value db 'uuid)
+	    (make-instance 'ebdb-field-uuid
+			   :uuid (ebdb-make-uuid
+				  (slot-value db 'uuid-prefix))))))
+  (while slots
+    (when (not (eq :object-name (car slots)))
+      (setq p (plist-put p (car slots) (nth 1 slots))))
+    (setq slots (cddr slots)))
+  (when obj-name
+    (setq p (plist-put p :label obj-name)))
+  (cl-call-next-method db p))
 
 ;;; Home-made auto saving for `eieio-persistent' objects.  The
 ;;; `ebdb-db-save' :after method deletes the auto save file, and the
@@ -3960,8 +3983,8 @@ process.")
 ;; all the set up we need.
 
 (cl-defmethod initialize-instance ((db ebdb-db-file) &optional slots)
-  (let ((object-name (concat "File: " (plist-get slots :file))))
-    (setq slots (plist-put slots :object-name object-name))
+  (let ((label (concat "File: " (plist-get slots :file))))
+    (setq slots (plist-put slots :label label))
     (cl-call-next-method db slots)))
 
 (cl-defmethod ebdb-db-add-record ((db ebdb-db-file) record)
@@ -4164,10 +4187,10 @@ prompting if there's only one database."
 			      nil
 			      (mapcar
 			       (lambda (d)
-				 (slot-value d 'object-name))
+				 (slot-value d 'label))
 			       collection)
 			      t))
-      (object-assoc db-string 'object-name collection))))
+      (object-assoc db-string 'label collection))))
 
 (defun ebdb-prompt-for-mail (record)
   "Prompt for one of RECORD's mail addresses.
@@ -4204,18 +4227,18 @@ If RECORDS are given, only search those records."
   (object-assoc (if (stringp label)
 		    label
 		  (symbol-name label))
-		'object-name (ebdb-record-user-fields record)))
+		'label (ebdb-record-user-fields record)))
 
 (defun ebdb-record-address (record &optional label)
   (let ((addresses (slot-value record 'address)))
     (if label
-	(object-assoc label 'object-name addresses)
+	(object-assoc label 'label addresses)
       addresses)))
 
 (defun ebdb-record-phone (record &optional label)
   (let ((phones (slot-value record 'phone)))
     (if label
-	(object-assoc label 'object-name phones)
+	(object-assoc label 'label phones)
       phones)))
 
 (defun ebdb-record-mail (record &optional roles label defunct)
@@ -4237,7 +4260,7 @@ addresses."
 			  (null (eq (slot-value m 'priority) 'defunct)))
 			mails)))
     (if label
-	(object-assoc label 'object-name mails)
+	(object-assoc label 'label mails)
       mails)))
 
 
@@ -4304,10 +4327,10 @@ leading \"+\"."
   (let* ((all-phones (slot-value record 'phone))
 	 (phone
 	  (car-safe
-	   (or (object-assoc "signal" 'object-name all-phones)
+	   (or (object-assoc "signal" 'label all-phones)
 	       (seq-filter
 		(lambda (p)
-		  (member (slot-value p 'object-name)
+		  (member (slot-value p 'label)
 			  '("cell" "mobile")))
 		all-phones))))
 	 (number
@@ -5287,15 +5310,15 @@ With optional argument INVERT, invert the search results."
 	(value (cdr pair)))
     (and (or (null label)
 	     (string-empty-p label)
-	     (string-match-p label (slot-value field 'object-name)))
+	     (string-match-p label (slot-value field 'label)))
 	 (or (null value)
 	     (ebdb-field-search field value)))))
 
 (cl-defmethod ebdb-field-search ((field ebdb-field-labeled)
 				 (regexp string))
   (or (string-match-p regexp (ebdb-string field))
-      (and (stringp (slot-value field 'object-name))
-	   (string-match-p regexp (slot-value field 'object-name)))
+      (and (stringp (slot-value field 'label))
+	   (string-match-p regexp (slot-value field 'label)))
       (cl-call-next-method)))
 
 (cl-defmethod ebdb-field-search ((_field ebdb-field-name-complex) _regex)

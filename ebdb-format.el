@@ -35,8 +35,12 @@
 (defvar ebdb-formatter-tracker nil
   "Variable for holding all instantiated formatters.")
 
-(defclass ebdb-formatter (eieio-named eieio-instance-tracker)
-  ((tracking-symbol :initform ebdb-formatter-tracker)
+(defclass ebdb-formatter (eieio-instance-tracker)
+  ((label
+    :initarg :label
+    :type string
+    :initform "")
+   (tracking-symbol :initform ebdb-formatter-tracker)
    (coding-system
     :type symbol
     :initarg :coding-system
@@ -100,7 +104,7 @@
   Subclass this to produce real formatters.")
 
 (cl-defmethod ebdb-string ((fmt ebdb-formatter))
-  (slot-value fmt 'object-name))
+  (slot-value fmt 'label))
 
 (cl-defgeneric ebdb-fmt-header (fmt records)
   "Insert a string at the beginning of the list of records.")
@@ -341,7 +345,7 @@ grouped by field class."
   (let ((collection
 	 (mapcar
 	  (lambda (formatter)
-	    (cons (slot-value formatter 'object-name) formatter))
+	    (cons (slot-value formatter 'label) formatter))
 	  ebdb-formatter-tracker)))
     (cdr (assoc (completing-read "Use formatter: " collection)
 		collection))))

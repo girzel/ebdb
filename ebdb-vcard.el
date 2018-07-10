@@ -57,7 +57,7 @@
 
 (defcustom ebdb-vcard-default-40-formatter
   (make-instance 'ebdb-formatter-vcard-40
-		 :object-name "VCard 4.0 (default)"
+		 :label "VCard 4.0 (default)"
 		 :combine nil
 		 :collapse nil
 		 :include '(ebdb-field-uuid
@@ -79,7 +79,7 @@
 
 (defcustom ebdb-vcard-default-30-formatter
   (make-instance 'ebdb-formatter-vcard-30
-		 :object-name "VCard 3.0 (default)"
+		 :label "VCard 3.0 (default)"
 		 :combine nil
 		 :collapse nil
 		 :include '(ebdb-field-uuid
@@ -204,7 +204,7 @@ All this does is split role instances into multiple fields."
 			  (ebdb-record-name org))
 		    out-list)
 	      (push (cons (format "TITLE;TYPE=\"%s\"" (ebdb-record-name org))
-			  (slot-value f 'object-name))
+			  (slot-value f 'label))
 		    out-list)
 	      (when (or mail fields)
 		(dolist (elt (cons mail fields))
@@ -343,7 +343,7 @@ method is just responsible for formatting the record name."
 				    _style
 				    _record)
   (let ((ret (cl-call-next-method))
-	(lab (slot-value field 'object-name)))
+	(lab (slot-value field 'label)))
     (if lab
 	(concat ret
 		";TYPE=" (ebdb-vcard-escape lab))
@@ -381,7 +381,7 @@ method is just responsible for formatting the record name."
 				    (ann ebdb-field-anniversary)
 				    _style
 				    _record)
-  (let* ((label (slot-value ann 'object-name))
+  (let* ((label (slot-value ann 'label))
 	 (label-string
 	  (if (string= label "birthday")
 	      "BDAY"

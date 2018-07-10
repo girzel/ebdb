@@ -499,7 +499,7 @@ BBDB sets the default of that option."
 				 (ebdb-vphone-suffix p))
 		  extension (ebdb-vphone-extension p)))
 	  (push (make-instance ebdb-default-phone-class
-			       :object-name label
+			       :label label
 			       :area-code area
 			       :number (replace-regexp-in-string "[- ]+"
 								 "" number)
@@ -515,7 +515,7 @@ BBDB sets the default of that option."
 	      (country (aref a 5))
 	      (case-fold-search t))
 	  (push (make-instance ebdb-default-address-class
-			       :object-name label
+			       :label label
 			       :streets streets
 			       :locality city
 			       :region state
@@ -575,7 +575,7 @@ BBDB sets the default of that option."
 					(string-to-number (nth 1 date-bits))
 					(string-to-number (nth 2 date-bits))
 					(string-to-number (car date-bits)))
-				 :object-name (cadr bits))
+				 :label (cadr bits))
 		  fields)))
 	 ((eq lab 'notes)
 	  (setq notes (make-instance 'ebdb-field-notes
@@ -612,7 +612,7 @@ BBDB sets the default of that option."
 		fields))
 	 (t
 	  (push (make-instance 'ebdb-field-user-simple
-			       :object-name (symbol-name (car x))
+			       :label (symbol-name (car x))
 			       :value val)
 		fields)))))
     (make-instance ebdb-default-record-class
@@ -721,7 +721,7 @@ no processing beyond calling `ebdb-parse' on the string values.")
 					 :date  (calendar-gregorian-from-absolute
 						 (org-time-string-to-absolute
 						  value))
-					 :object-name "birthday"))))))
+					 :label "birthday"))))))
 	      (when f
 		(ebdb-record-insert-field record f)))
 	  (ebdb-unparseable

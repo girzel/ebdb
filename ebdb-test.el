@@ -642,7 +642,7 @@ and typing."))
 			      :mail (list (ebdb-field-mail
 					   :mail "jb@barleycorn.com"))
 			      :phone (list (ebdb-field-phone
-					    :object-name "home"
+					    :label "home"
 					    :country-code 1
 					    :area-code 555
 					    :number "5555555"))

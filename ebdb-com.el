@@ -471,7 +471,7 @@ and 'role, and the special shortcuts 'mail-primary,
 
 (defcustom ebdb-default-multiline-formatter
   (make-instance 'ebdb-formatter-ebdb-multiline
-		 :object-name "multiline formatter"
+		 :label "multiline formatter"
 		 :include ebdb-default-multiline-include
 		 :exclude ebdb-default-multiline-exclude
 		 :combine ebdb-default-multiline-combine
@@ -487,7 +487,7 @@ and 'role, and the special shortcuts 'mail-primary,
 
 (defcustom ebdb-default-oneline-formatter
   (make-instance 'ebdb-formatter-ebdb-oneline
-		 :object-name "oneline formatter"
+		 :label "oneline formatter"
 		 :include ebdb-default-oneline-include)
   "The default oneline formatter of *EBDB* buffers."
   :type 'ebdb-formatter-ebdb-oneline
@@ -497,7 +497,7 @@ and 'role, and the special shortcuts 'mail-primary,
   (make-instance 'ebdb-formatter-ebdb-multiline
 		 :include nil :exclude nil
 		 :combine nil :collapse nil
-		 :object-name "full formatter")
+		 :label "full formatter")
   "Formatter used for displaying all values of a record.
 This formatter should not be changed.")
 
@@ -1716,7 +1716,7 @@ instance should be identical."
 	  (ebdb-record-field-slot-query
 	   (eieio-object-class (car records))))))
        (slots (when (equal class 'ebdb-field-user-simple)
-		`(:object-name ,label)))
+		`(:label ,label)))
        (field (when (or (= 1 (length records))
 			(y-or-n-p
 			 "Insert same field values in all records? "))
@@ -2922,7 +2922,7 @@ message."
                        url
 		       (ebdb-read-string "URL label: "
 					 nil ebdb-url-label-list))))
-  (let ((url-field (make-instance 'ebdb-field-url :url url :object-name label)))
+  (let ((url-field (make-instance 'ebdb-field-url :url url :label label)))
     (ebdb-record-insert-field record url-field 'fields)
     (ebdb-display-records (list record))))
 
