@@ -3611,14 +3611,14 @@ Also switch old :object-name slot name to :label."
       (setf (slot-value db 'uuid)
 	    (make-instance 'ebdb-field-uuid
 			   :uuid (ebdb-make-uuid
-				  (slot-value db 'uuid-prefix))))))
-  (while slots
-    (when (not (eq :object-name (car slots)))
-      (setq p (plist-put p (car slots) (nth 1 slots))))
-    (setq slots (cddr slots)))
-  (when obj-name
-    (setq p (plist-put p :label obj-name)))
-  (cl-call-next-method db p))
+				  (slot-value db 'uuid-prefix)))))
+    (while slots
+      (when (not (eq :object-name (car slots)))
+	(setq p (plist-put p (car slots) (nth 1 slots))))
+      (setq slots (cddr slots)))
+    (when obj-name
+      (setq p (plist-put p :label obj-name)))
+    (cl-call-next-method db p)))
 
 ;;; Home-made auto saving for `eieio-persistent' objects.  The
 ;;; `ebdb-db-save' :after method deletes the auto save file, and the
