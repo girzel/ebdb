@@ -207,7 +207,7 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 				    (field ebdb-field-labeled)
 				    _style
 				    (_record ebdb-record))
-  (eieio-object-name-string field))
+  (ebdb-field-label field))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
@@ -220,7 +220,7 @@ FIELD-STRING1 FIELD-STRING2 ..)."
 			      (_style (eql compact))
 			      (record ebdb-record))
   (format "(%s) %s"
-	  (eieio-object-name-string field)
+	  (ebdb-field-label field)
 	  (ebdb-fmt-field fmt field 'oneline record)))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)

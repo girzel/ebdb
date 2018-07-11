@@ -1033,8 +1033,8 @@ process."
     (ebdb-add-to-list (symbol-value label-var) (slot-value field 'label))
     (cl-call-next-method)))
 
-(cl-defmethod eieio-object-name-string ((field ebdb-field-labeled))
-  "Return a string which is FIELD's name."
+(cl-defmethod ebdb-field-label ((field ebdb-field-labeled))
+  "Return a string label for FIELD."
   (or (slot-value field 'label)
       (ebdb-field-readable-name (eieio-object-class field))))
 

@@ -532,13 +532,13 @@ This list is also used for toggling layouts."
 				    (field ebdb-field-phone)
 				    (_style (eql oneline))
 				    (_record ebdb-record))
-  (format "phone (%s)" (eieio-object-name-string field)))
+  (format "phone (%s)" (ebdb-field-label field)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-address)
 				    (_style (eql oneline))
 				    (_record ebdb-record))
-  (format "address (%s)" (eieio-object-name-string field)))
+  (format "address (%s)" (ebdb-field-label field)))
 
 (cl-defmethod ebdb-fmt-field :around ((_fmt ebdb-formatter-ebdb)
 				      (field ebdb-field)
@@ -2969,8 +2969,8 @@ is a list, copy only the NUMth list element."
 	(setq fields
 	      (seq-filter
 	       (lambda (f)
-		 (string= (eieio-object-name-string f)
-			  (eieio-object-name-string field)))
+		 (string= (ebdb-field-label f)
+			  (ebdb-field-label field)))
 	       fields)))
       (when (and num (> 1 (length fields)))
 	(setq fields (list (nth num fields))))
