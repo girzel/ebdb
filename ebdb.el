@@ -5002,7 +5002,6 @@ initialize those records."
 	 (thread-yield)))
      (or records ebdb-record-tracker))))
 
-(defvar ebdb-i18n-countries-pref-scripts)
 
 
 ;;; Citing EBDB records
