@@ -430,12 +430,21 @@ possible to manually create the buffer using interactive commands (see
 below).
 #+end_defopt
 
+#+ATTR_TEXINFO: :options ebdb-mua-default-formatter
+#+begin_defopt
+The default formatter to use for MUA pop-up buffers.  The value of
+this option should be an instance of ~ebdb-formatter-ebdb~; it
+defaults to ~ebdb-default-multiline-formatter~.  Other likely options
+would be the value of ~ebdb-default-oneline-formatter~, or a
+custom-made formatter, see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing Record Display]].
+#+end_defopt
+
 EBDB can also integrate with atomic windows (@@texinfo:@xref{Atomic
 Windows,,,elisp}@@).
 
 #+ATTR_TEXINFO: :options ebdb-join-atomic-windows
 #+begin_defopt
-When non-nil (the defaul), EBDB buffers that are popped up within
+When non-nil (the default), EBDB buffers that are popped up within
 existing atomic windows will become part of the atomic buffer.
 Otherwise they will be opened to one side of the atomic window.
 #+end_defopt

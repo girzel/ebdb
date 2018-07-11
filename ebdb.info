@@ -604,11 +604,18 @@ command, or by cloning or renaming existing buffers.
      possible to manually create the buffer using interactive commands
      (see below).
 
+ -- User Option: ebdb-mua-default-formatter
+     The default formatter to use for MUA pop-up buffers.  The value of
+     this option should be an instance of ‘ebdb-formatter-ebdb’; it
+     defaults to ‘ebdb-default-multiline-formatter’.  Other likely
+     options would be the value of ‘ebdb-default-oneline-formatter’, or
+     a custom-made formatter, see *note Customizing Record Display::.
+
    EBDB can also integrate with atomic windows (*Note (elisp)Atomic
 Windows::).
 
  -- User Option: ebdb-join-atomic-windows
-     When non-nil (the defaul), EBDB buffers that are popped up within
+     When non-nil (the default), EBDB buffers that are popped up within
      existing atomic windows will become part of the atomic buffer.
      Otherwise they will be opened to one side of the atomic window.
 
@@ -2164,7 +2171,7 @@ Index
                                                               (line   6)
 * ebdb-insert-field <1>:                 The Basics of ebdb-mode.
                                                               (line  30)
-* ebdb-join-atomic-windows:              Pop-up Buffers.      (line  19)
+* ebdb-join-atomic-windows:              Pop-up Buffers.      (line  26)
 * ebdb-join-atomic-windows <1>:          Customizing Record Display.
                                                               (line  24)
 * ebdb-mail:                             The Basics of ebdb-mode.
@@ -2182,6 +2189,7 @@ Index
                                                               (line  11)
 * ebdb-mua-auto-update-p:                Auto-Updating Records.
                                                               (line  10)
+* ebdb-mua-default-formatter:            Pop-up Buffers.      (line  16)
 * ebdb-mua-display-all-recipients:       Interactive Commands.
                                                               (line  59)
 * ebdb-mua-display-all-records:          Interactive Commands.
@@ -2360,40 +2368,40 @@ Node: MUA Interaction18443
 Node: Loading MUA Code18967
 Node: Display and Updating19680
 Node: Pop-up Buffers20446
-Node: Auto-Updating Records21622
-Node: Noticing and Automatic Rules24022
-Node: Interactive Commands25355
-Node: EBDB and MUA summary buffers27830
-Node: Sender name display28316
-Node: Summary buffer marks29543
-Node: EBDB Buffers30722
-Node: Searching31935
-Node: Changing Search Behavior33597
-Node: The Basics of ebdb-mode34844
-Node: Customizing Record Display38537
-Node: Marking42857
-Node: Exporting/Formatting43284
-Node: Completion44233
-Node: Snarfing45431
-Node: Internationalization47448
-Node: Diary Integration50147
-Node: Mail Aliases51012
-Node: vCard Support51726
-Node: Org Integration52225
-Node: Citing Records54123
-Node: Hacking EBDB54881
-Node: Field Classes57200
-Node: Init and Delete Methods60331
-Node: The Labeled Field Class61838
-Node: The Singleton Field Class62692
-Node: Actions63130
-Node: Custom Field Searching63802
-Node: Fast Lookups66669
-Node: Formatting in the EBDB Buffer68479
-Node: Writing Internationalization Libraries70555
-Node: Writing Integration For New MUAs74969
-Node: Article snarfing78416
-Node: Index79134
+Node: Auto-Updating Records22029
+Node: Noticing and Automatic Rules24429
+Node: Interactive Commands25762
+Node: EBDB and MUA summary buffers28237
+Node: Sender name display28723
+Node: Summary buffer marks29950
+Node: EBDB Buffers31129
+Node: Searching32342
+Node: Changing Search Behavior34004
+Node: The Basics of ebdb-mode35251
+Node: Customizing Record Display38944
+Node: Marking43264
+Node: Exporting/Formatting43691
+Node: Completion44640
+Node: Snarfing45838
+Node: Internationalization47855
+Node: Diary Integration50554
+Node: Mail Aliases51419
+Node: vCard Support52133
+Node: Org Integration52632
+Node: Citing Records54530
+Node: Hacking EBDB55288
+Node: Field Classes57607
+Node: Init and Delete Methods60738
+Node: The Labeled Field Class62245
+Node: The Singleton Field Class63099
+Node: Actions63537
+Node: Custom Field Searching64209
+Node: Fast Lookups67076
+Node: Formatting in the EBDB Buffer68886
+Node: Writing Internationalization Libraries70962
+Node: Writing Integration For New MUAs75376
+Node: Article snarfing78823
+Node: Index79541
 
 End Tag Table
 

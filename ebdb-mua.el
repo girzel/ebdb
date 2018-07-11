@@ -401,6 +401,15 @@ are not \"noticed\", nor is the timestamp updated."
   :group 'ebdb-mua
   :type 'boolean)
 
+(defcustom ebdb-mua-default-formatter ebdb-default-multiline-formatter
+  "The default formatter to use for MUA pop-up buffers.
+The value should be an instance of the `ebdb-formatter-ebdb'
+class.  Easy choices are the value of
+`ebdb-default-multiline-formatter' or
+`ebdb-default-oneline-formatter'."
+  :group 'ebdb-mua
+  :type ebdb-formatter-ebdb)
+
 
 
 (defcustom ebdb-mua-summary-unification-list
@@ -1065,7 +1074,7 @@ apply, however."
   (unless ebdb-record-tracker
     (ebdb-load))
   (let ((ebdb-message-all-addresses (or all ebdb-message-all-addresses))
-	(fmt ebdb-default-multiline-formatter)
+	(fmt ebdb-mua-default-formatter)
         records)
     (ebdb-mua-prepare-article)
     (setq records (ebdb-update-records
@@ -1077,7 +1086,6 @@ apply, however."
 ;;;###autoload
 (defun ebdb-mua-display-records (&optional header-class all)
   "Display the EBDB record(s) for the addresses in this message.
-
 This looks into the headers of a message according to
 HEADER-CLASS.  Then for the mail addresses found the
 corresponding EBDB records are displayed.  Records are not
@@ -1088,7 +1096,7 @@ use all classes in `ebdb-message-headers'.  If ALL is non-nil,
 bind `ebdb-message-all-addresses' to ALL."
   (interactive)
   (let ((ebdb-message-all-addresses (or all ebdb-message-all-addresses))
-	(fmt ebdb-default-multiline-formatter)
+	(fmt ebdb-mua-default-formatter)
         records)
     (ebdb-mua-prepare-article)
     (setq records (ebdb-update-records
@@ -1258,7 +1266,6 @@ buffer."
 ;;;###autoload
 (defun ebdb-mua-auto-update (&optional header-class update-p)
   "Update EBDB automatically based on incoming and outgoing messages.
-
 This looks into the headers of a message according to
 HEADER-CLASS.  Then for the mail addresses found the
 corresponding EBDB records are updated.  UPDATE-P determines
@@ -1283,7 +1290,7 @@ along with the MUA window(s), displaying the matching records."
 		       ebdb-mua-auto-update-p)))
     (if ebdb-mua-pop-up
 	(if records
-	    (ebdb-display-records records ebdb-default-multiline-formatter
+	    (ebdb-display-records records ebdb-mua-default-formatter
 				  nil nil (ebdb-popup-window))
 	  ;; If there are no records, empty the EBDB window.
 	  (ebdb-undisplay-records)))
