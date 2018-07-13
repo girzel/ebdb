@@ -4118,11 +4118,12 @@ the class symbol of OBJ, or nil."
 	(push d unsynced)))
     unsynced))
 
-(defun ebdb-prompt-for-record (&optional records class)
+(defun ebdb-prompt-for-record (&optional records class prompt)
   "Prompt for a single record, and return it.
-If RECORDS is a list of records, offer choices from that list.  If
-CLASS is given, only offer choices that are an instance of that
-class, or its subclasses."
+If RECORDS is a list of records, offer choices from that list.
+If CLASS is given, only offer choices that are an instance of
+that class, or its subclasses.  If PROMPT is given, use that as
+the prompt."
   (let* ((recs (or records (ebdb-records)))
 	 (pairs
 	  (mapcar
@@ -4140,7 +4141,7 @@ class, or its subclasses."
 	     recs)))
 	 (result
 	  (completing-read
-	   "Choose record: "
+	   (or prompt "Choose record: ")
 	   pairs)))
     (ebdb-gethash (cdr (assoc-string result pairs)) 'uuid)))
 
