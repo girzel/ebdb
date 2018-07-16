@@ -32,7 +32,8 @@
 (eval-and-compile
   (autoload 'build-mail-aliases "mailalias")
   (autoload 'browse-url-url-at-point "browse-url")
-  (autoload 'eieio-customize-object "eieio-custom"))
+  (autoload 'eieio-customize-object "eieio-custom")
+  (autoload 'message-goto-body "message"))
 
 (require 'crm)
 (defvar ebdb-crm-local-completion-map
@@ -302,6 +303,7 @@ display information."
 
     (define-key km (kbd "o")		'ebdb-omit-records)
     (define-key km (kbd "m")		'ebdb-mail)
+    (define-key km (kbd "M")		'ebdb-mail-each)
     (define-key km (kbd "M-d")		'ebdb-dial)
     (define-key km (kbd "h")		'ebdb-info)
     (define-key km (kbd "?")		'ebdb-help)
@@ -2342,6 +2344,58 @@ for `ebdb-field-action'."
 	      records ", ")))
      (unless (string= "" to)
        (ebdb-compose-mail to subject)))))
+
+;;;###autoload
+(defun ebdb-mail-each (records prompt subject cc bcc body-register)
+  "Compose a separate email to each of the records in RECORDS.
+RECORDS is either the marked records in an *EBDB* buffer, or (if
+no records are marked) all the records in the buffer.  If PROMPT
+is non-nil, prompt the user to choose a mail address to use for
+each record that has more than one.  SUBJECT is the subject to
+use for each message.  CC is a list of address strings to put in
+the Cc field of each message.  BCC likewise, for the Bcc field.
+BODY-REGISTER, if given, is a character indicating a register
+holding text to be inserted as the body of each message."
+  (interactive
+   (list (or (seq-filter (lambda (r) (nth 3 r)) ebdb-records)
+	     (mapcar #'car ebdb-records))
+	 current-prefix-arg
+	 (ebdb-with-exit (ebdb-read-string "Subject header (C-g to skip): "))
+	 (ebdb-loop-with-exit
+	  (ebdb-dwim-mail
+	   (ebdb-prompt-for-record
+	    nil nil "Add record to Cc (C-g to skip): ")))
+	 (ebdb-loop-with-exit
+	  (ebdb-dwim-mail
+	   (ebdb-prompt-for-record
+	    nil nil "Add record to Bcc (C-g to skip): ")))
+	 (let ((usable-registers
+		(seq-filter (lambda (pair) (stringp (cdr pair)))
+			    register-alist)))
+	   (when usable-registers
+	     (ebdb-with-exit
+	      (read-char-choice
+	       "Register to use for body text (C-g to skip): "
+	       (mapcar #'car usable-registers)))))))
+  (let ((cc (when cc (mapconcat #'identity cc ", ")))
+	(bcc (when bcc (mapconcat #'identity bcc ", ")))
+	(body (let ((reg (get-register body-register)))
+		(when (stringp reg)
+		  reg)))
+	headers)
+    (when cc
+      (push (cons "Cc" cc) headers))
+    (when bcc
+      (push (cons "Bcc" bcc) headers))
+    (dolist (rec records)
+      (funcall #'ebdb-field-mail-compose
+	       rec (ebdb-record-one-mail rec prompt)
+	       subject headers)
+      (when body
+	(message-goto-body)
+	(save-excursion
+	  ;; `register-val-insert' is too new.
+	  (insert-for-yank body))))))
 
 ;;; Citing
 

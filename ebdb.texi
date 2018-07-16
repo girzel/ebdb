@@ -1124,6 +1124,19 @@ that mail address
 Begin composing a message to the record under point
 (@code{ebdb-mail}).  With a prefix arg, prompt for the mail address to
 use; otherwise use the record's primary address.
+@item M
+@kindex M
+@findex ebdb-mail-each
+Begin composing a separate message to each marked record in the
+current @{@{@{buf(EBDB)@}@} buffer, or all records in the buffer if
+none are marked.  In addition, prompt for a common subject header
+line to use for each message, as well as records to add to the
+``Cc'' and ``Bcc'' headers.  Then optionally prompt for a character,
+interpreted as the name of a register.  If that register contains
+text, insert the text as the body of each message.
+
+This function works as a sort of poor-man's mail merge; it lacks
+the ability to interpolate variables in the body text.
 
 @item t
 @kindex t
