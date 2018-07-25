@@ -703,6 +703,45 @@ string provided by Gnus, and adding the EBDB-specific format code:
 Format letter to use in the summary buffer format string to mark a
 record.  Defaults to "e".
 #+END_defopt
+* Specific MUAs
+** Gnus
+EBDB has a little more support for Gnus than the other MUAs, for no
+other reason than that Gnus is what the author uses.
+*** Posting Styles
+Gnus provides a "posting styles" mechanism which allows the user to
+set up specific mail composition styles (custom headers and
+signatures, etc) when writing mails to certain recipients.  The
+mechanism examines Gnus group names to determine which styles to use.
+EBDB can fake this mechanism so that different styles are used when
+composing messages to different records.
+
+#+attr_texinfo: :options ebdb-gnus-post-style-function
+#+BEGIN_defopt
+Set this option to a callable which accepts two arguments, a record
+instance and a mail instance.  The callable should examine these
+arguments and return the string name of a Gnus group to use for
+looking up posting styles, or nil to use Gnus' defaults.
+#+END_defopt
+
+When writing this function, functions such as ~ebdb-record-field~ and
+~ebdb-record-current-fields~ may come in handy.  Here's a less-obvious
+example that dispatches styles depending on which database the record
+belongs to:
+
+#+BEGIN_SRC elisp
+  (setq ebdb-gnus-post-style-function
+        (lambda (rec _mail)
+          (let ((dbs (slot-value (ebdb-record-cache rec) 'database)))
+            (if (object-assoc "File: work.dat" 'label dbs)
+                "nnimap+WorkAccount:INBOX"
+              "nnimap+PersonalAccount:INBOX"))))
+#+END_SRC
+
+A current limitation of this functionality is that it only works when
+composing a mail to a single recipient.  If you mark several records
+in a {{{buf(EBDB)}}} buffer and compose a mail to them collectively,
+the mechanism will be bypassed.
+
 * EBDB Buffers
 :PROPERTIES:
 :ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30

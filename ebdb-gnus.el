@@ -26,7 +26,7 @@
 (require 'ebdb-com)
 (require 'ebdb-mua)
 (require 'gnus-sum)
-(require 'gnus-art)
+(require 'gnus-msg)
 
 (autoload 'message-make-domain "message")
 
@@ -56,6 +56,20 @@ By default, this adds the *EBDB-Gnus* window to the right of the
 article buffer, taking up 40% of the horizontal space."
   :group 'ebdb-mua-gnus
   :type 'list)
+
+(defcustom ebdb-gnus-post-style-function
+  (lambda (_rec _mail) nil)
+  "Callable used to determine Gnus group posting styles.
+The callable should accept a single record as a first argument,
+and a mail field instance as a second.  Either return a Gnus
+group name as a string, which will be used to configure posting
+styles when composing a message to that record/mail, or return
+nil to use Gnus defaults.
+
+See `ebdb-record-field' or `ebdb-record-current-fields' for
+likely ways to extract information about the record."
+  :group 'ebdb-mua-gnus
+  :type 'function)
 
 (defgroup ebdb-mua-gnus-scoring nil
   "Gnus-specific scoring EBDB customizations"
@@ -300,6 +314,21 @@ quoted replies."
      ;; Assume a blank line concludes a signature.
      (or (re-search-forward "\n\n" nil t)
 	 (point-max)))))
+
+(cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
+				       (mail ebdb-field-mail)
+				       &context (read-mail-command (eql gnus))
+				       &rest args)
+  "Compose a Gnus mail to RECORD's address MAIL.
+Gives the user a chance to set posting styles for a message
+composed to a certain record."
+  (let ((group (funcall ebdb-gnus-post-style-function
+			record mail)))
+    (if group
+	(let ((gnus-newsgroup-name group))
+	  (gnus-setup-message 'message
+	    (apply #'message-mail (ebdb-dwim-mail record mail) args)))
+      (cl-call-next-method))))
 
 (defun ebdb-insinuate-gnus ()
   "Hook EBDB into Gnus."

@@ -30,6 +30,7 @@ EBDB Manual
 * Creating Records::
 * Record Fields::
 * MUA Interaction::
+* Specific MUAs::
 * EBDB Buffers::
 * Completion::
 * Snarfing::
@@ -92,6 +93,15 @@ EBDB and MUA summary buffers
 
 * Sender name display::
 * Summary buffer marks::
+
+
+Specific MUAs
+
+* Gnus::
+
+Gnus
+
+* Posting Styles::
 
 
 EBDB Buffers
@@ -527,7 +537,7 @@ incoming mail from the contact should be filed into.  Currently only
 Gnus supports this; support in other MUAs is forthcoming.
 
 
-File: ebdb.info,  Node: MUA Interaction,  Next: EBDB Buffers,  Prev: Record Fields,  Up: Top
+File: ebdb.info,  Node: MUA Interaction,  Next: Specific MUAs,  Prev: Record Fields,  Up: Top
 
 5 MUA Interaction
 *****************
@@ -846,9 +856,68 @@ string provided by Gnus, and adding the EBDB-specific format code:
      record.  Defaults to “e”.
 
 
-File: ebdb.info,  Node: EBDB Buffers,  Next: Completion,  Prev: MUA Interaction,  Up: Top
+File: ebdb.info,  Node: Specific MUAs,  Next: EBDB Buffers,  Prev: MUA Interaction,  Up: Top
 
-6 EBDB Buffers
+6 Specific MUAs
+***************
+
+* Menu:
+
+* Gnus::
+
+
+File: ebdb.info,  Node: Gnus,  Up: Specific MUAs
+
+6.1 Gnus
+========
+
+EBDB has a little more support for Gnus than the other MUAs, for no
+other reason than that Gnus is what the author uses.
+
+* Menu:
+
+* Posting Styles::
+
+
+File: ebdb.info,  Node: Posting Styles,  Up: Gnus
+
+6.1.1 Posting Styles
+--------------------
+
+Gnus provides a “posting styles” mechanism which allows the user to set
+up specific mail composition styles (custom headers and signatures, etc)
+when writing mails to certain recipients.  The mechanism examines Gnus
+group names to determine which styles to use.  EBDB can fake this
+mechanism so that different styles are used when composing messages to
+different records.
+
+ -- User Option: ebdb-gnus-post-style-function
+     Set this option to a callable which accepts two arguments, a record
+     instance and a mail instance.  The callable should examine these
+     arguments and return the string name of a Gnus group to use for
+     looking up posting styles, or nil to use Gnus’ defaults.
+
+   When writing this function, functions such as ‘ebdb-record-field’ and
+‘ebdb-record-current-fields’ may come in handy.  Here’s a less-obvious
+example that dispatches styles depending on which database the record
+belongs to:
+
+     (setq ebdb-gnus-post-style-function
+           (lambda (rec _mail)
+             (let ((dbs (slot-value (ebdb-record-cache rec) 'database)))
+               (if (object-assoc "File: work.dat" 'label dbs)
+                   "nnimap+WorkAccount:INBOX"
+                 "nnimap+PersonalAccount:INBOX"))))
+
+   A current limitation of this functionality is that it only works when
+composing a mail to a single recipient.  If you mark several records in
+a *EBDB* buffer and compose a mail to them collectively, the mechanism
+will be bypassed.
+
+
+File: ebdb.info,  Node: EBDB Buffers,  Next: Completion,  Prev: Specific MUAs,  Up: Top
+
+7 EBDB Buffers
 **************
 
 EBDB can create several separate buffers for displaying contacts.
@@ -883,7 +952,7 @@ existing EBDB buffers.
 
 File: ebdb.info,  Node: Searching,  Next: The Basics of ebdb-mode,  Up: EBDB Buffers
 
-6.1 Searching
+7.1 Searching
 =============
 
 The most general search is performed with ‘/ /’, which searches on many
@@ -944,7 +1013,7 @@ buffer.  To pop back to previous searches, use:
 
 File: ebdb.info,  Node: Changing Search Behavior,  Up: Searching
 
-6.1.1 Changing Search Behavior
+7.1.1 Changing Search Behavior
 ------------------------------
 
 There are three ways to alter the behavior of EBDB searches.
@@ -974,7 +1043,7 @@ possibility for unexpected search behavior.
 
 File: ebdb.info,  Node: The Basics of ebdb-mode,  Next: Customizing Record Display,  Prev: Searching,  Up: EBDB Buffers
 
-6.2 The Basics of ebdb-mode
+7.2 The Basics of ebdb-mode
 ===========================
 
 EBDB buffers inherit from special-mode, and so the usual special-mode
@@ -1102,7 +1171,7 @@ creation and field manipulation.
 
 File: ebdb.info,  Node: Customizing Record Display,  Next: Marking,  Prev: The Basics of ebdb-mode,  Up: EBDB Buffers
 
-6.3 Customizing Record Display
+7.3 Customizing Record Display
 ==============================
 
 The appearance of records in *EBDB* buffers can be customized.  The
@@ -1199,7 +1268,7 @@ to get things exactly right, but the general signature looks like:
 
 File: ebdb.info,  Node: Marking,  Next: Exporting/Formatting,  Prev: Customizing Record Display,  Up: EBDB Buffers
 
-6.4 Marking
+7.4 Marking
 ===========
 
 Records can be marked and acted on in bulk.  The ‘#’ key will toggle the
@@ -1210,7 +1279,7 @@ Many editing commands can act on multiple marked records.
 
 File: ebdb.info,  Node: Exporting/Formatting,  Prev: Marking,  Up: EBDB Buffers
 
-6.5 Exporting/Formatting
+7.5 Exporting/Formatting
 ========================
 
 It is possible to export (referred to as “formatting”) records in
@@ -1235,7 +1304,7 @@ is unsupported: the only options are version 3.0 and 4.0.
 
 File: ebdb.info,  Node: Completion,  Next: Snarfing,  Prev: EBDB Buffers,  Up: Top
 
-7 Completion
+8 Completion
 ************
 
 There are many Emacs completion frameworks out there, and libraries
@@ -1260,7 +1329,7 @@ completion frameworks.
 
 File: ebdb.info,  Node: Snarfing,  Next: Internationalization,  Prev: Completion,  Up: Top
 
-8 Snarfing
+9 Snarfing
 **********
 
 “Snarfing” refers to scanning free-form text and extracting information
@@ -1305,8 +1374,8 @@ article headers.
 
 File: ebdb.info,  Node: Internationalization,  Next: Diary Integration,  Prev: Snarfing,  Up: Top
 
-9 Internationalization
-**********************
+10 Internationalization
+***********************
 
 EBDB comes with an internationalization framework that can provide
 country- and region-specific behavior for certain fields.  This
@@ -1358,7 +1427,7 @@ alter the display of some country names if they choose.
 
 File: ebdb.info,  Node: Diary Integration,  Next: Mail Aliases,  Prev: Internationalization,  Up: Top
 
-10 Diary Integration
+11 Diary Integration
 ********************
 
 Some EBDB fields hold dates or anniversaries (most notably the
@@ -1381,7 +1450,7 @@ are forthcoming.
 
 File: ebdb.info,  Node: Mail Aliases,  Next: vCard Support,  Prev: Diary Integration,  Up: Top
 
-11 Mail Aliases
+12 Mail Aliases
 ***************
 
 You can give records a mail alias with the “mail alias” field, available
@@ -1397,7 +1466,7 @@ also possible to force an update using the ‘A’ key in a *EBDB* buffer.
 
 File: ebdb.info,  Node: vCard Support,  Next: Org Integration,  Prev: Mail Aliases,  Up: Top
 
-12 vCard Support
+13 vCard Support
 ****************
 
 EBDB has rudimentary support for exporting to vCard format; this
@@ -1411,7 +1480,7 @@ eventually, support for CardDav servers.
 
 File: ebdb.info,  Node: Org Integration,  Next: Citing Records,  Prev: vCard Support,  Up: Top
 
-13 Org Integration
+14 Org Integration
 ******************
 
 EBDB has standard support for Org functionality: creating links to EBDB
@@ -1451,7 +1520,7 @@ pop up a buffer any time relevant records are found.
 
 File: ebdb.info,  Node: Citing Records,  Next: Hacking EBDB,  Prev: Org Integration,  Up: Top
 
-14 Citing Records
+15 Citing Records
 *****************
 
 Often one wants to share contact information into other channels: for
@@ -1469,7 +1538,7 @@ a general interface to this through:
 
 File: ebdb.info,  Node: Hacking EBDB,  Next: Index,  Prev: Citing Records,  Up: Top
 
-15 Hacking EBDB
+16 Hacking EBDB
 ***************
 
 EBDB is designed to be highly extensible.  In addition to the usual
@@ -1531,7 +1600,7 @@ existing objects.  This may be addressed in the future.
 
 File: ebdb.info,  Node: Field Classes,  Next: Writing Internationalization Libraries,  Up: Hacking EBDB
 
-15.1 Field Classes
+16.1 Field Classes
 ==================
 
 It’s fairly easy to create your own custom field classes in EBDB. All
@@ -1603,7 +1672,7 @@ default values for the new object.
 
 File: ebdb.info,  Node: Init and Delete Methods,  Next: The Labeled Field Class,  Up: Field Classes
 
-15.1.1 Init and Delete Methods
+16.1.1 Init and Delete Methods
 ------------------------------
 
 It’s also very common to define ‘ebdb-init-field’ and
@@ -1641,7 +1710,7 @@ must not change the database: they may not edit records or their fields.
 
 File: ebdb.info,  Node: The Labeled Field Class,  Next: The Singleton Field Class,  Prev: Init and Delete Methods,  Up: Field Classes
 
-15.1.2 The Labeled Field Class
+16.1.2 The Labeled Field Class
 ------------------------------
 
 Many field classes maintain their own list of labels: ie, anniversary
@@ -1660,7 +1729,7 @@ used to hold labels, and pointing to it in the class-allocated
 
 File: ebdb.info,  Node: The Singleton Field Class,  Next: Actions,  Prev: The Labeled Field Class,  Up: Field Classes
 
-15.1.3 The Singleton Field Class
+16.1.3 The Singleton Field Class
 --------------------------------
 
 Another abstract mix-in class is the ‘ebdb-field-singleton’ class.  Its
@@ -1671,7 +1740,7 @@ existing instance is deleted.
 
 File: ebdb.info,  Node: Actions,  Next: Custom Field Searching,  Prev: The Singleton Field Class,  Up: Field Classes
 
-15.1.4 Actions
+16.1.4 Actions
 --------------
 
 All field classes have a class-allocated slot called “actions”.  The
@@ -1687,7 +1756,7 @@ and the field instance under point.
 
 File: ebdb.info,  Node: Custom Field Searching,  Next: Fast Lookups,  Prev: Actions,  Up: Field Classes
 
-15.1.5 Custom Field Searching
+16.1.5 Custom Field Searching
 -----------------------------
 
 In most cases, searching the EBDB database is a matter of prompting for
@@ -1748,7 +1817,7 @@ EBDB code would create this search, external code conceivably might.
 
 File: ebdb.info,  Node: Fast Lookups,  Next: Formatting in the EBDB Buffer,  Prev: Custom Field Searching,  Up: Field Classes
 
-15.1.6 Fast Lookups
+16.1.6 Fast Lookups
 -------------------
 
 Usually, searches of the database are conducted by looping over all the
@@ -1784,7 +1853,7 @@ match the instance of that field (and not some other field string).
 
 File: ebdb.info,  Node: Formatting in the EBDB Buffer,  Prev: Fast Lookups,  Up: Field Classes
 
-15.1.7 Formatting in the EBDB Buffer
+16.1.7 Formatting in the EBDB Buffer
 ------------------------------------
 
 Most fields will be displayed in the *EBDB* buffer simply using
@@ -1827,7 +1896,7 @@ used in the body of the method.
 
 File: ebdb.info,  Node: Writing Internationalization Libraries,  Next: Writing Integration For New MUAs,  Prev: Field Classes,  Up: Hacking EBDB
 
-15.2 Writing Internationalization Libraries
+16.2 Writing Internationalization Libraries
 ===========================================
 
 Writing new internationalization libraries involves using generic
@@ -1923,7 +1992,7 @@ be specialized on with the ‘eql’ specializer.
 
 File: ebdb.info,  Node: Writing Integration For New MUAs,  Prev: Writing Internationalization Libraries,  Up: Hacking EBDB
 
-15.3 Writing Integration For New MUAs
+16.3 Writing Integration For New MUAs
 =====================================
 
 Theoretically EBDB can be incorporated into any Emacs package, but it’s
@@ -1998,7 +2067,7 @@ functions.
 
 File: ebdb.info,  Node: Article snarfing,  Up: Writing Integration For New MUAs
 
-15.3.1 Article snarfing
+16.3.1 Article snarfing
 -----------------------
 
 EBDB can scan articles or messages for likely field information, and
@@ -2164,6 +2233,7 @@ Index
                                                               (line  20)
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  15)
+* ebdb-gnus-post-style-function:         Posting Styles.      (line  13)
 * ebdb-hash-extra-predicates:            Fast Lookups.        (line  30)
 * ebdb-hashtable:                        Fast Lookups.        (line  10)
 * ebdb-help:                             The Basics of ebdb-mode.
@@ -2362,61 +2432,64 @@ Index
 
 Tag Table:
 Node: Top806
-Node: Getting Started2456
-Node: Migration from BBDB3111
-Node: Record Migration3322
-Node: Variables and Options4125
-Node: Migration from Org Contacts4611
-Node: The EBDB Database5371
-Node: Creating Records9359
-Node: Record classes10440
-Node: Record names10785
-Node: Record Fields11460
-Node: Inserting New Fields11704
-Node: Editing Existing Fields12500
-Node: Deleting Records and Fields13100
-Node: Field Types13496
-Node: Role fields15783
-Node: Tag field17471
-Node: Mail folder field18115
-Node: MUA Interaction18443
-Node: Loading MUA Code18967
-Node: Display and Updating19680
-Node: Pop-up Buffers20446
-Node: Auto-Updating Records22029
-Node: Noticing and Automatic Rules24429
-Node: Interactive Commands25762
-Node: EBDB and MUA summary buffers28237
-Node: Sender name display28723
-Node: Summary buffer marks29950
-Node: EBDB Buffers31129
-Node: Searching32342
-Node: Changing Search Behavior34004
-Node: The Basics of ebdb-mode35251
-Node: Customizing Record Display39566
-Node: Marking43886
-Node: Exporting/Formatting44313
-Node: Completion45262
-Node: Snarfing46460
-Node: Internationalization48477
-Node: Diary Integration51176
-Node: Mail Aliases52041
-Node: vCard Support52755
-Node: Org Integration53254
-Node: Citing Records55152
-Node: Hacking EBDB55910
-Node: Field Classes58229
-Node: Init and Delete Methods61360
-Node: The Labeled Field Class62867
-Node: The Singleton Field Class63721
-Node: Actions64159
-Node: Custom Field Searching64831
-Node: Fast Lookups67698
-Node: Formatting in the EBDB Buffer69508
-Node: Writing Internationalization Libraries71584
-Node: Writing Integration For New MUAs75998
-Node: Article snarfing79445
-Node: Index80163
+Node: Getting Started2526
+Node: Migration from BBDB3181
+Node: Record Migration3392
+Node: Variables and Options4195
+Node: Migration from Org Contacts4681
+Node: The EBDB Database5441
+Node: Creating Records9429
+Node: Record classes10510
+Node: Record names10855
+Node: Record Fields11530
+Node: Inserting New Fields11774
+Node: Editing Existing Fields12570
+Node: Deleting Records and Fields13170
+Node: Field Types13566
+Node: Role fields15853
+Node: Tag field17541
+Node: Mail folder field18185
+Node: MUA Interaction18513
+Node: Loading MUA Code19038
+Node: Display and Updating19751
+Node: Pop-up Buffers20517
+Node: Auto-Updating Records22100
+Node: Noticing and Automatic Rules24500
+Node: Interactive Commands25833
+Node: EBDB and MUA summary buffers28308
+Node: Sender name display28794
+Node: Summary buffer marks30021
+Node: Specific MUAs31200
+Node: Gnus31348
+Node: Posting Styles31570
+Node: EBDB Buffers33145
+Node: Searching34356
+Node: Changing Search Behavior36018
+Node: The Basics of ebdb-mode37265
+Node: Customizing Record Display41580
+Node: Marking45900
+Node: Exporting/Formatting46327
+Node: Completion47276
+Node: Snarfing48474
+Node: Internationalization50491
+Node: Diary Integration53192
+Node: Mail Aliases54057
+Node: vCard Support54771
+Node: Org Integration55270
+Node: Citing Records57168
+Node: Hacking EBDB57926
+Node: Field Classes60245
+Node: Init and Delete Methods63376
+Node: The Labeled Field Class64883
+Node: The Singleton Field Class65737
+Node: Actions66175
+Node: Custom Field Searching66847
+Node: Fast Lookups69714
+Node: Formatting in the EBDB Buffer71524
+Node: Writing Internationalization Libraries73600
+Node: Writing Integration For New MUAs78014
+Node: Article snarfing81461
+Node: Index82179
 
 End Tag Table
 

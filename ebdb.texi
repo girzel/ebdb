@@ -52,6 +52,7 @@ modify this GNU manual.”
 * Creating Records::
 * Record Fields::
 * MUA Interaction::
+* Specific MUAs::
 * EBDB Buffers::
 * Completion::
 * Snarfing::
@@ -115,6 +116,15 @@ EBDB and MUA summary buffers
 
 * Sender name display::
 * Summary buffer marks::
+
+
+Specific MUAs
+
+* Gnus::
+
+Gnus
+
+* Posting Styles::
 
 
 EBDB Buffers
@@ -892,6 +902,59 @@ string provided by Gnus, and adding the EBDB-specific format code:
 Format letter to use in the summary buffer format string to mark a
 record.  Defaults to ``e''.
 @end defopt
+
+@node Specific MUAs
+@chapter Specific MUAs
+
+@menu
+* Gnus::
+@end menu
+
+@node Gnus
+@section Gnus
+
+EBDB has a little more support for Gnus than the other MUAs, for no
+other reason than that Gnus is what the author uses.
+
+@menu
+* Posting Styles::
+@end menu
+
+@node Posting Styles
+@subsection Posting Styles
+
+Gnus provides a ``posting styles'' mechanism which allows the user to
+set up specific mail composition styles (custom headers and
+signatures, etc) when writing mails to certain recipients.  The
+mechanism examines Gnus group names to determine which styles to use.
+EBDB can fake this mechanism so that different styles are used when
+composing messages to different records.
+
+@defopt ebdb-gnus-post-style-function
+Set this option to a callable which accepts two arguments, a record
+instance and a mail instance.  The callable should examine these
+arguments and return the string name of a Gnus group to use for
+looking up posting styles, or nil to use Gnus' defaults.
+@end defopt
+
+When writing this function, functions such as @code{ebdb-record-field} and
+@code{ebdb-record-current-fields} may come in handy.  Here's a less-obvious
+example that dispatches styles depending on which database the record
+belongs to:
+
+@lisp
+(setq ebdb-gnus-post-style-function
+      (lambda (rec _mail)
+        (let ((dbs (slot-value (ebdb-record-cache rec) 'database)))
+          (if (object-assoc "File: work.dat" 'label dbs)
+              "nnimap+WorkAccount:INBOX"
+            "nnimap+PersonalAccount:INBOX"))))
+@end lisp
+
+A current limitation of this functionality is that it only works when
+composing a mail to a single recipient.  If you mark several records
+in a *EBDB* buffer and compose a mail to them collectively,
+the mechanism will be bypassed.
 
 @node EBDB Buffers
 @chapter EBDB Buffers
