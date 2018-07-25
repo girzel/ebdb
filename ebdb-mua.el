@@ -408,7 +408,7 @@ class.  Easy choices are the value of
 `ebdb-default-multiline-formatter' or
 `ebdb-default-oneline-formatter'."
   :group 'ebdb-mua
-  :type ebdb-formatter-ebdb)
+  :type 'ebdb-formatter-ebdb)
 
 
 
