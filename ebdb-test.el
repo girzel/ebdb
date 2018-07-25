@@ -272,10 +272,10 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	  (mail2 (ebdb-parse ebdb-default-mail-class
 			     "no@such.address")))
       (ebdb-record-insert-field rec mail)
-      (should (string= (ebdb-string (car (ebdb-record-mail rec)))
+      (should (string= (ebdb-string (ebdb-record-one-mail rec))
 		       "bogus@nosuchaddress.com"))
       (ebdb-record-change-field rec mail mail2)
-      (should (string= (ebdb-string (car (ebdb-record-mail rec)))
+      (should (string= (ebdb-string (ebdb-record-one-mail rec))
 		       "no@such.address")))))
 
 ;; Field instance parse tests.

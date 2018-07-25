@@ -3033,7 +3033,7 @@ If FIELD doesn't specify a year, use the current year."
   "Possibly set the priority of a newly-added mail address.
 If RECORD has no other primary mail, set MAIL's priority to
 primary."
-  (when (null (object-assoc 'primary 'priority (ebdb-record-mail record t)))
+  (when (null (ebdb-record-one-mail record nil 'primary-only))
     (setf (slot-value mail 'priority) 'primary)))
 
 (cl-defmethod ebdb-record-delete-field :after ((record ebdb-record-entity)
@@ -3042,26 +3042,36 @@ primary."
   "Possibly alter the priority of RECORD's remaining mails.
 If there aren't any other primary mails, make the first of the
 remaining mails primary."
-  (let* ((mails (remove mail (ebdb-record-mail record)))
+  (let* ((mails (remove mail (ebdb-record-mail record t)))
 	 (clone (unless (object-assoc 'primary 'priority mails)
 		  (when (car mails)
 		    (clone (car mails) :priority 'primary)))))
     (when clone
       (ebdb-record-change-field record (car mails) clone))))
 
-(defun ebdb-compose-mail (&rest args)
-  "Start composing a mail message to send.
-ARGS is passed to `compose-mail'."
-  (apply 'compose-mail args))
+(cl-defgeneric ebdb-compose-mail (records &rest args)
+  "Prepare to compose a mail message to RECORDS.
+Mail-sending MUAs can override this method to do extra setup
+before/after message composition, by using a &context specializer
+on eg. the value of `read-mail-command'.  The default
+implementation turns RECORDS in a string of mail addresses, then
+passes that along with ARGS to `compose-mail'.")
 
-(cl-defmethod ebdb-field-mail-compose ((record ebdb-record-entity)
-				       (mail ebdb-field-mail))
-  (ebdb-compose-mail (ebdb-dwim-mail record mail)))
+(cl-defmethod ebdb-compose-mail ((records list) &rest args)
+  (let ((to (mapconcat #'ebdb-dwim-mail records ", ")))
+    (ebdb-compose-mail to args)))
 
-(cl-defmethod ebdb-record-primary-mail ((record ebdb-record-entity))
-  "Return the primary mail field of RECORD."
-  (let ((mails (ebdb-record-mail record t)))
-    (object-assoc 'primary 'priority mails)))
+(cl-defmethod ebdb-compose-mail ((to string) &rest args)
+  (apply #'compose-mail to args))
+
+(cl-defgeneric ebdb-field-mail-compose (record mail &rest args)
+  "Begin composing a message to RECORD's mail field MAIL.
+ARGS are passed to `ebdb-compose-mail', and then to
+`compose-mail'."
+  (:method ((record ebdb-record-entity)
+	    (mail ebdb-field-mail)
+	    &rest args)
+	   (apply #'ebdb-compose-mail (ebdb-dwim-mail record mail) args)))
 
 ;; This needs to be a :before method so that the 'address slot is
 ;; filled by the time we call `ebdb-init-field'.
@@ -3072,7 +3082,7 @@ ARGS is passed to `compose-mail'."
   address to use with it."
   (unless (and (slot-boundp field 'address)
 	       (slot-value field 'address))
-   (let ((mail (ebdb-prompt-for-mail record)))
+   (let ((mail (ebdb-record-one-mail record t)))
      (when mail
       (setf (slot-value field 'address) mail)))))
 
@@ -3389,7 +3399,7 @@ Currently only works for mail fields."
     (dolist (r roles)
       (when (and (string= (slot-value r 'org-uuid) (ebdb-record-uuid org))
 		 org-domain)
-	(dolist (m (ebdb-record-mail record))
+	(dolist (m (ebdb-record-mail record t))
 	  (setq mail-domain (cadr (split-string (slot-value m 'mail) "@")))
 	  (when (and mail-domain
 		     (string-match-p mail-domain
@@ -4193,18 +4203,33 @@ prompting if there's only one database."
 			      t))
       (object-assoc db-string 'label collection))))
 
-(defun ebdb-prompt-for-mail (record)
-  "Prompt for one of RECORD's mail addresses.
-If RECORD only has one address, return that directly."
-  (let ((mail-alist (mapcar
-		     (lambda (m) (cons (ebdb-string m) m))
-		     (ebdb-record-mail record t))))
-    (cdr (if (= 1 (length mail-alist))
-	     (car mail-alist)
-	   (assoc (ebdb-read-string
-		   (format "Mail address for %s: " (ebdb-string record))
-		   nil mail-alist t)
-		  mail-alist)))))
+(defun ebdb-record-one-mail (record &optional
+				    prompt primary-only no-roles defunct)
+  "Return a single mail address to use for RECORD.
+If RECORD only has one address, return that directly.  If PROMPT
+is non-nil, ask the user which address to use.  Otherwise, return
+the record's primary address, or the first of the list of
+addresses, if none are primary.  If PRIMARY-ONLY is non-nil,
+return nil if RECORD has no primary address.  NO-ROLES and
+DEFUNCT function as in `ebdb-record-mail'."
+  (let ((mails (ebdb-record-mail record no-roles nil defunct)))
+    (when mails
+      (cond
+       ((= 1 (length mails))
+	(car mails))
+       (prompt
+	(let ((mail-alist (mapcar
+			   (lambda (m) (cons (ebdb-string m) m))
+			   mails)))
+	  (cdr (assoc (ebdb-read-string
+		       (format "Mail address for %s: "
+			       (ebdb-string record))
+		       nil mail-alist t)
+		      mail-alist))))
+       (primary-only
+	(object-assoc 'primary 'priority mails))
+       (t (or (object-assoc 'primary 'priority mails)
+	      (car mails)))))))
 
 (defun ebdb-dirty-records (&optional records)
   "Return all records with unsaved changes.
@@ -4242,14 +4267,14 @@ If RECORDS are given, only search those records."
 	(object-assoc label 'label phones)
       phones)))
 
-(defun ebdb-record-mail (record &optional roles label defunct)
+(defun ebdb-record-mail (record &optional no-roles label defunct)
   "Return a list of all RECORD's mail fields.
-If ROLES is non-nil, also consider mail fields from RECORD's
-roles.  If LABEL is a string, return the mail with that label.
-If DEFUNCT is non-nil, also consider RECORD's defunct mail
+If NO-ROLES is non-nil, exclude mail fields from RECORD's roles.
+If LABEL is a string, return the mail with that label.  If
+DEFUNCT is non-nil, also consider RECORD's defunct mail
 addresses."
   (let ((mails (slot-value record 'mail)))
-    (when (and roles (slot-exists-p record 'organizations))
+    (when (and (null no-roles) (slot-exists-p record 'organizations))
       (dolist (r (slot-value record 'organizations))
 	(when (and (slot-value r 'mail)
 		   (or defunct
@@ -4272,15 +4297,13 @@ addresses."
 However, if both the first name and last name are constituents of
 the address as in John.Doe@Some.Host, and
 `ebdb-mail-avoid-redundancy' is non-nil, then the address is used
-as is.  If `ebdb-mail-avoid-redundancy' is 'mail-only the name
-is never included.  MAIL may be a mail address to be used for
-RECORD.  If MAIL is an integer, use the MAILth mail address of
-RECORD.  If MAIL is nil use RECORD's primary mail address."
-  (unless mail
-    (let ((mails (ebdb-record-mail record t)))
-      (setq mail (or (and (integerp mail) (nth mail mails))
-                     (object-assoc 'primary 'priority mails)
-		     (car mails)))))
+as is.  If `ebdb-mail-avoid-redundancy' is 'mail-only the name is
+never included.  MAIL may be a mail address to be used for
+RECORD.  If MAIL is nil use RECORD's primary mail address.  If
+MAIL is the symbol `prompt', prompt the user for a mail address
+to use."
+  (unless (ebdb-field-mail-p mail)
+    (setq mail (ebdb-record-one-mail record (eq mail 'prompt) t t)))
   (unless mail (error "Record has no mail addresses"))
   (let* ((name-base (or (slot-value mail 'aka) (ebdb-record-name record)))
 	 (mail (slot-value mail 'mail))
@@ -4819,7 +4842,7 @@ also be one of the special symbols below.
 	((eq field 'mail-canon) (ebdb-record-mail-canon record)) ; derived (cached) field
 	;; Mail is special-cased, because mail addresses can come from
 	;; more than one slot.
-	((eq field 'mail) (ebdb-record-mail record t nil t))
+	((eq field 'mail) (ebdb-record-mail record nil nil t))
 	((eq field 'mail-aka) (ebdb-record-mail-aka record)) ; derived (cached) field
 	((eq field 'aka-all)  (append (ebdb-record-aka record) ; derived field
 				      (ebdb-record-mail-aka record)))
@@ -5022,7 +5045,7 @@ inserting it."
 	(style (if arg 'list 'inline))
 	usable str m)
     (dolist (r recs)
-      (when (setq m (ebdb-record-mail r t))
+      (when (setq m (ebdb-record-mail r))
 	(push (cons r (or (object-assoc 'primary 'priority m)
 			  (car m)))
 	      usable)))
@@ -5383,7 +5406,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record-entity)
 				  (_type (subclass ebdb-field-mail))
 				  (regexp string))
-  (let ((mails (ebdb-record-mail record t nil t)))
+  (let ((mails (ebdb-record-mail record nil nil t)))
     (if mails
 	(or (string-match-p regexp "")
 	    (catch 'found

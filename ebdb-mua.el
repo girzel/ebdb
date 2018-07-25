@@ -894,7 +894,7 @@ Return the records matching ADDRESS or nil."
                                    (format "Change name \"%s\" to \"%s\"? "
                                            old-name name)
                                  (format "Assign name \"%s\" to address \"%s\"? "
-                                         name (car (ebdb-record-mail record)))))
+                                         name (ebdb-record-one-mail record))))
                ;; Keep old-name as AKA?
                (when (and old-name
 			  ;; Leaky abstraction
@@ -1250,7 +1250,7 @@ buffer."
 	  (with-current-buffer buffer
             (delq nil
                   (mapcar (lambda (x)
-			    (when (setq mail (car (ebdb-record-mail (car x) t)))
+			    (when (setq mail (ebdb-record-one-mail (car x)))
 			      (ebdb-dwim-mail (car x) mail)))
                           ebdb-records)))))
     (if (derived-mode-p 'message-mode 'mail-mode)

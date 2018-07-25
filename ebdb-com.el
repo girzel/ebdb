@@ -1844,7 +1844,7 @@ Also redisplays it after customization."
   "Handle mail priority after customizing.
 Check that some mail is marked as primary after MAIL is edited."
   (let* ((rec ebdb-customization-record)
-	 (all-mails (remove mail (ebdb-record-mail rec)))
+	 (all-mails (remove mail (ebdb-record-mail rec t)))
 	 (primaries (when rec (seq-filter
 			       (lambda (m)
 				 (eq (slot-value m 'priority) 'primary))
@@ -2323,21 +2323,25 @@ the record to be displayed or nil otherwise."
 ;;;###autoload
 (defun ebdb-mail (records &optional subject arg)
   "Compose a mail message to RECORDS (optional: using SUBJECT).
-If ARG (interactively, the prefix arg) is nil, use the first mail
-address of each record.  If it is t, prompt the user for which
-address to use.
+If ARG (interactively, the prefix arg) is nil, use the primary
+mail address of each record.  If it is t, prompt the user for
+which address to use.
 
 Another approach is to put point on a mail field and press \"a\",
 for `ebdb-field-action'."
   (interactive (list (ebdb-do-records) nil
-                     (or (consp current-prefix-arg)
-                         current-prefix-arg)))
+                     current-prefix-arg))
   (setq records (ebdb-record-list records))
-  (let ((to (mapconcat
-	     (lambda (r) (ebdb-dwim-mail r (when arg (ebdb-prompt-for-mail r))))
-	     records ", ")))
-    (unless (string= "" to)
-      (ebdb-compose-mail to subject))))
+  (if (= 1 (length records))
+      (let ((mail (ebdb-record-one-mail (car records) arg)))
+	(unless mail (error "Record has no mail address"))
+	(ebdb-field-mail-compose (car records) mail subject))
+   (let ((to (mapconcat
+	      (lambda (r) (ebdb-dwim-mail
+			   r (ebdb-record-one-mail r arg)))
+	      records ", ")))
+     (unless (string= "" to)
+       (ebdb-compose-mail to subject)))))
 
 ;;; Citing
 
@@ -2548,7 +2552,7 @@ as part of the MUA insinuation."
         (let ((completion-list (if (eq t ebdb-completion-list)
                                    '(name alt-names mail aka organization)
                                  ebdb-completion-list))
-              (mails (ebdb-record-mail one-record t))
+              (mails (ebdb-record-mail one-record))
               mail elt)
           (if (not mails)
               (progn
@@ -2610,7 +2614,7 @@ as part of the MUA insinuation."
           ;; Add it if the mail is part of the completions
           (dolist (key all-completions)
             (dolist (record (gethash key ebdb-hashtable))
-              (let ((mails (ebdb-record-mail record t))
+              (let ((mails (ebdb-record-mail record))
                     accept)
                 (when mails
                   (dolist (field completion-list)
@@ -2668,7 +2672,7 @@ as part of the MUA insinuation."
         (if (and record
                  (setq dwim-completions
                        (mapcar (lambda (m) (ebdb-dwim-mail record m))
-                               (ebdb-record-mail record t))))
+                               (ebdb-record-mail record))))
             (cond ((and (= 1 (length dwim-completions))
                         (string= orig (car dwim-completions)))
                    (setq done 'unchanged))
@@ -2991,9 +2995,7 @@ With prefix argument ARG, prompt for which mail address to use."
 		     current-prefix-arg))
   (let* (mail-list mail result)
     (dolist (r records)
-      (setq mail (if arg
-	       (ebdb-prompt-for-mail r)
-	       (car-safe (ebdb-record-mail r t))))
+      (setq mail (ebdb-record-one-mail r arg))
       (when mail
 	(push (cons r mail) mail-list)))
     (setq result

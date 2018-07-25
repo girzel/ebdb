@@ -105,7 +105,7 @@ For use in `completion-at-point-functions'."
       (message "No records")
     (let ((to (mapconcat
                (lambda (r)
-                 (ebdb-dwim-mail r (when arg (ebdb-prompt-for-mail r))))
+                 (ebdb-dwim-mail r (ebdb-record-one-mail r arg)))
                records ", "))
           (buffer (gethash :buffer ebdb-complete-info)))
       (when buffer
