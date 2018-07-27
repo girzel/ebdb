@@ -2369,14 +2369,9 @@ holding text to be inserted as the body of each message."
 	  (ebdb-dwim-mail
 	   (ebdb-prompt-for-record
 	    nil nil "Add record to Bcc (C-g to skip): ")))
-	 (let ((usable-registers
-		(seq-filter (lambda (pair) (stringp (cdr pair)))
-			    register-alist)))
-	   (when usable-registers
-	     (ebdb-with-exit
-	      (read-char-choice
-	       "Register to use for body text (C-g to skip): "
-	       (mapcar #'car usable-registers)))))))
+	 (ebdb-with-exit
+	  (register-read-with-preview
+	   "Register to use for body text (C-g to skip): "))))
   (let ((cc (when cc (mapconcat #'identity cc ", ")))
 	(bcc (when bcc (mapconcat #'identity bcc ", ")))
 	(body (let ((reg (get-register body-register)))
