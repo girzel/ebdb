@@ -794,6 +794,11 @@ You really should not disable debugging.  But it will speed things up."
       `(let ((debug-on-error t))
          ,@body)))
 
+(defmacro ebdb-add-to-list (list-var element)
+  "Add ELEMENT to the value of LIST-VAR if it isn't there yet and non-nil.
+The test for presence of ELEMENT is done with `equal'."
+  `(when ,element (cl-pushnew ,element ,list-var :test #'equal)))
+
 ;;; Fields.
 
 (defclass ebdb-field ()
@@ -4493,11 +4498,6 @@ REQUIRE-MATCH have the same meaning as in `completing-read'."
        (if (string-empty-p string)
 	   (signal 'ebdb-empty (list prompt))
 	 string)))))
-
-(defmacro ebdb-add-to-list (list-var element)
-  "Add ELEMENT to the value of LIST-VAR if it isn't there yet and non-nil.
-The test for presence of ELEMENT is done with `equal'."
-  `(when ,element (cl-pushnew ,element ,list-var :test #'equal)))
 
 ;; FIXME: Get rid of this add-job and eval-spec stuff.
 (defsubst ebdb-add-job (spec record string)
