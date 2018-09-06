@@ -642,6 +642,21 @@ Print the first line, add an ellipsis, and add a tooltip."
 	  (propertize value 'face 'ebdb-role-defunct)
 	value))))
 
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field-image)
+			      _style
+			      (record ebdb-record))
+  (if (display-images-p)
+      (progn
+	(require 'image)
+	(propertize
+	 " "
+	 ;; Cribbed from `insert-image'.
+	 (list 'display (ebdb-field-image-get field record)
+               'rear-nonsticky '(display)
+               'keymap image-map)))
+    "<img>"))
+
 (defsubst ebdb-indent-string (string column)
   "Indent nonempty lines in STRING to COLUMN (except first line).
 This happens in addition to any pre-defined indentation of STRING."
