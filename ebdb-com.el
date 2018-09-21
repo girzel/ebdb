@@ -503,11 +503,15 @@ and 'role, and the special shortcuts 'mail-primary,
   "Formatter used for displaying all values of a record.
 This formatter should not be changed.")
 
-(defun ebdb-available-ebdb-formatters ()
+(defun ebdb-available-ebdb-formatters (&optional full-okay)
   "A list of formatters available in the *EBDB* buffer.
-This list is also used for toggling layouts."
+This list is also used for toggling layouts.  Unless FULL-OKAY is
+non-nil, do not offer the value of `ebdb-full-formatter' as a
+choice: that formatter should be selected explicitly."
   (seq-filter
-   (lambda (f) (object-of-class-p f 'ebdb-formatter-ebdb))
+   (lambda (f) (and (object-of-class-p f 'ebdb-formatter-ebdb)
+		    (or full-okay
+			(null (equal f ebdb-full-formatter)))))
    ebdb-formatter-tracker))
 
 (defsubst ebdb-formatter-prefix ()
