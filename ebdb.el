@@ -5260,12 +5260,13 @@ With optional argument INVERT, invert the search results."
       (pcase-dolist (`(,key ,crit) clauses)
 	(or
 	 ;; Either we get some records out the fast lookup...
-	 (and (or (memq key (list 'ebdb-field-name
-				  'ebdb-field-mail
-				  'ebdb-field-tags))
-		  (assoc key ebdb-hash-extra-predicates))
-	      (stringp crit)
+	 (and (stringp crit)
 	      (string-prefix-p "^" crit)
+	      (or (ebdb-foo-in-list-p
+		   key (list 'ebdb-field-name
+			     'ebdb-field-mail
+			     'ebdb-field-tags))
+		  (assoc key ebdb-hash-extra-predicates))
 	      (setq completed-strings
 		    (all-completions (downcase (substring crit 1))
 				     ebdb-hashtable)
