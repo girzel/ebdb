@@ -936,7 +936,7 @@ keybindings apply.
      #+FINDEX: ebdb-delete-field-or-record
      With point on a record field, offer to delete that field.  With
      point on a record header, offer to delete the whole
-     record. (~ebdb-delete-field-or-record~)
+     record (~ebdb-delete-field-or-record~).
 
 - @@texinfo:@kbd{@key{RET}}@@ ::
 
@@ -947,7 +947,7 @@ keybindings apply.
      (~ebdb-record-action~). If multiple actions are provided, you'll
      be prompted to choose one.  Not all fields provide actions.
      {{{kbd(@key{RET})}}} on a mail field will compose a message to
-     that mail address
+     that mail address.
 
 - m ::
 
@@ -956,12 +956,13 @@ keybindings apply.
      Begin composing a message to the record under point
      (~ebdb-mail~).  With a prefix arg, prompt for the mail address to
      use; otherwise use the record's primary address.
+
 - M ::
 
      #+KINDEX: M
      #+FINDEX: ebdb-mail-each
      Begin composing a separate message to each marked record in the
-     current {{{buf(EBDB)}} buffer, or all records in the buffer if
+     current {{{buf(EBDB)}}} buffer, or all records in the buffer if
      none are marked.  In addition, prompt for a common subject header
      line to use for each message, as well as records to add to the
      "Cc" and "Bcc" headers.  Then optionally prompt for a character,
@@ -1467,7 +1468,7 @@ possible to create a record of a different class by using {{{kbd(C)}}}
 in ebdb-mode.
 #+END_defopt
 
-#+ATTR_TEXINFO: :options ebdb-default-record-class
+#+ATTR_TEXINFO: :options ebdb-default-name-class
 #+BEGIN_defopt
 The default class for complex names.  Simple names (used for
 organizations and nicknames) are always plain strings---this option
@@ -1541,7 +1542,7 @@ instance.  The simplest field types only need to provide these three
 methods.
 
 The ~ebdb-read~ and ~ebdb-parse~ methods are static (class-level)
-methods.  Both take an optional ~slots~ argument, which a plist of
+methods.  Both take an optional ~slots~ argument, which is a plist of
 slot values that will eventually be fed to ~make-instance~.  If values
 are already present in the plist, these methods should _not_ override
 them.  In addition, ~ebdb-read~ takes an optional ~obj~ argument,
@@ -1555,7 +1556,7 @@ provide default values for the new object.
       (let ((gender (intern (completing-read
                              "Gender: " '(female male other unknown none)
                              nil t
-                             (when obj (symbol-name (slot-value obj :gender)))))))
+                             (when obj (symbol-name (slot-value obj 'gender)))))))
         (setq slots (plist-put slots :gender gender))))
     (cl-call-next-method class slots obj))
 
