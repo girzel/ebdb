@@ -1154,10 +1154,12 @@ where it was in the MUA, rather than quitting the EBDB buffer."
     (set-transient-map
      key-m
      (lambda ()
-       ;; Keep the transient map active until the user hits "q".
-       (null
-	(equal (this-command-keys-vector)
-	       [?q]))))))
+       ;; Keep the transient map active until the user hits "q", but
+       ;; not during minibuffer input.
+       (or (minibufferp)
+	   (null
+	    (equal (this-command-keys-vector)
+		[?q])))))))
 
 ;;;###autoload
 (defun ebdb-mua-toggle-records-format ()
