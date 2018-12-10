@@ -331,7 +331,7 @@ grouped by field class."
 		       ((ebdb-foo-in-list-p f collapse) 'collapse)
 		       (t 'normal)))
 		outlist)))
-      outlist)))
+      (nreverse outlist))))
 
 ;;; Basic export routines
 
