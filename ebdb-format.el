@@ -24,13 +24,37 @@
 ;; for creating the *EBDB* buffer as well as exporting to vcard,
 ;; latex, and html formats.
 
+;; The basic idea is: a formatter object controls which record fields
+;; are selected, and ultimately how they're output as text.  The
+;; formatting routine first inserts the value of `ebdb-fmt-header',
+;; then the value of `ebdb-fmt-record' for each record to be output,
+;; then the value of `ebdb-fmt-footer'.
+
+;; For each record, the method `ebdb-fmt-record' first collects its
+;; fields using `ebdb-fmt-collect-fields', which are then sorted by
+;; `ebdb-fmt-sort-fields', then processed with
+;; `ebdb-fmt-process-fields' (this last means handling field
+;; combination or collapse, etc).  Then it splits header fields from
+;; body fields, and formats the header fields with
+;; `ebdb-fmt-record-header', and the body fields with
+;; `ebdb-fmt-compose-fields'.  It concats those two strings and
+;; returns the result.
+
+;; This file also provides the functions `ebdb-format-all-records' and
+;; `ebdb-format-to-tmp-buffer', the difference being that the former
+;; formats the whole database, and the latter only formats the
+;; currently marked or displayed records.
+
 ;;; Code:
 
 (require 'ebdb)
 (declare-function ebdb-do-records "ebdb-com")
 (declare-function ebdb-display-records "ebdb-com")
-;; qp = quoted-printable, might not end up needing this.
-(require 'qp)
+
+(defcustom ebdb-format-buffer-name "*EBDB Format*"
+  "Default name of buffer in which to display formatted records."
+  :type 'string
+  :group 'ebdb-record-display)
 
 (defvar ebdb-formatter-tracker nil
   "Variable for holding all instantiated formatters.")
@@ -41,6 +65,10 @@
     :type string
     :initform "")
    (tracking-symbol :initform ebdb-formatter-tracker)
+   (format-buffer-name
+    :initarg :format-buffer-name
+    :type string
+    :initform `,ebdb-format-buffer-name)
    (coding-system
     :type symbol
     :initarg :coding-system
@@ -114,17 +142,12 @@
 
 (cl-defgeneric ebdb-fmt-record (fmt record)
   "Handle the insertion of formatted RECORD.
-
-This method collects all the fields to be output for RECORD,
-groups them into header fields and body fields, and then calls
-`ebdb-fmt-record-header' and `ebdb-fmt-record-body' with the two
-lists, respectively.")
+This method collects all the fields for RECORD, splits them into
+header and body fields, and then calls `ebdb-fmt-record-header'
+and `ebdb-fmt-compose-fields'.")
 
 (cl-defgeneric ebdb-fmt-record-header (fmt record fields)
-  "Format a header for RECORD, using the fields in FIELDS.")
-
-(cl-defgeneric ebdb-fmt-record-body (fmt record fields)
-  "Format the body of RECORD, using the fields in FIELDS.")
+  "Format a header for RECORD, using fields in FIELDS.")
 
 (cl-defgeneric ebdb-fmt-collect-fields (fmt record &optional fields)
   "Return a list of RECORD's FIELDS to be formatted.")
@@ -138,21 +161,20 @@ slots.")
 (cl-defgeneric ebdb-fmt-sort-fields (fmt record &optional fields)
   "Sort FIELDS belonging to RECORD according to FMT.")
 
-;; Do we still need this now that formatters and specs are collapsed?
-(cl-defgeneric ebdb-fmt-compose-field (fmt field-cons record)
-  "Convert the lists produced by `ebdb-fmt-process-fields'.
+(cl-defgeneric ebdb-fmt-compose-fields (fmt object &optional field-list depth)
+  "Compose the lists produced by `ebdb-fmt-process-fields'.
 The lists of class instances and formatting information are
-turned into lists holding labels strings and instance strings.")
+turned into indented strings, and the entire block is returned as
+a single string value.  Optional argument DEPTH is used when
+recursively composing subfields of fields.")
 
 (cl-defgeneric ebdb-fmt-field (fmt field style record)
   "Format FIELD value of RECORD.
-
 This method only returns the string value of FIELD itself,
 possibly with text properties attached.")
 
 (cl-defgeneric ebdb-fmt-field-label (fmt field-or-class style record)
   "Format a field label, using formatter FMT.
-
 FIELD-OR-CLASS is a field class or a field instance, and STYLE is
 a symbol indicating a style of some sort, such as 'compact or
 'expanded.")
@@ -164,32 +186,6 @@ a symbol indicating a style of some sort, such as 'compact or
 
 (cl-defmethod ebdb-fmt-footer (_fmt _records)
   "")
-
-(cl-defmethod ebdb-fmt-compose-field ((fmt ebdb-formatter)
-				      field-plist
-				      (record ebdb-record))
-  "Turn FIELD-PLIST into a list structure suitable for formatting.
-
-The FIELD-PLIST structure is that returned by
-`ebdb-fmt-collect-fields'.  It is a plist with three
-keys: :class, :style, and :inst.
-
-This function passes the class and field instances to FMT, which
-formats them appropriately, and returns a list of (LABEL
-FIELD-STRING1 FIELD-STRING2 ..)."
-  (let* ((style (plist-get field-plist :style))
-	 (inst (plist-get field-plist :inst))
-	 (label (ebdb-fmt-field-label fmt
-				      (if (= 1 (length inst))
-					  (car inst)
-					(plist-get field-plist :class))
-				      style
-				      record)))
-    (cons label
-	  (mapcar
-	   (lambda (f)
-	     (ebdb-fmt-field fmt f style record))
-	   inst))))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (cls (subclass ebdb-field))
@@ -304,7 +300,13 @@ At present that means handling the combine and collapse slots of
 FMT.
 
 This method assumes that fields in FIELD-LIST have already been
-grouped by field class."
+grouped by field class.
+
+The return value is a list of alists.  Each alist has three keys:
+'class, holding a class symbol, 'style, holding either the symbol
+`collapse' or the symbol `normal', and 'inst, a list of all the
+instances in this bundle.  The `combine' style works by putting
+multiple instances in a single alist."
   (let (outlist f acc)
     (with-slots (combine collapse) fmt
       (when combine
@@ -315,8 +317,8 @@ grouped by field class."
 	    (while (and field-list (same-class-p (car field-list)
 						 (eieio-object-class f)))
 	      (push (setq f (pop field-list)) acc))
-	    (push `(:class ,(eieio-object-class-name f)
-			   :style compact :inst ,(nreverse acc))
+	    (push `((class . ,(eieio-object-class-name f))
+		    (style . compact) (inst . ,(nreverse acc)))
 		  outlist)
 	    (setq acc nil)))
 	(setq field-list (nreverse outlist)
@@ -324,21 +326,19 @@ grouped by field class."
       (dolist (f field-list)
 	(if (listp f)
 	    (push f outlist)
-	  (push (list :class (eieio-object-class-name f)
-		      :inst (list f)
-		      :style
-		      (cond
-		       ((ebdb-foo-in-list-p f collapse) 'collapse)
-		       (t 'normal)))
+	  (push (list (cons 'class (eieio-object-class-name f))
+		      (cons 'inst (list f))
+		      (cons 'style
+			    (cond
+			     ((ebdb-foo-in-list-p f collapse) 'collapse)
+			     (t 'normal))))
 		outlist)))
       (nreverse outlist))))
 
-;;; Basic export routines
+;; No basic implementation of `ebdb-fmt-compose-fields' is given, as
+;; that is entirely formatter-dependent.
 
-(defcustom ebdb-format-buffer-name "*EBDB Format*"
-  "Default name of buffer in which to display formatted records."
-  :type 'string
-  :group 'ebdb-record-display)
+;;; Basic export routines
 
 (defun ebdb-prompt-for-formatter ()
   (interactive)
@@ -355,25 +355,25 @@ grouped by field class."
   (interactive
    (list (ebdb-prompt-for-formatter)
 	 (ebdb-do-records)))
-  (let ((buf (get-buffer-create ebdb-format-buffer-name))
+  (let ((buf (generate-new-buffer
+	      (slot-value formatter 'format-buffer-name)))
 	(fmt-coding (slot-value formatter 'coding-system))
 	(ebdb-p (object-of-class-p formatter 'ebdb-formatter-ebdb)))
     ;; If the user has chosen an ebdb formatter, we need to
-    ;; special-case it.  First because the ebdb formatters handle
-    ;; insertion themselves and the other formatters don't, which was
-    ;; arguably a bad choice.  Second because ebdb formatting should
-    ;; behave differently here -- we assume that what the user
-    ;; actually wants is a text-mode buffer containing the text that
-    ;; *would have been* displayed in an *EBDB* buffer, but with all
-    ;; properties removed.
+    ;; special-case it.  We assume that what the user actually wants
+    ;; is a text-mode buffer containing the text that *would have
+    ;; been* displayed in an *EBDB* buffer, but with all properties
+    ;; removed.
     (if ebdb-p
 	(save-window-excursion
-	  (ebdb-display-records records formatter nil nil nil " *EBDB Fake Output*")
-	  (let ((str (buffer-substring-no-properties
-		      (point-min) (point-max))))
-	    (with-current-buffer buf
-	      (erase-buffer)
-	      (insert str))))
+	  (let ((tmp-buf (get-buffer-create " *EBDB Fake Output*")))
+	    (unwind-protect
+		(progn
+		  (ebdb-display-records records formatter nil nil nil tmp-buf)
+		  (with-current-buffer buf
+		    (erase-buffer)
+		    (insert-buffer-substring-no-properties tmp-buf)))
+	      (kill-buffer tmp-buf))))
       (with-current-buffer buf
 	(erase-buffer)
 	(insert (ebdb-fmt-header formatter records))

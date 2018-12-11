@@ -28,6 +28,7 @@
 (require 'ebdb)
 (require 'ebdb-format)
 (require 'mailabbrev)
+(require 'map)
 
 (eval-and-compile
   (autoload 'build-mail-aliases "mailalias")
@@ -534,6 +535,12 @@ choice: that formatter should be selected explicitly."
 	     dbs)))))
     (propertize char-string 'face 'ebdb-db-char)))
 
+(cl-defmethod ebdb-fmt-field-label :around ((_fmt ebdb-formatter-ebdb)
+					    _field
+					    _style
+					    (_record ebdb-record))
+  (propertize (cl-call-next-method) 'face 'ebdb-label))
+
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-phone)
 				    (_style (eql oneline))
@@ -657,132 +664,141 @@ Print the first line, add an ellipsis, and add a tooltip."
                'keymap image-map)))
     "<img>"))
 
-(defsubst ebdb-indent-string (string column)
-  "Indent nonempty lines in STRING to COLUMN (except first line).
-This happens in addition to any pre-defined indentation of STRING."
-  (replace-regexp-in-string "\n\\([^\n]\\)"
-                            (concat "\n" (make-string column ?\s) "\\1")
-                            string))
-
-;;; Record display:
-;;; This inserts formatted (pieces of) records into the EBDB buffer.
-
-(cl-defmethod ebdb-fmt-record-body ((_fmt ebdb-formatter-ebdb-multiline)
-				    (_record ebdb-record)
-				    (field-list list))
-  (let* ((indent
-	  (if field-list
-	      (apply #'max (mapcar (lambda (f)
-				     (string-width (car f)))
-				   field-list))
-	    0))
-	 (label-fmt (format "   %%%ds" indent))
-	 (fill-column (window-text-width))
-	 (fill-prefix (make-string (+ 5 indent) ?\s))
-	 (paragraph-start "[^:]+:[^\n]+$")
-	 field-string)
-
-    (dolist (c field-list)
-      (insert (format label-fmt (car c)))
-      (put-text-property (line-beginning-position) (point) 'face 'ebdb-label)
-      (insert (setq field-string
-		    (concat
-		     ": "
-		     ;; If I understood the mechanics of filling better, I
-		     ;; could probably do away with `ebdb-indent-string'
-		     ;; altogether.
-		     (ebdb-indent-string (mapconcat #'identity (cdr c) ", ") (+ indent 5)))))
-      ;; If there are newlines in the value string, assume the field
-      ;; knows what's it's doing re filling and formatting.
-      (unless (or (string-match-p "\n" field-string)
-		  (null ebdb-fill-field-values))
-      	(fill-paragraph))
-      (insert "\n"))))
-
-(cl-defmethod ebdb-fmt-record-body ((_fmt ebdb-formatter-ebdb-oneline)
-				    (_record ebdb-record)
-				    (field-list list))
-  (insert " ")
-  (insert (mapconcat (lambda (elt)
-		       (mapconcat #'identity
-				  (cdr elt) " "))
-		     field-list ", ")))
-
-(cl-defmethod ebdb-fmt-record-header ((_fmt ebdb-formatter-ebdb)
-				      (record ebdb-record)
-				      (field-list list))
-  "Insert header for RECORD."
-  ;; Name
-  (let ((record-class (eieio-object-class-name record))
-	(db-chars (ebdb-record-db-char-string record))
-	step)
-    (when db-chars
-      (insert db-chars " "))
-    (setq step (point))
-    ;; We don't actually ask the name field to format itself, just use
-    ;; the cached canonical name string.  We do add the field to the
-    ;; string as a text property, however.
-    (insert (ebdb-record-name record))
-    (add-text-properties (line-beginning-position) (point)
-			 (list 'ebdb-record record-class))
-    (add-text-properties step (point)
-			 (list
-			  'ebdb-field (slot-value record 'name)
-			  'face (cdr (assoc record-class ebdb-name-face-alist)))))
-  ;; Everything else
-  (when field-list
-    (insert " - ")
-    (insert
-     (mapconcat
-      (lambda (f)
-	;; We need to special-case image field, because it is inserted
-	;; differently.  Conveniently, this also allows us to always
-	;; keep the image at the end of the header.
-	(unless (eql (plist-get f :class) 'ebdb-field-image)
-	  (mapconcat #'identity (cdr f) " ")))
-      field-list
-      ", "))
-    ;; TODO: Check if image is in field-list, not if it exists!
-    (when (and (slot-boundp record 'image)
-	       (slot-value record 'image)
-	       (display-images-p))
-      (let ((image (ebdb-field-image-get (slot-value record 'image) record)))
-	(when image
-	  (insert " ")
-	  (insert-image image))))))
-
-(cl-defmethod ebdb-fmt-record-header :after ((_fmt ebdb-formatter-ebdb-multiline)
-					     (_record ebdb-record)
-					     _field-list)
-  (insert "\n"))
+;;; Record display
 
 (cl-defmethod ebdb-fmt-record ((fmt ebdb-formatter-ebdb)
 			       (record ebdb-record))
-  (let ((field-plist
-	 (ebdb-fmt-process-fields
-	  fmt record
-	  (ebdb-fmt-sort-fields
-	   fmt record
-	   (ebdb-fmt-collect-fields
-	    fmt record))))
-	(header-classes (cdr (assoc (eieio-object-class-name record)
-				     (slot-value fmt 'header))))
-	header-fields body-fields)
-    (dolist (f field-plist)
-      (push (ebdb-fmt-compose-field fmt f record)
-	    (if (ebdb-foo-in-list-p (plist-get f :class) header-classes)
-		header-fields
-	      body-fields)))
-    (ebdb-fmt-record-header
-     fmt
-     record
-     header-fields)
+  (pcase-let* ((header-classes (cdr (assoc (eieio-object-class-name record)
+					   (slot-value fmt 'header))))
+	       ((map header-fields body-fields)
+		(seq-group-by
+		 (lambda (f)
+		   ;; FIXME: Consider doing the header/body split in
+		   ;; `ebdb-fmt-process-fields', we've already got the
+		   ;; formatter there.
+		   (if (ebdb-foo-in-list-p (alist-get 'class f)
+					   header-classes)
+		       'header-fields
+		     'body-fields))
+		 (ebdb-fmt-process-fields
+		  fmt record
+		  (ebdb-fmt-sort-fields
+		   fmt record
+		   (ebdb-fmt-collect-fields
+		    fmt record))))))
+    (concat
+     (ebdb-fmt-record-header fmt record header-fields)
+     (ebdb-fmt-compose-fields fmt record body-fields 1))))
 
-    (ebdb-fmt-record-body
-     fmt
-     record
-     body-fields)
-    (insert "\n")))
+(cl-defmethod ebdb-fmt-record-header ((fmt ebdb-formatter-ebdb)
+				      (record ebdb-record)
+				      &optional header-fields)
+  (let ((record-class (eieio-object-class-name record)))
+   (concat
+    (propertize
+     (concat
+      (ebdb-record-db-char-string record)
+      " "
+      (propertize (ebdb-record-name record)
+		  'face (cdr (assoc record-class
+				    ebdb-name-face-alist))))
+     ;; We don't actually ask the name field to format itself, just use
+     ;; the cached canonical name string.  We do add the field to the
+     ;; string as a text property, however.
+     'ebdb-record record-class
+     'ebdb-field (slot-value record 'name))
+    (when header-fields
+      (concat
+       " - "
+       (mapconcat (pcase-lambda ((map style inst))
+		    (mapconcat (lambda (f)
+				 (ebdb-fmt-field fmt f style record))
+			       inst " "))
+		  header-fields " "))))))
+
+(cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-multiline)
+				       (record ebdb-record)
+				       &optional
+				       field-alist depth)
+  "Turn FIELD-ALIST into a string.
+The FIELD-ALIST structure is that returned by
+`ebdb-fmt-collect-fields'.  It is an alist with three keys:
+'class, 'style, and 'inst.
+
+This function passes the class and field instances to FMT, which
+formats them appropriately, and concatenates them into a
+string."
+  (when field-alist
+    (let* ((field-pairs
+	    (mapcar
+	     (pcase-lambda ((map style inst class))
+	       ;; Field labels,
+	       (cons (ebdb-fmt-field-label
+		      fmt
+		      (if (= 1 (length inst))
+			  (car inst)
+			class)
+		      style
+		      record)
+		     ;; and fields.
+		     (mapconcat
+		      #'identity
+		      (mapcar (lambda (f)
+				(ebdb-fmt-field fmt f style record))
+			      inst)
+		      ", ")))
+	     field-alist))
+	   (max-label-width (apply #'max
+				   (mapcar
+				    (lambda (s)
+				      (string-width (car s)))
+				    field-pairs)))
+	   (label-fmt (format " %%%ds"
+			      max-label-width))
+	   (paragraph-start "[ \t]* [[:alpha:] ]+: ")
+	   (fill-prefix (make-string (+ 3 max-label-width) ? ))
+	   (fill-column (window-body-width)))
+      (with-current-buffer (get-buffer-create "format test")
+	(erase-buffer)
+	(insert "\n")
+	(mapc
+	 (pcase-lambda (`(,label . ,fields))
+	   (let ((start (point)))
+	    (insert
+	     (concat
+	      (format label-fmt label)
+	      ": "
+	      fields
+	      "\n"))
+	    (if (string-match-p "\n" fields)
+		;; If a field value contains newlines, don't try to
+		;; fill it, just indent.  I still think there should
+		;; be a way to achieve this purely using
+		;; `fill-region', but I'm not going to worry about it
+		;; for now.
+		(indent-region (save-excursion
+				 (goto-char start)
+				 (forward-line)
+				 (point))
+			       (point))
+	      (when ebdb-fill-field-values
+		(fill-region start (point))))))
+	 field-pairs)
+	(insert "\n\n")
+	(buffer-string)))))
+
+(cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-oneline)
+				       (record ebdb-record)
+				       &optional field-list _depth)
+  (concat
+   (when field-list
+     (concat
+      " - "
+      (mapconcat (pcase-lambda ((map inst style))
+		   (mapconcat (lambda (f) (ebdb-fmt-field fmt f style record))
+			      inst " "))
+		 field-list ", ")))
+   "\n"))
 
 (cl-defgeneric ebdb-make-buffer-name (&context (major-mode t))
   "Return the buffer to be used by EBDB.
@@ -882,7 +898,7 @@ name based on the current major mode."
 	(insert (ebdb-fmt-header fmt records))
         (dolist (record ebdb-records)
 	  (setq start (set-marker (nth 2 record) (point)))
-          (ebdb-fmt-record fmt (car record))
+          (insert (ebdb-fmt-record fmt (car record)))
 	  (put-text-property start (point) 'ebdb-record-number record-number)
 	  (cl-incf record-number))
 	(insert (ebdb-fmt-footer fmt records))
@@ -931,7 +947,7 @@ only happens when removing records.")
 				     (fmt ebdb-formatter-ebdb)
 				     full-record)
   (let ((marker (nth 2 full-record)))
-    (ebdb-fmt-record fmt record)
+    (insert (ebdb-fmt-record fmt record))
     (setf (nth 1 full-record) fmt)
     (if (eq (nth 3 full-record) 'mark)
 	(add-face-text-property
@@ -959,6 +975,7 @@ only happens when removing records.")
   (let ((uuid (ebdb-record-uuid record)))
    (setf (car full-record) uuid)
    (insert uuid)
+   (insert "\n")
    'replaced))
 
 (cl-defmethod ebdb-redisplay-record ((record ebdb-record)
@@ -1016,6 +1033,7 @@ displayed records."
     (dolist (b bufs)
       (with-current-buffer b
 	(let ((inhibit-read-only t)
+	      (ebdb-fill-column (min (window-width) (default-value 'fill-column)))
 	      renumber)
 	  (dolist (r records)
 	    (catch 'bail
