@@ -846,7 +846,8 @@ name based on the current major mode."
 	;; When appending, we want point to end up on the first of the
 	;; appended records.  Save the uuid, and later point a marker
 	;; at it.  Mostly useful for `follow-related'.
-	(target-record-uuid (ebdb-record-uuid (car records)))
+	(target-record-uuid (when records
+			      (ebdb-record-uuid (car records))))
 	target-record-marker)
 
     (with-current-buffer (get-buffer-create target-buffer)
