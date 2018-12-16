@@ -3017,6 +3017,44 @@ message."
     (ebdb-record-insert-field record url-field 'fields)
     (ebdb-display-records (list record))))
 
+;;; Formatting
+
+;;;###autoload
+(defun ebdb-format-to-tmp-buffer (&optional formatter records)
+  (interactive
+   (list (ebdb-prompt-for-formatter)
+	 (ebdb-do-records)))
+  (let ((buf (generate-new-buffer
+	      (slot-value formatter 'format-buffer-name)))
+	(fmt-coding (slot-value formatter 'coding-system))
+	(ebdb-p (object-of-class-p formatter 'ebdb-formatter-ebdb)))
+    ;; If the user has chosen an ebdb formatter, we need to
+    ;; special-case it.  We assume that what the user actually wants
+    ;; is a text-mode buffer containing the text that *would have
+    ;; been* displayed in an *EBDB* buffer, but with all properties
+    ;; removed.
+    (if ebdb-p
+	(save-window-excursion
+	  (let ((tmp-buf (get-buffer-create " *EBDB Fake Output*")))
+	    (unwind-protect
+		(progn
+		  (ebdb-display-records records formatter nil nil nil tmp-buf)
+		  (with-current-buffer buf
+		    (erase-buffer)
+		    (insert-buffer-substring-no-properties tmp-buf)))
+	      (kill-buffer tmp-buf))))
+      (with-current-buffer buf
+	(erase-buffer)
+	(insert (ebdb-fmt-header formatter records))
+	(dolist (r records)
+	  (insert (ebdb-fmt-record formatter r)))
+	(insert (ebdb-fmt-footer formatter records))
+	(set-buffer-file-coding-system fmt-coding)))
+    (pop-to-buffer buf)
+    (let ((f (slot-value formatter 'post-format-function)))
+      (when (fboundp f)
+	(funcall f)))))
+
 ;;; Copy to kill ring
 
 ;;;###autoload

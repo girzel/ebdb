@@ -19,10 +19,10 @@
 
 ;;; Commentary:
 
-;; This file contains code for take record objects and turning them
-;; into text, somehow.  It provides the basic framework that is used
-;; for creating the *EBDB* buffer as well as exporting to vcard,
-;; latex, and html formats.
+;; This file contains code for turning record objects into text,
+;; somehow.  It provides the basic framework that is used for creating
+;; the *EBDB* buffer as well as exporting to vcard, latex, and html
+;; formats.
 
 ;; The basic idea is: a formatter object controls which record fields
 ;; are selected, and ultimately how they're output as text.  The
@@ -48,8 +48,6 @@
 ;;; Code:
 
 (require 'ebdb)
-(declare-function ebdb-do-records "ebdb-com")
-(declare-function ebdb-display-records "ebdb-com")
 
 (defcustom ebdb-format-buffer-name "*EBDB Format*"
   "Default name of buffer in which to display formatted records."
@@ -351,46 +349,10 @@ multiple instances in a single alist."
 		collection))))
 
 ;;;###autoload
-(defun ebdb-format-to-tmp-buffer (&optional formatter records)
-  (interactive
-   (list (ebdb-prompt-for-formatter)
-	 (ebdb-do-records)))
-  (let ((buf (generate-new-buffer
-	      (slot-value formatter 'format-buffer-name)))
-	(fmt-coding (slot-value formatter 'coding-system))
-	(ebdb-p (object-of-class-p formatter 'ebdb-formatter-ebdb)))
-    ;; If the user has chosen an ebdb formatter, we need to
-    ;; special-case it.  We assume that what the user actually wants
-    ;; is a text-mode buffer containing the text that *would have
-    ;; been* displayed in an *EBDB* buffer, but with all properties
-    ;; removed.
-    (if ebdb-p
-	(save-window-excursion
-	  (let ((tmp-buf (get-buffer-create " *EBDB Fake Output*")))
-	    (unwind-protect
-		(progn
-		  (ebdb-display-records records formatter nil nil nil tmp-buf)
-		  (with-current-buffer buf
-		    (erase-buffer)
-		    (insert-buffer-substring-no-properties tmp-buf)))
-	      (kill-buffer tmp-buf))))
-      (with-current-buffer buf
-	(erase-buffer)
-	(insert (ebdb-fmt-header formatter records))
-	(dolist (r records)
-	  (insert (ebdb-fmt-record formatter r)))
-	(insert (ebdb-fmt-footer formatter records))
-	(set-buffer-file-coding-system fmt-coding)))
-    (pop-to-buffer buf)
-    (let ((f (slot-value formatter 'post-format-function)))
-      (when (fboundp f)
-	(funcall f)))))
-
-;;;###autoload
-(defun ebdb-format-all-records (&optional formatter)
+(defun ebdb-format-all-records (&optional formatter records)
   (interactive
    (list (ebdb-prompt-for-formatter)))
-  (ebdb-format-to-tmp-buffer formatter (ebdb-records)))
+  (ebdb-format-to-tmp-buffer formatter (or records (ebdb-records))))
 
 (provide 'ebdb-format)
 ;;; ebdb-format.el ends here
