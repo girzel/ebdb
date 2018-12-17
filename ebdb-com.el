@@ -784,7 +784,7 @@ string."
 	      (when ebdb-fill-field-values
 		(fill-region start (point))))))
 	 field-pairs)
-	(insert "\n\n")
+	(insert "\n")
 	(buffer-string)))))
 
 (cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-oneline)
