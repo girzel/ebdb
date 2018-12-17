@@ -130,7 +130,7 @@ italicized, in all other cases it is left unchanged."
 		       (when ebdb-tags
 			 (mapcar #'list ebdb-tags)))
 	       nil nil
-	       (when obj (ebdb-string obj)))))
+	       (when obj (ebdb-string obj)) 'org-tags-history)))
     (cl-call-next-method field (plist-put slots :tags val))))
 
 ;;;###autoload
