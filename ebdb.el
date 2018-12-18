@@ -2827,7 +2827,7 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 (cl-defmethod ebdb-record-related ((_record ebdb-record)
 				   (_field ebdb-field))
   "Provide a base method that raises `ebdb-related-unfound'."
-  (signal 'ebdb-related-unfound))
+  (signal 'ebdb-related-unfound '("Related record not found")))
 
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
