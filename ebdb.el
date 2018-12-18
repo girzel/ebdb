@@ -5142,6 +5142,37 @@ additionally prompt to save each database individually."
 (defvar ebdb-search-invert nil
   "Bind to t to invert the result of `ebdb-search'.")
 
+(defun ebdb-parse-search-string (str)
+  "Parse STR as a search on multiple fields.
+STR should contain some number of <key>:<value> pairs, where key
+is the name of a field class, or a field class shortcut such as
+\"name\" or \"mail\", and the value is an arbitrary string value
+to search on.
+
+Values containing spaces should be enclosed in double quotes.
+
+Returns a list of (field value) pairs suitable for searching."
+  (let (parsed)
+    (with-temp-buffer
+      (insert str)
+      (goto-char (point-min))
+      (skip-syntax-forward " ")
+      (while (re-search-forward
+	      "\\([[:ascii:]-]+\\):\\(?:\"\\(?2:[^\"]+\\)\"\\|\\(?2:[^[:space:]]+\\)\\)"
+	      (point-max) t)
+	(let* ((key-string (match-string 1))
+	       (sym (or (and (string-match-p "ebdb-field-" key-string)
+			     (intern-soft key-string))
+			(intern-soft (format "ebdb-field-%s" key-string)))))
+	  (if (and (class-p sym)
+		   (child-of-class-p sym 'ebdb-field))
+	      (push (list sym
+			  (match-string 2))
+		    parsed)
+	    (signal 'ebdb-unparseable
+		    (list "Invalid search key" key-string))))))
+    parsed))
+
 ;; Char folding: a simplified version of what happens in char-fold.el.
 
 (defconst ebdb-char-fold-table
