@@ -1186,7 +1186,7 @@ popped up from."
   (let* ((buf (get-buffer buf))
 	 (split-window (car-safe pop))
 	 (buffer-window (get-buffer-window buf t))
-	 (direction (or (caddr pop)
+	 (direction (or (nth 2 pop)
 			(if (> (window-total-width split-window)
 			       (window-total-height split-window))
 			    'right
