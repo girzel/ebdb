@@ -31,6 +31,7 @@
 (declare-function make-gnorb-ebdb-link "ext:gnorb-ebdb")
 (declare-function org-contacts-db "ext:org-contacts")
 (defvar url-handler-regexp)
+(defvar bbdb-time-stamp-format)
 ;;; Migrating the EBDB
 
 ;; For org-contacts
