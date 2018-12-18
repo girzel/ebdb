@@ -1033,7 +1033,6 @@ displayed records."
     (dolist (b bufs)
       (with-current-buffer b
 	(let ((inhibit-read-only t)
-	      (ebdb-fill-column (min (window-width) (default-value 'fill-column)))
 	      renumber)
 	  (dolist (r records)
 	    (catch 'bail
