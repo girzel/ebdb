@@ -101,8 +101,10 @@ internals."
 ;; file operate normally.  These functions are used nowhere else in
 ;; EBDB, and the "v" prefix has been added to prevent function name
 ;; clashes.
-(ebdb-defstruct vrecord
-  firstname lastname affix aka organization phone address mail xfields cache)
+(ebdb-defstruct
+ vrecord
+ firstname lastname affix aka organization phone address mail xfields
+ uuid creation-date timestamp cache)
 
 (ebdb-defstruct vphone
   label area exchange suffix extension)
@@ -121,7 +123,7 @@ slightly munged old EBDB files."
     (setq lis (car lis)))
   lis)
 
-(defconst ebdb-file-format 7
+(defconst ebdb-file-format 9
   "Obsolete variable, only used in migration.")
 
 ;;;###autoload
@@ -142,6 +144,26 @@ slightly munged old EBDB files."
                                (elt record 5) (elt record 6) (elt record 7)
                                (elt record 8)))
           (setq temp (cdr temp)))))
+  (if (< old-format 9)
+      (let (new-records)
+        (dolist (record records)
+          (let ((uuid (or (cdr (assq 'uuid (elt record 8)))
+                          (ebdb-make-uuid)))
+                (creation-date (or (cdr (assq 'creation-date (elt record 8)))
+                                   (format-time-string bbdb-time-stamp-format nil t)))
+                (timestamp (or (cdr (assq 'timestamp (elt record 8)))
+                               (format-time-string bbdb-time-stamp-format nil t))))
+            (push (vector (elt record 0) (elt record 1) (elt record 2)
+                          (elt record 3) (elt record 4) (elt record 5)
+                          (elt record 6) (elt record 7)
+                          (let ((xfields (elt record 8)))
+                            (dolist (elt '(uuid creation-date timestamp))
+                              (setq xfields (assq-delete-all elt xfields)))
+                            xfields)
+                          uuid creation-date timestamp
+                          (elt record 9))
+                  new-records)))
+        (setq records (nreverse new-records))))
   (mapc (ebdb-migrate-versions-lambda old-format) records)
   records)
 
@@ -157,7 +179,11 @@ slightly munged old EBDB files."
     (6 (ebdb-vrecord-xfields ebdb-vrecord-set-xfields
         ebdb-migrate-xfields-to-list)
        (ebdb-vrecord-organization ebdb-vrecord-set-organization
-        ebdb-migrate-organization-to-list)))
+				  ebdb-migrate-organization-to-list))
+    (7 (bbdb-record-xfields bbdb-record-set-xfields
+        bbdb-migrate-xfields-to-list)
+       (bbdb-record-organization bbdb-record-set-organization
+        bbdb-migrate-organization-to-list)))
   "The alist of (version . migration-spec-list).
 See `ebdb-migrate-record-lambda' for details.")
 
@@ -414,7 +440,7 @@ BBDB sets the default of that option."
 	      (let ((orgs (ebdb-vrecord-organization r))
 		    (c-rec (ebdb-migrate-vector-to-class r))
 		    org)
-		;; Gives it a uuid
+		;; Gives it a uuid if it doesn't already have one.
 		(ebdb-db-add-record target-db c-rec)
 		(when orgs
 		  (dolist (o orgs)
@@ -476,7 +502,10 @@ BBDB sets the default of that option."
 	(address (aref v 6))
 	(mail (aref v 7))
 	(xfields (aref v 8))
-	name akas phones mails addresses fields ts c-date notes lab val)
+	(uuid (aref v 9))
+	(c-date (aref v 10))
+	(ts (aref v 11))
+	name akas phones mails addresses fields notes lab val)
     (setq name (make-instance ebdb-default-name-class
 			      :surname l-name
 			      :given-names (when f-name (split-string f-name " " nil))
@@ -487,6 +516,9 @@ BBDB sets the default of that option."
 			     :surname (car (last (split-string a)))
 			     :given-names (butlast (split-string a)))
 	      akas)))
+    (when uuid
+      (setq uuid
+	    (make-instance 'ebdb-field-uuid :uuid uuid)))
     (when phone
       (dolist (p phone)
 	(let ((label (aref p 0))
@@ -532,13 +564,18 @@ BBDB sets the default of that option."
 		  mails))))
       (when mails
 	(setf (slot-value (car (last mails)) 'priority) 'primary)))
-    (when xfields
-      (dolist (x xfields)
-	(setq lab (car x)
-	      val (cdr x))
-	(cond
-	 ((eq lab 'timestamp)
-	  (setq ts (make-instance 'ebdb-field-timestamp
+    (when ts
+      (setq ts (make-instance 'ebdb-field-timestamp
+			      :timestamp
+			      (apply #'encode-time
+				     (mapcar
+				      (lambda (el)
+					(if (null el)
+					    0
+					  el))
+				      (parse-time-string ts))))))
+    (when c-date
+      (setq c-date (make-instance 'ebdb-field-creation-date
 				  :timestamp
 				  (apply #'encode-time
 					 (mapcar
@@ -546,17 +583,12 @@ BBDB sets the default of that option."
 					    (if (null el)
 						0
 					      el))
-					  (parse-time-string val))))))
-	 ((eq lab 'creation-date)
-	  (setq c-date (make-instance 'ebdb-field-creation-date
-				      :timestamp
-				      (apply #'encode-time
-					     (mapcar
-					      (lambda (el)
-						(if (null el)
-						    0
-						  el))
-					      (parse-time-string val))))))
+					  (parse-time-string c-date))))))
+    (when xfields
+      (dolist (x xfields)
+	(setq lab (car x)
+	      val (cdr x))
+	(cond
 	 ((eq lab 'mail-alias)
 	  (push (make-instance 'ebdb-field-mail-alias
 			       :alias val
@@ -617,6 +649,7 @@ BBDB sets the default of that option."
 		fields)))))
     (make-instance ebdb-default-record-class
 		   :name name
+		   :uuid uuid
 		   :aka akas
 		   :phone phones
 		   :address addresses
