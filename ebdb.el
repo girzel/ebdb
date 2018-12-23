@@ -4836,21 +4836,22 @@ also be one of the special symbols below.
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
 				 (field symbol))
-  (cond ((eq field 'firstname) (ebdb-record-firstname record))
-	((eq field 'lastname) (ebdb-record-lastname record))
-	((eq field 'affix)    (slot-value (slot-value record 'name) 'affix))
-	((eq field 'mail-canon) (ebdb-record-mail-canon record)) ; derived (cached) field
-	;; Mail is special-cased, because mail addresses can come from
-	;; more than one slot.
-	((eq field 'mail) (ebdb-record-mail record nil nil t))
-	((eq field 'mail-aka) (ebdb-record-mail-aka record)) ; derived (cached) field
-	((eq field 'aka-all)  (append (ebdb-record-aka record) ; derived field
-				      (ebdb-record-mail-aka record)))
-	;; Otherwise assume it is a valid slot name.
-	(t
-	 (when (and (slot-exists-p record field)
-		    (slot-boundp record field))
-	   (slot-value record field)))))
+  (pcase field
+    ('firstname (ebdb-record-firstname record))
+    ('lastname (ebdb-record-lastname record))
+    ('affix    (slot-value (slot-value record 'name) 'affix))
+    ('mail-canon (ebdb-record-mail-canon record)) ; derived (cached) field
+    ;; Mail is special-cased, because mail addresses can come from
+    ;; more than one slot.
+    ('mail (ebdb-record-mail record nil nil t))
+    ('mail-aka (ebdb-record-mail-aka record)) ; derived (cached) field
+    ('aka-all  (append (ebdb-record-aka record) ; derived field
+		       (ebdb-record-mail-aka record)))
+    ;; Otherwise assume it is a valid slot name.
+    (_
+     (when (and (slot-exists-p record field)
+		(slot-boundp record field))
+       (slot-value record field)))))
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
 				 (f-class (subclass ebdb-field-user)))
