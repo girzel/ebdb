@@ -688,7 +688,8 @@ Print the first line, add an ellipsis, and add a tooltip."
 		    fmt record))))))
     (concat
      (ebdb-fmt-record-header fmt record header-fields)
-     (ebdb-fmt-compose-fields fmt record body-fields 1))))
+     (ebdb-fmt-compose-fields fmt record body-fields 1)
+     "\n")))
 
 (cl-defmethod ebdb-fmt-record-header ((fmt ebdb-formatter-ebdb)
 				      (record ebdb-record)
@@ -715,6 +716,11 @@ Print the first line, add an ellipsis, and add a tooltip."
 				 (ebdb-fmt-field fmt f style record))
 			       inst " "))
 		  header-fields " "))))))
+
+(cl-defmethod ebdb-fmt-record-header :around ((fmt ebdb-formatter-ebdb-multiline)
+					      (record ebdb-record)
+					      &optional header-fields)
+  (concat (cl-call-next-method) "\n"))
 
 (cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-multiline)
 				       (record ebdb-record)
@@ -760,7 +766,6 @@ string."
 	   (fill-column (window-body-width)))
       (with-current-buffer (get-buffer-create "format test")
 	(erase-buffer)
-	(insert "\n")
 	(mapc
 	 (pcase-lambda (`(,label . ,fields))
 	   (let ((start (point)))
@@ -784,7 +789,6 @@ string."
 	      (when ebdb-fill-field-values
 		(fill-region start (point))))))
 	 field-pairs)
-	(insert "\n")
 	(buffer-string)))))
 
 (cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-oneline)
@@ -797,8 +801,7 @@ string."
       (mapconcat (pcase-lambda ((map inst style))
 		   (mapconcat (lambda (f) (ebdb-fmt-field fmt f style record))
 			      inst " "))
-		 field-list ", ")))
-   "\n"))
+		 field-list ", ")))))
 
 (cl-defgeneric ebdb-make-buffer-name (&context (major-mode t))
   "Return the buffer to be used by EBDB.
