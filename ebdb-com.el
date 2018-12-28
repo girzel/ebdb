@@ -2369,8 +2369,7 @@ If ARG (interactively, the prefix arg) is nil, use the primary
 mail address of each record.  If it is t, prompt the user for
 which address to use.
 
-Another approach is to put point on a mail field and press \"a\",
-for `ebdb-field-action'."
+\\<ebdb-mode-map>Another approach is to put point on a mail field and press \\[ebdb-record-action]."
   (interactive (list (ebdb-do-records) nil
                      current-prefix-arg))
   (setq records (ebdb-record-list records))
