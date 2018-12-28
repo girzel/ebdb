@@ -1,8 +1,9 @@
-;;; ebdb-complete.el --- EBDB window as an email-chooser      -*- lexical-binding: t; -*-
+;;; ebdb-complete.el --- Completion functionality for EBDB      -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017  Free Software Foundation, Inc.
 
 ;; Author: Feng Shu <tumashu@163.com>
+;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: mail, convenience
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,80 +21,78 @@
 
 ;;; Commentary:
 
-;; ## Introduce ##
-;;
-;; ebdb-complete is a EBDB tool, when in headers (TO: and CC:) of message-mode
-;; buffer, Type TAB key will pop up a EBDB window as email-chooser.
+;; This file contains code for various EBDB contact completion
+;; options.  The basic function is
+;; `ebdb-completion-at-point-function', which can be added to
+;; `completion-at-point-functions'.  This will offer EBDB contact
+;; completions when in the modes listed in `ebdb-capf-modes'.  Also
+;; see `ebdb-capf-insert-context-aware-strings'.
 
-;; ## Usage ##
-;;
-;; ### The easiest way ###
-;;
-;; Add the below line to your emacs config file.
-;;
-;; ```
-;; (require 'ebdb-complete)
+;; It also contains the function `ebdb-complete' which pops up a full
+;; EBDB window as email-chooser, typically in mail composition buffers.
+
+;; The simplest installation method is to call:
+
 ;; (ebdb-complete-enable)
-;; ```
+
+;; This will bind TAB in message-mode and mail-mode to
+;; `ebdb-complete', which will pop up a full EBDB buffer as a contact
+;; chooser.
 ;;
-;; ### The manual way ###
+;; This can also be done manually, e.g.:
 ;;
-;; The function `ebdb-complete-enable' only rebind some key in `ebdb-mode-map',
-;; `message-mode-map' and `mail-mode-map', user can do this job by hand,
-;; for example:
-;;
-;; ```
-;; ;; ebdb-mode
 ;; (define-key ebdb-mode-map "q" 'ebdb-complete-quit-window)
 ;; (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
 ;; (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window)
 ;; (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
 ;; (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
-;; ```
 
 ;;; Code:
 (require 'ebdb-com)
 (require 'message)
 (require 'sendmail)
 
-;; Experimental completion-at-point function.  I'm not sure this is a
-;; good idea yet -- with a large enough EBDB database, nearly any
-;; string is completable, meaning the other completion-at-point
-;; functions will rarely get a chance.
-(defun ebdb-completion-at-point-function ()
-  "Try to find an EBDB completion for the text at point.
-For use in `completion-at-point-functions'."
-  ;; Might consider restricting this to text-mode buffers -- would you
-  ;; ever want to complete contact names in prog-mode?
-  (let* ((start (point))
-	 (chunk (buffer-substring
-		 (save-excursion
-		   ;; First try going back two words.
-		   (forward-word -2)
-		   (setq start (point)))
-		 (point)))
-	 (completions (all-completions (downcase chunk) ebdb-hashtable)))
-    (unless completions
-      ;; If that didn't work, try just one word.
-      (setq chunk (buffer-substring
-		   (save-excursion
-		     (forward-word -1)
-		     (setq start (point)))
-		   (point))
-	    completions (all-completions (downcase chunk) ebdb-hashtable)))
-    (when completions
-      (list start (point)
-	    (mapcar
-	     (lambda (str)
-	       ;; Gross.
-	       (if (string-match-p "@" str)
-		   str
-		 (capitalize str)))
-	     completions)
-	    '(:exclusive no)))))
+;;;###autoload
+(defun ebdb-mail-dwim-completion-at-point-function ()
+  "Complete text at point as a mail \"dwim\" string.
+The completed strings are of the form \"Firstname Lastname
+<name@example.org>\".  For use in `completion-at-point-functions'
+in `message-mode' or `mail-mode'."
+  (when (let ((mail-abbrev-mode-regexp "^\\(To\\|Cc\\|Bcc\\):"))
+          (mail-abbrev-in-expansion-header-p))
+    (let* ((start
+	    (save-excursion
+	      ;; Headers can be multi-line, but if we've wrapped there
+	      ;; should always be something on the current line.
+	      (re-search-backward ",[[:blank:]]?\\|:[[:blank:]]?"
+				  (line-beginning-position) t)
+	      (match-end 0)))
+	   (end (save-excursion
+		  (goto-char (line-end-position))
+		  (skip-syntax-backward " " (line-beginning-position))
+		  (max start (point)))))
+      (list start end 'ebdb-mail-dwim-collection-function
+	    (list :exclusive 'no)))))
+
+(defun ebdb-mail-dwim-collection-function (str pred flag)
+  "Function that pretends to be a completion table."
+  (let ((completion-ignore-case t))
+    (pcase flag
+      ('t (all-completions str ebdb-dwim-completion-cache pred))
+      ('nil (try-completion str ebdb-dwim-completion-cache pred))
+      ('lambda (test-completion str ebdb-dwim-completion-cache pred))
+      (`(boundaries . ,suffix)
+       (completion-boundaries str ebdb-dwim-completion-cache pred suffix))
+      ('metadata '(metadata . ((category . ebdb-contact)))))))
+
+;; This is apparently the only way to tell the completion mechanisms
+;; which completion style we want for our function.
+(add-to-list 'completion-category-defaults
+	     `(ebdb-contact (styles basic substring)
+			    (cycle . ,ebdb-complete-mail-allow-cycling)))
 
 (defvar ebdb-complete-info (make-hash-table)
-  "A hashtable, record buffer, buffer-window and window-point")
+  "A hashtable recording buffer, buffer-window and window-point")
 
 (defun ebdb-complete-push-mail (records &optional _ arg)
   "Push email-address(es) of `records' to buffer in `ebdb-complete-info'."
@@ -154,6 +153,7 @@ Before quit, this command will do some clean jobs."
      (skip-syntax-backward "w_")
      (point))))
 
+;;;###autoload
 (defun ebdb-complete ()
   "Open EBDB window as an email-address selector,
 if Word at point is found, EBDB will search this word
@@ -233,6 +233,7 @@ when in message body, this command will indent regular text."
   (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
   (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window))
 
+;;;###autoload
 (defun ebdb-complete-enable ()
   "Enable ebdb-complete, it will rebind TAB key in `message-mode-map'."
   (interactive)

@@ -95,6 +95,11 @@ You really should not disable debugging.  But it will speed things up."))
   "Bind this to t to quiet things down - do not set it.
 See also `ebdb-silent'.")
 
+(defvar ebdb-dwim-completion-cache nil
+  "A list of strings as returned by `ebdb-dwim-mail'.
+As mail field instances are created, a \"dwim\"-style string is
+added here, for use in `completion-at-point' in mail buffers.")
+
 ;; Custom groups
 
 (defgroup ebdb-eieio nil
@@ -672,9 +677,13 @@ If nil, no completion is offered."
                                  (const mail)))))
 
 (defcustom ebdb-complete-mail-allow-cycling nil
-  "If non-nil cycle mail addresses when calling function `ebdb-complete-mail'."
+  "If non-nil, cycle mail addresses when completing mails.
+If t, always cycle.  If an integer, only cycle when there are
+that many completion candidates or fewer."
   :group 'ebdb-sendmail
-  :type 'boolean)
+  :type '(choice (const :tag "Never cycle" nil)
+		 (const :tag "Always cycle" t)
+		 (number :tag "Cycle for this many candidates or fewer")))
 
 (defcustom ebdb-complete-mail-hook nil
   "List of functions called after a sucessful completion."
@@ -1482,6 +1491,8 @@ first one."
   (with-slots (aka mail) field
     (ebdb-puthash mail record)
     (object-add-to-list (ebdb-record-cache record) 'mail-canon mail)
+    (cl-pushnew (ebdb-dwim-mail record field) ebdb-dwim-completion-cache
+		:test #'equal)
     (when aka
       (ebdb-puthash aka record)
       (object-add-to-list (ebdb-record-cache record) 'mail-aka aka))))
@@ -1491,6 +1502,8 @@ first one."
     (when aka
       (ebdb-remhash aka record)
       (object-remove-from-list (ebdb-record-cache record) 'mail-aka aka))
+    (setq ebdb-dwim-completion-cache (delete (ebdb-dwim-mail record field)
+					     ebdb-dwim-completion-cache))
     (ebdb-remhash mail record)
     (object-remove-from-list (ebdb-record-cache record) 'mail-canon mail))
   (cl-call-next-method))

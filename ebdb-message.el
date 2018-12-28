@@ -92,15 +92,18 @@ See Gnus' manual for details."
 
 (defun ebdb-insinuate-message ()
   ;; We don't currently bind the `ebdb-mua-keymap'.
-  (when ebdb-complete-mail
-    (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
-		message-completion-alist
-		:test #'equal))
+  ;; (when ebdb-complete-mail
+  ;;   (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
+  ;; 		message-completion-alist
+  ;; 		:test #'equal))
   ;; Other MUAs clear the EBDB buffer before displaying (in
   ;; `ebdb-mua-auto-update', the call to `ebdb-display-records' does
   ;; not pass the "append" flag).  Displaying in message-mode does
   ;; pass the "append" flag (in `ebdb-complete-mail-cleanup'), so we
   ;; do the undisplay manually.
+  (add-to-list 'completion-at-point-functions
+	       #'ebdb-mail-dwim-completion-at-point-function)
+  (local-set-key (kbd "C-M-i") #'completion-at-point)
   (ebdb-undisplay-records))
 
 (defun ebdb-insinuate-mail ()

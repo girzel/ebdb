@@ -2435,6 +2435,17 @@ otherwise inline."
 
 ;;; completion
 
+(defun ebdb-record-completion-table (str pred flag)
+  ""
+  (let* ((completion-ignore-case t))
+    (pcase flag
+      ('t (all-completions str ebdb-hashtable pred))
+      ('nil (try-completion str ebdb-hashtable pred))
+      ('lambda (test-completion str ebdb-hashtable pred))
+      (`(boundaries . ,suffix)
+       (completion-boundaries str ebdb-hashtable pred suffix))
+      ('metadata '(metadata . ((category . ebdb-contact)))))))
+
 ;;;###autoload
 (defun ebdb-completion-predicate (key records)
   "Check if KEY is a value key to return RECORDS.
@@ -2458,9 +2469,9 @@ Otherwise, a valid response is forced.  Optional argument
 OMIT-RECORDS is a list of records that should never be returned."
   (unless ebdb-record-tracker
     (ebdb-load))
-  (let* ((completion-ignore-case t)
-         (string (completing-read prompt ebdb-hashtable
-                                  'ebdb-completion-predicate t)))
+  (let ((string (completing-read
+		 prompt 'ebdb-record-completion-table
+                 'ebdb-completion-predicate t)))
     (unless (string= "" string)
       (let (records)
 	(dolist (record (gethash string ebdb-hashtable))
