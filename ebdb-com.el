@@ -3025,7 +3025,7 @@ message."
   (interactive
    (list (ebdb-prompt-for-formatter)
 	 (ebdb-do-records)))
-  (let ((buf (generate-new-buffer
+  (let ((buf (get-buffer-create
 	      (slot-value formatter 'format-buffer-name)))
 	(fmt-coding (slot-value formatter 'coding-system))
 	(ebdb-p (object-of-class-p formatter 'ebdb-formatter-ebdb)))
