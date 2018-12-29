@@ -74,11 +74,18 @@
     :initform `,buffer-file-coding-system
     :documentation "The coding system for the formatted
     file/buffer/stream.")
-   ;; The elements of the next two slots, besides field class symbols,
-   ;; can also use some shortcut symbols: mail, phone, address, notes,
-   ;; tags, role, mail-primary, mail-defunct, mail-not-defunct,
-   ;; role-defunct, and role-not-defunct.
-   (include
+   (post-format-function
+    :type (or null function)
+    :initarg :post-format-function
+    :initform nil
+    :documentation "A function to be called after formatting is
+    complete.  Probably a major mode."))
+  :abstract t
+  :documentation "Abstract base class for EBDB formatters.
+  Subclass this to produce real formatters.")
+
+(defclass ebdb-formatter-freeform (ebdb-formatter)
+  ((include
     :type list
     :initarg :include
     :initform nil
@@ -97,13 +104,6 @@
     :documentation "How field instances should be sorted.  Field
     classes should be listed in their proper sort order.  A \"_\"
     placeholder indicates where all other fields should go." )
-   (header
-    :type list
-    :initarg :header
-    :initform  '((ebdb-record-person ebdb-field-role ebdb-field-image)
-		 (ebdb-record-organization ebdb-field-domain ebdb-field-image))
-    :documentation "A list of field classes which will be output
-    in the header of the record, grouped by record class type.")
    (combine
     :type list
     :initarg :combine
@@ -119,15 +119,48 @@
     generally indicates that most of the field contents will
     hidden unless the user takes some action, such as clicking or
     hitting <TAB>.  (Currently unimplemented.)")
-   (post-format-function
-    :type (or null function)
-    :initarg :post-format-function
-    :initform nil
-    :documentation "A function to be called after formatting is
-    complete.  Probably a major mode."))
+   (header
+    :type list
+    :initarg :header
+    :initform  '((ebdb-record-person ebdb-field-role ebdb-field-image)
+		 (ebdb-record-organization ebdb-field-domain ebdb-field-image))
+    :documentation "A list of field classes which will be output
+    in the header of the record, grouped by record class type."))
   :abstract t
-  :documentation "Abstract base class for EBDB formatters.
-  Subclass this to produce real formatters.")
+  :documentation "An abstract formatter for formats that can
+  accept variable numbers and types of fields.")
+
+(defclass ebdb-formatter-constrained (ebdb-formatter)
+  ((fields
+    :type list
+    :initarg :fields
+    :initform nil
+    :documentation "A list of the record fields to output.
+    Fields will be output in the order listed.")
+   (field-missing
+    :type (or string symbol function)
+    :initarg :field-missing
+    :initform "none"
+    :documentation "How to handle missing fields.  Can be a
+    string, which will be inserted in place of the missing field,
+    a symbol, which will be raised as an error symbol, or a
+    function, which will be called with three arguments: the
+    formatter, the record, and the field spec."))
+  :abstract t
+  :documentation "An abstract formatter for formats that require
+  an exact specification of fields.")
+
+(defclass ebdb-formatter-tabular (ebdb-formatter-constrained)
+  ((record-separator
+    :type (or string character)
+    :initarg :record-separator
+    :initform "")
+   (field-separator
+    :type (or string character)
+    :initarg :field-separator
+    :initform ""))
+  :documentation "A formatter for outputting records in tabular
+  format.")
 
 (cl-defmethod ebdb-string ((fmt ebdb-formatter))
   (slot-value fmt 'label))
@@ -171,7 +204,7 @@ recursively composing subfields of fields.")
 This method only returns the string value of FIELD itself,
 possibly with text properties attached.")
 
-(cl-defgeneric ebdb-fmt-field-label (fmt field-or-class style record)
+(cl-defgeneric ebdb-fmt-field-label (fmt field-or-class style &optional record)
   "Format a field label, using formatter FMT.
 FIELD-OR-CLASS is a field class or a field instance, and STYLE is
 a symbol indicating a style of some sort, such as 'compact or
@@ -188,24 +221,28 @@ a symbol indicating a style of some sort, such as 'compact or
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (cls (subclass ebdb-field))
 				    _style
+				    &optional
 				    (_record ebdb-record))
   (ebdb-field-readable-name cls))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field)
 				    _style
+				    &optional
 				    (_record ebdb-record))
   (ebdb-field-readable-name field))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
 				    _style
+				    &optional
 				    (_record ebdb-record))
   (ebdb-field-label field))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
 				    (_style (eql compact))
+				    &optional
 				    (_record ebdb-record))
   (ebdb-field-readable-name field))
 
@@ -238,10 +275,11 @@ a symbol indicating a style of some sort, such as 'compact or
   `ebdb-string'."
   (ebdb-string field))
 
-(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-freeform)
 				       (record ebdb-record)
 				       &optional field-list)
-  "Collect all fields of RECORD, and filter according to FMT."
+  "Collect all fields of RECORD, and filter according to FMT.
+Returns RECORD's field as a simple list."
   ;; Remove the `name' slot entry from the list.
   (let ((fields (append
 		 field-list
@@ -262,14 +300,41 @@ a symbol indicating a style of some sort, such as 'compact or
 	   (null (ebdb-foo-in-list-p f exclude))))
        fields))))
 
-(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-constrained)
+				       (record ebdb-record))
+  "Collect RECORD's fields according to FMT's `fields' slot.
+Return as a vector of field instances, with nil in place of
+missing fields."
+  (let* ((fmt-fields (slot-value fmt 'fields))
+	 (missing (slot-value fmt 'field-missing))
+	 (fields (make-vector (length fmt-fields) nil)))
+    (dotimes (i (length fields))
+      (aset fields i (or (ebdb-record-field record (nth i fmt-fields))
+			 (cons (nth i fmt-fields) missing))))
+    fields))
+
+(cl-defmethod ebdb-fmt-sort-fields ((_fmt ebdb-formatter-constrained)
+				    (_record ebdb-record)
+				    &optional fields)
+  "Don't sort by default."
+  fields)
+
+(cl-defmethod ebdb-fmt-process-fields ((_fmt ebdb-formatter-constrained)
+				       (_record ebdb-record)
+				       &optional fields)
+  "Process fields for the \"constrained\" formatter class.
+At present, just makes sure that multiple field instances are
+combined into a single string."
+  fields)
+
+(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-freeform)
 				       (record ebdb-record-organization)
 				       &optional field-list)
   (cl-call-next-method
    fmt record
    (append field-list (gethash (ebdb-record-uuid record) ebdb-org-hashtable))))
 
-(cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter-freeform)
 				    (_record ebdb-record)
 				    field-list)
   "Sort FIELD-LIST using sort order from FMT.
@@ -290,7 +355,7 @@ slot of FMT."
 	     #'< sorted)))
     sorted))
 
-(cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter)
+(cl-defmethod ebdb-fmt-process-fields ((fmt ebdb-formatter-freeform)
 				       (_record ebdb-record)
 				       field-list)
   "Process FIELD-LIST for FMT.
@@ -333,8 +398,89 @@ multiple instances in a single alist."
 		outlist)))
       (nreverse outlist))))
 
-;; No basic implementation of `ebdb-fmt-compose-fields' is given, as
-;; that is entirely formatter-dependent.
+;; Tabular formatting
+
+(cl-defmethod ebdb-fmt-record ((fmt ebdb-formatter-tabular)
+			       (rec ebdb-record))
+  (let ((fields (ebdb-fmt-process-fields
+		 fmt rec
+		 (ebdb-fmt-sort-fields
+		  fmt rec
+		  (ebdb-fmt-collect-fields
+		   fmt rec))))
+	(rec-sep (slot-value fmt 'record-separator)))
+    (concat
+     (ebdb-fmt-compose-fields fmt rec fields)
+     rec-sep)))
+
+(cl-defmethod ebdb-fmt-header ((fmt ebdb-formatter-tabular)
+			       _records)
+  (with-slots (fields field-separator record-separator) fmt
+    (concat
+     "Name"
+     field-separator
+     (mapconcat
+      (lambda (f)
+	(cond
+	 ((stringp f) f)
+	 ((or (class-p f)
+	      (eieio-object-p f))
+	  (ebdb-fmt-field-label fmt f 'normal))
+	 ((symbolp f)
+	  (symbol-name f))))
+      fields
+      field-separator))))
+
+(cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-tabular)
+				       (rec ebdb-record)
+				       &optional field-list _depth)
+
+  (with-slots (field-separator) fmt
+    (concat
+     (ebdb-record-name rec)
+     field-separator
+     (mapconcat
+      (lambda (f)
+	(if (object-p f)
+	    (ebdb-fmt-field fmt f 'compact rec)
+	  ;; See docs of 'field-missing slot of
+	  ;; `ebdb-formatter-constrained' for explanation of the
+	  ;; following behavior.
+	  (pcase f
+	    (`(_ . ,(and (pred stringp) str)) str)
+	    (`(,spec . ,(and (pred symbolp) sym))
+	     (signal sym (list rec spec)))
+	    (`(,spec . (and (pred functionp) fun))
+	     (funcall fun fmt rec spec)))))
+      field-list
+      field-separator))))
+
+(defclass ebdb-formatter-csv (ebdb-formatter-tabular)
+  ((record-separator :initform "\n")
+   (field-separator :initform ",")
+   (post-format-function :initform #'csv-mode)))
+
+(cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-csv)
+			      (_field ebdb-field)
+			      _style
+			      (_rec ebdb-record))
+  "Quote field strings containing the separator."
+  (let ((sep (slot-value fmt 'field-separator))
+	(field (cl-call-next-method)))
+    (if (and (stringp sep)
+	     (string-match-p sep field))
+	(format "\"%s\"" field)
+      field)))
+
+(cl-defmethod ebdb-fmt-header ((_fmt ebdb-formatter-csv)
+			       _records)
+  (concat (cl-call-next-method) "\n"))
+
+(defcustom ebdb-default-csv-formatter
+  (make-instance 'ebdb-formatter-csv :label "csv"
+		 :fields '(mail-primary))
+  "Default CSV formatter."
+  :group 'ebdb)
 
 ;;; Basic export routines
 

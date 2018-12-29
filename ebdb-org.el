@@ -53,8 +53,13 @@
 ;;; Code:
 
 (require 'ebdb-com)
+(require 'ebdb-format)
 (require 'org)
 (require 'org-agenda)
+
+(defgroup ebdb-org nil
+  "Custom group for EBDB Org options."
+  :group 'ebdb)
 
 (if (fboundp 'org-link-set-parameters)
     (org-link-set-parameters "ebdb"
@@ -66,8 +71,8 @@
 			     :store 'ebdb-org-store-link
 			     :export 'ebdb-org-export)
   (with-no-warnings ;; I know it's obsolete.
-   (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
-   (add-hook 'org-store-link-functions 'ebdb-org-store-link)))
+    (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
+    (add-hook 'org-store-link-functions 'ebdb-org-store-link)))
 
 ;; TODO: Put a custom keymap on the links (or else expand
 ;; `ebdb-org-open') so that users can choose what to do with the
@@ -154,6 +159,54 @@ To do this automatically for every search, add this function to
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode org-mode))
   "Use a separate EBDB buffer for Org-related contacts."
   (format "*%s-Org*" ebdb-buffer-name))
+
+;;; Formatters
+
+(defclass ebdb-org-formatter (ebdb-formatter)
+  ((post-format-function :initform #'org-mode))
+  :abstract t
+  :documentation "Formatter responsible for Org-specific field
+  formatting.")
+
+(cl-defmethod ebdb-fmt-field ((fmt ebdb-org-formatter)
+			      (field ebdb-field-mail)
+			      _style
+			      (rec ebdb-record))
+  (concat "mailto:" (cl-call-next-method)))
+
+(defun ebdb-org-table-post-format ()
+  "Align the formatted Org table."
+  (org-mode)
+  (goto-char (point-min))
+  (forward-char)
+  (org-table-align))
+
+(defclass ebdb-org-formatter-tabular (ebdb-formatter-tabular
+				      ebdb-org-formatter)
+  ((record-separator :initform "\n")
+   (field-separator :initform " | ")
+   (post-format-function :initform #'ebdb-org-table-post-format)))
+
+(cl-defmethod ebdb-fmt-header :around ((fmt ebdb-org-formatter-tabular)
+				       _records)
+  (concat "| "
+	  (cl-call-next-method)
+	  " |\n"
+	  "|---|\n"))
+
+(cl-defmethod ebdb-fmt-compose-fields :around ((_fmt ebdb-org-formatter-tabular)
+					       (_rec ebdb-record)
+					       &optional _field-list _depth)
+  (concat "| "
+	  (cl-call-next-method)
+	  " |"))
+
+(defcustom ebdb-org-default-tabular-formatter
+  (make-instance 'ebdb-org-formatter-tabular
+		 :label "org table"
+		 :fields '(mail-primary))
+  "Default Org table formatter."
+  :type 'ebdb-formatter-tabular)
 
 (provide 'ebdb-org)
 ;;; ebdb-org.el ends here

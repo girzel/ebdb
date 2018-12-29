@@ -396,7 +396,7 @@ position-marker mark)."
 
 ;;; *EBDB* formatting
 
-(defclass ebdb-formatter-ebdb (ebdb-formatter)
+(defclass ebdb-formatter-ebdb (ebdb-formatter-freeform)
   ;; This post-format-function only comes into play when the user
   ;; chooses the EBDB format in `ebdb-format-to-tmp-buffer'.
   ((post-format-function
@@ -538,18 +538,21 @@ choice: that formatter should be selected explicitly."
 (cl-defmethod ebdb-fmt-field-label :around ((_fmt ebdb-formatter-ebdb)
 					    _field
 					    _style
+					    &optional
 					    (_record ebdb-record))
   (propertize (cl-call-next-method) 'face 'ebdb-label))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-phone)
 				    (_style (eql oneline))
+				    &optional
 				    (_record ebdb-record))
   (format "phone (%s)" (ebdb-field-label field)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-address)
 				    (_style (eql oneline))
+				    &optional
 				    (_record ebdb-record))
   (format "address (%s)" (ebdb-field-label field)))
 
