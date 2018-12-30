@@ -49,6 +49,8 @@
 
 (require 'ebdb)
 
+(declare-function csv-mode "ext:csv-mode")
+
 (defcustom ebdb-format-buffer-name "*EBDB Format*"
   "Default name of buffer in which to display formatted records."
   :type 'string
@@ -482,7 +484,9 @@ multiple instances in a single alist."
 (defclass ebdb-formatter-csv (ebdb-formatter-tabular)
   ((record-separator :initform "\n")
    (field-separator :initform ",")
-   (post-format-function :initform #'csv-mode)))
+   (post-format-function :initform (lambda ()
+				     (when (fboundp 'csv-mode)
+				       (csv-mode))))))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter-csv)
 			      (_field ebdb-field)
