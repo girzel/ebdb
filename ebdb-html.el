@@ -33,10 +33,67 @@
   :group 'ebdb)
 
 (defclass ebdb-html-formatter (ebdb-formatter)
-  nil
+  ((post-format-function :initform #'html-mode))
   :abstract t
   :documentation "Formatter responsible for HTML-specific field
   formatting.")
+
+(defclass ebdb-html-formatter-html5 (ebdb-html-formatter
+				     ebdb-formatter-freeform)
+  ((header :initform '((ebdb-record-person ebdb-field-notes))))
+  :documentation "HTML formatter for \"block-style\" HTML
+  formatting.")
+
+(cl-defmethod ebdb-fmt-record :around ((_fmt ebdb-html-formatter-html5)
+				       (rec ebdb-record))
+  (concat
+   "<article class=\"ebdb-record\">\n"
+   (cl-call-next-method)
+   "\n</article>\n"))
+
+(cl-defmethod ebdb-fmt-record-header ((fmt ebdb-html-formatter-html5)
+				      (rec ebdb-record)
+				      header-fields)
+  (concat
+   "<header>\n"
+   (format "<h1>%s</h1>\n" (ebdb-record-name rec))
+   (mapconcat
+    (pcase-lambda ((map style inst class))
+      (format "<p>%s</p>" (mapconcat (lambda (f) (ebdb-fmt-field fmt f style rec)) inst ", ")))
+    header-fields
+    "\n")
+   "</header>\n"))
+
+(cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-html-formatter-html5)
+				       (rec ebdb-record)
+				       &optional field-list _depth)
+  (when field-list
+    (let ((field-pairs
+	   (mapcar
+	    (pcase-lambda ((map style inst class))
+	      ;; Field labels,
+	      (cons (ebdb-fmt-field-label
+		     fmt
+		     (if (= 1 (length inst))
+			 (car inst)
+		       class)
+		     style
+		     rec)
+		    ;; and fields.
+		    (mapconcat
+		     #'identity
+		     (mapcar (lambda (f)
+			       (ebdb-fmt-field fmt f style rec))
+			     inst)
+		     ", ")))
+	    field-list)))
+      (concat
+       "<dl>\n"
+       (mapconcat
+	(pcase-lambda (`(,label . ,field))
+	  (format "<dt>%s</dt><dd>%s</dd>" label field))
+	field-pairs "\n")
+       "</dl>\n"))))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-html-formatter)
 			      (field ebdb-field-mail)
@@ -49,14 +106,19 @@
 				       ebdb-html-formatter)
   ;; We put the <tr> elements in manually.
   ((record-separator :initform "")
-   (field-separator :initform "</td><td>")
-   (post-format-function :initform #'html-mode)))
+   (field-separator :initform "</td><td>")))
 
 (defcustom ebdb-html-default-formatter-tabular
   (make-instance 'ebdb-html-formatter-tabular
 		 :label "html table"
 		 :fields '(mail-primary))
   "The default HTML table formatter.")
+
+(defcustom ebdb-html-default-formatter-html5
+  (make-instance 'ebdb-html-formatter-html5
+		 :label "html5 block"
+		 :include '(mail-primary ebdb-field-phone ebdb-field-address ebdb-field-notes))
+  "The default HTML5 block formatter.")
 
 (cl-defmethod ebdb-fmt-header ((fmt ebdb-html-formatter-tabular)
 			       _records)
