@@ -398,6 +398,30 @@ multiple instances in a single alist."
 		outlist)))
       (nreverse outlist))))
 
+(cl-defmethod ebdb-fmt-record ((fmt ebdb-formatter-freeform)
+			       (record ebdb-record))
+  (pcase-let* ((header-classes (cdr (assoc (eieio-object-class-name record)
+					   (slot-value fmt 'header))))
+	       ((map header-fields body-fields)
+		(seq-group-by
+		 (lambda (f)
+		   ;; FIXME: Consider doing the header/body split in
+		   ;; `ebdb-fmt-process-fields', we've already got the
+		   ;; formatter there.
+		   (if (ebdb-foo-in-list-p (alist-get 'class f)
+					   header-classes)
+		       'header-fields
+		     'body-fields))
+		 (ebdb-fmt-process-fields
+		  fmt record
+		  (ebdb-fmt-sort-fields
+		   fmt record
+		   (ebdb-fmt-collect-fields
+		    fmt record))))))
+    (concat
+     (ebdb-fmt-record-header fmt record header-fields)
+     (ebdb-fmt-compose-fields fmt record body-fields 1))))
+
 ;; Tabular formatting
 
 (cl-defmethod ebdb-fmt-record ((fmt ebdb-formatter-tabular)
