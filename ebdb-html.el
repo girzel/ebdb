@@ -67,33 +67,27 @@
 (cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-html-formatter-html5)
 				       (rec ebdb-record)
 				       &optional field-list _depth)
+  "This particular implementation uses description lists (<dl>)."
   (when field-list
-    (let ((field-pairs
-	   (mapcar
-	    (pcase-lambda ((map style inst class))
-	      ;; Field labels,
-	      (cons (ebdb-fmt-field-label
-		     fmt
-		     (if (= 1 (length inst))
-			 (car inst)
-		       class)
-		     style
-		     rec)
-		    ;; and fields.
-		    (mapconcat
-		     #'identity
-		     (mapcar (lambda (f)
-			       (ebdb-fmt-field fmt f style rec))
-			     inst)
-		     ", ")))
-	    field-list)))
-      (concat
-       "<dl>\n"
-       (mapconcat
-	(pcase-lambda (`(,label . ,field))
-	  (format "<dt>%s</dt><dd>%s</dd>" label field))
-	field-pairs "\n")
-       "</dl>\n"))))
+    (concat
+     "<dl>\n"
+     (mapconcat
+      (pcase-lambda ((map style inst class))
+	(concat
+	 (format "<dt>%s</dt>" (ebdb-fmt-field-label
+				fmt
+				(if (= 1 (length inst))
+				    (car inst)
+				  class)
+				style
+				rec))
+	 (mapconcat
+	  (lambda (f)
+	    (format "<dd>%s</dd>" (ebdb-fmt-field fmt f style rec)))
+	  inst
+	  "\n")))
+      field-list "\n")
+     "</dl>\n")))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-html-formatter)
 			      (field ebdb-field-mail)
