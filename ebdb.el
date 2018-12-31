@@ -4832,6 +4832,7 @@ also be one of the special symbols below.
  affix         Return the list of affixes
  aka-all       Return the list of AKAs plus mail-akas.
  mail-aka      Return the list of name parts in mail addresses
+ mail-primary  Return the record's primary mail address
  mail-canon    Return the list of canonical mail addresses.")
 
 (cl-defmethod ebdb-record-field ((record ebdb-record)
@@ -4844,6 +4845,7 @@ also be one of the special symbols below.
     ;; Mail is special-cased, because mail addresses can come from
     ;; more than one slot.
     ('mail (ebdb-record-mail record nil nil t))
+    ('mail-primary (ebdb-record-one-mail record nil t))
     ('mail-aka (ebdb-record-mail-aka record)) ; derived (cached) field
     ('aka-all  (append (ebdb-record-aka record) ; derived field
 		       (ebdb-record-mail-aka record)))
