@@ -28,7 +28,6 @@
 (require 'ebdb)
 (require 'ebdb-format)
 (require 'mailabbrev)
-(require 'map)
 
 (eval-and-compile
   (autoload 'build-mail-aliases "mailalias")

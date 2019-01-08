@@ -45,6 +45,7 @@
 (require 'timezone)
 (require 'cl-lib)
 (require 'seq)
+(require 'map)
 (require 'calendar)
 (require 'subr-x)
 (require 'pcase)
