@@ -650,9 +650,15 @@ name in mail address when same as mail."
                  (const :tag "Avoid redundancy" t)))
 
 (defcustom ebdb-complete-mail t
-  "If t MUA insinuation provides key binding for command `ebdb-complete-mail'."
+  "If non-nil composition MUAs will complete EBDB contacts.
+Completion takes place within mail headers that specify one or
+more message recipients.  A value of `capf' will add an EBDB
+collection to `completion-at-point-functions'.  Any other non-nil
+value will override \"TAB\" to call `ebdb-complete-mail'."
   :group 'ebdb-sendmail
-  :type 'boolean)
+  :type '(choice (const :tag "Use `ebdb-complete-mail'" t)
+		 (const :tag "Do not complete mail addresses" nil)
+		 (const :tag "Use completion at point" capf)))
 
 (defcustom ebdb-completion-list t
   "Controls the behaviour of function `ebdb-complete-mail'.
@@ -676,10 +682,13 @@ If nil, no completion is offered."
                                  (const primary)
                                  (const mail)))))
 
-(defcustom ebdb-complete-mail-allow-cycling nil
+(defcustom ebdb-complete-mail-allow-cycling 5
   "If non-nil, cycle mail addresses when completing mails.
-If t, always cycle.  If an integer, only cycle when there are
-that many completion candidates or fewer."
+If `ebdb-complete-mail' is set to `capf', this option can be set
+to an integer number, specifying that completion should take
+place when there are that many completion candidates or fewer.
+Otherwise, cycling will take place among all a single contact's
+email addresses."
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Never cycle" nil)
 		 (const :tag "Always cycle" t)
@@ -4309,6 +4318,8 @@ addresses."
 
 
 
+;;; Mail and completion stuff.
+
 (defun ebdb-dwim-mail (record &optional mail)
   ;; Do What I Mean!
   "Return a string to use as the mail address of RECORD.
@@ -4352,6 +4363,42 @@ to use."
 		    "%s <%s>")
 		  name mail))
       mail)))
+
+(defun ebdb-mail-dwim-completion-at-point-function ()
+  "Complete text at point as a mail \"dwim\" string.
+The completed strings are of the form \"Firstname Lastname
+<name@example.org>\".  For use in `completion-at-point-functions'
+in `message-mode' or `mail-mode'."
+  (when (let ((mail-abbrev-mode-regexp
+	       "^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):"))
+          (mail-abbrev-in-expansion-header-p))
+    (let* ((start
+	    (save-excursion
+	      ;; Headers can be multi-line, but if we've wrapped there
+	      ;; should always be something on the current line.
+	      (re-search-backward ",[[:blank:]]?\\|:[[:blank:]]?"
+				  (line-beginning-position) t)
+	      (match-end 0)))
+	   (end (save-excursion
+		  (goto-char (line-end-position))
+		  (max start (point)))))
+      (list start end 'ebdb-mail-dwim-collection-function
+	    (list :exclusive 'no)))))
+
+(defun ebdb-mail-dwim-collection-function (str pred flag)
+  "Function that pretends to be a completion table."
+  (let ((completion-ignore-case t))
+    (pcase flag
+      ('t (all-completions str ebdb-dwim-completion-cache pred))
+      ('nil (try-completion str ebdb-dwim-completion-cache pred))
+      ('lambda (test-completion str ebdb-dwim-completion-cache pred))
+      (`(boundaries . ,suffix)
+       (completion-boundaries str ebdb-dwim-completion-cache pred suffix))
+      ('metadata '(metadata . ((category . ebdb-contact)))))))
+
+(add-to-list 'completion-category-defaults
+	     `(ebdb-contact (styles basic substring)
+			    (cycle . ,ebdb-complete-mail-allow-cycling)))
 
 
 ;;; Dialing and texting.

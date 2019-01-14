@@ -21,15 +21,9 @@
 
 ;;; Commentary:
 
-;; This file contains code for various EBDB contact completion
-;; options.  The basic function is
-;; `ebdb-completion-at-point-function', which can be added to
-;; `completion-at-point-functions'.  This will offer EBDB contact
-;; completions when in the modes listed in `ebdb-capf-modes'.  Also
-;; see `ebdb-capf-insert-context-aware-strings'.
-
-;; It also contains the function `ebdb-complete' which pops up a full
-;; EBDB window as email-chooser, typically in mail composition buffers.
+;; This file contains the function `ebdb-complete' which pops
+;; up a full EBDB window as email-chooser, typically in mail
+;; composition buffers.
 
 ;; The simplest installation method is to call:
 
@@ -53,43 +47,6 @@
 (require 'sendmail)
 
 ;;;###autoload
-(defun ebdb-mail-dwim-completion-at-point-function ()
-  "Complete text at point as a mail \"dwim\" string.
-The completed strings are of the form \"Firstname Lastname
-<name@example.org>\".  For use in `completion-at-point-functions'
-in `message-mode' or `mail-mode'."
-  (when (let ((mail-abbrev-mode-regexp "^\\(To\\|Cc\\|Bcc\\):"))
-          (mail-abbrev-in-expansion-header-p))
-    (let* ((start
-	    (save-excursion
-	      ;; Headers can be multi-line, but if we've wrapped there
-	      ;; should always be something on the current line.
-	      (re-search-backward ",[[:blank:]]?\\|:[[:blank:]]?"
-				  (line-beginning-position) t)
-	      (match-end 0)))
-	   (end (save-excursion
-		  (goto-char (line-end-position))
-		  (skip-syntax-backward " " (line-beginning-position))
-		  (max start (point)))))
-      (list start end 'ebdb-mail-dwim-collection-function
-	    (list :exclusive 'no)))))
-
-(defun ebdb-mail-dwim-collection-function (str pred flag)
-  "Function that pretends to be a completion table."
-  (let ((completion-ignore-case t))
-    (pcase flag
-      ('t (all-completions str ebdb-dwim-completion-cache pred))
-      ('nil (try-completion str ebdb-dwim-completion-cache pred))
-      ('lambda (test-completion str ebdb-dwim-completion-cache pred))
-      (`(boundaries . ,suffix)
-       (completion-boundaries str ebdb-dwim-completion-cache pred suffix))
-      ('metadata '(metadata . ((category . ebdb-contact)))))))
-
-;; This is apparently the only way to tell the completion mechanisms
-;; which completion style we want for our function.
-(add-to-list 'completion-category-defaults
-	     `(ebdb-contact (styles basic substring)
-			    (cycle . ,ebdb-complete-mail-allow-cycling)))
 
 (defvar ebdb-complete-info (make-hash-table)
   "A hashtable recording buffer, buffer-window and window-point")
@@ -242,7 +199,6 @@ when in message body, this command will indent regular text."
   (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
   (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
   (message "ebdb-complete: Override EBDB keybindings: `q', `C-c C-c' and `RET'"))
-
 
 (provide 'ebdb-complete)
 

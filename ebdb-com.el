@@ -2437,7 +2437,7 @@ otherwise inline."
 
 (defun ebdb-record-completion-table (str pred flag)
   ""
-  (let* ((completion-ignore-case t))
+  (let ((completion-ignore-case t))
     (pcase flag
       ('t (all-completions str ebdb-hashtable pred))
       ('nil (try-completion str ebdb-hashtable pred))
