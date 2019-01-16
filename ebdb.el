@@ -4382,22 +4382,18 @@ in `message-mode' or `mail-mode'."
 	   (end (save-excursion
 		  (goto-char (line-end-position))
 		  (max start (point)))))
-      (list start end 'ebdb-mail-dwim-collection-function
+      (list start end #'ebdb-mail-dwim-collection-function
 	    (list :exclusive 'no)))))
 
-(defun ebdb-mail-dwim-collection-function (str pred flag)
+(defun ebdb-mail-dwim-collection-function (str pred action)
   "Function that pretends to be a completion table."
   (let ((completion-ignore-case t))
-    (pcase flag
-      ('t (all-completions str ebdb-dwim-completion-cache pred))
-      ('nil (try-completion str ebdb-dwim-completion-cache pred))
-      ('lambda (test-completion str ebdb-dwim-completion-cache pred))
-      (`(boundaries . ,suffix)
-       (completion-boundaries str ebdb-dwim-completion-cache pred suffix))
-      ('metadata '(metadata . ((category . ebdb-contact)))))))
+    (if (eq action 'metadata)
+	'(metadata . ((category . ebdb-contact)))
+      (complete-with-action action ebdb-dwim-completion-cache str pred))))
 
 (add-to-list 'completion-category-defaults
-	     `(ebdb-contact (styles basic substring)
+	     `(ebdb-contact (styles substring basic)
 			    (cycle . ,ebdb-complete-mail-allow-cycling)))
 
 

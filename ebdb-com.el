@@ -2433,18 +2433,14 @@ otherwise inline."
       (ebdb-cite-records records arg))
     (pop-to-buffer buf)))
 
-;;; completion
+;;; Completion
 
-(defun ebdb-record-completion-table (str pred flag)
+(defun ebdb-record-completion-table (str pred action)
   ""
   (let ((completion-ignore-case t))
-    (pcase flag
-      ('t (all-completions str ebdb-hashtable pred))
-      ('nil (try-completion str ebdb-hashtable pred))
-      ('lambda (test-completion str ebdb-hashtable pred))
-      (`(boundaries . ,suffix)
-       (completion-boundaries str ebdb-hashtable pred suffix))
-      ('metadata '(metadata . ((category . ebdb-contact)))))))
+    (if (eq action 'metadata)
+	'(metadata . ((category . ebdb-contact)))
+      (complete-with-action action ebdb-hashtable str pred))))
 
 ;;;###autoload
 (defun ebdb-completion-predicate (key records)
