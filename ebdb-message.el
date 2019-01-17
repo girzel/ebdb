@@ -120,16 +120,20 @@ See Gnus' manual for details."
 ;; *EBDB-Message* buffer after the message-mode buffer is created.
 ;; The gnus window configuration stanza makes sure it's displayed
 ;; after the message buffer is set up.
-(with-eval-after-load 'gnus-win
-  (add-to-list 'gnus-window-to-buffer
-	       `(ebdb-message . ,(ebdb-message-buffer-name)))
-  (add-hook 'message-header-setup-hook 'ebdb-mua-auto-update)
+(add-hook 'ebdb-after-load-hook
+	  (lambda ()
+	    (with-eval-after-load "gnus-win"
+	      (add-hook 'message-header-setup-hook 'ebdb-mua-auto-update)
 
-  (gnus-add-configuration
-   ebdb-message-reply-window-config)
+	      (when ebdb-mua-pop-up
+		(add-to-list 'gnus-window-to-buffer
+			     `(ebdb-message . ,(ebdb-message-buffer-name)))
 
-  (gnus-add-configuration
-   ebdb-message-reply-yank-window-config))
+		(gnus-add-configuration
+		 ebdb-message-reply-window-config)
+
+		(gnus-add-configuration
+		 ebdb-message-reply-yank-window-config)))))
 
 (provide 'ebdb-message)
 ;;; ebdb-message.el ends here

@@ -233,10 +233,13 @@ Note that `\( is the backquote, NOT the quote '\(."
   (format "*%s-Gnus*" ebdb-buffer-name))
 
 ;; Tell Gnus how to display the *EBDB-Gnus* buffer.
-(with-eval-after-load "gnus-win"
-  (add-to-list 'gnus-window-to-buffer
-	       `(ebdb-gnus . ,(ebdb-gnus-buffer-name)))
-  (gnus-add-configuration ebdb-gnus-window-configuration))
+(add-hook 'ebdb-after-load-hook
+	  (lambda ()
+	   (with-eval-after-load "gnus-win"
+	     (when ebdb-mua-pop-up
+	       (add-to-list 'gnus-window-to-buffer
+			    `(ebdb-gnus . ,(ebdb-gnus-buffer-name)))
+	       (gnus-add-configuration ebdb-gnus-window-configuration)))))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode gnus-summary-mode))
   "Produce a EBDB buffer name associated with Gnus."
