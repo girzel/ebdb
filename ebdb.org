@@ -741,6 +741,22 @@ A current limitation of this functionality is that it only works when
 composing a mail to a single recipient.  If you mark several records
 in a {{{buf(EBDB)}}} buffer and compose a mail to them collectively,
 the mechanism will be bypassed.
+** Message and Mail Modes
+:PROPERTIES:
+:ID:       6972ea6a-79e7-47e0-b12e-0faaf441dfd2
+:END:
+Emacs' two message-composition modes are ~message-mode~ and
+~mail-mode~, the former having somewhat obsoleted the latter -- EBDB
+supports both.
+
+The main use of EBDB in message composition is to complete email
+addresses of contacts, obviously.  The following options govern this
+behavior:
+
+#+ATTR_TEXINFO: :options ebdb-complete-mail
+#+BEGIN_defopt
+If non-nil, EBDB will provide mail completion in .
+#+END_defopt
 
 * EBDB Buffers
 :PROPERTIES:
@@ -1220,13 +1236,12 @@ imperfect: not all fields can be exported correctly.  VCard version
 
 It's possible to write new formatters, documentation is forthcoming.
 * Completion
-There are many Emacs completion frameworks out there, and libraries
-exist providing EBDB support for helm, counsel, and company.  These
-libraries must be loaded from the package repositories, and provide
-the commands ~helm-ebdb~, ~counsel-ebdb~, and ~company-ebdb~,
-respectively.  Counsel and company are made to be hooked into Emacs'
-existing completion frameworks; the helm command must be called
-explicitly.
+There are many Emacs completion frameworks out there, and EBDB
+provides custom commands for a few of them: ~ebdb-helm~,
+~ebdb-counsel~, and ~ebdb-company~.  Counsel and company are made to
+be hooked into Emacs' existing completion frameworks; the helm command
+must be called explicitly.  For information about completion in mail
+composition buffers, see [[id:6972ea6a-79e7-47e0-b12e-0faaf441dfd2][Message and Mail Modes]].
 
 Another built-in library,
 @@texinfo:@file{@@ebdb-complete@@texinfo:}@@, uses an ephemeral pop-up
@@ -1235,12 +1250,6 @@ Another built-in library,
 it for {{{kbd(@key{TAB})}}} in ~message-mode~ by calling
 ~ebdb-complete-enable~.
 
-Several native EBDB commands involve choosing a record, or multiple
-records.  At present, the completion interface for these commands is a
-bit random: several of the commands simply use ~completing-read~
-directly, which isn't right.  At some point, all EBDB commands that
-ask the user to select a record will become aware of the
-currently-loaded completion frameworks.
 * Snarfing
 #+CINDEX: Snarfing text
 "Snarfing" refers to scanning free-form text and extracting
