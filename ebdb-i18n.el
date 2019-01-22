@@ -783,14 +783,15 @@ for their symbol representations."
 (cl-defmethod ebdb-parse :extra "i18n" ((class (subclass ebdb-field-phone))
 					(str string)
 					&optional slots)
-  (let ((cc (or (plist-get slots :country-code)
-		(and (string-match "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+" str)
-		     (string-to-number (match-string 1 str))))))
+  (let* ((cc-reg "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+")
+	 (cc (or (plist-get slots :country-code)
+		 (and (string-match cc-reg str)
+		      (string-to-number (match-string 1 str))))))
     (or (and cc
 	     (condition-case nil
 		 (ebdb-parse-i18n
 		  class
-		  (replace-match "" nil nil str 0)
+		  (replace-regexp-in-string cc-reg "" str)
 		  cc (plist-put slots :country-code cc))
 	       (cl-no-method nil)))
 	(cl-call-next-method))))
