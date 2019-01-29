@@ -4335,7 +4335,7 @@ to use."
 	  ;; well (!,%, and $) just for common sense.
 	  ;; `define-mail-alias' uses regexp "[^- !#$%&'*+/0-9=?A-Za-z^_`{|}~]".
 
-	  (format (if (string-match "[][[:cntrl:]\177()<>@,;:.!$%[:nonascii:]]" name)
+	  (format (if (string-match "[][[:cntrl:]\177[:punct:][:nonascii:]]" name)
 		      "\"%s\" <%s>"
 		    "%s <%s>")
 		  name mail))
