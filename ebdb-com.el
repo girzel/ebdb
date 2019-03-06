@@ -192,14 +192,6 @@ This is a vector [INVERT-M INVERT].
 
 INVERT-M is the mode line info if variable `ebdb-search-invert' is non-nil.")
 
-(defun ebdb-get-records (prompt)
-  "If inside the *EBDB* buffer get the current records.
-In other buffers ask the user.
-Argument PROMPT is passed to `ebdb-completing-read-records'."
-  (if (eql major-mode 'ebdb-mode)
-      (ebdb-do-records)
-    (ebdb-completing-read-records prompt)))
-
 ;; Note about the arg RECORDS of various EBDB commands:
 ;;  - Usually, RECORDS is a list of records.  (Interactively,
 ;;    this list of records is set up by `ebdb-do-records'.)
