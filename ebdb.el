@@ -695,15 +695,15 @@ email addresses."
 		 (number :tag "Cycle for this many candidates or fewer")))
 
 (defcustom ebdb-complete-mail-hook nil
-  "List of functions called after a sucessful completion."
+  "List of functions called after a successful completion."
   :group 'ebdb-sendmail
   :type 'hook)
 
 (defcustom ebdb-mail-abbrev-expand-hook nil
   ;; Replacement for function `mail-abbrev-expand-hook'.
   "Function (not hook) run each time an alias is expanded.
-The function is called with two args the alias and the list
-of corresponding mail addresses."
+The function is called with two args: the alias and the list of
+corresponding mail addresses."
   :group 'ebdb-sendmail
   :type 'function)
 
@@ -4368,7 +4368,9 @@ to use."
   "Complete text at point as a mail \"dwim\" string.
 The completed strings are of the form \"Firstname Lastname
 <name@example.org>\".  For use in `completion-at-point-functions'
-in `message-mode' or `mail-mode'."
+in `message-mode' or `mail-mode'.
+
+Also see the variable `ebdb-ignore-redundant-mails'."
   (when (let ((mail-abbrev-mode-regexp
 	       "^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):"))
           (mail-abbrev-in-expansion-header-p))
