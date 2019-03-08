@@ -42,17 +42,6 @@
   "Options for EBDB's interaction with Wanderlust."
   :group 'ebdb-mua)
 
-;; This rebinds <TAB> in `wl-draft-mode-map' to `ebdb-complete-mail'.
-;; WL has its own completion mechanism that we could hook into, by
-;; setting `wl-address-init-function' to our own function that
-;; populates `wl-address-completion-list', but that would mean that
-;; we're basically duplicating most of the information in the EBDB,
-;; and `ebdb-complete-mail' works fine in `wl-draft-mode'.
-(defcustom ebdb-wl-use-ebdb-completion nil
-  "If non-nil, use EBDB mail completion in WL draft mode."
-  :group 'ebdb-wl
-  :type 'bool)
-
 (cl-defmethod ebdb-mua-message-header ((header string)
 				       &context (major-mode mime-view-mode))
   "Extract a message header in Wanderlust."
@@ -122,7 +111,7 @@ beginning) of the signature separator."
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."
   (define-key wl-summary-mode-map ";" ebdb-mua-keymap)
-  (when ebdb-wl-use-ebdb-completion
+  (when ebdb-complete-mail
     (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail))
   (add-hook 'wl-summary-exit-hook #'ebdb-wl-quit-window))
 
