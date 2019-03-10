@@ -1,8 +1,9 @@
-;;; ebdb-complete.el --- EBDB window as an email-chooser      -*- lexical-binding: t; -*-
+;;; ebdb-complete.el --- Completion functionality for EBDB      -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017  Free Software Foundation, Inc.
 
 ;; Author: Feng Shu <tumashu@163.com>
+;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: mail, convenience
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,80 +21,35 @@
 
 ;;; Commentary:
 
-;; ## Introduce ##
-;;
-;; ebdb-complete is a EBDB tool, when in headers (TO: and CC:) of message-mode
-;; buffer, Type TAB key will pop up a EBDB window as email-chooser.
+;; This file contains the function `ebdb-complete' which pops
+;; up a full EBDB window as email-chooser, typically in mail
+;; composition buffers.
 
-;; ## Usage ##
-;;
-;; ### The easiest way ###
-;;
-;; Add the below line to your emacs config file.
-;;
-;; ```
-;; (require 'ebdb-complete)
+;; The simplest installation method is to call:
+
 ;; (ebdb-complete-enable)
-;; ```
+
+;; This will bind TAB in message-mode and mail-mode to
+;; `ebdb-complete', which will pop up a full EBDB buffer as a contact
+;; chooser.
 ;;
-;; ### The manual way ###
+;; This can also be done manually, e.g.:
 ;;
-;; The function `ebdb-complete-enable' only rebind some key in `ebdb-mode-map',
-;; `message-mode-map' and `mail-mode-map', user can do this job by hand,
-;; for example:
-;;
-;; ```
-;; ;; ebdb-mode
 ;; (define-key ebdb-mode-map "q" 'ebdb-complete-quit-window)
 ;; (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
 ;; (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window)
 ;; (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
 ;; (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
-;; ```
 
 ;;; Code:
 (require 'ebdb-com)
 (require 'message)
 (require 'sendmail)
 
-;; Experimental completion-at-point function.  I'm not sure this is a
-;; good idea yet -- with a large enough EBDB database, nearly any
-;; string is completable, meaning the other completion-at-point
-;; functions will rarely get a chance.
-(defun ebdb-completion-at-point-function ()
-  "Try to find an EBDB completion for the text at point.
-For use in `completion-at-point-functions'."
-  ;; Might consider restricting this to text-mode buffers -- would you
-  ;; ever want to complete contact names in prog-mode?
-  (let* ((start (point))
-	 (chunk (buffer-substring
-		 (save-excursion
-		   ;; First try going back two words.
-		   (forward-word -2)
-		   (setq start (point)))
-		 (point)))
-	 (completions (all-completions (downcase chunk) ebdb-hashtable)))
-    (unless completions
-      ;; If that didn't work, try just one word.
-      (setq chunk (buffer-substring
-		   (save-excursion
-		     (forward-word -1)
-		     (setq start (point)))
-		   (point))
-	    completions (all-completions (downcase chunk) ebdb-hashtable)))
-    (when completions
-      (list start (point)
-	    (mapcar
-	     (lambda (str)
-	       ;; Gross.
-	       (if (string-match-p "@" str)
-		   str
-		 (capitalize str)))
-	     completions)
-	    '(:exclusive no)))))
+;;;###autoload
 
 (defvar ebdb-complete-info (make-hash-table)
-  "A hashtable, record buffer, buffer-window and window-point")
+  "A hashtable recording buffer, buffer-window and window-point")
 
 (defun ebdb-complete-push-mail (records &optional _ arg)
   "Push email-address(es) of `records' to buffer in `ebdb-complete-info'."
@@ -154,6 +110,7 @@ Before quit, this command will do some clean jobs."
      (skip-syntax-backward "w_")
      (point))))
 
+;;;###autoload
 (defun ebdb-complete ()
   "Open EBDB window as an email-address selector,
 if Word at point is found, EBDB will search this word
@@ -233,6 +190,7 @@ when in message body, this command will indent regular text."
   (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
   (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window))
 
+;;;###autoload
 (defun ebdb-complete-enable ()
   "Enable ebdb-complete, it will rebind TAB key in `message-mode-map'."
   (interactive)
@@ -241,7 +199,6 @@ when in message body, this command will indent regular text."
   (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
   (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
   (message "ebdb-complete: Override EBDB keybindings: `q', `C-c C-c' and `RET'"))
-
 
 (provide 'ebdb-complete)
 

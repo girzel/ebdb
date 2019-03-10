@@ -634,7 +634,6 @@ Only display the recipients.
 #+begin_deffn
 Only display recipients, using all mail addresses from the message.
 #+end_deffn
-
 ** EBDB and MUA summary buffers
 
 EBDB can affect the way message senders are displayed in your MUA's
@@ -703,6 +702,78 @@ string provided by Gnus, and adding the EBDB-specific format code:
 Format letter to use in the summary buffer format string to mark a
 record.  Defaults to "e".
 #+END_defopt
+** Mail Address Completion
+:PROPERTIES:
+:ID:       f035aefc-53b1-4d05-b980-8ae0ac851275
+:END:
+Emacs' two message-composition modes are ~message-mode~ and
+~mail-mode~, the former having somewhat obsoleted the latter -- EBDB
+supports both.
+
+The main use of EBDB in message composition is to complete email
+addresses of contacts, obviously.  The following options govern this
+behavior:
+
+#+ATTR_TEXINFO: :options ebdb-complete-mail
+#+BEGIN_defopt
+If non-nil, EBDB will provide mail completion in mail composition
+buffers.  If it is the symbol ~capf~, EBDB will add it's own
+completion function to the local value of
+~completion-at-point-functions~.  Otherwise, it will clobber the
+existing binding of {{{kbd(@key{TAB})}}} and replace it with the
+function ~ebdb-complete-mail~.  (Technically, in ~message-mode~, it
+will ensure this function is called instead of ~message-expand-name~.)
+#+END_defopt
+
+#+ATTR_TEXINFO: :options ebdb-mail-avoid-redundancy
+#+BEGIN_defopt
+If nil, mail completion will always insert a full "First Last
+<first.last@example.com>" string, even when the contact's name is
+deemed to be redundant with the email address itself.  If set to the
+symbol ~mail-only~, the name will never be inserted.  If any other
+non-nil value, the name will be elided if it appears to be redundant.
+#+END_defopt
+
+#+ATTR_TEXINFO: :options ebdb-complete-mail-allow-cycling
+#+BEGIN_defopt
+If non-nil, cycle mail addresses when completing mails.  The exact
+behavior of this setting depends a bit on the value of
+~ebdb-complete-mail~.  If completion at point is being used, this can
+be set to an integer N, specifying that cycling may take place if
+there are N or fewer candidate completion strings.  If the function
+~ebdb-complete-mail~ is being used, a non-nil value will allow cycling
+among all of a single contact's mail addresses, once the contact
+itself has been selected.
+#+END_defopt
+
+#+ATTR_TEXINFO: :options ebdb-completion-display-record
+#+BEGIN_defopt
+If non-nil, display each newly-completed record in a pop-up
+{{{buf(EBDB)}}} buffer.
+#+END_defopt
+
+#+ATTR_TEXINFO: :options ebdb-complete-mail-hook
+#+BEGIN_defopt
+A hook run after a successful completion.
+#+END_defopt
+
+#+ATTR_TEXINFO: :options ebdb-mail-abbrev-expand-hook
+#+BEGIN_defopt
+A single function called each time an alias is expanded in a
+composition buffer.  The function is called with two arguments: the
+alias name, and the list of corresponding mail addresses.
+#+END_defopt
+
+*** A Note on Completion
+As mentioned above, EBDB completion can be done either using the
+completion at point framework, or its own ~ebdb-complete-mail~
+function.  The two don't behave exactly the same, however: completion
+at point works from a pre-constructed list of strings, while
+~ebdb-complete-mail~ conducts an actual search of the database.  This
+means that the former is faster, but the latter will find more
+records, particularly if search options like ~ebdb-case-fold-search~
+are in effect.
+
 * Specific MUAs
 ** Gnus
 EBDB has a little more support for Gnus than the other MUAs, for no
@@ -741,7 +812,6 @@ A current limitation of this functionality is that it only works when
 composing a mail to a single recipient.  If you mark several records
 in a {{{buf(EBDB)}}} buffer and compose a mail to them collectively,
 the mechanism will be bypassed.
-
 * EBDB Buffers
 :PROPERTIES:
 :ID:       877ca77a-06d6-4fbf-87ec-614d03c37e30
@@ -1220,13 +1290,12 @@ imperfect: not all fields can be exported correctly.  VCard version
 
 It's possible to write new formatters, documentation is forthcoming.
 * Completion
-There are many Emacs completion frameworks out there, and libraries
-exist providing EBDB support for helm, counsel, and company.  These
-libraries must be loaded from the package repositories, and provide
-the commands ~helm-ebdb~, ~counsel-ebdb~, and ~company-ebdb~,
-respectively.  Counsel and company are made to be hooked into Emacs'
-existing completion frameworks; the helm command must be called
-explicitly.
+There are many Emacs completion frameworks out there, and EBDB
+provides custom commands for a few of them: ~ebdb-helm~,
+~ebdb-counsel~, and ~ebdb-company~.  Counsel and company are made to
+be hooked into Emacs' existing completion frameworks; the helm command
+must be called explicitly.  For information about completion in mail
+composition buffers, see [[id:f035aefc-53b1-4d05-b980-8ae0ac851275][Mail Address Completion]].
 
 Another built-in library,
 @@texinfo:@file{@@ebdb-complete@@texinfo:}@@, uses an ephemeral pop-up
@@ -1235,12 +1304,6 @@ Another built-in library,
 it for {{{kbd(@key{TAB})}}} in ~message-mode~ by calling
 ~ebdb-complete-enable~.
 
-Several native EBDB commands involve choosing a record, or multiple
-records.  At present, the completion interface for these commands is a
-bit random: several of the commands simply use ~completing-read~
-directly, which isn't right.  At some point, all EBDB commands that
-ask the user to select a record will become aware of the
-currently-loaded completion frameworks.
 * Snarfing
 #+CINDEX: Snarfing text
 "Snarfing" refers to scanning free-form text and extracting

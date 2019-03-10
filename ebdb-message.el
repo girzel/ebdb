@@ -90,12 +90,30 @@ See Gnus' manual for details."
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
   (list (get-buffer-window) 0.4))
 
+(defun ebdb-message-complete-mail-cleanup (str _buffer pos &optional _)
+  "Call `ebdb-complete-mail-cleanup' after capf completion."
+  (ebdb-complete-mail-cleanup str pos))
+
 (defun ebdb-insinuate-message ()
   ;; We don't currently bind the `ebdb-mua-keymap'.
-  (when ebdb-complete-mail
-    (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
-		message-completion-alist
-		:test #'equal))
+  (pcase ebdb-complete-mail
+    ('capf (progn (add-hook
+		   'completion-at-point-functions
+  		   #'ebdb-mail-dwim-completion-at-point-function nil t)
+		  ;; Kind of hacky way of mimicking
+		  ;; `ebdb-complete-mail' behavior, but for capf.  The
+		  ;; completion-string-functions are supposed to be
+		  ;; buffer local, but don't appear to be.
+		  (set
+		   (make-local-variable
+		    'choose-completion-string-functions)
+		   (push #'ebdb-message-complete-mail-cleanup
+			 choose-completion-string-functions))))
+    ('nil nil)
+    (_
+     (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
+  		 message-completion-alist
+  		 :test #'equal)))
   ;; Other MUAs clear the EBDB buffer before displaying (in
   ;; `ebdb-mua-auto-update', the call to `ebdb-display-records' does
   ;; not pass the "append" flag).  Displaying in message-mode does
@@ -106,8 +124,18 @@ See Gnus' manual for details."
 (defun ebdb-insinuate-mail ()
   "Hook EBDB into Mail Mode."
   ;; We don't currently bind the `ebdb-mua-keymap'.
-  (if ebdb-complete-mail
-      (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail))
+  (pcase ebdb-complete-mail
+    ('capf (progn (add-hook
+		   'completion-at-point-functions
+  		   #'ebdb-mail-dwim-completion-at-point-function nil t)
+		  ;; See above.
+		  (set
+		   (make-local-variable
+		    'choose-completion-string-functions)
+		   (push #'ebdb-message-complete-mail-cleanup
+			 choose-completion-string-functions))))
+    ('nil nil)
+    (_ (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
   (ebdb-undisplay-records))
 
 (add-hook 'message-mode-hook 'ebdb-insinuate-message)

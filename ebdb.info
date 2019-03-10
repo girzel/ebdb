@@ -12,6 +12,7 @@ Copyright © 2016 Free Software Foundation, Inc.
 
      (a) The FSF’s Back-Cover Text is: “You have the freedom to copy and
      modify this GNU manual.”
+
 INFO-DIR-SECTION Emacs
 START-INFO-DIR-ENTRY
 * EBDB: (ebdb).         Contact management package.
@@ -80,6 +81,7 @@ MUA Interaction
 * Loading MUA Code::
 * Display and Updating::
 * EBDB and MUA summary buffers::
+* Mail Address Completion::
 
 Display and Updating
 
@@ -93,6 +95,11 @@ EBDB and MUA summary buffers
 
 * Sender name display::
 * Summary buffer marks::
+
+
+Mail Address Completion
+
+* A Note on Completion::
 
 
 Specific MUAs
@@ -181,8 +188,8 @@ variable should point to your current BBDB file; alternately EBDB will
 look in the default location, found using ‘(locate-user-emacs-file
 "bbdb" ".bbdb)’.  Then set ‘ebdb-sources’ to a non-existent file name,
 and then run ‘ebdb-load’ (or any of the other EBDB entry commands).
-You’ll be prompted to create the new database, and upgrade from BBDB. If
-any records could not be upgraded, they will be displayed in an *EBDB
+You’ll be prompted to create the new database, and upgrade from BBDB.
+If any records could not be upgraded, they will be displayed in an *EBDB
 Migration Errors* buffer.  Migration bug reports are very welcome.
 
    You can also call the command ‘ebdb-migrate-from-bbdb’ at any time.
@@ -194,7 +201,7 @@ File: ebdb.info,  Node: Variables and Options,  Prev: Record Migration,  Up: Mig
 ---------------------------
 
 Many of the old BBDB customization options have been changed or removed
-entirely in EBDB. It’s probably best to put your BBDB customizations
+entirely in EBDB.  It’s probably best to put your BBDB customizations
 aside, and set new EBDB options as you come across them.  The most
 important options are detailed in this manual, you can also customize
 the “EBDB” group to see what’s available.
@@ -432,10 +439,10 @@ File: ebdb.info,  Node: Field Types,  Prev: Deleting Records and Fields,  Up: Re
 Fields can be classed in a few different categories.  Some are
 “plumbing” fields, that are present for all records, but not generally
 visible or user-editable: these include the creation date, timestamp,
-and UUID. You can view these fields by hitting ‘T’ on the record.  Other
-fields are “built-in”: basic fields that get special treatment.  These
-include the name, mail, phone, address, and notes fields.  EBDB comes
-with default classes for these fields: if you would like to use
+and UUID.  You can view these fields by hitting ‘T’ on the record.
+Other fields are “built-in”: basic fields that get special treatment.
+These include the name, mail, phone, address, and notes fields.  EBDB
+comes with default classes for these fields: if you would like to use
 different defaults, you can create new classes (inheriting from the
 existing ones) and use those instead.  See *note Hacking EBDB:: for more
 information.
@@ -553,6 +560,7 @@ emails.
 * Loading MUA Code::
 * Display and Updating::
 * EBDB and MUA summary buffers::
+* Mail Address Completion::
 
 
 File: ebdb.info,  Node: Loading MUA Code,  Next: Display and Updating,  Up: MUA Interaction
@@ -781,7 +789,7 @@ binding, and only specifies the further binding.  Ie, press “;:” to call
      Only display recipients, using all mail addresses from the message.
 
 
-File: ebdb.info,  Node: EBDB and MUA summary buffers,  Prev: Display and Updating,  Up: MUA Interaction
+File: ebdb.info,  Node: EBDB and MUA summary buffers,  Next: Mail Address Completion,  Prev: Display and Updating,  Up: MUA Interaction
 
 5.3 EBDB and MUA summary buffers
 ================================
@@ -854,6 +862,76 @@ string provided by Gnus, and adding the EBDB-specific format code:
  -- User Option: ebdb-mua-summary-mark-format-letter
      Format letter to use in the summary buffer format string to mark a
      record.  Defaults to “e”.
+
+
+File: ebdb.info,  Node: Mail Address Completion,  Prev: EBDB and MUA summary buffers,  Up: MUA Interaction
+
+5.4 Mail Address Completion
+===========================
+
+Emacs’ two message-composition modes are ‘message-mode’ and ‘mail-mode’,
+the former having somewhat obsoleted the latter – EBDB supports both.
+
+   The main use of EBDB in message composition is to complete email
+addresses of contacts, obviously.  The following options govern this
+behavior:
+
+ -- User Option: ebdb-complete-mail
+     If non-nil, EBDB will provide mail completion in mail composition
+     buffers.  If it is the symbol ‘capf’, EBDB will add it’s own
+     completion function to the local value of
+     ‘completion-at-point-functions’.  Otherwise, it will clobber the
+     existing binding of ‘<TAB>’ and replace it with the function
+     ‘ebdb-complete-mail’.  (Technically, in ‘message-mode’, it will
+     ensure this function is called instead of ‘message-expand-name’.)
+
+ -- User Option: ebdb-mail-avoid-redundancy
+     If nil, mail completion will always insert a full “First Last
+     <first.last@example.com>” string, even when the contact’s name is
+     deemed to be redundant with the email address itself.  If set to
+     the symbol ‘mail-only’, the name will never be inserted.  If any
+     other non-nil value, the name will be elided if it appears to be
+     redundant.
+
+ -- User Option: ebdb-complete-mail-allow-cycling
+     If non-nil, cycle mail addresses when completing mails.  The exact
+     behavior of this setting depends a bit on the value of
+     ‘ebdb-complete-mail’.  If completion at point is being used, this
+     can be set to an integer N, specifying that cycling may take place
+     if there are N or fewer candidate completion strings.  If the
+     function ‘ebdb-complete-mail’ is being used, a non-nil value will
+     allow cycling among all of a single contact’s mail addresses, once
+     the contact itself has been selected.
+
+ -- User Option: ebdb-completion-display-record
+     If non-nil, display each newly-completed record in a pop-up *EBDB*
+     buffer.
+
+ -- User Option: ebdb-complete-mail-hook
+     A hook run after a successful completion.
+
+ -- User Option: ebdb-mail-abbrev-expand-hook
+     A single function called each time an alias is expanded in a
+     composition buffer.  The function is called with two arguments: the
+     alias name, and the list of corresponding mail addresses.
+
+* Menu:
+
+* A Note on Completion::
+
+
+File: ebdb.info,  Node: A Note on Completion,  Up: Mail Address Completion
+
+5.4.1 A Note on Completion
+--------------------------
+
+As mentioned above, EBDB completion can be done either using the
+completion at point framework, or its own ‘ebdb-complete-mail’ function.
+The two don’t behave exactly the same, however: completion at point
+works from a pre-constructed list of strings, while ‘ebdb-complete-mail’
+conducts an actual search of the database.  This means that the former
+is faster, but the latter will find more records, particularly if search
+options like ‘ebdb-case-fold-search’ are in effect.
 
 
 File: ebdb.info,  Node: Specific MUAs,  Next: EBDB Buffers,  Prev: MUA Interaction,  Up: Top
@@ -1308,24 +1386,17 @@ File: ebdb.info,  Node: Completion,  Next: Snarfing,  Prev: EBDB Buffers,  Up: T
 8 Completion
 ************
 
-There are many Emacs completion frameworks out there, and libraries
-exist providing EBDB support for helm, counsel, and company.  These
-libraries must be loaded from the package repositories, and provide the
-commands ‘helm-ebdb’, ‘counsel-ebdb’, and ‘company-ebdb’, respectively.
-Counsel and company are made to be hooked into Emacs’ existing
-completion frameworks; the helm command must be called explicitly.
+There are many Emacs completion frameworks out there, and EBDB provides
+custom commands for a few of them: ‘ebdb-helm’, ‘ebdb-counsel’, and
+‘ebdb-company’.  Counsel and company are made to be hooked into Emacs’
+existing completion frameworks; the helm command must be called
+explicitly.  For information about completion in mail composition
+buffers, see *note Mail Address Completion::.
 
    Another built-in library, ‘ebdb-complete’, uses an ephemeral pop-up
 *EBDB* buffer for record completion.  The command ‘ebdb-complete’
 provides an interactive entry point, or you can enable it for ‘<TAB>’ in
 ‘message-mode’ by calling ‘ebdb-complete-enable’.
-
-   Several native EBDB commands involve choosing a record, or multiple
-records.  At present, the completion interface for these commands is a
-bit random: several of the commands simply use ‘completing-read’
-directly, which isn’t right.  At some point, all EBDB commands that ask
-the user to select a record will become aware of the currently-loaded
-completion frameworks.
 
 
 File: ebdb.info,  Node: Snarfing,  Next: Internationalization,  Prev: Completion,  Up: Top
@@ -1604,7 +1675,7 @@ File: ebdb.info,  Node: Field Classes,  Next: Writing Internationalization Libra
 16.1 Field Classes
 ==================
 
-It’s fairly easy to create your own custom field classes in EBDB. All
+It’s fairly easy to create your own custom field classes in EBDB.  All
 such fields should subclass the ‘ebdb-field-user’ class, which sets up
 basic behavior.  That base class provides for no slots at all, so your
 class must define the slots where the field data will be held.  It
@@ -2047,7 +2118,7 @@ separate functions:
  -- Method: ebdb-make-buffer-name
      Called with no arguments but the mode specializer, this function
      should return the string name of the *EBDB* buffer to be associated
-     with this MUA. Usually the function body will look like: ‘(format
+     with this MUA.  Usually the function body will look like: ‘(format
      "*%s-<mua>" ebdb-buffer-name)’.
 
  -- Method: ebdb-popup-window
@@ -2087,8 +2158,8 @@ any).  This is done with two generic functions:
 
 File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
-Index
-*****
+17 Index
+********
 
  [index ]
 * Menu:
@@ -2173,6 +2244,14 @@ Index
 * ebdb-cite-records-ebdb:                The Basics of ebdb-mode.
                                                               (line  89)
 * ebdb-clone-buffer:                     EBDB Buffers.        (line  19)
+* ebdb-complete-mail:                    Mail Address Completion.
+                                                              (line  13)
+* ebdb-complete-mail-allow-cycling:      Mail Address Completion.
+                                                              (line  30)
+* ebdb-complete-mail-hook:               Mail Address Completion.
+                                                              (line  44)
+* ebdb-completion-display-record:        Mail Address Completion.
+                                                              (line  40)
 * ebdb-copy-fields-as-kill:              The Basics of ebdb-mode.
                                                               (line  96)
 * ebdb-copy-mail-as-kill:                The Basics of ebdb-mode.
@@ -2258,6 +2337,10 @@ Index
                                                               (line  24)
 * ebdb-mail:                             The Basics of ebdb-mode.
                                                               (line  56)
+* ebdb-mail-abbrev-expand-hook:          Mail Address Completion.
+                                                              (line  47)
+* ebdb-mail-avoid-redundancy:            Mail Address Completion.
+                                                              (line  22)
 * ebdb-mail-each:                        The Basics of ebdb-mode.
                                                               (line  61)
 * ebdb-make-buffer-name:                 Writing Integration For New MUAs.
@@ -2432,65 +2515,67 @@ Index
 
 
 Tag Table:
-Node: Top806
-Node: Getting Started2526
-Node: Migration from BBDB3181
-Node: Record Migration3392
-Node: Variables and Options4195
-Node: Migration from Org Contacts4681
-Node: The EBDB Database5441
-Node: Creating Records9429
-Node: Record classes10510
-Node: Record names10855
-Node: Record Fields11530
-Node: Inserting New Fields11774
-Node: Editing Existing Fields12570
-Node: Deleting Records and Fields13170
-Node: Field Types13566
-Node: Role fields15853
-Node: Tag field17541
-Node: Mail folder field18185
-Node: MUA Interaction18513
-Node: Loading MUA Code19038
-Node: Display and Updating19751
-Node: Pop-up Buffers20517
-Node: Auto-Updating Records22100
-Node: Noticing and Automatic Rules24500
-Node: Interactive Commands25833
-Node: EBDB and MUA summary buffers28308
-Node: Sender name display28794
-Node: Summary buffer marks30021
-Node: Specific MUAs31200
-Node: Gnus31348
-Node: Posting Styles31570
-Node: EBDB Buffers33145
-Node: Searching34356
-Node: Changing Search Behavior36018
-Node: The Basics of ebdb-mode37265
-Node: Customizing Record Display41574
-Node: Marking45894
-Node: Exporting/Formatting46321
-Node: Completion47270
-Node: Snarfing48468
-Node: Internationalization50485
-Node: Diary Integration53186
-Node: Mail Aliases54051
-Node: vCard Support54765
-Node: Org Integration55264
-Node: Citing Records57162
-Node: Hacking EBDB57920
-Node: Field Classes60237
-Node: Init and Delete Methods63372
-Node: The Labeled Field Class64879
-Node: The Singleton Field Class65733
-Node: Actions66171
-Node: Custom Field Searching66843
-Node: Fast Lookups69710
-Node: Formatting in the EBDB Buffer71520
-Node: Writing Internationalization Libraries73596
-Node: Writing Integration For New MUAs78010
-Node: Article snarfing81457
-Node: Index82175
+Node: Top807
+Node: Getting Started2607
+Node: Migration from BBDB3262
+Node: Record Migration3473
+Node: Variables and Options4276
+Node: Migration from Org Contacts4763
+Node: The EBDB Database5523
+Node: Creating Records9511
+Node: Record classes10592
+Node: Record names10937
+Node: Record Fields11612
+Node: Inserting New Fields11856
+Node: Editing Existing Fields12652
+Node: Deleting Records and Fields13252
+Node: Field Types13648
+Node: Role fields15934
+Node: Tag field17622
+Node: Mail folder field18266
+Node: MUA Interaction18594
+Node: Loading MUA Code19147
+Node: Display and Updating19860
+Node: Pop-up Buffers20626
+Node: Auto-Updating Records22209
+Node: Noticing and Automatic Rules24609
+Node: Interactive Commands25942
+Node: EBDB and MUA summary buffers28417
+Node: Sender name display28935
+Node: Summary buffer marks30162
+Node: Mail Address Completion31341
+Node: A Note on Completion33850
+Node: Specific MUAs34473
+Node: Gnus34621
+Node: Posting Styles34843
+Node: EBDB Buffers36418
+Node: Searching37629
+Node: Changing Search Behavior39291
+Node: The Basics of ebdb-mode40538
+Node: Customizing Record Display44847
+Node: Marking49167
+Node: Exporting/Formatting49594
+Node: Completion50543
+Node: Snarfing51339
+Node: Internationalization53356
+Node: Diary Integration56057
+Node: Mail Aliases56922
+Node: vCard Support57636
+Node: Org Integration58135
+Node: Citing Records60033
+Node: Hacking EBDB60791
+Node: Field Classes63108
+Node: Init and Delete Methods66244
+Node: The Labeled Field Class67751
+Node: The Singleton Field Class68605
+Node: Actions69043
+Node: Custom Field Searching69715
+Node: Fast Lookups72582
+Node: Formatting in the EBDB Buffer74392
+Node: Writing Internationalization Libraries76468
+Node: Writing Integration For New MUAs80882
+Node: Article snarfing84330
+Node: Index85048
 
 End Tag Table
 

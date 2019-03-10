@@ -2313,9 +2313,9 @@ The search results are displayed in the EBDB buffer using formatter FMT."
 ;;;###autoload
 (defun ebdb-search-single-record (record &optional fmt)
   "Prompt for a single RECORD, and display it."
-  (interactive (list (ebdb-completing-read-records "Display records: ")
+  (interactive (list (ebdb-completing-read-record "Display record: ")
                      (ebdb-formatter-prefix)))
-  (ebdb-display-records record fmt))
+  (ebdb-display-records (list record) fmt))
 
 (defun ebdb-search-prog (function &optional fmt)
   "Search records using FUNCTION.
@@ -2424,7 +2424,39 @@ otherwise inline."
       (ebdb-cite-records records arg))
     (pop-to-buffer buf)))
 
-;;; completion
+;;; Completion
+
+(defun ebdb-record-completion-table (str pred action)
+  "Function used as a completion table for EBDB records.
+STR is used to search the database.  The return value is the
+completed name string."
+  (let* ((completion-ignore-case ebdb-case-fold-search)
+	 (newstring (concat "^" str))
+	 ;; Completion searches the database, but we only use "fast
+	 ;; lookup" search clauses which use the hashtable, instead of
+	 ;; cycling over all records one by one.  Still pretty slow,
+	 ;; though.  Also unfortunate is that EBDB has a broader
+	 ;; concept of "matching string" than the completion
+	 ;; framework, which will later filter out strings that we
+	 ;; consider matching (e.g. according to character folding, or
+	 ;; romanization of non-English scripts).  Perhaps we could
+	 ;; make our own completion style to take care of that.
+	 (strings
+	  (mapcar #'ebdb-string
+		  (if (string-empty-p str)
+		      (ebdb-records)
+		    (ebdb-search
+		     (ebdb-records)
+		     (append
+		      (list `(ebdb-field-name ,newstring)
+			    `(ebdb-field-mail ,newstring)
+			    `(ebdb-field-tags ,newstring))
+		      (mapcar (lambda (f)
+				(list f newstring))
+			      ebdb-hash-extra-predicates)))))))
+    (if (eq action 'metadata)
+	'(metadata . ((category . ebdb-contact)))
+      (complete-with-action action strings str pred))))
 
 ;;;###autoload
 (defun ebdb-completion-predicate (key records)
@@ -2441,44 +2473,16 @@ Obey `ebdb-completion-list'."
 	     (ebdb-hash-p key record ebdb-completion-list))
 	   nil))))
 
-(defun ebdb-completing-read-records (prompt &optional omit-records)
-  "Read and return list of records from the ebdb.
-Completion is done according to `ebdb-completion-list', with
-prompt PROMPT.  If the user just hits return, nil is returned.
-Otherwise, a valid response is forced.  Optional argument
-OMIT-RECORDS is a list of records that should never be returned."
-  (unless ebdb-record-tracker
-    (ebdb-load))
-  (let* ((completion-ignore-case t)
-         (string (completing-read prompt ebdb-hashtable
-                                  'ebdb-completion-predicate t)))
-    (unless (string= "" string)
-      (let (records)
-	(dolist (record (gethash string ebdb-hashtable))
-	  (when (and (not (memq record omit-records))
-		     (not (memq record records)))
-	    (push record records)))
-	records))))
-
-
-(defun ebdb-completing-read-record (prompt &optional omit-records)
-  "Prompt for and return a single record from the ebdb.
-Completion is done according to `ebdb-completion-list', with
-prompt PROMPT.  If the user just hits return, nil is
-returned.  Otherwise, a valid response is forced.  If OMIT-RECORDS
-is non-nil it should be a list of records to dis-allow completion
-with."
-  (let ((records (ebdb-completing-read-records prompt omit-records)))
-    (cond ((eq (length records) 1)
-           (car records))
-          ((> (length records) 1)
-           (ebdb-display-records records ebdb-default-oneline-formatter)
-           (let* ((count (length records))
-                  (result (completing-read
-                           (format "Which record (1-%s): " count)
-                           (mapcar 'number-to-string (number-sequence 1 count))
-                           nil t)))
-             (nth (1- (string-to-number result)) records))))))
+(defun ebdb-completing-read-record (prompt)
+  "Read and return a record from the EBDB.
+PROMPT is used in `completing-read'.  Actual completion is done
+using the function `ebdb-record-completion-table'."
+  (let ((string (completing-read
+		 prompt #'ebdb-record-completion-table nil t))
+	records)
+    (unless (string-empty-p string)
+      (or (car-safe (ebdb-gethash string '(fl-name aka mail)))
+	  (message "No matching records for \"%s\"" string)))))
 
 ;;;###autoload
 (defun ebdb-completing-read-mails (prompt &optional init)
