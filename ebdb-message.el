@@ -90,7 +90,7 @@ See Gnus' manual for details."
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
   (list (get-buffer-window) 0.4))
 
-(defun ebdb-message-complete-mail-cleanup (str _buffer pos &optional _)
+(defun ebdb-message-complete-mail-cleanup (str _buffer pos &rest _)
   "Call `ebdb-complete-mail-cleanup' after capf completion."
   (ebdb-complete-mail-cleanup str pos))
 
@@ -101,14 +101,11 @@ See Gnus' manual for details."
 		   'completion-at-point-functions
   		   #'ebdb-mail-dwim-completion-at-point-function nil t)
 		  ;; Kind of hacky way of mimicking
-		  ;; `ebdb-complete-mail' behavior, but for capf.  The
-		  ;; completion-string-functions are supposed to be
-		  ;; buffer local, but don't appear to be.
-		  (set
-		   (make-local-variable
-		    'choose-completion-string-functions)
-		   (push #'ebdb-message-complete-mail-cleanup
-			 choose-completion-string-functions))))
+		  ;; `ebdb-complete-mail' behavior, but for capf.
+		  (add-hook
+		   'choose-completion-string-functions
+		   #'ebdb-message-complete-mail-cleanup
+		   nil t)))
     ('nil nil)
     (_
      (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
@@ -129,11 +126,10 @@ See Gnus' manual for details."
 		   'completion-at-point-functions
   		   #'ebdb-mail-dwim-completion-at-point-function nil t)
 		  ;; See above.
-		  (set
-		   (make-local-variable
-		    'choose-completion-string-functions)
-		   (push #'ebdb-message-complete-mail-cleanup
-			 choose-completion-string-functions))))
+		  (add-hook
+		   'choose-completion-string-functions
+		   #'ebdb-message-complete-mail-cleanup
+		   nil t)))
     ('nil nil)
     (_ (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
   (ebdb-undisplay-records))
