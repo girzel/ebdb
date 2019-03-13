@@ -168,10 +168,10 @@ To do this automatically for every search, add this function to
   :documentation "Formatter responsible for Org-specific field
   formatting.")
 
-(cl-defmethod ebdb-fmt-field ((fmt ebdb-org-formatter)
-			      (field ebdb-field-mail)
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-org-formatter)
+			      (_field ebdb-field-mail)
 			      _style
-			      (rec ebdb-record))
+			      (_rec ebdb-record))
   (concat "mailto:" (cl-call-next-method)))
 
 (defun ebdb-org-table-post-format ()
@@ -187,7 +187,7 @@ To do this automatically for every search, add this function to
    (field-separator :initform " | ")
    (post-format-function :initform #'ebdb-org-table-post-format)))
 
-(cl-defmethod ebdb-fmt-header :around ((fmt ebdb-org-formatter-tabular)
+(cl-defmethod ebdb-fmt-header :around ((_fmt ebdb-org-formatter-tabular)
 				       _records)
   (concat "| "
 	  (cl-call-next-method)

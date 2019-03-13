@@ -26,7 +26,7 @@
 
 (require 'ebdb)
 
-(declare-function 'ivy-read "ext:ivy")
+(declare-function ivy-read "ext:ivy")
 
 ;;;###autoload
 (defun ebdb-counsel ()

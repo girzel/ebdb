@@ -45,7 +45,7 @@
   formatting.")
 
 (cl-defmethod ebdb-fmt-record :around ((_fmt ebdb-html-formatter-html5)
-				       (rec ebdb-record))
+				       (_rec ebdb-record))
   (concat
    "<article class=\"ebdb-record\">\n"
    (cl-call-next-method)
@@ -58,7 +58,7 @@
    "<header>\n"
    (format "<h1>%s</h1>\n" (ebdb-record-name rec))
    (mapconcat
-    (pcase-lambda ((map style inst class))
+    (pcase-lambda ((map style inst _class))
       (format "<p>%s</p>" (mapconcat (lambda (f) (ebdb-fmt-field fmt f style rec)) inst ", ")))
     header-fields
     "\n")
@@ -106,13 +106,15 @@
   (make-instance 'ebdb-html-formatter-tabular
 		 :label "html table"
 		 :fields '(mail-primary))
-  "The default HTML table formatter.")
+  "The default HTML table formatter."
+  :type 'ebdb-html-formatter-tabular)
 
 (defcustom ebdb-html-default-formatter-html5
   (make-instance 'ebdb-html-formatter-html5
 		 :label "html5 block"
 		 :include '(mail-primary ebdb-field-phone ebdb-field-address ebdb-field-notes))
-  "The default HTML5 block formatter.")
+  "The default HTML5 block formatter."
+  :type 'ebdb-html-formatter-html5)
 
 (cl-defmethod ebdb-fmt-header ((fmt ebdb-html-formatter-tabular)
 			       _records)
@@ -132,7 +134,7 @@
       "</th><th>")
      "</th></tr>\n")))
 
-(cl-defmethod ebdb-fmt-footer ((fmt ebdb-html-formatter-tabular)
+(cl-defmethod ebdb-fmt-footer ((_fmt ebdb-html-formatter-tabular)
 			      _records)
   "\n</table>")
 

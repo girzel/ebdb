@@ -660,8 +660,8 @@ Print the first line, add an ellipsis, and add a tooltip."
 
 ;;; Record display
 
-(cl-defmethod ebdb-fmt-record ((fmt ebdb-formatter-ebdb)
-			       (record ebdb-record))
+(cl-defmethod ebdb-fmt-record ((_fmt ebdb-formatter-ebdb)
+			       (_record ebdb-record))
   (concat (cl-call-next-method) "\n"))
 
 (cl-defmethod ebdb-fmt-record-header ((fmt ebdb-formatter-ebdb)
@@ -690,15 +690,15 @@ Print the first line, add an ellipsis, and add a tooltip."
 			       inst " "))
 		  header-fields " "))))))
 
-(cl-defmethod ebdb-fmt-record-header :around ((fmt ebdb-formatter-ebdb-multiline)
-					      (record ebdb-record)
-					      &optional header-fields)
+(cl-defmethod ebdb-fmt-record-header :around ((_fmt ebdb-formatter-ebdb-multiline)
+					      (_record ebdb-record)
+					      &optional _header-fields)
   (concat (cl-call-next-method) "\n"))
 
 (cl-defmethod ebdb-fmt-compose-fields ((fmt ebdb-formatter-ebdb-multiline)
 				       (record ebdb-record)
 				       &optional
-				       field-alist depth)
+				       field-alist _depth)
   "Turn FIELD-ALIST into a string.
 The FIELD-ALIST structure is that returned by
 `ebdb-fmt-collect-fields'.  It is an alist with three keys:
@@ -2478,8 +2478,7 @@ Obey `ebdb-completion-list'."
 PROMPT is used in `completing-read'.  Actual completion is done
 using the function `ebdb-record-completion-table'."
   (let ((string (completing-read
-		 prompt #'ebdb-record-completion-table nil t))
-	records)
+		 prompt #'ebdb-record-completion-table nil t)))
     (unless (string-empty-p string)
       (or (car-safe (ebdb-gethash string '(fl-name aka mail)))
 	  (message "No matching records for \"%s\"" string)))))

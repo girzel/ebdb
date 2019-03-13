@@ -467,16 +467,16 @@ multiple instances in a single alist."
      field-separator
      (mapconcat
       (lambda (f)
-	(if (object-p f)
+	(if (eieio-object-p f)
 	    (ebdb-fmt-field fmt f 'compact rec)
 	  ;; See docs of 'field-missing slot of
 	  ;; `ebdb-formatter-constrained' for explanation of the
 	  ;; following behavior.
 	  (pcase f
-	    (`(_ . ,(and (pred stringp) str)) str)
+	    (`(,_ . ,(and (pred stringp) str)) str)
 	    (`(,spec . ,(and (pred symbolp) sym))
 	     (signal sym (list rec spec)))
-	    (`(,spec . (and (pred functionp) fun))
+	    (`(,spec . ,(and (pred functionp) fun))
 	     (funcall fun fmt rec spec)))))
       field-list
       field-separator))))
@@ -508,7 +508,8 @@ multiple instances in a single alist."
   (make-instance 'ebdb-formatter-csv :label "csv"
 		 :fields '(mail-primary))
   "Default CSV formatter."
-  :group 'ebdb)
+  :group 'ebdb
+  :type 'ebdb-formatter-csv)
 
 ;;; Basic export routines
 
