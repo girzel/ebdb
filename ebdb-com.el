@@ -2081,6 +2081,14 @@ With prefix N, omit the next N records.  If negative, omit backwards."
 
 ;; Entry points to EBDB
 
+;;;###autoload
+(defun ebdb-open ()
+  "Open a buffer in `ebdb-mode'; do nothing else."
+  (interactive)
+  (unless ebdb-db-list
+    (ebdb-load))
+  (ebdb-display-records nil))
+
 ;; We need to have this first thing in the interactive declaration,
 ;; because if you check `this-command-keys' after the
 ;; `ebdb-search-read' interactive bit, it will return ^M.
@@ -2118,7 +2126,10 @@ optional formatter to use."
 	  ;; with.
 	  (progn
 	    (ebdb-display-records nil fmt)
-	    (message "EBDB database is empty"))
+	    (message
+	     (substitute-command-keys
+	      "Database is empty, use\\<ebdb-mode-map>\
+ \\[ebdb-create-record] to create records")))
 	(message "No matching records")))))
 
 ;;;###autoload

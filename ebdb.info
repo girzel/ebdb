@@ -1,4 +1,4 @@
-This is ebdb.info, produced by makeinfo version 6.5 from ebdb.texi.
+This is ebdb.info, produced by makeinfo version 6.6 from ebdb.texi.
 
 Copyright © 2016 Free Software Foundation, Inc.
 
@@ -48,6 +48,7 @@ EBDB Manual
 
 Getting Started
 
+* Starting a New Database::
 * Migration from BBDB::
 * Migration from Org Contacts::
 
@@ -153,23 +154,56 @@ File: ebdb.info,  Node: Getting Started,  Next: The EBDB Database,  Prev: Top,  
 1 Getting Started
 *****************
 
-Assuming you have no records you want to migrate from other contact
-management software, it is enough to call the top-level ‘ebdb’ command.
-This will create a new database at the location specified by
-‘ebdb-sources’ (see *note The EBDB Database::), prompt you for a search
-string, fail to find anything (because you don’t have any records yet),
-and finally open a *EBDB* buffer where you can start to make new records
-(see *note Creating Records::).
+EBDB is a contact management package: it records information about
+people and organizations, and integrates with other Emacs software
+packages, mostly those concerned with sending and reading mail.  The
+principle parts of EBDB are records, which represent people and
+organizations; fields, representing detailed data about records; and
+databases, which hold and persist records.
+
+   It’s easiest to install EBDB from the ELPA package repositories,
+though it’s also possible to clone the package from Github
+(https:github.com/girzel/ebdb) and put it on your load path.  Questions
+and bug reports can be raised on the Github issues page, or on the Emacs
+bug tracker or mailing lists, provided you cc the maintainer.
+
+   There are a large number of configuration options listed in this
+manual, but the only one you might want to tweak in advance is
+‘ebdb-sources’ (see *note The EBDB Database::), which controls where
+EBDB stores its records.
+
+   EBDB comes with integration for a few other Emacs packages, including
+Org and a number of mail user agents; see the following sections below
+for details.
 
 * Menu:
 
+* Starting a New Database::
 * Migration from BBDB::
 * Migration from Org Contacts::
 
 
-File: ebdb.info,  Node: Migration from BBDB,  Next: Migration from Org Contacts,  Up: Getting Started
+File: ebdb.info,  Node: Starting a New Database,  Next: Migration from BBDB,  Up: Getting Started
 
-1.1 Migration from BBDB
+1.1 Starting a New Database
+===========================
+
+If you have no records you want to migrate from other contact management
+software, start by calling the command ‘ebdb-open’.  This will open a
+new buffer in ‘ebdb-mode’, and prompt you to create a database, if one
+doesn’t already exist.  From there, you can use ‘c’ to make new records
+(see *note Creating Records::).  You can also hook EBDB into a mail-user
+agent (see *note MUA Interaction::) and allow it to create records
+automatically.
+
+   Otherwise, you’ll want to migrate your contact information from other
+contact management software as described in the sections below.
+Currently EBDB only knows about migrating from BBDB and Org Contacts.
+
+
+File: ebdb.info,  Node: Migration from BBDB,  Next: Migration from Org Contacts,  Prev: Starting a New Database,  Up: Getting Started
+
+1.2 Migration from BBDB
 =======================
 
 * Menu:
@@ -180,7 +214,7 @@ File: ebdb.info,  Node: Migration from BBDB,  Next: Migration from Org Contacts,
 
 File: ebdb.info,  Node: Record Migration,  Next: Variables and Options,  Up: Migration from BBDB
 
-1.1.1 Record Migration
+1.2.1 Record Migration
 ----------------------
 
 It’s possible to migrate records from a BBDB database.  The ‘bbdb-file’
@@ -197,7 +231,7 @@ Migration Errors* buffer.  Migration bug reports are very welcome.
 
 File: ebdb.info,  Node: Variables and Options,  Prev: Record Migration,  Up: Migration from BBDB
 
-1.1.2 Variables and Options
+1.2.2 Variables and Options
 ---------------------------
 
 Many of the old BBDB customization options have been changed or removed
@@ -209,7 +243,7 @@ the “EBDB” group to see what’s available.
 
 File: ebdb.info,  Node: Migration from Org Contacts,  Prev: Migration from BBDB,  Up: Getting Started
 
-1.2 Migration from Org Contacts
+1.3 Migration from Org Contacts
 ===============================
 
 EBDB also provides limited support for migrating from Org Contacts:
@@ -1623,6 +1657,11 @@ see *note EIEIO: (eieio)Top. for information on defining classes, and
 *note Generic Functions: (elisp)Generic Functions. for information on
 writing generic functions and methods.
 
+   Some information about EBDB’s various classes can had from Emacs’
+built-in help system: examining the function definition of a class
+symbol like ‘ebdb-field-anniversary’ will show a documentation string,
+and details of the class’s slot and method definitions.
+
    The simplest customization involves changing the default classes used
 for basic record and field types.
 
@@ -2266,8 +2305,8 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  26)
 * ebdb-dedicated-window:                 Customizing Record Display.
                                                               (line  19)
-* ebdb-default-address-class:            Hacking EBDB.        (line  38)
-* ebdb-default-mail-class:               Hacking EBDB.        (line  32)
+* ebdb-default-address-class:            Hacking EBDB.        (line  43)
+* ebdb-default-mail-class:               Hacking EBDB.        (line  37)
 * ebdb-default-multiline-collapse:       Customizing Record Display.
                                                               (line  63)
 * ebdb-default-multiline-combine:        Customizing Record Display.
@@ -2278,15 +2317,15 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line   6)
 * ebdb-default-multiline-include:        Customizing Record Display.
                                                               (line  48)
-* ebdb-default-name-class:               Hacking EBDB.        (line  26)
-* ebdb-default-notes-class:              Hacking EBDB.        (line  41)
+* ebdb-default-name-class:               Hacking EBDB.        (line  31)
+* ebdb-default-notes-class:              Hacking EBDB.        (line  46)
 * ebdb-default-oneline-formatter:        Customizing Record Display.
                                                               (line   6)
 * ebdb-default-oneline-include:          Customizing Record Display.
                                                               (line  73)
-* ebdb-default-phone-class:              Hacking EBDB.        (line  35)
+* ebdb-default-phone-class:              Hacking EBDB.        (line  40)
 * ebdb-default-record-class:             Creating Records.    (line  10)
-* ebdb-default-record-class <1>:         Hacking EBDB.        (line  19)
+* ebdb-default-record-class <1>:         Hacking EBDB.        (line  24)
 * ebdb-delete-field:                     Init and Delete Methods.
                                                               (line  15)
 * ebdb-delete-field-or-record:           The Basics of ebdb-mode.
@@ -2404,6 +2443,8 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  11)
 * ebdb-omit-records:                     The Basics of ebdb-mode.
                                                               (line  85)
+* ebdb-open:                             Starting a New Database.
+                                                              (line   6)
 * ebdb-org-agenda-popup:                 Org Integration.     (line  32)
 * ebdb-popup-window:                     Writing Integration For New MUAs.
                                                               (line  60)
@@ -2516,66 +2557,67 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
 Tag Table:
 Node: Top807
-Node: Getting Started2607
-Node: Migration from BBDB3262
-Node: Record Migration3473
-Node: Variables and Options4276
-Node: Migration from Org Contacts4763
-Node: The EBDB Database5523
-Node: Creating Records9511
-Node: Record classes10592
-Node: Record names10937
-Node: Record Fields11612
-Node: Inserting New Fields11856
-Node: Editing Existing Fields12652
-Node: Deleting Records and Fields13252
-Node: Field Types13648
-Node: Role fields15934
-Node: Tag field17622
-Node: Mail folder field18266
-Node: MUA Interaction18594
-Node: Loading MUA Code19147
-Node: Display and Updating19860
-Node: Pop-up Buffers20626
-Node: Auto-Updating Records22209
-Node: Noticing and Automatic Rules24609
-Node: Interactive Commands25942
-Node: EBDB and MUA summary buffers28417
-Node: Sender name display28935
-Node: Summary buffer marks30162
-Node: Mail Address Completion31341
-Node: A Note on Completion33850
-Node: Specific MUAs34473
-Node: Gnus34621
-Node: Posting Styles34843
-Node: EBDB Buffers36418
-Node: Searching37629
-Node: Changing Search Behavior39291
-Node: The Basics of ebdb-mode40538
-Node: Customizing Record Display44847
-Node: Marking49167
-Node: Exporting/Formatting49594
-Node: Completion50543
-Node: Snarfing51339
-Node: Internationalization53356
-Node: Diary Integration56057
-Node: Mail Aliases56922
-Node: vCard Support57636
-Node: Org Integration58135
-Node: Citing Records60033
-Node: Hacking EBDB60791
-Node: Field Classes63108
-Node: Init and Delete Methods66244
-Node: The Labeled Field Class67751
-Node: The Singleton Field Class68605
-Node: Actions69043
-Node: Custom Field Searching69715
-Node: Fast Lookups72582
-Node: Formatting in the EBDB Buffer74392
-Node: Writing Internationalization Libraries76468
-Node: Writing Integration For New MUAs80882
-Node: Article snarfing84330
-Node: Index85048
+Node: Getting Started2635
+Node: Starting a New Database3964
+Node: Migration from BBDB4788
+Node: Record Migration5031
+Node: Variables and Options5834
+Node: Migration from Org Contacts6321
+Node: The EBDB Database7081
+Node: Creating Records11069
+Node: Record classes12150
+Node: Record names12495
+Node: Record Fields13170
+Node: Inserting New Fields13414
+Node: Editing Existing Fields14210
+Node: Deleting Records and Fields14810
+Node: Field Types15206
+Node: Role fields17492
+Node: Tag field19180
+Node: Mail folder field19824
+Node: MUA Interaction20152
+Node: Loading MUA Code20705
+Node: Display and Updating21418
+Node: Pop-up Buffers22184
+Node: Auto-Updating Records23767
+Node: Noticing and Automatic Rules26167
+Node: Interactive Commands27500
+Node: EBDB and MUA summary buffers29975
+Node: Sender name display30493
+Node: Summary buffer marks31720
+Node: Mail Address Completion32899
+Node: A Note on Completion35408
+Node: Specific MUAs36031
+Node: Gnus36179
+Node: Posting Styles36401
+Node: EBDB Buffers37976
+Node: Searching39187
+Node: Changing Search Behavior40849
+Node: The Basics of ebdb-mode42096
+Node: Customizing Record Display46405
+Node: Marking50725
+Node: Exporting/Formatting51152
+Node: Completion52101
+Node: Snarfing52897
+Node: Internationalization54914
+Node: Diary Integration57615
+Node: Mail Aliases58480
+Node: vCard Support59194
+Node: Org Integration59693
+Node: Citing Records61591
+Node: Hacking EBDB62349
+Node: Field Classes64940
+Node: Init and Delete Methods68076
+Node: The Labeled Field Class69583
+Node: The Singleton Field Class70437
+Node: Actions70875
+Node: Custom Field Searching71547
+Node: Fast Lookups74414
+Node: Formatting in the EBDB Buffer76224
+Node: Writing Internationalization Libraries78300
+Node: Writing Integration For New MUAs82714
+Node: Article snarfing86162
+Node: Index86880
 
 End Tag Table
 

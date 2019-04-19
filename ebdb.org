@@ -5,7 +5,7 @@
 #+TEXINFO_HEADER: @syncodeindex ky cp
 #+AUTHOR: Eric Abrahamsen <eric@ericabrahamsen.net>
 #+TITLE: EBDB Manual
-#+SUBTITLE: This manual is for version 0.3.2, updated 17 September, 2017
+#+SUBTITLE: This manual is for version 0.6.7, updated 19 April, 2019
 #+TEXINFO_DIR_CATEGORY: Emacs
 #+TEXINFO_DIR_TITLE: EBDB: (ebdb)
 #+TEXINFO_DIR_DESC: Contact management package
@@ -32,13 +32,41 @@ is included in the section entitled “GNU Free Documentation License.”
 modify this GNU manual.”
 #+END_QUOTE
 * Getting Started
-Assuming you have no records you want to migrate from other contact
-management software, it is enough to call the top-level ~ebdb~
-command.  This will create a new database at the location specified by
-~ebdb-sources~ (see [[id:9a02f8fb-01e2-4cd8-8166-608814a031f7][The EBDB Database]]), prompt you for a search
-string, fail to find anything (because you don't have any records
-yet), and finally open a {{{buf(EBDB)}}} buffer where you can start to
-make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).
+EBDB is a contact management package: it records information about
+people and organizations, and integrates with other Emacs software
+packages, mostly those concerned with sending and reading mail.  The
+principle parts of EBDB are records, which represent people and
+organizations; fields, representing detailed data about records; and
+databases, which hold and persist records.
+
+It's easiest to install EBDB from the ELPA package repositories,
+though it's also possible to clone the package from [[https:github.com/girzel/ebdb][Github]] and put it
+on your load path.  Questions and bug reports can be raised on the
+Github issues page, or on the Emacs bug tracker or mailing lists,
+provided you cc the maintainer.
+
+There are a large number of configuration options listed in this
+manual, but the only one you might want to tweak in advance is
+~ebdb-sources~ (see [[id:9a02f8fb-01e2-4cd8-8166-608814a031f7][The EBDB Database]]), which controls where EBDB
+stores its records.
+
+EBDB comes with integration for a few other Emacs packages, including
+Org and a number of mail user agents; see the following sections below
+for details.
+
+** Starting a New Database
+#+FINDEX: ebdb-open
+If you have no records you want to migrate from other contact
+management software, start by calling the command ~ebdb-open~.  This
+will open a new buffer in ~ebdb-mode~, and prompt you to create a
+database, if one doesn't already exist.  From there, you can use
+{{{kbd(c)}}} to make new records (see [[id:692cde31-73be-4faf-b436-7eae8a5d02d1][Creating Records]]).  You can also
+hook EBDB into a mail-user agent (see [[id:6a16bc3a-dd20-48af-b532-d5a39da6ab55][MUA Interaction]]) and allow it to
+create records automatically.
+
+Otherwise, you'll want to migrate your contact information from other
+contact management software as described in the sections below.
+Currently EBDB only knows about migrating from BBDB and Org Contacts.
 ** Migration from BBDB
 #+CINDEX: Migration from BBDB
 *** Record Migration
@@ -381,6 +409,9 @@ The "mail folder" field is used to indicate which folder or group
 incoming mail from the contact should be filed into.  Currently only
 Gnus supports this; support in other MUAs is forthcoming.
 * MUA Interaction
+:PROPERTIES:
+:ID:       6a16bc3a-dd20-48af-b532-d5a39da6ab55
+:END:
 One of EBDB's most important features is the ability to create, update
 and display records based on messages received or sent in your mail
 user agent(s).  In theory, EBDB can be integrated with any software
@@ -1518,6 +1549,11 @@ methods of classes, without touching the original source code.  This
 manual won't go into details about Emacs' object-orientation support:
 see [[info:eieio#Top][EIEIO]] for information on defining classes, and [[info:elisp#Generic%20Functions][Generic Functions]]
 for information on writing generic functions and methods.
+
+Some information about EBDB's various classes can had from Emacs'
+built-in help system: examining the function definition of a class
+symbol like ~ebdb-field-anniversary~ will show a documentation string,
+and details of the class's slot and method definitions.
 
 The simplest customization involves changing the default classes used
 for basic record and field types.
