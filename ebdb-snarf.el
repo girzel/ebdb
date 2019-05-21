@@ -385,7 +385,7 @@ automatically."
 	    (progn
 	      (ebdb-record-insert-field record f)
 	      (ebdb-init-field f record)
-	      (add-to-list records record))
+	      (push record records))
 	  (ebdb-unacceptable-field nil))))
     records))
 
