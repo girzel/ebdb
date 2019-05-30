@@ -1436,11 +1436,11 @@ first one."
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((role (subclass ebdb-field-role)) &optional slots obj)
-  (let ((org-id (or (plist-get slots 'org-uuid)
-		    (if obj (slot-value obj 'org-uuid)
+  (let ((org-id (or (plist-get slots :org-uuid)
+		    (if obj (slot-value obj :org-uuid)
 		      (ebdb-record-uuid (ebdb-prompt-for-record
 					 nil 'ebdb-record-organization)))))
-	(mail (or (plist-get slots 'mail)
+	(mail (or (plist-get slots :mail)
 		  (ebdb-with-exit
 		   (ebdb-read ebdb-default-mail-class nil
 			      (when obj (slot-value obj 'mail)))))))
@@ -3353,7 +3353,7 @@ ARGS are passed to `ebdb-compose-mail', and then to
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record-organization)) &optional slots)
   (let ((name (ebdb-read 'ebdb-field-name-simple slots
-			 (plist-get slots 'name)))
+			 (plist-get slots :name)))
 	(domain (ebdb-with-exit (ebdb-read 'ebdb-field-domain))))
     (setq slots (plist-put slots :name name))
     (when domain
