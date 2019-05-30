@@ -699,10 +699,15 @@ existing atomic windows will become part of the atomic buffer.
 Otherwise they will be opened to one side of the atomic window.
 @end defopt
 
+@defopt ebdb-default-window-size
+Set to a float between 0 and 1 to specify how much of an existing
+window the popped-up *EBDB* buffer should occupy.
+@end defopt
+
 At present, there are _no_ other user customization options
-controlling the size and layout of MUA pop-up buffers: each MUA
-creates the pop-up according to hard-coded rules.  This will likely
-change in the future: please complain to the author.
+controlling the layout of MUA pop-up buffers: each MUA creates the
+pop-up according to hard-coded rules.  This will likely change in the
+future: please complain to the author.
 
 @node Auto-Updating Records
 @subsection Auto-Updating Records

@@ -480,10 +480,16 @@ existing atomic windows will become part of the atomic buffer.
 Otherwise they will be opened to one side of the atomic window.
 #+end_defopt
 
+#+ATTR_TEXINFO: :options ebdb-default-window-size
+#+begin_defopt
+Set to a float between 0 and 1 to specify how much of an existing
+window the popped-up {{{buf(EBDB)}}} buffer should occupy.
+#+end_defopt
+
 At present, there are _no_ other user customization options
-controlling the size and layout of MUA pop-up buffers: each MUA
-creates the pop-up according to hard-coded rules.  This will likely
-change in the future: please complain to the author.
+controlling the layout of MUA pop-up buffers: each MUA creates the
+pop-up according to hard-coded rules.  This will likely change in the
+future: please complain to the author.
 *** Auto-Updating Records
 EBDB can automatically update the name and mail addresses of records
 based on information in an MUA message. The first and most important

@@ -671,10 +671,14 @@ Windows::).
      existing atomic windows will become part of the atomic buffer.
      Otherwise they will be opened to one side of the atomic window.
 
+ -- User Option: ebdb-default-window-size
+     Set to a float between 0 and 1 to specify how much of an existing
+     window the popped-up *EBDB* buffer should occupy.
+
    At present, there are _no_ other user customization options
-controlling the size and layout of MUA pop-up buffers: each MUA creates
-the pop-up according to hard-coded rules.  This will likely change in
-the future: please complain to the author.
+controlling the layout of MUA pop-up buffers: each MUA creates the
+pop-up according to hard-coded rules.  This will likely change in the
+future: please complain to the author.
 
 
 File: ebdb.info,  Node: Auto-Updating Records,  Next: Noticing and Automatic Rules,  Prev: Pop-up Buffers,  Up: Display and Updating
@@ -2326,6 +2330,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-default-phone-class:              Hacking EBDB.        (line  40)
 * ebdb-default-record-class:             Creating Records.    (line  10)
 * ebdb-default-record-class <1>:         Hacking EBDB.        (line  24)
+* ebdb-default-window-size:              Pop-up Buffers.      (line  31)
 * ebdb-delete-field:                     Init and Delete Methods.
                                                               (line  15)
 * ebdb-delete-field-or-record:           The Basics of ebdb-mode.
@@ -2579,45 +2584,45 @@ Node: MUA Interaction20152
 Node: Loading MUA Code20705
 Node: Display and Updating21418
 Node: Pop-up Buffers22184
-Node: Auto-Updating Records23767
-Node: Noticing and Automatic Rules26167
-Node: Interactive Commands27500
-Node: EBDB and MUA summary buffers29975
-Node: Sender name display30493
-Node: Summary buffer marks31720
-Node: Mail Address Completion32899
-Node: A Note on Completion35408
-Node: Specific MUAs36031
-Node: Gnus36179
-Node: Posting Styles36401
-Node: EBDB Buffers37976
-Node: Searching39187
-Node: Changing Search Behavior40849
-Node: The Basics of ebdb-mode42096
-Node: Customizing Record Display46405
-Node: Marking50725
-Node: Exporting/Formatting51152
-Node: Completion52101
-Node: Snarfing52897
-Node: Internationalization54914
-Node: Diary Integration57615
-Node: Mail Aliases58480
-Node: vCard Support59194
-Node: Org Integration59693
-Node: Citing Records61591
-Node: Hacking EBDB62349
-Node: Field Classes64940
-Node: Init and Delete Methods68076
-Node: The Labeled Field Class69583
-Node: The Singleton Field Class70437
-Node: Actions70875
-Node: Custom Field Searching71547
-Node: Fast Lookups74414
-Node: Formatting in the EBDB Buffer76224
-Node: Writing Internationalization Libraries78300
-Node: Writing Integration For New MUAs82714
-Node: Article snarfing86162
-Node: Index86880
+Node: Auto-Updating Records23927
+Node: Noticing and Automatic Rules26327
+Node: Interactive Commands27660
+Node: EBDB and MUA summary buffers30135
+Node: Sender name display30653
+Node: Summary buffer marks31880
+Node: Mail Address Completion33059
+Node: A Note on Completion35568
+Node: Specific MUAs36191
+Node: Gnus36339
+Node: Posting Styles36561
+Node: EBDB Buffers38136
+Node: Searching39347
+Node: Changing Search Behavior41009
+Node: The Basics of ebdb-mode42256
+Node: Customizing Record Display46565
+Node: Marking50885
+Node: Exporting/Formatting51312
+Node: Completion52261
+Node: Snarfing53057
+Node: Internationalization55074
+Node: Diary Integration57775
+Node: Mail Aliases58640
+Node: vCard Support59354
+Node: Org Integration59853
+Node: Citing Records61751
+Node: Hacking EBDB62509
+Node: Field Classes65100
+Node: Init and Delete Methods68236
+Node: The Labeled Field Class69743
+Node: The Singleton Field Class70597
+Node: Actions71035
+Node: Custom Field Searching71707
+Node: Fast Lookups74574
+Node: Formatting in the EBDB Buffer76384
+Node: Writing Internationalization Libraries78460
+Node: Writing Integration For New MUAs82874
+Node: Article snarfing86322
+Node: Index87040
 
 End Tag Table
 

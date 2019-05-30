@@ -59,7 +59,6 @@
   "Make *EBDB* window a dedicated window.
 Allowed values include nil (not dedicated) 'ebdb (weakly dedicated)
 and t (strongly dedicated)."
-  :group 'ebdb-record-display
   :type '(choice (const :tag "EBDB window not dedicated" nil)
                  (const :tag "EBDB window weakly dedicated" ebdb)
                  (const :tag "EBDB window strongly dedicated" t)))
@@ -68,12 +67,17 @@ and t (strongly dedicated)."
   "When non-nil, have EBDB buffers join atomic windows.
 Atomic windows are window groups that are treated as single
 windows by other splitting/display code."
-  :group 'ebdb-record-display
   :type 'boolean)
+
+(defcustom ebdb-default-window-size 0.4
+  "Default size of EBDB popup windows.
+Specified as a float between 0 and 1, which is interpreted as a
+fractional size of the window that is being split to make way for
+the *EBDB* buffer."
+  :type 'float)
 
 (defcustom ebdb-fill-field-values t
   "When non-nil, fill long field values."
-  :group 'ebdb-record-display
   :type '(choice (const :tag "Always fill" nil)
                  (const :tag "Never fill" t)))
 
@@ -83,12 +87,10 @@ This should be a list of menu entries.
 When set to a function, it is called with two arguments RECORD and FIELD
 and it should either return nil or a list of menu entries.
 Used by `ebdb-mouse-menu'."
-  :group 'ebdb-record-display
   :type 'sexp)
 
 (defcustom ebdb-display-hook nil
   "Hook run after the *EBDB* is filled in."
-  :group 'ebdb-record-display
   :type 'hook)
 
 ;; Faces for font-lock
@@ -101,7 +103,6 @@ Used by `ebdb-mouse-menu'."
 				  (ebdb-record-organization . ebdb-organization-name))
   "Alist of record class types to the face names.
 Faces are used to font-lock their names in the *EBDB* buffer."
-  :group 'ebdb-faces
   :type '(repeat (cons (ebdb-record :tag "Record type") (face :tag "Face"))))
 
 (defface ebdb-person-name
@@ -817,7 +818,7 @@ Ie, don't pop up at all."
 
 (cl-defmethod ebdb-popup-window ()
   "When popping up from a random window, use half the window."
-  (list (get-buffer-window) 0.5))
+  (list (get-buffer-window) ebdb-default-window-size))
 
 (defun ebdb-display-records (records &optional fmt append
                                      select pop buf)
