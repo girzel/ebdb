@@ -2917,30 +2917,35 @@ or actual image data."
 					       (field ebdb-field-anniversary))
   "Go to the date of anniversary FIELD in the calendar.
 If FIELD doesn't specify a year, use the current year."
-  ;; This and the next function should be rethought.  Do people really
-  ;; want to look at the original date?  Won't they usually want to
-  ;; see the most recent, or the upcoming, occurrence of the date?
-  (let ((date (slot-value field 'date)))
-   (calendar)
-   (calendar-goto-date
-    (if (nth 2 date)
-	date
-      (pcase-let ((`(,month ,day) date)
-		  (cur-year (nth 5 (decode-time (current-time)))))
-	(list month day cur-year))))))
+  (let* ((date (slot-value field 'date))
+	 (this-year (nth 5 (decode-time (current-time))))
+	 (year (+ this-year
+		  ;; If this year's occurrence is already in the past,
+		  ;; use next year's.
+		  (if (time-less-p
+		       (encode-time
+			1 1 1 (nth 1 date) (nth 0 date) this-year)
+		       nil)
+		      1 0))))
+    (calendar)
+    (calendar-goto-date
+     (append (seq-subseq date 0 2) (list year)))))
 
 (cl-defmethod ebdb-field-anniversary-agenda ((_record ebdb-record)
 					     (field ebdb-field-anniversary))
   "Go to the date of anniversary FIELD in the Org agenda.
 If FIELD doesn't specify a year, use the current year."
-  (let ((date (slot-value field 'date)))
+  (let* ((date (slot-value field 'date))
+	 (this-year (nth 5 (decode-time (current-time))))
+	 (year (+ this-year
+		  (if (time-less-p
+		       (encode-time
+			1 1 1 (nth 1 date) (nth 0 date) this-year)
+		       nil)
+		      1 0))))
     (org-agenda-list
      nil
-     (calendar-absolute-from-gregorian
-      (if (nth 2 date)
-	  date
-	(append date (list (nth 5 (decode-time
-				   (current-time))))))))))
+     (format "%d-%d-%d" year (nth 0 date) (nth 1 date)))))
 
 (cl-defmethod ebdb-field-anniv-diary-entry ((field ebdb-field-anniversary)
 					    (record ebdb-record))
