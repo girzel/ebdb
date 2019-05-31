@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'ebdb-mua)
+(require 'ebdb-message)
 (if t (require 'mu4e-view))
 
 (defvar mu4e~view-buffer-name)
@@ -45,7 +46,13 @@
 (defun ebdb-insinuate-mu4e ()
   "Hook EBDB into mu4e."
   ;; Tackle headers later
-  (define-key mu4e-view-mode-map ";" ebdb-mua-keymap))
+  (define-key mu4e-view-mode-map ";" ebdb-mua-keymap)
+  (add-hook 'message-sent-hook
+	    (lambda ()
+	      (let ((win (get-buffer-window (ebdb-message-buffer-name))))
+		(when (and win
+			   (window-live-p win))
+		  (quit-window nil win))))))
 
 ;; Why wasn't `ebdb-mua-auto-update' ever hooked in to mu4e?
 
