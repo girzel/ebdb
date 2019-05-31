@@ -263,6 +263,7 @@ display information."
     (define-key km (kbd "A")		'ebdb-mail-aliases)
     (define-key km (kbd "c")		'ebdb-create-record)
     (define-key km (kbd "C")		'ebdb-create-record-extended)
+    (define-key km (kbd "R")            'ebdb-create-record-and-role)
     (define-key km (kbd "e")		'ebdb-edit-field)
     (define-key km (kbd "E")		'ebdb-edit-field-customize)
     (define-key km (kbd ";")		'ebdb-edit-foo)
@@ -1710,6 +1711,37 @@ for these values."
 	(record-class
 	 (eieio-read-subclass "Use which record class? " 'ebdb-record nil t)))
     (ebdb-create-record db record-class)))
+
+;;;###autoload
+(defun ebdb-create-record-and-role (rec)
+  "Convenience function for creating a record and role at once.
+If called on an organization record, create a new person record
+and give them a role at the organization.  If called on a person,
+do the reverse."
+  (interactive
+   (list (ebdb-current-record)))
+  (let ((make-org (if (object-of-class-p rec 'ebdb-record-person)
+		      t nil))
+	(db (car (slot-value (ebdb-record-cache rec) 'database)))
+	new-rec role-field)
+    (ebdb-create-record
+     db
+     (if make-org
+	 'ebdb-record-organization
+       'ebdb-record-person))
+    (setq new-rec (ebdb-current-record))
+    (setq role-field (ebdb-read 'ebdb-field-role
+				`(:record-uuid
+				  ,(ebdb-record-uuid
+				    (if make-org rec
+				      new-rec))
+				  :org-uuid
+				  ,(ebdb-record-uuid
+				    (if make-org new-rec
+				      rec)))))
+    (ebdb-with-record-edits (if make-org rec new-rec)
+      (ebdb-com-insert-field (if make-org rec new-rec)
+			     role-field))))
 
 ;;;###autoload
 (defun ebdb-insert-field (records)

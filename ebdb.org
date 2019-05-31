@@ -388,8 +388,14 @@ to come up with a good interface for viewing and manipulating these
 extra fields, however, so the functionality remains hidden.
 Suggestions are very welcome.
 
-Manipulating role fields is generally a little clunky, at present.
-This will be addressed in future.
+#+FINDEX: ebdb-create-record-and-role
+It can often feel a little clunky creating a new organization to
+associate with a person, or vice versa.  EBDB provides a convenience
+function to create a new person or organization record, and associate
+it with the existing record under point, in one step, using the
+{{{kbd(F)}}}.  This will create a new organization if point is on a
+person record, or a new person if point is on an organization.
+
 *** Tag field
 :PROPERTIES:
 :ID:       d9073bc7-8731-4919-9fc0-7d1dcf98426e
