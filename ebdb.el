@@ -1943,13 +1943,18 @@ Eventually this method will go away."
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-anniversary)) &optional slots obj)
   ;; Fake `calendar-read-date' to make the year optional.
   (let* ((year (ebdb-with-exit
-		(read-number "Year (C-g to omit): ")))
+		(read-number "Year (C-g to omit): "
+			     (when obj (nth 2 (slot-value obj 'date))))))
 	 (month (cdr (assoc-string
 		      (completing-read
 		       "Month: "
 		       (mapcar 'list (append
 				      calendar-month-name-array nil))
-		       nil t)
+		       nil t (when obj
+			       (aref
+				calendar-month-name-array
+				(1- (nth 0 (slot-value obj 'date)))))
+		       nil)
 		      (calendar-make-alist
 		       calendar-month-name-array 1)
 		      t)))
@@ -1958,7 +1963,9 @@ Eventually this method will go away."
 		month (or year 2017)))
 	 (day (calendar-read (format "Day (1-%d): " last)
 			     (lambda (x) (and (< 0 x)
-					      (<= x last))))))
+					      (<= x last)))
+			     (when obj (number-to-string
+					(nth 1 (slot-value obj 'date)))))))
     (cl-call-next-method class
 			 (plist-put slots :date
 				    (list month day year))
