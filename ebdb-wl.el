@@ -38,9 +38,15 @@
 (defvar wl-folder-buffer-name)
 (defvar wl-highlight-signature-separator)
 
-(defgroup ebdb-wl nil
+(defgroup ebdb-mua-wl nil
   "Options for EBDB's interaction with Wanderlust."
   :group 'ebdb-mua)
+
+(defcustom ebdb-wl-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in Wanderlust.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
 
 (cl-defmethod ebdb-mua-message-header ((header string)
 				       &context (major-mode mime-view-mode))
@@ -68,7 +74,7 @@
   (format "*%s-Wl-Draft*" ebdb-buffer-name))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode mime-view-mode))
-  (list (get-buffer-window) 0.3))
+  (list (get-buffer-window) ebdb-wl-window-size))
 
 (defsubst ebdb-wl-goto-signature (&optional beginning)
   "Goto the signature in the current message buffer.

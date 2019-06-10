@@ -455,6 +455,7 @@ the records referenced in that message. It can:
 Each of these functionalities is optional, and can be customized
 independently of the others.
 *** Pop-up Buffers
+#+CINDEX: Pop-up buffers
 Each MUA creates its own EBDB pop-up buffer, with a name like
 {{{buf(EBDB-Gnus)}}} or {{{buf(EBDB-Rmail)}}}.  MUAs will re-use their
 own buffers, and will not interfere with buffers the user has created
@@ -482,7 +483,7 @@ Windows,,,elisp}@@).
 #+ATTR_TEXINFO: :options ebdb-join-atomic-windows
 #+begin_defopt
 When non-nil (the default), EBDB buffers that are popped up within
-existing atomic windows will become part of the atomic buffer.
+existing atomic windows will become part of the atomic window.
 Otherwise they will be opened to one side of the atomic window.
 #+end_defopt
 
@@ -492,10 +493,14 @@ Set to a float between 0 and 1 to specify how much of an existing
 window the popped-up {{{buf(EBDB)}}} buffer should occupy.
 #+end_defopt
 
-At present, there are _no_ other user customization options
-controlling the layout of MUA pop-up buffers: each MUA creates the
-pop-up according to hard-coded rules.  This will likely change in the
-future: please complain to the author.
+In addition, each MUA has its own customization option for controlling
+the window size of pop-up buffers.  Each option is named as
+~ebdb-<MUA>-window-size~, and each defaults to
+~ebdb-default-window-size~.
+
+Beyond this, there are no other user customization options controlling
+the layout of MUA pop-up buffers.  Further customization will likely
+be added in the future: please complain to the author.
 *** Auto-Updating Records
 EBDB can automatically update the name and mail addresses of records
 based on information in an MUA message. The first and most important

@@ -29,6 +29,16 @@
 (require 'rmailsum)
 (require 'mailheader)
 
+(defgroup ebdb-mua-rmail nil
+  "EBDB customization for rmail."
+  :group 'ebdb-mua)
+
+(defcustom ebdb-rmail-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in rmail.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
+
 (defun ebdb/rmail-new-flag ()
   "Returns t if the current message in buffer BUF is new."
   (rmail-message-labels-p rmail-current-message ", ?\\(unseen\\),"))
@@ -56,6 +66,9 @@
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode rmail-summary-mode))
   (format "*%s-Rmail*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-popup-buffer (&context (major-mode rmail-summary-mode))
+  (list (get-buffer-window) ebdb-rmail-window-size))
 
 (defun ebdb-insinuate-rmail ()
   "Hook EBDB into RMAIL."

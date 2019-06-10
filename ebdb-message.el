@@ -25,6 +25,7 @@
 
 
 (require 'ebdb-mua)
+(require 'ebdb-com)
 (require 'message)
 (require 'sendmail)
 
@@ -35,11 +36,17 @@
   :group 'ebdb-mua)
 (put 'ebdb-mua-message 'custom-loads '(ebdb-message))
 
+(defcustom ebdb-message-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in message-mode.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
+
 (defcustom ebdb-message-reply-window-config
   '(reply
     (horizontal 1.0
 		(message 1.0 point)
-		(ebdb-message 0.4)))
+		(ebdb-message ebdb-message-window-size)))
   "Message reply window configuration to show EBDB.
 See Gnus' manual for details."
   :group 'ebdb-mua-message
@@ -49,7 +56,7 @@ See Gnus' manual for details."
   '(reply-yank
      (horizontal 1.0
 		 (message 1.0 point)
-		 (ebdb-message 0.4)))
+		 (ebdb-message ebdb-message-window-size)))
   "Message reply-yank window configuration to show EBDB.
 See Gnus' manual for details."
   :group 'ebdb-mua-message
@@ -85,10 +92,10 @@ See Gnus' manual for details."
   (message-field-value header))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode message-mode))
-  (list (get-buffer-window) 0.4))
+  (list (get-buffer-window) ebdb-message-window-size))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode mail-mode))
-  (list (get-buffer-window) 0.4))
+  (list (get-buffer-window) ebdb-message-window-size))
 
 (defun ebdb-message-complete-mail-cleanup (str _buffer pos &rest _)
   "Call `ebdb-complete-mail-cleanup' after capf completion."

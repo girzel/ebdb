@@ -676,6 +676,7 @@ independently of the others.
 @node Pop-up Buffers
 @subsection Pop-up Buffers
 
+@cindex Pop-up buffers
 Each MUA creates its own EBDB pop-up buffer, with a name like
 *EBDB-Gnus* or *EBDB-Rmail*.  MUAs will re-use their
 own buffers, and will not interfere with buffers the user has created
@@ -700,7 +701,7 @@ Windows,,,elisp}).
 
 @defopt ebdb-join-atomic-windows
 When non-nil (the default), EBDB buffers that are popped up within
-existing atomic windows will become part of the atomic buffer.
+existing atomic windows will become part of the atomic window.
 Otherwise they will be opened to one side of the atomic window.
 @end defopt
 
@@ -709,10 +710,14 @@ Set to a float between 0 and 1 to specify how much of an existing
 window the popped-up *EBDB* buffer should occupy.
 @end defopt
 
-At present, there are _no_ other user customization options
-controlling the layout of MUA pop-up buffers: each MUA creates the
-pop-up according to hard-coded rules.  This will likely change in the
-future: please complain to the author.
+In addition, each MUA has its own customization option for controlling
+the window size of pop-up buffers.  Each option is named as
+@code{ebdb-<MUA>-window-size}, and each defaults to
+@code{ebdb-default-window-size}.
+
+Beyond this, there are no other user customization options controlling
+the layout of MUA pop-up buffers.  Further customization will likely
+be added in the future: please complain to the author.
 
 @node Auto-Updating Records
 @subsection Auto-Updating Records

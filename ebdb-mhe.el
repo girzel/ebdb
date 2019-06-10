@@ -30,6 +30,16 @@
     (require 'mh-comp))              ; For mh-e 4.x
 (require 'advice)
 
+(defgroup ebdb-mua-mhe nil
+  "EBDB customizations for mhe."
+  :group 'ebdb-mua)
+
+(defcustom ebdb-mhe-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in mh-e.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
+
 ;; A simplified `mail-fetch-field'.  We could use instead (like rmail):
 ;; (mail-header (intern-soft (downcase header)) (mail-header-extract))
 (defun ebdb/mh-header (header)
@@ -43,12 +53,11 @@ Returns the empty string if HEADER is not in the message."
     (cond ((not (re-search-forward header nil t)) "")
           ((looking-at "[\t ]*$") "")
           (t (re-search-forward "[ \t]*\\([^ \t\n].*\\)$" nil t)
-           (let ((start (match-beginning 1)))
-             (while (progn (forward-line 1)
-                           (looking-at "[ \t]")))
-             (backward-char 1)
-             (buffer-substring-no-properties start (point)))))))
-
+             (let ((start (match-beginning 1)))
+               (while (progn (forward-line 1)
+                             (looking-at "[ \t]")))
+               (backward-char 1)
+               (buffer-substring-no-properties start (point)))))))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode mhe-mode))
   "Produce a EBDB buffer name associated with mh-hmode."
@@ -62,8 +71,11 @@ Returns the empty string if HEADER is not in the message."
   "Produce a EBDB buffer name associated with mh-hmode."
   (format "*%s-MHE*" ebdb-buffer-name))
 
+(cl-defmethod ebdb-popup-buffer (&context (major-mode mhe-summary-mode))
+  (list (get-buffer-window) ebdb-mhe-window-size))
+
 (cl-defmethod ebdb-mua-message-header ((header string)
-				   &context (major-mode mhe-mode))
+				       &context (major-mode mhe-mode))
   (ebdb/mh-header header))
 
 (cl-defmethod ebdb-mua-message-header ((header string)

@@ -32,6 +32,16 @@
 (defvar mu4e-view-mode-map)
 (declare-function message-field-value "message")
 
+(defgroup ebdb-mua-mu4e nil
+  "Mu4e-specific EBDB customizations."
+  :group 'ebdb-mua)
+
+(defcustom ebdb-mu4e-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in mu4e.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
+
 ;; Tackle `mu4e-headers-mode' later
 
 (cl-defmethod ebdb-mua-message-header ((header string)
@@ -42,6 +52,9 @@
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode mu4e-view-mode))
   "Produce a EBDB buffer name associated with mu4e mode."
   (format "*%s-mu4e*" ebdb-buffer-name))
+
+(cl-defmethod ebdb-popup-window (&context (major-mode mu4e-view-mode))
+  (list (get-buffer-window) ebdb-mu4e-window-size))
 
 (defun ebdb-insinuate-mu4e ()
   "Hook EBDB into mu4e."

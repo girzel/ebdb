@@ -31,9 +31,15 @@
 (autoload 'message-make-domain "message")
 
 (defgroup ebdb-mua-gnus nil
-  "Gnus-specific EBDB customizations"
+  "Gnus-specific EBDB customizations."
   :group 'ebdb-mua)
 (put 'ebdb-mua-gnus 'custom-loads '(ebdb-gnus))
+
+(defcustom ebdb-gnus-window-size ebdb-default-window-size
+  "Size of the EBDB buffer when popping up in Gnus.
+Size should be specified as a float between 0 and 1.  Defaults to
+the value of `ebdb-default-window-size'."
+  :type 'float)
 
 (defcustom ebdb-gnus-window-configuration
   `(article
@@ -44,17 +50,16 @@
 		  (tree 0.25)
 		  (horizontal 1.0
 			      (article 1.0)
-			      (ebdb-gnus 0.4))))
+			      (ebdb-gnus ebdb-gnus-window-size))))
       (t
        '(vertical 1.0
 		  (summary 0.25 point)
 		  (horizontal 1.0
 			      (article 1.0)
-			      (ebdb-gnus 0.4))))))
+			      (ebdb-gnus ebdb-gnus-window-size))))))
   "Gnus window configuration to include EBDB.
 By default, this adds the *EBDB-Gnus* window to the right of the
 article buffer, taking up 40% of the horizontal space."
-  :group 'ebdb-mua-gnus
   :type 'list)
 
 (defcustom ebdb-gnus-post-style-function
@@ -68,7 +73,6 @@ nil to use Gnus defaults.
 
 See `ebdb-record-field' or `ebdb-record-current-fields' for
 likely ways to extract information about the record."
-  :group 'ebdb-mua-gnus
   :type 'function)
 
 (defgroup ebdb-mua-gnus-scoring nil
@@ -255,10 +259,10 @@ Note that `\( is the backquote, NOT the quote '\(."
 	   (unless (gnus-buffer-live-p gnus-article-buffer)
 	     (gnus-summary-show-article))
 	   (get-buffer-window gnus-article-buffer))))
-    (list win 0.3)))
+    (list win ebdb-gnus-window-size)))
 
 (cl-defmethod ebdb-popup-window (&context (major-mode gnus-article-mode))
-  (list (get-buffer-window) 0.3))
+  (list (get-buffer-window) ebdb-gnus-window-size))
 
 ;; It seems that `gnus-fetch-field' fetches decoded content of
 ;; `gnus-visible-headers', ignoring `gnus-ignored-headers'.
