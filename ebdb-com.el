@@ -799,7 +799,6 @@ buffer."
 
 (cl-defgeneric ebdb-popup-window (major-mode)
   "Return a spec for how to pop up a window on an *EBDB* buffer.
-
 This generic function dispatches on the current value of
 major-mode.  The return value should be a two-element list
 of (window split), in which WINDOW is the window to split, and
@@ -813,12 +812,13 @@ using the current window.")
 
 (cl-defmethod ebdb-popup-window (&context (major-mode ebdb-mode))
   "When popping up from an existing *EBDB* buffer, just reuse the window.
-
 Ie, don't pop up at all."
   nil)
 
 (cl-defmethod ebdb-popup-window ()
-  "When popping up from a random window, use half the window."
+  "Return a default pop-up spec for an unspecified mode.
+If there's no specialization for the current mode, default to
+splitting the current window, using `ebdb-default-window-size'."
   (list (get-buffer-window) ebdb-default-window-size))
 
 (defun ebdb-display-records (records &optional fmt append
@@ -1455,9 +1455,8 @@ Use the symbol `mark', or the mark provided by MARK."
   (interactive (list (read-string "New buffer name: ")))
   (when (eql major-mode 'ebdb-mode)
     (rename-buffer
-     (generate-new-buffer-name
-      (format "*%s-%s*" ebdb-buffer-name new-name)))
-    (force-mode-line-update)))
+     (format "*%s-%s*" ebdb-buffer-name new-name) t)
+    (force-mode-line-update t)))
 
 ;; Unloading/Reloading/Disabling
 
