@@ -1437,7 +1437,7 @@ first one."
 
 (cl-defmethod ebdb-read ((role (subclass ebdb-field-role)) &optional slots obj)
   (let ((org-id (or (plist-get slots :org-uuid)
-		    (if obj (slot-value obj :org-uuid)
+		    (if obj (slot-value obj 'org-uuid)
 		      (ebdb-record-uuid (ebdb-prompt-for-record
 					 nil 'ebdb-record-organization)))))
 	(mail (or (plist-get slots :mail)
