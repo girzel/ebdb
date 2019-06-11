@@ -43,20 +43,20 @@ the value of `ebdb-default-window-size'."
   :type 'float)
 
 (defcustom ebdb-message-reply-window-config
-  '(reply
+  `(reply
     (horizontal 1.0
 		(message 1.0 point)
-		(ebdb-message ebdb-message-window-size)))
+		(ebdb-message ,ebdb-message-window-size)))
   "Message reply window configuration to show EBDB.
 See Gnus' manual for details."
   :group 'ebdb-mua-message
   :type 'list)
 
 (defcustom ebdb-message-reply-yank-window-config
-  '(reply-yank
+  `(reply-yank
      (horizontal 1.0
 		 (message 1.0 point)
-		 (ebdb-message ebdb-message-window-size)))
+		 (ebdb-message ,ebdb-message-window-size)))
   "Message reply-yank window configuration to show EBDB.
 See Gnus' manual for details."
   :group 'ebdb-mua-message

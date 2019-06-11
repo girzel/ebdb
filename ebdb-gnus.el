@@ -45,18 +45,18 @@ the value of `ebdb-default-window-size'."
   `(article
     ,(cond
       (gnus-use-trees
-       '(vertical 1.0
+       `(vertical 1.0
 		  (summary 0.25 point)
 		  (tree 0.25)
 		  (horizontal 1.0
 			      (article 1.0)
-			      (ebdb-gnus ebdb-gnus-window-size))))
+			      (ebdb-gnus ,ebdb-gnus-window-size))))
       (t
-       '(vertical 1.0
+       `(vertical 1.0
 		  (summary 0.25 point)
 		  (horizontal 1.0
 			      (article 1.0)
-			      (ebdb-gnus ebdb-gnus-window-size))))))
+			      (ebdb-gnus ,ebdb-gnus-window-size))))))
   "Gnus window configuration to include EBDB.
 By default, this adds the *EBDB-Gnus* window to the right of the
 article buffer, taking up 40% of the horizontal space."
