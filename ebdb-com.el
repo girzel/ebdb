@@ -800,15 +800,19 @@ buffer."
 (cl-defgeneric ebdb-popup-window (major-mode)
   "Return a spec for how to pop up a window on an *EBDB* buffer.
 This generic function dispatches on the current value of
-major-mode.  The return value should be a two-element list
-of (window split), in which WINDOW is the window to split, and
-SPLIT is either an integer, specifying number of rows/columns, or
-a float specifying what percentage of window real estate the
-pop-up should occupy.  SPLIT can also be nil, in which case the
-window will probably take up half the available space.
+major-mode.  The return value should be a three-element list
+of (window split direction), in which WINDOW is the window to
+split, SPLIT is either an integer, specifying number of
+rows/columns, or a float specifying what percentage of window
+real estate the pop-up should occupy, and DIRECTION is one of the
+symbols `left', `right', `above' or `below'.  SPLIT can be nil,
+in which case the value of `ebdb-default-window-size' will be
+used.  DIRECTION can also be nil, in which case the direction
+will either be `right' or `below', depending on the height and
+width of the window to be split.
 
-Alternately, the return value can be nil, which means continue
-using the current window.")
+Alternately, the entire return value can be nil, which means
+continue using the current window.")
 
 (cl-defmethod ebdb-popup-window (&context (major-mode ebdb-mode))
   "When popping up from an existing *EBDB* buffer, just reuse the window.
@@ -1172,11 +1176,13 @@ popped up from."
 		      nil)
 		     ((integerp (cadr pop))
 		      (cadr pop))
-		     (t
-		      (let ((ratio (- 1 (or (cadr pop) 0.5)))
-			    (dimension (max (window-total-width split-window)
-					    (window-total-height split-window))))
-			(round (* dimension ratio)))))))
+		     ((or (floatp (cadr pop)) (floatp ebdb-default-window-size))
+		      (let ((flt (or (cadr pop) ebdb-default-window-size)))
+			(round (* (max (window-total-width split-window)
+				       (window-total-height split-window))
+				  (- 1 flt)))))
+		     ((integerp ebdb-default-window-size)
+		      ebdb-default-window-size))))
 
     (cond (buffer-window
 	   ;; It's already visible, re-use it.
