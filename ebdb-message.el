@@ -101,6 +101,13 @@ See Gnus' manual for details."
   "Call `ebdb-complete-mail-cleanup' after capf completion."
   (ebdb-complete-mail-cleanup str pos))
 
+(defun ebdb-message-quit-ebdb ()
+  "Remove the EBDB window if the user kills the message buffer.
+Also fires when postponing a draft."
+  (let ((buf (get-buffer (ebdb-message-buffer-name))))
+    (when (and (bufferp buf) (buffer-live-p buf))
+      (quit-window nil (get-buffer-window buf)))))
+
 (defun ebdb-insinuate-message ()
   ;; We don't currently bind the `ebdb-mua-keymap'.
   (pcase ebdb-complete-mail
@@ -118,6 +125,8 @@ See Gnus' manual for details."
      (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
   		 message-completion-alist
   		 :test #'equal)))
+  (message-add-action
+   #'ebdb-message-quit-ebdb 'exit 'postpone 'kill)
   ;; Other MUAs clear the EBDB buffer before displaying (in
   ;; `ebdb-mua-auto-update', the call to `ebdb-display-records' does
   ;; not pass the "append" flag).  Displaying in message-mode does
