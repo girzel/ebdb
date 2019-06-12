@@ -282,7 +282,7 @@ display information."
 
     (define-key km (kbd "r")		'ebdb-reformat-records)
     (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
-    (define-key km (kbd "F")		'ebdb-format-all-records)
+    (define-key km (kbd "F")		'ebdb-format-these-records)
     (define-key km (kbd "I")            'ebdb-cite-records-ebdb)
     (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
     (define-key km (kbd "i")		'ebdb-insert-field)
@@ -3046,7 +3046,10 @@ message."
 ;;; Formatting
 
 ;;;###autoload
-(defun ebdb-format-to-tmp-buffer (&optional formatter records)
+(defun ebdb-format-to-tmp-buffer (formatter records)
+  "Format some records and display in a temporary buffer.
+Records are formatted using FORMATTER, which is prompted for.
+RECORDS is the record under point, or all marked records."
   (interactive
    (list (ebdb-prompt-for-formatter)
 	 (ebdb-do-records)))
@@ -3080,6 +3083,16 @@ message."
     (let ((f (slot-value formatter 'post-format-function)))
       (when (fboundp f)
 	(funcall f)))))
+
+;;;###autoload
+(defun ebdb-format-these-records (formatter)
+  "Format all records in the current *EBDB* buffer.
+Prompts for FORMATTER to use."
+  (interactive
+   (list (ebdb-prompt-for-formatter)))
+  (if (derived-mode-p 'ebdb-mode)
+      (ebdb-format-to-tmp-buffer formatter (mapcar #'car ebdb-records))
+    (error "Not in an *EBDB* buffer")))
 
 ;;; Copy to kill ring
 

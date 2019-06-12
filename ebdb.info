@@ -1421,8 +1421,8 @@ is unsupported: the only options are version 3.0 and 4.0.
      *note marking: Marking. to format multiple records.
 
 ‘F’
-     Export all records in the database (not only those displayed) to a
-     different format (‘ebdb-format-all-records’).
+     Export all records in the current EBDB buffer to a different format
+     (‘ebdb-format-these-records’).
 
    It’s possible to write new formatters, documentation is forthcoming.
 
@@ -2362,7 +2362,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  24)
 * ebdb-fill-field-values:                Customizing Record Display.
                                                               (line  28)
-* ebdb-format-all-records:               Exporting/Formatting.
+* ebdb-format-these-records:             Exporting/Formatting.
                                                               (line  20)
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  15)
@@ -2612,27 +2612,27 @@ Node: The Basics of ebdb-mode42726
 Node: Customizing Record Display47035
 Node: Marking51355
 Node: Exporting/Formatting51782
-Node: Completion52731
-Node: Snarfing53527
-Node: Internationalization55544
-Node: Diary Integration58245
-Node: Mail Aliases59110
-Node: vCard Support59824
-Node: Org Integration60323
-Node: Citing Records62221
-Node: Hacking EBDB62979
-Node: Field Classes65570
-Node: Init and Delete Methods68706
-Node: The Labeled Field Class70213
-Node: The Singleton Field Class71067
-Node: Actions71505
-Node: Custom Field Searching72177
-Node: Fast Lookups75044
-Node: Formatting in the EBDB Buffer76854
-Node: Writing Internationalization Libraries78930
-Node: Writing Integration For New MUAs83344
-Node: Article snarfing86792
-Node: Index87510
+Node: Completion52717
+Node: Snarfing53513
+Node: Internationalization55530
+Node: Diary Integration58231
+Node: Mail Aliases59096
+Node: vCard Support59810
+Node: Org Integration60309
+Node: Citing Records62207
+Node: Hacking EBDB62965
+Node: Field Classes65556
+Node: Init and Delete Methods68692
+Node: The Labeled Field Class70199
+Node: The Singleton Field Class71053
+Node: Actions71491
+Node: Custom Field Searching72163
+Node: Fast Lookups75030
+Node: Formatting in the EBDB Buffer76840
+Node: Writing Internationalization Libraries78916
+Node: Writing Integration For New MUAs83330
+Node: Article snarfing86778
+Node: Index87496
 
 End Tag Table
 

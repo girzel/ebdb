@@ -1332,9 +1332,9 @@ imperfect: not all fields can be exported correctly.  VCard version
 - F ::
 
      #+KINDEX: F
-     #+FINDEX: ebdb-format-all-records
-     Export all records in the database (not only those displayed) to
-     a different format (~ebdb-format-all-records~).
+     #+FINDEX: ebdb-format-these-records
+     Export all records in the current EBDB buffer to a different
+     format (~ebdb-format-these-records~).
 
 It's possible to write new formatters, documentation is forthcoming.
 * Completion

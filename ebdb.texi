@@ -1560,9 +1560,9 @@ Use @ref{Marking, , marking} to format multiple records.
 
 @item F
 @kindex F
-@findex ebdb-format-all-records
-Export all records in the database (not only those displayed) to
-a different format (@code{ebdb-format-all-records}).
+@findex ebdb-format-these-records
+Export all records in the current EBDB buffer to a different
+format (@code{ebdb-format-these-records}).
 @end table
 
 It's possible to write new formatters, documentation is forthcoming.
