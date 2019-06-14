@@ -104,9 +104,9 @@ See Gnus' manual for details."
 (defun ebdb-message-quit-ebdb ()
   "Remove the EBDB window if the user kills the message buffer.
 Also fires when postponing a draft."
-  (let ((buf (get-buffer (ebdb-message-buffer-name))))
-    (when (and (bufferp buf) (buffer-live-p buf))
-      (quit-window nil (get-buffer-window buf)))))
+  (let ((win (get-buffer-window (ebdb-message-buffer-name))))
+    (when win
+      (quit-window nil win))))
 
 (defun ebdb-insinuate-message ()
   ;; We don't currently bind the `ebdb-mua-keymap'.
