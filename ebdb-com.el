@@ -739,8 +739,7 @@ string."
 	   (paragraph-start "[ \t]* [[:alpha:] ]+: ")
 	   (fill-prefix (make-string (+ 3 max-label-width) ? ))
 	   (fill-column (window-body-width)))
-      (with-current-buffer (get-buffer-create "format test")
-	(erase-buffer)
+      (with-temp-buffer
 	(mapc
 	 (pcase-lambda (`(,label . ,fields))
 	   (let ((start (point)))
