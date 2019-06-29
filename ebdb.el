@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2019  Free Software Foundation, Inc.
 
-;; Version: 0.6.9
+;; Version: 0.6.10
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -5041,13 +5041,6 @@ All the important work is done by the `ebdb-db-load' method."
 	(sit-for 2))
       (cl-pushnew s ebdb-db-list))
 
-    (when (and
-	   (null ebdb-record-tracker)
-	   (or (and (bound-and-true-p bbdb-file)
-		    (file-exists-p bbdb-file))
-	       (file-exists-p (locate-user-emacs-file "bbdb" ".bbdb"))))
-      ;; We're migrating from a version of BBDB.
-      (ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
     (if (fboundp 'make-thread)
 	(let ((thread (make-thread #'ebdb-initialize-threadwise)))

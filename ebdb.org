@@ -70,18 +70,15 @@ Currently EBDB only knows about migrating from BBDB and Org Contacts.
 ** Migration from BBDB
 #+CINDEX: Migration from BBDB
 *** Record Migration
+#+FINDEX: ebdb-migrate-from-bbdb
 It's possible to migrate records from a BBDB database.  The
 ~bbdb-file~ variable should point to your current BBDB file;
 alternately EBDB will look in the default location, found using
-~(locate-user-emacs-file "bbdb" ".bbdb)~.  Then set ~ebdb-sources~ to
-a non-existent file name, and then run ~ebdb-load~ (or any of the
-other EBDB entry commands).  You'll be prompted to create the new
+~(locate-user-emacs-file "bbdb" ".bbdb)~.  Then call
+~ebdb-migrate-from-bbdb~.  You'll be prompted to create the new
 database, and upgrade from BBDB.  If any records could not be
-upgraded, they will be displayed in an {{{buf(EBDB Migration Errors)}}}
-buffer.  Migration bug reports are very welcome.
-
-#+FINDEX: ebdb-migrate-from-bbdb
-You can also call the command ~ebdb-migrate-from-bbdb~ at any time.
+upgraded, they will be displayed in an {{{buf(EBDB Migration
+Errors)}}} buffer.  Migration bug reports are very welcome.
 *** Variables and Options
 Many of the old BBDB customization options have been changed or
 removed entirely in EBDB.  It's probably best to put your BBDB

@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'ebdb)
+(require 'subr-x)
 (autoload 'calendar-absolute-from-gregorian "calendar")
 (autoload 'calendar-gregorian-from-absolute "calendar")
 (autoload 'org-time-string-to-absolute "org")
@@ -446,10 +447,11 @@ BBDB sets the default of that option."
 		(when orgs
 		  (dolist (o orgs)
 		    ;; Make all the orgs into real records.
-		    (unless (string= o "") ; There are many of these.
+		    (unless (string-blank-p o) ; There are many of these.
 		      (setq org (or (seq-find
 				     (lambda (r)
-				       (string= o (ebdb-record-name r)))
+				       (and (ebdb-record-organization-p r)
+					    (string= o (ebdb-record-name r))))
 				     c-records)
 				    (let ((time (current-time)))
 				      (ebdb-db-add-record
