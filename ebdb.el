@@ -5041,13 +5041,6 @@ All the important work is done by the `ebdb-db-load' method."
 	(sit-for 2))
       (cl-pushnew s ebdb-db-list))
 
-    (when (and
-	   (null ebdb-record-tracker)
-	   (or (and (bound-and-true-p bbdb-file)
-		    (file-exists-p bbdb-file))
-	       (file-exists-p (locate-user-emacs-file "bbdb" ".bbdb"))))
-      ;; We're migrating from a version of BBDB.
-      (ebdb-migrate-from-bbdb))
     (message "Initializing EBDB records...")
     (if (fboundp 'make-thread)
 	(let ((thread (make-thread #'ebdb-initialize-threadwise)))
