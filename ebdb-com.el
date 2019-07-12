@@ -1668,7 +1668,10 @@ runs `ebdb-after-change-hook', and redisplays the record."
 	   (with-current-buffer b
 	     (when (derived-mode-p 'ebdb-mode)
 	       (set-buffer-modified-p t))))
-	 (ebdb-redisplay-records ,record 'reformat))
+	 (ebdb-redisplay-records ,record 'reformat
+				 ;; If we're not in ebdb-mode,
+				 ;; redisplay in all EBDB buffers.
+				 (null (derived-mode-p 'ebdb-mode))))
      (ebdb-unsynced-db
       (let ((db (cadr err)))
 	(ebdb-reload-database db)
