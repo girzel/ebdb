@@ -1890,21 +1890,25 @@ commands, called from an *EBDB* buffer, and the lower-level
 
 (cl-defmethod eieio-done-customizing :around ((_field ebdb-field))
   "Check that the record owning FIELD can be edited.
-Also redisplays it after customization."
+Also redisplay the record after customization."
   (let ((rec ebdb-customization-record))
     (when rec
       (ebdb-with-record-edits rec
 	(cl-call-next-method)))))
 
-(cl-defmethod eieio-done-customizing :after ((mail ebdb-field-mail))
+(cl-defmethod eieio-done-customizing :around ((mail ebdb-field-mail))
   "Handle mail priority after customizing.
 Check that some mail is marked as primary after MAIL is edited."
   (let* ((rec ebdb-customization-record)
-	 (all-mails (remove mail (ebdb-record-mail rec t)))
+	 (other-mails (seq-remove
+		       (lambda (m)
+			 (string-equal (ebdb-string mail)
+				       (ebdb-string m)))
+		       (ebdb-record-mail rec t)))
 	 (primaries (when rec (seq-filter
 			       (lambda (m)
 				 (eq (slot-value m 'priority) 'primary))
-			       all-mails)))
+			       other-mails)))
 	 (prim (eq (slot-value mail 'priority) 'primary)))
     (cond ((and prim primaries)
 	   ;; MAIL is primary, so set all other primary mails to
@@ -1912,13 +1916,13 @@ Check that some mail is marked as primary after MAIL is edited."
 	   (dolist (p primaries)
 	     (ebdb-record-change-field rec p (clone p :priority 'normal))))
 	  ((and (null (or prim primaries))
-		(car-safe all-mails))
+		(car-safe other-mails))
 	   ;; Nothing is primary, so try to set some other mail to
 	   ;; primary.
 	   (ebdb-record-change-field
-	    rec (car all-mails)
-	    (clone (car all-mails) :priority 'primary))))
-    (ebdb-redisplay-records rec 'reformat)))
+	    rec (car other-mails)
+	    (clone (car other-mails) :priority 'primary))))
+    (cl-call-next-method)))
 
 ;;;###autoload
 (defun ebdb-edit-foo (record field)
@@ -2014,6 +2018,24 @@ confirm before deleting the field."
 				     noprompt)
   (let ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
     (ebdb-com-delete-field person field noprompt)))
+
+(cl-defmethod ebdb-com-delete-field :after ((record ebdb-record-entity)
+					    (mail ebdb-field-mail)
+					    _noprompt)
+  "Possibly alter the priority of RECORD's remaining mails.
+If there aren't any other primary mails, make the first of the
+remaining mails primary."
+  (let* ((mails (seq-remove
+		 (lambda (m)
+		   (string-equal
+		    (ebdb-string m)
+		    (ebdb-string mail)))
+		 (ebdb-record-mail record t)))
+	 (clone (unless (object-assoc 'primary 'priority mails)
+		  (when (car mails)
+		    (clone (car mails) :priority 'primary)))))
+    (when clone
+      (ebdb-record-change-field record (car mails) clone))))
 
 ;;;###autoload
 (defun ebdb-delete-records (records &optional noprompt)
