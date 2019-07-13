@@ -42,6 +42,15 @@
   "Options for EBDB's interaction with Wanderlust."
   :group 'ebdb-mua)
 
+(defcustom ebdb-wl-auto-update-p ebdb-mua-reader-update-p
+  "Wl-specific value of `ebdb-m-auto-update-p'."
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
 (defcustom ebdb-wl-window-size ebdb-default-window-size
   "Size of the EBDB buffer when popping up in Wanderlust.
 Size should be specified as a float between 0 and 1.  Defaults to
@@ -121,9 +130,12 @@ beginning) of the signature separator."
     (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail))
   (add-hook 'wl-summary-exit-hook #'ebdb-wl-quit-window))
 
+(defun ebdb-wl-auto-update ()
+  (ebdb-mua-auto-update ebdb-wl-auto-update-p))
+
 (add-hook 'wl-folder-mode-hook #'ebdb-insinuate-wl)
 
-(add-hook 'wl-message-redisplay-hook #'ebdb-mua-auto-update)
+(add-hook 'wl-message-redisplay-hook #'ebdb-wl-auto-update)
 
 (provide 'ebdb-wl)
 ;;; ebdb-wl.el ends here

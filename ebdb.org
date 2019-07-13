@@ -517,8 +517,37 @@ function which returns one of the above symbols.
 
 This option only governs what EBDB does automatically, each time a
 message is displayed.  The same process can be run interactively using
-the commands below.  When updating records either automatically or
-interactively, a few more options come into play:
+the commands below.
+
+In many cases it's useful to have different auto-update behavior in
+different MUAs.  In particular, you might want to automatically create
+records for addresses as you send messages to them, but retain manual
+control over creating records from messages you receive.  EBDB
+provides two more-specific versions of ~ebdb-mua-auto-update-p~:
+
+#+ATTR_TEXINFO: :options ebdb-mua-sender-update-p
+#+begin_defopt
+The default "update-p" value for all mail-sending MUAs.
+#+end_defopt
+
+#+ATTR_TEXINFO: :options ebdb-mua-reader-update-p
+#+begin_defopt
+The default "update-p" value for all mail-reading MUAs.
+#+end_defopt
+
+#+VINDEX: ebdb-gnus-auto-update-p
+#+VINDEX: ebdb-message-auto-update-p
+#+VINDEX: ebdb-rmail-auto-update-p
+#+VINDEX: ebdb-mhe-auto-update-p
+#+VINDEX: ebdb-mu4e-auto-update-p
+#+VINDEX: ebdb-wl-auto-update-p
+#+VINDEX: ebdb-vm-auto-update-p
+Even finer-grained control is available using per-MUA versions of the
+option, all of them named after the pattern
+~ebdb-<MUA>-auto-update-p~.
+
+When updating records either automatically or interactively, a few
+more options come into play:
 
 #+ATTR_TEXINFO: :options ebdb-add-name
 #+begin_defopt
@@ -553,6 +582,7 @@ An alist governing which addresses in which headers will be ignored.
 See docstring for details.
 #+end_defopt
 
+#+VINDEX: ebdb-record-self
 #+ATTR_TEXINFO: :options ebdb-user-name-address-re
 #+begin_defopt
 A regular expression matching the user's own mail address(es).  In
@@ -567,7 +597,7 @@ the record pointed to by the option ~ebdb-record-self~.
 #+CINDEX: Automatic Rules
 In addition to updating records' name and mail fields, it's possible
 to run other arbitrary edits on records when they are referenced in a
-message.  This process is called "noticing". Two hooks are run as a
+message.  This process is called "noticing".  Two hooks are run as a
 part of noticing:
 
 #+ATTR_TEXINFO: :options ebdb-notice-record-hook
@@ -601,7 +631,7 @@ Some interactive commands are also provided for operating on the
 relevant EBDB records.  In message-reading MUAs, EBDB creates its own
 keymap, and binds it to the key ";".  The following list assumes this
 binding, and only specifies the further binding.  Ie, press ";:" to
-call ~ebdb-mua-display-records~.
+call ~ebdb-mua-update-records~.
 
 #+attr_texinfo: :indic @kbd
 - : ::
@@ -899,9 +929,10 @@ searches on many different record fields and displays the results.
 The EBDB major mode provides many keys for searching on specific
 record fields.  Most of these keys are used after one of three prefix
 keys, which change the behavior of the search: {{{kbd(/)}}} clears the
-buffer before displaying the results, {{{kbd(|)}}} searches only among
-the records already displayed, and {{{kbd(+)}}} appends the search
-results to the records already displayed.
+buffer and searches the whole database, {{{kbd(|)}}} searches only
+among the records already displayed, and {{{kbd(+)}}} searches the
+whole database and appends the results to the records already
+displayed.
 
 For instance, record name search is on the key {{{kbd(n)}}}, meaning
 you can use {{{kbd(/ n)}}}, {{{kbd(| n)}}}, or {{{kbd(+ n)}}}.
@@ -913,6 +944,7 @@ Search keys that work this way are:
 - p :: Search phones
 - a :: Search addresses
 - m :: Search mails
+- t :: Search tags
 - x :: Search user fields (prompts for which field to search on)
 - c :: Search records that have been modified since last save
 - C :: Search by record class

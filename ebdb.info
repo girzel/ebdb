@@ -707,8 +707,25 @@ option governing this behavior is:
 
    This option only governs what EBDB does automatically, each time a
 message is displayed.  The same process can be run interactively using
-the commands below.  When updating records either automatically or
-interactively, a few more options come into play:
+the commands below.
+
+   In many cases it’s useful to have different auto-update behavior in
+different MUAs.  In particular, you might want to automatically create
+records for addresses as you send messages to them, but retain manual
+control over creating records from messages you receive.  EBDB provides
+two more-specific versions of ‘ebdb-mua-auto-update-p’:
+
+ -- User Option: ebdb-mua-sender-update-p
+     The default “update-p” value for all mail-sending MUAs.
+
+ -- User Option: ebdb-mua-reader-update-p
+     The default “update-p” value for all mail-reading MUAs.
+
+   Even finer-grained control is available using per-MUA versions of the
+option, all of them named after the pattern ‘ebdb-<MUA>-auto-update-p’.
+
+   When updating records either automatically or interactively, a few
+more options come into play:
 
  -- User Option: ebdb-add-name
      Whether to automatically change record names.  See docstring for
@@ -779,7 +796,7 @@ Some interactive commands are also provided for operating on the
 relevant EBDB records.  In message-reading MUAs, EBDB creates its own
 keymap, and binds it to the key “;”.  The following list assumes this
 binding, and only specifies the further binding.  Ie, press “;:” to call
-‘ebdb-mua-display-records’.
+‘ebdb-mua-update-records’.
 
 ‘:’
      If the option ‘ebdb-mua-auto-update-p’ is nil, this command
@@ -1081,10 +1098,10 @@ different record fields and displays the results.
 
    The EBDB major mode provides many keys for searching on specific
 record fields.  Most of these keys are used after one of three prefix
-keys, which change the behavior of the search: ‘/’ clears the buffer
-before displaying the results, ‘|’ searches only among the records
-already displayed, and ‘+’ appends the search results to the records
-already displayed.
+keys, which change the behavior of the search: ‘/’ clears the buffer and
+searches the whole database, ‘|’ searches only among the records already
+displayed, and ‘+’ searches the whole database and appends the results
+to the records already displayed.
 
    For instance, record name search is on the key ‘n’, meaning you can
 use ‘/ n’, ‘| n’, or ‘+ n’.  Search keys that work this way are:
@@ -1099,6 +1116,8 @@ use ‘/ n’, ‘| n’, or ‘+ n’.  Search keys that work this way are:
      Search addresses
 ‘m’
      Search mails
+‘t’
+     Search tags
 ‘x’
      Search user fields (prompts for which field to search on)
 ‘c’
@@ -2212,7 +2231,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
  [index ]
 * Menu:
 
-* !:                                     Searching.           (line  49)
+* !:                                     Searching.           (line  51)
 * / /:                                   Searching.           (line   6)
 * ;:                                     The Basics of ebdb-mode.
                                                               (line  41)
@@ -2230,7 +2249,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  42)
 * ?:                                     The Basics of ebdb-mode.
                                                               (line 115)
-* ^:                                     Searching.           (line  55)
+* ^:                                     Searching.           (line  57)
 * Article snarfing:                      Snarfing.            (line  36)
 * Article snarfing <1>:                  Article snarfing.    (line   6)
 * auto-save of Database:                 The EBDB Database.   (line  24)
@@ -2276,13 +2295,13 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * E <1>:                                 The Basics of ebdb-mode.
                                                               (line  37)
 * ebdb-accept-header-list:               Auto-Updating Records.
-                                                              (line  40)
+                                                              (line  57)
 * ebdb-add-aka:                          Auto-Updating Records.
-                                                              (line  29)
+                                                              (line  46)
 * ebdb-add-mails:                        Auto-Updating Records.
-                                                              (line  33)
+                                                              (line  50)
 * ebdb-add-name:                         Auto-Updating Records.
-                                                              (line  25)
+                                                              (line  42)
 * ebdb-buffer-name:                      EBDB Buffers.        (line  14)
 * ebdb-case-fold-search:                 Changing Search Behavior.
                                                               (line   8)
@@ -2363,6 +2382,8 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  20)
 * ebdb-format-to-tmp-buffer:             Exporting/Formatting.
                                                               (line  15)
+* ebdb-gnus-auto-update-p:               Auto-Updating Records.
+                                                              (line  36)
 * ebdb-gnus-post-style-function:         Posting Styles.      (line  13)
 * ebdb-hash-extra-predicates:            Fast Lookups.        (line  30)
 * ebdb-hashtable:                        Fast Lookups.        (line  10)
@@ -2373,7 +2394,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-i18n-countries-pref-scripts:      Internationalization.
                                                               (line  47)
 * ebdb-ignore-header-list:               Auto-Updating Records.
-                                                              (line  44)
+                                                              (line  61)
 * ebdb-info:                             The Basics of ebdb-mode.
                                                               (line 118)
 * ebdb-init-field:                       Init and Delete Methods.
@@ -2395,11 +2416,17 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  61)
 * ebdb-make-buffer-name:                 Writing Integration For New MUAs.
                                                               (line  54)
+* ebdb-message-auto-update-p:            Auto-Updating Records.
+                                                              (line  36)
 * ebdb-message-clean-name-function:      Sender name display. (line  14)
 * ebdb-message-mail-as-name:             Sender name display. (line  18)
+* ebdb-mhe-auto-update-p:                Auto-Updating Records.
+                                                              (line  36)
 * ebdb-migrate-from-bbdb:                Record Migration.    (line   6)
 * ebdb-migrate-from-org-contacts:        Migration from Org Contacts.
                                                               (line   6)
+* ebdb-mu4e-auto-update-p:               Auto-Updating Records.
+                                                              (line  36)
 * ebdb-mua-article-body:                 Article snarfing.    (line  13)
 * ebdb-mua-article-signature:            Article snarfing.    (line  16)
 * ebdb-mua-auto-update:                  Writing Integration For New MUAs.
@@ -2428,6 +2455,10 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-mua-pop-up:                       Pop-up Buffers.      (line  11)
 * ebdb-mua-prepare-article:              Writing Integration For New MUAs.
                                                               (line  47)
+* ebdb-mua-reader-update-p:              Auto-Updating Records.
+                                                              (line  33)
+* ebdb-mua-sender-update-p:              Auto-Updating Records.
+                                                              (line  30)
 * ebdb-mua-snarf-article:                Interactive Commands.
                                                               (line  33)
 * ebdb-mua-summary-mark:                 Summary buffer marks.
@@ -2466,14 +2497,18 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-record-action:                    The Basics of ebdb-mode.
                                                               (line  50)
 * ebdb-record-self:                      Creating Records.    (line  21)
+* ebdb-record-self <1>:                  Auto-Updating Records.
+                                                              (line  65)
 * ebdb-reformat-records:                 The Basics of ebdb-mode.
                                                               (line  82)
 * ebdb-rename-buffer:                    EBDB Buffers.        (line  23)
+* ebdb-rmail-auto-update-p:              Auto-Updating Records.
+                                                              (line  36)
 * ebdb-save:                             The Basics of ebdb-mode.
                                                               (line 121)
 * ebdb-save-on-exit:                     The EBDB Database.   (line  78)
-* ebdb-search-invert:                    Searching.           (line  49)
-* ebdb-search-pop:                       Searching.           (line  55)
+* ebdb-search-invert:                    Searching.           (line  51)
+* ebdb-search-pop:                       Searching.           (line  57)
 * ebdb-search-read:                      Custom Field Searching.
                                                               (line  18)
 * ebdb-search-transform-functions:       Changing Search Behavior.
@@ -2487,7 +2522,11 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-try-speedups:                     The EBDB Database.   (line  84)
 * ebdb-use-diary:                        Diary Integration.   (line  13)
 * ebdb-user-name-address-re:             Auto-Updating Records.
-                                                              (line  48)
+                                                              (line  65)
+* ebdb-vm-auto-update-p:                 Auto-Updating Records.
+                                                              (line  36)
+* ebdb-wl-auto-update-p:                 Auto-Updating Records.
+                                                              (line  36)
 * Editing fields:                        Editing Existing Fields.
                                                               (line   6)
 * f:                                     Exporting/Formatting.
@@ -2511,7 +2550,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line   6)
 * Internationalization:                  Internationalization.
                                                               (line   6)
-* Inverting searches:                    Searching.           (line  46)
+* Inverting searches:                    Searching.           (line  48)
 * Loading databases:                     The EBDB Database.   (line  84)
 * m:                                     The Basics of ebdb-mode.
                                                               (line  56)
@@ -2551,7 +2590,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * s:                                     The Basics of ebdb-mode.
                                                               (line 121)
 * Saving the database:                   The EBDB Database.   (line  78)
-* Search history:                        Searching.           (line  51)
+* Search history:                        Searching.           (line  53)
 * Searching the EBDB:                    Searching.           (line   6)
 * Snarfing text:                         Snarfing.            (line   6)
 * t:                                     The Basics of ebdb-mode.
@@ -2592,44 +2631,44 @@ Node: Loading MUA Code20835
 Node: Display and Updating21548
 Node: Pop-up Buffers22314
 Node: Auto-Updating Records24234
-Node: Noticing and Automatic Rules26634
-Node: Interactive Commands27967
-Node: EBDB and MUA summary buffers30442
-Node: Sender name display30960
-Node: Summary buffer marks32187
-Node: Mail Address Completion33366
-Node: A Note on Completion35875
-Node: Specific MUAs36498
-Node: Gnus36646
-Node: Posting Styles36868
-Node: EBDB Buffers38443
-Node: Searching39654
-Node: Changing Search Behavior41316
-Node: The Basics of ebdb-mode42563
-Node: Customizing Record Display46872
-Node: Marking51192
-Node: Exporting/Formatting51619
-Node: Completion52554
-Node: Snarfing53350
-Node: Internationalization55367
-Node: Diary Integration58068
-Node: Mail Aliases58933
-Node: vCard Support59647
-Node: Org Integration60146
-Node: Citing Records62044
-Node: Hacking EBDB62802
-Node: Field Classes65393
-Node: Init and Delete Methods68529
-Node: The Labeled Field Class70036
-Node: The Singleton Field Class70890
-Node: Actions71328
-Node: Custom Field Searching72000
-Node: Fast Lookups74867
-Node: Formatting in the EBDB Buffer76677
-Node: Writing Internationalization Libraries78753
-Node: Writing Integration For New MUAs83167
-Node: Article snarfing86615
-Node: Index87333
+Node: Noticing and Automatic Rules27350
+Node: Interactive Commands28683
+Node: EBDB and MUA summary buffers31157
+Node: Sender name display31675
+Node: Summary buffer marks32902
+Node: Mail Address Completion34081
+Node: A Note on Completion36590
+Node: Specific MUAs37213
+Node: Gnus37361
+Node: Posting Styles37583
+Node: EBDB Buffers39158
+Node: Searching40369
+Node: Changing Search Behavior42083
+Node: The Basics of ebdb-mode43330
+Node: Customizing Record Display47639
+Node: Marking51959
+Node: Exporting/Formatting52386
+Node: Completion53321
+Node: Snarfing54117
+Node: Internationalization56134
+Node: Diary Integration58835
+Node: Mail Aliases59700
+Node: vCard Support60414
+Node: Org Integration60913
+Node: Citing Records62811
+Node: Hacking EBDB63569
+Node: Field Classes66160
+Node: Init and Delete Methods69296
+Node: The Labeled Field Class70803
+Node: The Singleton Field Class71657
+Node: Actions72095
+Node: Custom Field Searching72767
+Node: Fast Lookups75634
+Node: Formatting in the EBDB Buffer77444
+Node: Writing Internationalization Libraries79520
+Node: Writing Integration For New MUAs83934
+Node: Article snarfing87382
+Node: Index88100
 
 End Tag Table
 

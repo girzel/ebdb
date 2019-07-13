@@ -90,11 +90,40 @@ It can take one of the following values:
 
 Note that this option only controls how EBDB acts on information
 in incoming messages; the option `ebdb-mua-pop-up' controls
-whether the records in question are actually displayed or not."
+whether the records in question are actually displayed or not.
+
+Also see `ebdb-mua-reader-update-p' and
+`ebdb-mua-sender-update-p', as well as the equivalent values for
+each individual MUA package."
 
   ;; Also: Used for communication between `ebdb-update-records'
   ;; and `ebdb-query-create'.
-  :group 'ebdb-mua
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
+(defcustom ebdb-mua-reader-update-p ebdb-mua-auto-update-p
+  "Value for `ebdb-mua-auto-update-p' for reader MUAs.
+\"Reader\" MUAs are those that provide an interface for reading
+incoming messages and articles.
+
+Defaults to the value of `ebdb-mua-auto-update-p'."
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
+(defcustom ebdb-mua-sender-update-p ebdb-mua-auto-update-p
+  "Value for `ebdb-mua-auto-update-p' for sender MUAs.
+\"Sender\" MUAs are those that govern mail composition.  EBDB
+currently only supports the \"message\" and \"mail\" MUAs.
+
+Defaults to the value of `ebdb-mua-auto-update-p'."
   :type '(choice (const :tag "do nothing" nil)
                  (const :tag "search for existing records" search)
                  (const :tag "update existing records" update)
@@ -1266,7 +1295,7 @@ buffer."
 ;; Functions for noninteractive use in MUA hooks
 
 ;;;###autoload
-(defun ebdb-mua-auto-update (&optional header-class update-p)
+(defun ebdb-mua-auto-update (&optional update-p header-class)
   "Update EBDB automatically based on incoming and outgoing messages.
 This looks into the headers of a message according to
 HEADER-CLASS.  Then for the mail addresses found the
@@ -1275,10 +1304,11 @@ whether only existing EBDB records are taken or whether also new
 records are created for these mail addresses.  Return matching
 records.
 
-HEADER-CLASS is defined in `ebdb-message-headers'.  If it is nil,
-use all classes in `ebdb-message-headers'.  UPDATE-P may take the
-same values as `ebdb-mua-auto-update-p'.  If UPDATE-P is nil, use
-`ebdb-mua-auto-update-p' (which see).
+UPDATE-P may take the same values as `ebdb-mua-auto-update-p' or
+any of the MUA-specific equivalents.  If UPDATE-P is nil, use
+`ebdb-mua-auto-update-p' (which see).  HEADER-CLASS is defined in
+`ebdb-message-headers'.  If it is nil, use all classes in
+`ebdb-message-headers'.
 
 If `ebdb-mua-pop-up' is non-nil, EBDB pops up the *EBDB* buffer
 along with the MUA window(s), displaying the matching records."

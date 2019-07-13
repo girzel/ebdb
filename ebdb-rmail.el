@@ -33,6 +33,15 @@
   "EBDB customization for rmail."
   :group 'ebdb-mua)
 
+(defcustom ebdb-rmail-auto-update-p ebdb-mua-reader-update-p
+  "Rmail-specific value of `ebdb-mua-auto-update-p'."
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
 (defcustom ebdb-rmail-window-size ebdb-default-window-size
   "Size of the EBDB buffer when popping up in rmail.
 Size should be specified as a float between 0 and 1.  Defaults to
@@ -74,9 +83,12 @@ the value of `ebdb-default-window-size'."
   "Hook EBDB into RMAIL."
   (define-key rmail-mode-map ";" ebdb-mua-keymap))
 
+(defun ebdb-rmail-auto-update ()
+  (ebdb-mua-auto-update ebdb-rmail-auto-update-p))
+
 (add-hook 'rmail-mode-hook 'ebdb-insinuate-rmail)
 
-(add-hook 'rmail-show-message-hook 'ebdb-mua-auto-update)
+(add-hook 'rmail-show-message-hook 'ebdb-rmail-auto-update)
 
 (provide 'ebdb-rmail)
 ;;; ebdb-rmail.el ends here

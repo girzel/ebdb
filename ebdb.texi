@@ -735,8 +735,35 @@ function which returns one of the above symbols.
 
 This option only governs what EBDB does automatically, each time a
 message is displayed.  The same process can be run interactively using
-the commands below.  When updating records either automatically or
-interactively, a few more options come into play:
+the commands below.
+
+In many cases it's useful to have different auto-update behavior in
+different MUAs.  In particular, you might want to automatically create
+records for addresses as you send messages to them, but retain manual
+control over creating records from messages you receive.  EBDB
+provides two more-specific versions of @code{ebdb-mua-auto-update-p}:
+
+@defopt ebdb-mua-sender-update-p
+The default ``update-p'' value for all mail-sending MUAs.
+@end defopt
+
+@defopt ebdb-mua-reader-update-p
+The default ``update-p'' value for all mail-reading MUAs.
+@end defopt
+
+@vindex ebdb-gnus-auto-update-p
+@vindex ebdb-message-auto-update-p
+@vindex ebdb-rmail-auto-update-p
+@vindex ebdb-mhe-auto-update-p
+@vindex ebdb-mu4e-auto-update-p
+@vindex ebdb-wl-auto-update-p
+@vindex ebdb-vm-auto-update-p
+Even finer-grained control is available using per-MUA versions of the
+option, all of them named after the pattern
+@code{ebdb-<MUA>-auto-update-p}.
+
+When updating records either automatically or interactively, a few
+more options come into play:
 
 @defopt ebdb-add-name
 Whether to automatically change record names.  See docstring for
@@ -766,6 +793,7 @@ An alist governing which addresses in which headers will be ignored.
 See docstring for details.
 @end defopt
 
+@vindex ebdb-record-self
 @defopt ebdb-user-name-address-re
 A regular expression matching the user's own mail address(es).  In
 addition to a regexp, this can also be the symbol @code{message}, in which
@@ -780,7 +808,7 @@ the record pointed to by the option @code{ebdb-record-self}.
 @cindex Automatic Rules
 In addition to updating records' name and mail fields, it's possible
 to run other arbitrary edits on records when they are referenced in a
-message.  This process is called ``noticing''. Two hooks are run as a
+message.  This process is called ``noticing''.  Two hooks are run as a
 part of noticing:
 
 @defopt ebdb-notice-record-hook
@@ -811,7 +839,7 @@ Some interactive commands are also provided for operating on the
 relevant EBDB records.  In message-reading MUAs, EBDB creates its own
 keymap, and binds it to the key ``;''.  The following list assumes this
 binding, and only specifies the further binding.  Ie, press ``;:'' to
-call @code{ebdb-mua-display-records}.
+call @code{ebdb-mua-update-records}.
 
 @table @kbd
 @item :
@@ -1128,9 +1156,10 @@ searches on many different record fields and displays the results.
 The EBDB major mode provides many keys for searching on specific
 record fields.  Most of these keys are used after one of three prefix
 keys, which change the behavior of the search: @kbd{/} clears the
-buffer before displaying the results, @kbd{|} searches only among
-the records already displayed, and @kbd{+} appends the search
-results to the records already displayed.
+buffer and searches the whole database, @kbd{|} searches only
+among the records already displayed, and @kbd{+} searches the
+whole database and appends the results to the records already
+displayed.
 
 For instance, record name search is on the key @kbd{n}, meaning
 you can use @kbd{/ n}, @kbd{| n}, or @kbd{+ n}.
@@ -1147,6 +1176,8 @@ Search phones
 Search addresses
 @item m
 Search mails
+@item t
+Search tags
 @item x
 Search user fields (prompts for which field to search on)
 @item c

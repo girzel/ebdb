@@ -34,6 +34,15 @@
   "EBDB customizations for mhe."
   :group 'ebdb-mua)
 
+(defcustom ebdb-mhe-auto-update-p ebdb-mua-reader-update-p
+  "Mh-e-specific value of `ebdb-mua-auto-update-p'."
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
 (defcustom ebdb-mhe-window-size ebdb-default-window-size
   "Size of the EBDB buffer when popping up in mh-e.
 Size should be specified as a float between 0 and 1.  Defaults to
@@ -133,7 +142,10 @@ Returns the empty string if HEADER is not in the message."
       (define-key mh-letter-mode-map "\M-;" 'ebdb-complete-mail)
       (define-key mh-letter-mode-map "\e\t" 'ebdb-complete-mail)))
 
-(add-hook 'mh-show-hook 'ebdb-mua-auto-update)
+(defun ebdb-mhe-auto-update ()
+  (ebdb-mua-auto-update ebdb-mhe-auto-update-p))
+
+(add-hook 'mh-show-hook 'ebdb-mhe-auto-update)
 
 (add-hook 'mh-folder-mode-hook 'ebdb-insinuate-mh)
 

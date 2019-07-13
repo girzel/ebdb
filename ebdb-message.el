@@ -36,6 +36,15 @@
   :group 'ebdb-mua)
 (put 'ebdb-mua-message 'custom-loads '(ebdb-message))
 
+(defcustom ebdb-message-auto-update-p ebdb-mua-sender-update-p
+  "Message-specific value of `ebdb-mua-auto-update-p'."
+  :type '(choice (const :tag "do nothing" nil)
+                 (const :tag "search for existing records" search)
+                 (const :tag "update existing records" update)
+                 (const :tag "query annotation of all messages" query)
+                 (const :tag "annotate all messages" create)
+                 (function :tag "User-defined function")))
+
 (defcustom ebdb-message-window-size ebdb-default-window-size
   "Size of the EBDB buffer when popping up in message-mode.
 Size should be specified as a float between 0 and 1.  Defaults to
@@ -150,10 +159,13 @@ Also fires when postponing a draft."
     (_ (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
   (ebdb-undisplay-records))
 
+(defun ebdb-message-auto-update ()
+  (ebdb-mua-auto-update ebdb-message-auto-update-p))
+
 (add-hook 'message-mode-hook 'ebdb-insinuate-message)
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
-(add-hook 'message-send-hook 'ebdb-mua-auto-update)
-(add-hook 'mail-send-hook 'ebdb-mua-auto-update)
+(add-hook 'message-send-hook 'ebdb-message-auto-update)
+(add-hook 'mail-send-hook 'ebdb-message-auto-update)
 
 ;; Slightly convoluted, but does it the "right way".  The
 ;; `message-header-setup-hook' creates and populates the
@@ -163,7 +175,7 @@ Also fires when postponing a draft."
 (add-hook 'ebdb-after-load-hook
 	  (lambda ()
 	    (with-eval-after-load "gnus-win"
-	      (add-hook 'message-header-setup-hook 'ebdb-mua-auto-update)
+	      (add-hook 'message-header-setup-hook 'ebdb-message-auto-update)
 
 	      (when ebdb-mua-pop-up
 		(add-to-list 'gnus-window-to-buffer
