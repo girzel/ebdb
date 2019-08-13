@@ -89,6 +89,31 @@
     ("Wyoming" . "WY"))
   "All the states in the US, for use with completion.")
 
+(cl-defmethod ebdb-parse-i18n ((_class (subclass ebdb-field-phone))
+			       (str string)
+			       (_cc (eql 1))
+			       &optional slots)
+  "Parse a US phone number.
+Uses first three digits as the area code, next seven as the
+number, and any remaining as an extension."
+  (let ((numstr (replace-regexp-in-string "[^[:digit:]]+" "" str))
+	ext)
+    (setq slots
+	  (plist-put
+	   (plist-put
+	    slots :area-code
+	    (string-to-number (substring numstr 0 3)))
+	   :number (substring numstr 3 10)))
+    (condition-case nil
+	(setq slots (plist-put
+		     slots
+		     :extension
+		     (when (and (setq ext (substring numstr 10))
+				(null (string-empty-p ext)))
+		       (string-to-number ext))))
+      (args-out-of-range nil))
+    slots))
+
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
 				(_cc (eql 1)))
   (with-slots (area-code number extension) phone

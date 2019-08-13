@@ -870,9 +870,11 @@ Then call `cl-call-next-method' with the new values.")
   (save-match-data
     (cl-call-next-method)))
 
-(cl-defmethod ebdb-parse ((field-class (subclass ebdb-field)) _str &optional slots)
+(cl-defmethod ebdb-parse ((field-class (subclass ebdb-field)) str &optional slots)
   "Create the actual field instance."
-  (apply 'make-instance field-class slots))
+  (condition-case nil
+      (apply 'make-instance field-class slots)
+    (error (signal 'ebdb-unparseable (list str)))))
 
 (cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional _slots)
   (when (string-empty-p str)
@@ -1828,17 +1830,19 @@ The result looks like this:
       ;; "number" is saved as a string, partially for ease in
       ;; formatting, partially because if it's too long Emacs turns it
       ;; into a float, which is a pain in the ass.
-      (while (and (< (point) (point-max))
-		  (null (looking-at-p ext-regexp))
-		  (looking-at "[ \t]?\\([0-9]+\\)[- .]?"))
-	(setq acc (concat acc (match-string-no-properties 1)))
-	(goto-char (match-end 0)))
-      (when (looking-at ext-regexp)
+      (unless (plist-member slots :number)
+	(while (and (< (point) (point-max))
+		    (null (looking-at-p ext-regexp))
+		    (looking-at "[ \t]?\\([0-9]+\\)[- .]?"))
+	  (setq acc (concat acc (match-string-no-properties 1)))
+	  (goto-char (match-end 0)))
 	(setq slots
-	      (plist-put slots :extension (string-to-number
-					   (match-string 1))))))
-    (setq slots
-	  (plist-put slots :number acc))
+	      (plist-put slots :number acc)))
+      (unless (plist-member slots :number)
+	(when (looking-at ext-regexp)
+	  (setq slots
+		(plist-put slots :extension (string-to-number
+					     (match-string 1)))))))
     (cl-call-next-method class string slots)))
 
 (cl-defmethod cl-print-object ((phone ebdb-field-phone) stream)
