@@ -359,6 +359,14 @@ anniversary date, and the sexp (as a string):
   :group 'ebdb
   :type 'hook)
 
+(defcustom ebdb-before-save-hook nil
+  "Hook run before saving all databases."
+  :type 'hook)
+
+(defcustom ebdb-after-save-hook nil
+  "Hook run after saving all databases."
+  :type 'hook)
+
 (defvar ebdb-create-hook nil
   "*Hook run each time a new EBDB record is created.
 Run with one argument, the new record.  This is called before the record is
@@ -5179,9 +5187,11 @@ additionally prompt to save each database individually."
   ;; TODO: Reimplement ebdb-remote-file, or otherwise do something
   ;; about that.
   (when interactive
-   (message "Saving the EBDB..."))
+    (message "Saving the EBDB..."))
+  (run-hooks 'ebdb-before-save-hook)
   (dolist (s ebdb-db-list)
     (ebdb-db-save s (eq interactive 4)))
+  (run-hooks 'ebdb-after-save-hook)
   (when interactive
    (message "Saving the EBDB... done")))
 
