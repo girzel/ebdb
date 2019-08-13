@@ -593,6 +593,30 @@ the symbol ~self~, in which case the value will be constructed from
 the record pointed to by the option ~ebdb-record-self~.
 #+end_defopt
 
+When auto update is set to ~query~, and the user has already told EBDB
+not to automatically create or update a record for a given mail
+address, it can be annoying when opening the message a second timed to
+be prompted again.  It is possible to permanently ignore a mail
+address, by saving it to disk.
+
+#+CINDEX: Permanently ignoring mail addresses
+#+ATTR_TEXINFO: :options ebdb-permanent-ignores-file
+#+begin_defopt
+A file in which to save permanently-ignored mail addresses.  This
+defaults to ".ebdb-permanent-ignores" in the user's Emacs directory,
+but can be set to a different location, or to nil to disable saving of
+the ignored list altogether.
+#+end_defopt
+
+When EBDB queries to create or update a record, the {{{kbd(i)}}} key
+will ignore the mail permanently.  If the above option is nil, the
+mail will be ignored for this session only, otherwise it will be saved
+to disk the next time EBDB is saved.
+
+It's also possible to add addresses manually, while EBDB is shut
+down.  The format is one address per line, with no attached name or
+angle brackets.  The addresses are matched literally (though
+case-insensitively); it's not possible to use regexps.
 *** Noticing and Automatic Rules
 
 #+CINDEX: Automatic Rules

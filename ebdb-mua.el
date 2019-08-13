@@ -245,6 +245,50 @@ will not operate on your own record.  See also
 		 (const :tag "Use the value of `message-alternative-emails'" message)
 		 (regexp :tag "Regexp matching your mail addresses")))
 
+(defcustom ebdb-permanent-ignores-file
+  (locate-user-emacs-file ".ebdb-permanent-ignores")
+  "File in which to save a list of permanently-ignored mails.
+EBDB can offer to permanently ignore a mail address, so that it
+will never again be considered for record creation or update.
+This option specifies the file in which to save those mails, or
+nil not to permanently ignore any mail addresses.
+
+Ignored mails are written one per line, with no name or other
+leading/trailing characters."
+  :type '(choice (const :tag "do not save ignored mails" nil)
+		 (file :tag "file in which to save ignored mails")))
+
+;; Maybe more efficient to make this a buffer instead of a list
+;; variable, and use `search-forward' to find mails instead of
+;; `member'?
+(defvar ebdb-permanently-ignored-mails nil
+  "Variable holding a list of permanently-ignored mails.")
+
+(defun ebdb-mua-load-permanent-ignores ()
+  "Load permanent ignores.
+Reads mail addresses to permanently ignore from the option
+`ebdb-permanent-ignores-file', and stores them in the variable
+`ebdb-permanently-ignored-mails'."
+  (when (and ebdb-permanent-ignores-file
+	     (file-exists-p ebdb-permanent-ignores-file))
+    (with-temp-buffer
+      (insert-file-contents ebdb-permanent-ignores-file)
+      (when (null (zerop (buffer-size)))
+	(setq ebdb-permanently-ignored-mails
+	      (split-string (buffer-string) "\n" t "[[:blank:]]"))))))
+
+(add-hook 'ebdb-after-load-hook #'ebdb-mua-load-permanent-ignores)
+
+(defun ebdb-mua-save-permanent-ignores ()
+  "Write the list of permanently-ignored mails to disk."
+  (when (and ebdb-permanent-ignores-file
+	     ebdb-permanently-ignored-mails)
+    (with-temp-file ebdb-permanent-ignores-file
+      (dolist (m ebdb-permanently-ignored-mails)
+	(insert m "\n")))))
+
+(add-hook 'ebdb-after-save-hook #'ebdb-mua-save-permanent-ignores)
+
 ;; This is currently only called in `ebdb-mua-test-headers'.
 (defun ebdb-get-user-mail-address-re ()
   "Get or set the value of variable `ebdb-user-mail-address-re'.
@@ -678,7 +722,8 @@ are discarded as appropriate."
   (let ((message-headers (if header-class
                              (list (assoc header-class ebdb-message-headers))
                            ebdb-message-headers))
-        address-list mail mail-list content)
+	(mail-list (copy-sequence ebdb-permanently-ignored-mails))
+        address-list mail content)
     (condition-case nil
 	(dolist (headers message-headers)
 	  (dolist (header (cdr headers))
@@ -688,14 +733,14 @@ are discarded as appropriate."
 		(setq mail (cadr address))
 		;; Ignore addresses that should be ignored.
 		(when (and mail
-			   (not (member-ignore-case mail mail-list))
+			   (not (member (downcase mail) mail-list))
 			   (ebdb-mua-test-headers (car headers) address ignore-address))
 		  ;; Add each address only once. (Use MAIL-LIST for book keeping.)
 		  ;; Thus if we care about whether an address gets associated with
 		  ;; one or another header, the order of elements in
 		  ;; `ebdb-message-headers' is relevant.  The "most important"
 		  ;; headers should be first in `ebdb-message-headers'.
-		  (push mail mail-list)
+		  (push (downcase mail) mail-list)
 		  (push (list (car address) (cadr address) header (car headers) major-mode) address-list))))))
       (cl-no-applicable-method
        ;; Potentially triggered by `ebdb-mua-message-header', which
@@ -770,6 +815,13 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 		  nil)))
 	  (cond ((eq task 'quit)
 		 (setq address-list nil))
+		((eq task 'ignore)
+		 (when (cadr address)
+		   (cl-pushnew (downcase (cadr address))
+			       ebdb-permanently-ignored-mails :test #'equal))
+		 (unless ebdb-permanent-ignores-file
+		   (message "Mail will be ignored for this session only")
+		   (sit-for 2)))
 		((not (eq task 'next))
 		 (dolist (hit (delq nil (nreverse hits)))
 		   (cl-pushnew hit records :test #'equal)
@@ -787,7 +839,6 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 
     records))
 
-;;; This whole thing could probably be replaced by `map-y-or-n-p'
 (defun ebdb-query-create ()
   "Interactive query used by `ebdb-update-records'.
 Return t if the record should be created or nil otherwise.
@@ -797,7 +848,7 @@ Honor previous answers such as `!'."
     ;; `ebdb-offer-to-create' holds a character, i.e., a number.
     ;; -- Right now, we only remember "!".
     (when (not (integerp task))
-      (let ((prompt (format "%s is not in EBDB; add? (y,!,n,s,q,?) "
+      (let ((prompt (format "%s is not in EBDB; add? (y,!,n,i,s,q,?) "
                             (or (nth 0 ebdb-update-records-address)
                                 (nth 1 ebdb-update-records-address))))
             event)
@@ -818,6 +869,8 @@ Honor previous answers such as `!'."
           ((or (eq task ?q)
                (eq task ?\a)) ; ?\a = C-g
            (throw 'done 'quit))
+	  ((eq task ?i)
+	   (throw 'done 'ignore))
           ((eq task ?s)
            (setq ebdb-update-records-p 'existing)
            (throw 'done 'next))
@@ -836,7 +889,8 @@ Honor previous answers such as `!'."
 Type ?  for this help.
 Type y  to add the current record.
 Type !  to add all remaining records.
-Type n  to skip the current record. (You might also type space)
+Type n  to skip the current record. (You can also type space)
+Type i  to permanently ignore this mail address
 Type s  to switch from annotate to search mode.
 Type q  to quit updating records.  No more search or annotation is done.")
                    (set-buffer-modified-p nil)
@@ -880,7 +934,7 @@ Return the records matching ADDRESS or nil."
                 (not (or name mail)))
       ;; If there is no name, try to use the mail address as name
       (if (and ebdb-message-mail-as-name mail
-               (or (null name)
+	       (or (null name)
                    (string= "" name)))
           (setq name (funcall ebdb-message-clean-name-function mail)))
       (if (or (eq update-p 'create)
@@ -902,7 +956,7 @@ Return the records matching ADDRESS or nil."
 
         ;; Analyze the name part of the record.
         (cond (created-p		; new record
-               (ebdb-record-change-name record name))
+	       (ebdb-record-change-name record name))
 
               ((or (not name)
                    ;; The following tests can differ for more complicated names
@@ -913,19 +967,19 @@ Return the records matching ADDRESS or nil."
 
 
               ((numberp add-name)
-               (unless ebdb-silent
+	       (unless ebdb-silent
                  (message "name mismatch: \"%s\" changed to \"%s\""
                           old-name name)
                  (sit-for add-name)))
 
               ((ebdb-eval-spec add-name
-                               (if old-name
+			       (if old-name
                                    (format "Change name \"%s\" to \"%s\"? "
                                            old-name name)
                                  (format "Assign name \"%s\" to address \"%s\"? "
                                          name (ebdb-record-one-mail record))))
-               ;; Keep old-name as AKA?
-               (when (and old-name
+	       ;; Keep old-name as AKA?
+	       (when (and old-name
 			  ;; Leaky abstraction
 			  (object-of-class-p record 'ebdb-record-person)
                           (not (member-ignore-case old-name (ebdb-record-alt-names record))))
@@ -933,8 +987,8 @@ Return the records matching ADDRESS or nil."
                                      (format "Keep name \"%s\" as an AKA? " old-name))
                      (ebdb-record-insert-field
                       record (slot-value record 'name) 'aka)))
-               (ebdb-record-change-name record name)
-               (setq change-p 'name))
+	       (ebdb-record-change-name record name)
+	       (setq change-p 'name))
 
               ;; make new name an AKA?
               ((and old-name
@@ -943,15 +997,15 @@ Return the records matching ADDRESS or nil."
                     (ebdb-eval-spec (ebdb-add-job ebdb-add-aka record name)
                                     (format "Make \"%s\" an alternate for \"%s\"? "
                                             name old-name)))
-               (ebdb-record-insert-field
+	       (ebdb-record-insert-field
                 record (ebdb-parse 'ebdb-field-name name) 'aka)
-               (setq change-p 'name)))
+	       (setq change-p 'name)))
 
         ;; Is MAIL redundant compared with the mail addresses
         ;; that are already known for RECORD?
         (if (and mail
                  (setq ignore-redundant
-                       (ebdb-add-job ebdb-ignore-redundant-mails record mail)))
+		       (ebdb-add-job ebdb-ignore-redundant-mails record mail)))
             (let ((mails (ebdb-record-mail-canon record))
                   (case-fold-search t) redundant ml re)
               (while (setq ml (pop mails))
@@ -974,12 +1028,12 @@ Return the records matching ADDRESS or nil."
                    (member-ignore-case (ebdb-string mail) (ebdb-record-mail-canon record)))) ; do nothing
 
               (created-p		; new record
-               (ebdb-record-insert-field record mail 'mail))
+	       (ebdb-record-insert-field record mail 'mail))
 
               ((not (setq add-mails (ebdb-add-job ebdb-add-mails record mail)))) ; do nothing
 
               ((numberp add-mails)
-               (unless ebdb-silent
+	       (unless ebdb-silent
                  (message "%s: new address `%s'"
                           (ebdb-string record) (ebdb-string mail))
                  (sit-for add-mails)))
@@ -1001,16 +1055,16 @@ Return the records matching ADDRESS or nil."
                           (ebdb-record-change-name record name)
                           (setq created-p t))))
 
-               (let ((mails (ebdb-record-mail record)))
+	       (let ((mails (ebdb-record-mail record)))
                  (if ignore-redundant
                      ;; Does the new address MAIL make an old address redundant?
                      (let ((mail-re (ebdb-mail-redundant-re (ebdb-string mail)))
                            (case-fold-search t) okay redundant)
-                       (dolist (ml mails)
+		       (dolist (ml mails)
                          (if (string-match mail-re (ebdb-string ml)) ; redundant mail address
                              (push ml redundant)
                            (push ml okay)))
-                       (let ((form (format "redundant mail%s %s"
+		       (let ((form (format "redundant mail%s %s"
                                            (if (< 1 (length redundant)) "s" "")
                                            (ebdb-concat 'mail (nreverse redundant))))
                              (name (ebdb-record-name record)))
@@ -1033,24 +1087,24 @@ Return the records matching ADDRESS or nil."
                  (unless change-p (setq change-p t)))))
 
         (cond (created-p
-               (unless ebdb-silent
+	       (unless ebdb-silent
                  (if (ebdb-record-name record)
                      (message "created %s's record with address \"%s\""
                               (ebdb-string record)
 			      (ebdb-string mail))
                    (message "created record with naked address \"%s\""
 			    (ebdb-string mail))))
-               (ebdb-init-record record))
+	       (ebdb-init-record record))
 
               (change-p
-               (unless ebdb-silent
+	       (unless ebdb-silent
                  (cond ((eq change-p 'name)
                         (message "noticed \"%s\"" (ebdb-string record)))
-                       ((ebdb-record-name record)
+		       ((ebdb-record-name record)
                         (message "noticed %s's address \"%s\""
                                  (ebdb-string record)
 				 (ebdb-string mail)))
-                       (t
+		       (t
                         (message "noticed naked address \"%s\""
 				 (ebdb-string mail)))))))
 
