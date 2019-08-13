@@ -507,12 +507,13 @@ option governing this behavior is:
 #+begin_defopt
 This option determines how EBDB acts upon mail addresses found in
 incoming messages.  If nil, nothing will happen.  Other options
-include the symbols ~update~ (only find existing records, and update
-their name and mail fields as necessary), ~query~ (find existing
-records, and query about the editing and creation of new records), and
-~create~ (automatically create new records).  A value of ~t~ is
-considered equivalent to ~create~.  The option can also be set to a
-function which returns one of the above symbols.
+include the symbols ~existing~ (only search for and display existing
+records), ~update~ (only find existing records, and update their name
+and mail fields as necessary), ~query~ (find existing records, and
+query about the editing and creation of new records), and ~create~
+(automatically create new records).  A value of ~t~ is considered
+equivalent to ~create~.  The option can also be set to a function
+which returns one of the above symbols.
 #+end_defopt
 
 This option only governs what EBDB does automatically, each time a

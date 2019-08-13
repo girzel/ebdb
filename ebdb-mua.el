@@ -99,36 +99,36 @@ each individual MUA package."
   ;; Also: Used for communication between `ebdb-update-records'
   ;; and `ebdb-query-create'.
   :type '(choice (const :tag "do nothing" nil)
-                 (const :tag "search for existing records" search)
+                 (const :tag "search for existing records" existing)
                  (const :tag "update existing records" update)
-                 (const :tag "query annotation of all messages" query)
-                 (const :tag "annotate all messages" create)
+                 (const :tag "query for update or record creation" query)
+                 (const :tag "update or create automatically" create)
                  (function :tag "User-defined function")))
 
 (defcustom ebdb-mua-reader-update-p ebdb-mua-auto-update-p
-  "Value for `ebdb-mua-auto-update-p' for reader MUAs.
+  "Value of `ebdb-mua-auto-update-p' for reader MUAs.
 \"Reader\" MUAs are those that provide an interface for reading
 incoming messages and articles.
 
 Defaults to the value of `ebdb-mua-auto-update-p'."
   :type '(choice (const :tag "do nothing" nil)
-                 (const :tag "search for existing records" search)
+                 (const :tag "search for existing records" existing)
                  (const :tag "update existing records" update)
-                 (const :tag "query annotation of all messages" query)
-                 (const :tag "annotate all messages" create)
+                 (const :tag "query for update or record creation" query)
+                 (const :tag "update or create automatically" create)
                  (function :tag "User-defined function")))
 
 (defcustom ebdb-mua-sender-update-p ebdb-mua-auto-update-p
-  "Value for `ebdb-mua-auto-update-p' for sender MUAs.
+  "Value of `ebdb-mua-auto-update-p' for sender MUAs.
 \"Sender\" MUAs are those that govern mail composition.  EBDB
 currently only supports the \"message\" and \"mail\" MUAs.
 
 Defaults to the value of `ebdb-mua-auto-update-p'."
   :type '(choice (const :tag "do nothing" nil)
-                 (const :tag "search for existing records" search)
+                 (const :tag "search for existing records" existing)
                  (const :tag "update existing records" update)
-                 (const :tag "query annotation of all messages" query)
-                 (const :tag "annotate all messages" create)
+                 (const :tag "query for update or record creation" query)
+                 (const :tag "update or create automatically" create)
                  (function :tag "User-defined function")))
 
 (defcustom ebdb-message-headers

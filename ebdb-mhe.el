@@ -37,10 +37,10 @@
 (defcustom ebdb-mhe-auto-update-p ebdb-mua-reader-update-p
   "Mh-e-specific value of `ebdb-mua-auto-update-p'."
   :type '(choice (const :tag "do nothing" nil)
-                 (const :tag "search for existing records" search)
+                 (const :tag "search for existing records" existing)
                  (const :tag "update existing records" update)
-                 (const :tag "query annotation of all messages" query)
-                 (const :tag "annotate all messages" create)
+                 (const :tag "query for update or record creation" query)
+                 (const :tag "update or create automatically" create)
                  (function :tag "User-defined function")))
 
 (defcustom ebdb-mhe-window-size ebdb-default-window-size
