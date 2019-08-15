@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2019  Free Software Foundation, Inc.
 
-;; Version: 0.6.10
+;; Version: 0.6.11
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -1338,13 +1338,13 @@ first one."
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
   (pcase-let ((`(,surname ,given-names ,suffix)
 	       (ebdb-divide-name str)))
-    (unless (plist-get slots :given-names)
+    (unless (plist-member slots :given-names)
       (setq slots (plist-put slots :given-names
 			     given-names)))
-    (unless (plist-get slots :surname)
+    (unless (plist-member slots :surname)
       (setq slots (plist-put slots :surname
 			     (or surname ""))))
-    (unless (plist-get slots :suffix)
+    (unless (plist-member slots :suffix)
       (setq slots (plist-put slots :suffix suffix)))
     (cl-call-next-method class str slots)))
 

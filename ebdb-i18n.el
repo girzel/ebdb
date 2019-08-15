@@ -723,12 +723,11 @@ for their symbol representations."
 		  (cdr-safe (assoc-string
 			     (match-string 0 str)
 			     (ebdb-i18n-countries)))))))
-    (or (and cc
-	     (symbolp cc)
-	     (condition-case nil
-		 (ebdb-parse-i18n class str cc slots)
-	       (cl-no-method nil)))
-	(signal 'ebdb-unparseable (list str)))))
+    (when (and cc (symbolp cc))
+      (condition-case nil
+	  (setq slots (ebdb-parse-i18n class str cc slots))
+	(cl-no-method nil)))
+    (cl-call-next-method class str slots)))
 
 (cl-defmethod ebdb-read :extra "i18n" ((class (subclass ebdb-field-phone))
 				       &optional slots obj)
@@ -787,14 +786,15 @@ for their symbol representations."
 	 (cc (or (plist-get slots :country-code)
 		 (and (string-match cc-reg str)
 		      (string-to-number (match-string 1 str))))))
-    (or (and cc
-	     (condition-case nil
-		 (ebdb-parse-i18n
-		  class
-		  (replace-regexp-in-string cc-reg "" str)
-		  cc (plist-put slots :country-code cc))
-	       (cl-no-method nil)))
-	(cl-call-next-method))))
+    (when cc
+      (condition-case nil
+	  (setq slots
+		(ebdb-parse-i18n
+		 class
+		 (replace-regexp-in-string cc-reg "" str)
+		 cc (plist-put slots :country-code cc)))
+	(cl-no-method nil)))
+    (cl-call-next-method class str slots)))
 
 ;; We don't need to override the `ebdb-read' method for names.  It
 ;; only matters what script the name is in if the user has set
@@ -807,13 +807,13 @@ for their symbol representations."
   ;; user has entered.
   (let ((script (unless (string-empty-p string)
 		  (aref char-script-table (aref string 0)))))
-    (or (and script
-	     (null (memq script ebdb-i18n-ignorable-scripts))
-	     (condition-case nil
-		 (ebdb-parse-i18n class string script slots)
-	       (cl-no-method
-		nil)))
-	(cl-call-next-method))))
+    (when (and script
+	       (null (memq script ebdb-i18n-ignorable-scripts)))
+      (condition-case nil
+	  (setq slots (ebdb-parse-i18n class string script slots))
+	(cl-no-method
+	 nil)))
+    (cl-call-next-method class string slots)))
 
 (cl-defmethod ebdb-string :extra "i18n" ((name ebdb-field-name-complex))
   (let* ((str (cl-call-next-method name))

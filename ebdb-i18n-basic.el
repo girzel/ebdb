@@ -158,7 +158,7 @@ number, and any remaining as an extension."
 	(setq slots (plist-put slots :locality (match-string 1))))
       (setq slots (plist-put slots :streets
 			     (split-string (buffer-substring (point-min) (point))
-					   "[,\n]" t))))
+					   "[,\n]" t "[[:blank:]]"))))
     slots))
 
 ;;; France
