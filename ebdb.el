@@ -950,6 +950,15 @@ old field.  By now we've sucked all the useful information out of
 it, and if this process is successful it will get deleted."
   (apply 'make-instance class slots))
 
+;; Pretty much everything in here should implement an `ebdb-string'
+;; method.
+(cl-defgeneric ebdb-string (obj)
+  "Return a string representing OBJ.")
+
+;; Sometimes it might already be a string.
+(cl-defmethod ebdb-string ((str string))
+  str)
+
 ;; Generics for fields.  Not all field classes will implement these
 ;; methods.  `ebdb-action' should raise an error (to be caught and
 ;; displayed at top level) when there is no applicable action method,
@@ -4801,20 +4810,17 @@ single record, otherwise returns a list."
 (defun ebdb-hash-p (key record predicate)
   "Throw `ebdb-hash-ok' non-nil if KEY matches RECORD acording to PREDICATE.
 PREDICATE may take the same values as the elements of `ebdb-completion-list'."
-  (if (and (seq-intersection '(fl-name ebdb-field-name) predicate)
+  (if (and (seq-intersection '(name ebdb-field-name) predicate)
            (ebdb-string= key (or (ebdb-record-name record) "")))
-      (throw 'ebdb-hash-ok 'fl-name))
-  ;; (if (and (memq 'lf-name predicate)
-  ;;          (ebdb-string= key (or (ebdb-record-name-lf record) "")))
-  ;;     (throw 'ebdb-hash-ok 'lf-name))
+      (throw 'ebdb-hash-ok 'name))
   (if (seq-intersection '(organization ebdb-field-role) predicate)
       (mapc (lambda (organization) (if (ebdb-string= key organization)
                                        (throw 'ebdb-hash-ok 'organization)))
             (ebdb-record-organization record)))
-  (if (memq 'aka predicate)
-      (mapc (lambda (aka) (if (ebdb-string= key (ebdb-string aka))
-                              (throw 'ebdb-hash-ok 'aka)))
-            (slot-value record 'aka)))
+  (if (memq 'alt-names predicate)
+      (mapc (lambda (name) (if (ebdb-string= key (ebdb-string name))
+                              (throw 'ebdb-hash-ok 'alt-names)))
+            (ebdb-record-alt-names record)))
   (if (and (seq-intersection '(primary mail-primary) predicate)
            (ebdb-string= key (car (ebdb-record-mail-canon record))))
       (throw 'ebdb-hash-ok 'primary))
@@ -4856,7 +4862,7 @@ may correspond to RECORD without raising an error."
   ;; Are there more useful checks for names beyond checking for duplicates?
   (unless ebdb-allow-duplicates
     (let* ((name (ebdb-concat 'name-first-last first last))
-           (records (ebdb-gethash name '(fl-name lf-name aka))))
+           (records (ebdb-gethash name '(name alt-names))))
       (if (or (and (not record) records)
               (remq record records))
           (error "%s is already in EBDB" name)))))
@@ -5307,7 +5313,7 @@ See `ebdb-search' for searching records with regexps."
     (unless ebdb-db-list
       (ebdb-load))
     (let ((mrecords (if mail (ebdb-gethash mail '(mail))))
-          (nrecords (if name (ebdb-gethash name '(fl-name lf-name aka)))))
+          (nrecords (if name (ebdb-gethash name '(name alt-names)))))
       ;; (1) records matching NAME and MAIL
       (or (and mrecords nrecords
                (let (records)

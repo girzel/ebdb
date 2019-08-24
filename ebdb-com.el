@@ -2355,7 +2355,7 @@ The search results are displayed in the EBDB buffer using formatter FMT."
 	       (slot-exists-p record 'aka))
           (dolist (aka (ebdb-record-aka record))
 	    (setq aka (ebdb-string aka))
-            (setq hash (ebdb-gethash aka '(fl-name lf-name aka)))
+            (setq hash (ebdb-gethash aka '(name alt-names)))
             (when (> (length hash) 1)
               (setq ret (append hash ret))
               (message "EBDB record `%s' has duplicate aka `%s'"
@@ -2554,7 +2554,7 @@ using the function `ebdb-record-completion-table'."
   (let ((string (completing-read
 		 prompt #'ebdb-record-completion-table nil t)))
     (unless (string-empty-p string)
-      (or (car-safe (ebdb-gethash string '(fl-name aka mail)))
+      (or (car-safe (ebdb-gethash string '(name alt-names mail)))
 	  (message "No matching records for \"%s\"" string)))))
 
 ;;;###autoload
