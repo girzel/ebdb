@@ -885,7 +885,8 @@ Then call `cl-call-next-method' with the new values.")
     (error (signal 'ebdb-unparseable (list str)))))
 
 (cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional _slots)
-  (when (string-empty-p str)
+  (when (or (null str)
+	    (string-empty-p str))
     (signal 'ebdb-empty (list "Empty string cannot be parsed"))))
 
 ;;; Errors
