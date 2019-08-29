@@ -920,12 +920,13 @@ Return the records matching ADDRESS or nil."
           (records (ebdb-message-search
 		    name
 		    ;; If `mail-extract-address-components' can't find
-		    ;; a mail addres it returns two identical strings
+		    ;; a mail address it returns two identical strings
 		    ;; (the name), I don't know why.  But when it
 		    ;; does, EBDB assumes the string is a valid mail
 		    ;; address and tries to find/add it.
-		    (unless (string= mail name)
-		      mail)))
+		    (setq mail
+			  (unless (string= mail name)
+			    mail))))
           created-p new-records)
       (if (and (not records) (functionp update-p))
           (setq update-p (funcall update-p)))
@@ -1028,7 +1029,7 @@ Return the records matching ADDRESS or nil."
                                ebdb-silent
                                (y-or-n-p (format "Ignore redundant mail %s? " mail)))
                            (setq mail redundant))))))
-	  (setq mail (make-instance ebdb-default-mail-class :mail mail))
+	  (setq mail (ignore-errors (ebdb-parse ebdb-default-mail-class mail)))
           ;; Analyze the mail part of the new records
           (cond ((or (not mail) (equal (ebdb-string mail) "???")
                      (member-ignore-case (ebdb-string mail) (ebdb-record-mail-canon record)))) ; do nothing
