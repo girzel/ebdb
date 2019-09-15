@@ -4729,8 +4729,8 @@ be taken as a source of inspiration for what's possible."
 (defun ebdb-message-clean-name-default (name)
   "Default function for `ebdb-message-clean-name-function'.
 This strips garbage from the user full NAME string."
-  ;; Remove leading non-alpha chars
-  (if (string-match "\\`[^[:alpha:]]+" name)
+  ;; Remove leading non-alphanumeric chars
+  (if (string-match "\\`[^[:alnum:]]+" name)
       (setq name (substring name (match-end 0))))
 
   (if (string-match "^\\([^@]+\\)@" name)
@@ -4756,8 +4756,8 @@ This strips garbage from the user full NAME string."
     (setq name (replace-regexp-in-string
                 "\\W+\\(x\\|ext\\.?\\)\\W*[-0-9]+" "" name)))
 
-  ;; Remove trailing non-alpha chars
-  (if (string-match "[^[:alpha:]]+\\'" name)
+  ;; Remove trailing non-alphanumeric chars
+  (if (string-match "[^[:alnum:]]+\\'" name)
       (setq name (substring name 0 (match-beginning 0))))
 
   ;; Remove text properties
