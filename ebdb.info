@@ -1,4 +1,4 @@
-This is ebdb.info, produced by makeinfo version 6.6 from ebdb.texi.
+This is ebdb.info, produced by makeinfo version 6.7 from ebdb.texi.
 
 Copyright © 2016 Free Software Foundation, Inc.
 
@@ -772,14 +772,15 @@ by saving it to disk.
      disable saving of the ignored list altogether.
 
    When EBDB queries to create or update a record, the ‘i’ key will
-ignore the mail permanently.  If the above option is nil, the mail will
-be ignored for this session only, otherwise it will be saved to disk the
-next time EBDB is saved.
+ignore the mail permanently; the ‘I’ key will ignore the entire domain.
+If the above option is nil, the mail will be ignored for this session
+only, otherwise it will be saved to disk the next time EBDB is saved.
 
    It’s also possible to add addresses manually, while EBDB is shut
 down.  The format is one address per line, with no attached name or
-angle brackets.  The addresses are matched literally (though
-case-insensitively); it’s not possible to use regexps.
+angle brackets.  Domains to be ignored should start with the “@” symbol.
+The addresses are matched literally (though case-insensitively); it’s
+not possible to use regexps.
 
 
 File: ebdb.info,  Node: Noticing and Automatic Rules,  Next: Interactive Commands,  Prev: Auto-Updating Records,  Up: Display and Updating
@@ -2658,44 +2659,44 @@ Node: Loading MUA Code20835
 Node: Display and Updating21548
 Node: Pop-up Buffers22314
 Node: Auto-Updating Records24234
-Node: Noticing and Automatic Rules28534
-Node: Interactive Commands29867
-Node: EBDB and MUA summary buffers32341
-Node: Sender name display32859
-Node: Summary buffer marks34086
-Node: Mail Address Completion35265
-Node: A Note on Completion37774
-Node: Specific MUAs38397
-Node: Gnus38545
-Node: Posting Styles38767
-Node: EBDB Buffers40342
-Node: Searching41553
-Node: Changing Search Behavior43267
-Node: The Basics of ebdb-mode44514
-Node: Customizing Record Display48823
-Node: Marking53143
-Node: Exporting/Formatting53570
-Node: Completion54505
-Node: Snarfing55301
-Node: Internationalization57318
-Node: Diary Integration60019
-Node: Mail Aliases60884
-Node: vCard Support61598
-Node: Org Integration62097
-Node: Citing Records63995
-Node: Hacking EBDB64753
-Node: Field Classes67344
-Node: Init and Delete Methods70480
-Node: The Labeled Field Class71987
-Node: The Singleton Field Class72841
-Node: Actions73279
-Node: Custom Field Searching73951
-Node: Fast Lookups76818
-Node: Formatting in the EBDB Buffer78628
-Node: Writing Internationalization Libraries80704
-Node: Writing Integration For New MUAs85118
-Node: Article snarfing88566
-Node: Index89284
+Node: Noticing and Automatic Rules28640
+Node: Interactive Commands29973
+Node: EBDB and MUA summary buffers32447
+Node: Sender name display32965
+Node: Summary buffer marks34192
+Node: Mail Address Completion35371
+Node: A Note on Completion37880
+Node: Specific MUAs38503
+Node: Gnus38651
+Node: Posting Styles38873
+Node: EBDB Buffers40448
+Node: Searching41659
+Node: Changing Search Behavior43373
+Node: The Basics of ebdb-mode44620
+Node: Customizing Record Display48929
+Node: Marking53249
+Node: Exporting/Formatting53676
+Node: Completion54611
+Node: Snarfing55407
+Node: Internationalization57424
+Node: Diary Integration60125
+Node: Mail Aliases60990
+Node: vCard Support61704
+Node: Org Integration62203
+Node: Citing Records64101
+Node: Hacking EBDB64859
+Node: Field Classes67450
+Node: Init and Delete Methods70586
+Node: The Labeled Field Class72093
+Node: The Singleton Field Class72947
+Node: Actions73385
+Node: Custom Field Searching74057
+Node: Fast Lookups76924
+Node: Formatting in the EBDB Buffer78734
+Node: Writing Internationalization Libraries80810
+Node: Writing Integration For New MUAs85224
+Node: Article snarfing88672
+Node: Index89390
 
 End Tag Table
 

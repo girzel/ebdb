@@ -734,6 +734,11 @@ are discarded as appropriate."
 		;; Ignore addresses that should be ignored.
 		(when (and mail
 			   (not (member (downcase mail) mail-list))
+			   (not (member (downcase
+					 (concat
+					  "@"
+					  (nth 1 (split-string mail "@"))))
+					mail-list))
 			   (ebdb-mua-test-headers (car headers) address ignore-address))
 		  ;; Add each address only once. (Use MAIL-LIST for book keeping.)
 		  ;; Thus if we care about whether an address gets associated with
@@ -822,6 +827,16 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 		 (unless ebdb-permanent-ignores-file
 		   (message "Mail will be ignored for this session only")
 		   (sit-for 2)))
+		((eq task 'ignore-domain)
+		 (when (cadr address)
+		   (cl-pushnew (downcase
+				(concat "@"
+					(split-string
+					 (cadr address) "@" t)))
+			       ebdb-permanently-ignored-mails :test #'equal)
+		   (unless ebdb-permanent-ignores-file
+		     (message "Mail will be ignored for this session only")
+		     (sit-for 2))))
 		((not (eq task 'next))
 		 (dolist (hit (delq nil (nreverse hits)))
 		   (cl-pushnew hit records :test #'equal)
@@ -848,7 +863,7 @@ Honor previous answers such as `!'."
     ;; `ebdb-offer-to-create' holds a character, i.e., a number.
     ;; -- Right now, we only remember "!".
     (when (not (integerp task))
-      (let ((prompt (format "%s is not in EBDB; add? (y,!,n,i,s,q,?) "
+      (let ((prompt (format "%s is not in EBDB; add? (y,!,n,i,I,s,q,?) "
                             (or (nth 0 ebdb-update-records-address)
                                 (nth 1 ebdb-update-records-address))))
             event)
@@ -871,6 +886,8 @@ Honor previous answers such as `!'."
            (throw 'done 'quit))
 	  ((eq task ?i)
 	   (throw 'done 'ignore))
+	  ((eq task ?I)
+	   (throw 'done 'ignore-domain))
           ((eq task ?s)
            (setq ebdb-update-records-p 'existing)
            (throw 'done 'next))
@@ -891,6 +908,7 @@ Type y  to add the current record.
 Type !  to add all remaining records.
 Type n  to skip the current record. (You can also type space)
 Type i  to permanently ignore this mail address
+Type I  to permanently ignore this mail domain
 Type s  to switch from annotate to search mode.
 Type q  to quit updating records.  No more search or annotation is done.")
                    (set-buffer-modified-p nil)

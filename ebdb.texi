@@ -818,14 +818,16 @@ the ignored list altogether.
 @end defopt
 
 When EBDB queries to create or update a record, the @kbd{i} key
-will ignore the mail permanently.  If the above option is nil, the
-mail will be ignored for this session only, otherwise it will be saved
-to disk the next time EBDB is saved.
+will ignore the mail permanently; the @kbd{I} key will ignore the
+entire domain.  If the above option is nil, the mail will be ignored
+for this session only, otherwise it will be saved to disk the next
+time EBDB is saved.
 
-It's also possible to add addresses manually, while EBDB is shut
-down.  The format is one address per line, with no attached name or
-angle brackets.  The addresses are matched literally (though
-case-insensitively); it's not possible to use regexps.
+It's also possible to add addresses manually, while EBDB is shut down.
+The format is one address per line, with no attached name or angle
+brackets.  Domains to be ignored should start with the ``@@'' symbol.
+The addresses are matched literally (though case-insensitively); it's
+not possible to use regexps.
 
 @node Noticing and Automatic Rules
 @subsection Noticing and Automatic Rules
