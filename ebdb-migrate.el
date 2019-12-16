@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'ebdb)
+(require 'cl-lib)
 (require 'subr-x)
 (autoload 'calendar-absolute-from-gregorian "calendar")
 (autoload 'calendar-gregorian-from-absolute "calendar")
@@ -61,57 +62,24 @@ Format ((VERSION . DIFFERENCES) ... ).")
 ;; Quiet compiler
 (defvar bbdb-file)
 
-;;; These struct functions and definitions are here only to enable
-;;; multi-step upgrades from earlier versions of the database.
-
-(defmacro ebdb-defstruct (name &rest elts)
-  "Define two functions to operate on vector NAME for each symbol ELT in ELTS.
-The function ebdb-NAME-ELT returns the element ELT in vector NAME.
-The function ebdb-NAME-set-ELT sets ELT.
-Also define a constant ebdb-NAME-length that holds the number of ELTS
-in vector NAME."
-  (declare (indent 1))
-  (let* ((count 0)
-         (sname (symbol-name name))
-         (uname (upcase sname))
-         (cname (concat "ebdb-" sname "-"))
-         body)
-    (dolist (elt elts)
-      (let* ((selt (symbol-name elt))
-             (setname  (intern (concat cname "set-" selt))))
-        (push (list 'defsubst (intern (concat cname selt)) `(,name)
-                    (format "For EBDB %s read element %i `%s'."
-                            uname count selt)
-                    ;; Use `elt' instead of `aref' so that these functions
-                    ;; also work for the `ebdb-record-type' pseudo-code.
-                    `(elt ,name ,count)) body)
-        (push (list 'defsubst setname `(,name value)
-                    (format "For EBDB %s set element %i `%s' to VALUE.  \
-Return VALUE.
-Do not call this function directly.  Call instead `ebdb-record-set-field'
-which ensures the integrity of the database.  Also, this makes your code
-more robust with respect to possible future changes of EBDB's innermost
-internals."
-                            uname count selt)
-                    `(aset ,name ,count value)) body))
-      (setq count (1+ count)))
-    (push (list 'defconst (intern (concat cname "length")) count
-                (concat "Length of EBDB `" sname "'.")) body)
-    (cons 'progn body)))
-
 ;; Define structs so that the getters/setters used elsewhere in the
 ;; file operate normally.  These functions are used nowhere else in
 ;; EBDB, and the "v" prefix has been added to prevent function name
 ;; clashes.
-(ebdb-defstruct
- vrecord
+(cl-defstruct (ebdb-vrecord
+               (:type vector)
+               (:constructor nil))
  firstname lastname affix aka organization phone address mail xfields
  uuid creation-date timestamp cache)
 
-(ebdb-defstruct vphone
+(cl-defstruct (ebdb-vphone
+               (:type vector)
+               (:constructor nil))
   label area exchange suffix extension)
 
-(ebdb-defstruct vaddress
+(cl-defstruct (ebdb-vaddress
+               (:type vector)
+               (:constructor nil))
   label streets city state postcode country)
 
 (defun ebdb-peel-the-onion (lis)
@@ -170,22 +138,14 @@ slightly munged old EBDB files."
   records)
 
 (defconst ebdb-migration-spec
-  '((2 (ebdb-vrecord-xfields ebdb-vrecord-set-xfields
-        ebdb-migrate-change-dates))
-    (3 (ebdb-vrecord-address ebdb-vrecord-set-address
-        ebdb-migrate-add-country-field))
-    (4 (ebdb-vrecord-address ebdb-vrecord-set-address
-        ebdb-migrate-streets-to-list))
-    (5 (ebdb-vrecord-address ebdb-vrecord-set-address
-        ebdb-migrate-postcodes-to-strings))
-    (6 (ebdb-vrecord-xfields ebdb-vrecord-set-xfields
-        ebdb-migrate-xfields-to-list)
-       (ebdb-vrecord-organization ebdb-vrecord-set-organization
-				  ebdb-migrate-organization-to-list))
-    (7 (bbdb-record-xfields bbdb-record-set-xfields
-        bbdb-migrate-xfields-to-list)
-       (bbdb-record-organization bbdb-record-set-organization
-        bbdb-migrate-organization-to-list)))
+  '((2 (ebdb-vrecord-xfields ebdb-migrate-change-dates))
+    (3 (ebdb-vrecord-address ebdb-migrate-add-country-field))
+    (4 (ebdb-vrecord-address ebdb-migrate-streets-to-list))
+    (5 (ebdb-vrecord-address ebdb-migrate-postcodes-to-strings))
+    (6 (ebdb-vrecord-xfields ebdb-migrate-xfields-to-list)
+       (ebdb-vrecord-organization ebdb-migrate-organization-to-list))
+    (7 (bbdb-record-xfields bbdb-migrate-xfields-to-list)
+       (bbdb-record-organization bbdb-migrate-organization-to-list)))
   "The alist of (version . migration-spec-list).
 See `ebdb-migrate-record-lambda' for details.")
 
@@ -200,12 +160,11 @@ modified, and SET is the function to be used to set the field to be
 modified.  FUNCTION will be applied to the result of GET, and its
 results will be saved with SET."
   (byte-compile `(lambda (record)
-                  ,@(mapcar (lambda (ch)
-                              `(,(cadr ch) record
-                                (,(car (cddr ch))
-                                 (,(car ch) record))))
-                            changes)
-                  record)))
+                   ,@(mapcar (lambda (ch)
+                               `(cl-callf ,(cadr ch)
+                                    (,(car ch) record)))
+                             changes)
+                   record)))
 
 (defun ebdb-migrate-versions-lambda (v0)
   "Return the function to migrate from V0 to `ebdb-file-format'."
@@ -264,7 +223,7 @@ This uses the code that used to be in `ebdb-address-postcode'."
                                   ;; else a number, could be 3 to 5 digits (possible error: assuming
                                   ;; no leading zeroes in postcodes)
                                   (format "%d" (ebdb-vaddress-postcode address)))))))
-              (ebdb-vaddress-set-postcode address postcode))
+              (setf (ebdb-vaddress-postcode address) postcode))
             address)
           addresses))
 
@@ -367,13 +326,13 @@ Formats are changed in timestamp and creation-date fields from
       (ebdb-split 'organization organization)
     organization))
 
-;;; These defcustoms are now obsolete, but they're here so that,
-;;; during the migration/upgrade process, we know which xfields to
-;;; handle specially, and turn into specific field types.  In the case
-;;; of `bbdb/gnus-split-public-field', this should signal to us that
-;;; the record should actually be changed into a
-;;; `ebdb-record-mailing-list'.  But that hasn't been implemented yet,
-;;; so...
+;; These defcustoms are now obsolete, but they're here so that,
+;; during the migration/upgrade process, we know which xfields to
+;; handle specially, and turn into specific field types.  In the case
+;; of `bbdb/gnus-split-public-field', this should signal to us that
+;; the record should actually be changed into a
+;; `ebdb-record-mailing-list'.  But that hasn't been implemented yet,
+;; so...
 
 (defcustom bbdb/gnus-split-private-field 'gnus-private
   "This variable is used to determine the xfield to reference to find the
