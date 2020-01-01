@@ -1,6 +1,6 @@
 ;;; ebdb-org.el --- Org mode integration for EBDB    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2019  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords:
