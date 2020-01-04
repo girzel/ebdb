@@ -2349,6 +2349,15 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-string ((field ebdb-field-tags))
   (ebdb-concat 'ebdb-field-tags (slot-value field 'tags)))
 
+(cl-defmethod ebdb-read ((field (subclass ebdb-field-tags)) &optional slots obj)
+  (let* ((crm-separator (cadr (assq 'ebdb-field-tags ebdb-separator-alist)))
+	 (val (completing-read-multiple
+	       (format "Tags (separate with \"%s\"): " crm-separator)
+	       ebdb-tags
+	       nil nil
+	       (when obj (ebdb-string obj)))))
+    (cl-call-next-method field (plist-put slots :tags val))))
+
 (cl-defmethod ebdb-search-read ((_class (subclass ebdb-field-tags)))
   (let ((search-string (ebdb-read-string
 			"Search for tags (eg +tag1-tag2|tag3): ")))
