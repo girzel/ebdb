@@ -385,7 +385,8 @@ position-marker mark)."
 	 (next-single-property-change (point)
 				      'ebdb-field nil
 				      (line-end-position)))
-       'ebdb-field)))
+       'ebdb-field)
+      (error "No field at point")))
 
 ;;; *EBDB* formatting
 
@@ -555,7 +556,16 @@ choice: that formatter should be selected explicitly."
 				      (_record ebdb-record))
   "Put the 'ebdb-field text property on FIELD.  The value of the
 property is the field instance itself."
-  (propertize (cl-call-next-method) 'ebdb-field field))
+  (let ((str (cl-call-next-method)))
+    ;; If the field fails to produce a string, or produces an empty
+    ;; string, `propertize' will fail to add the 'ebdb-field property.
+    ;; Put in a dummy string to be propertized, otherwise the user
+    ;; will have no way of interacting with the field.
+    (propertize (if (or (null str)
+			(string-empty-p str))
+		    "<empty>"
+		  str)
+		'ebdb-field field)))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field)
