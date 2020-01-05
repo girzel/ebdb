@@ -2898,12 +2898,16 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 					&optional _slot)
   "Prevent RECORD from having more than one instance of FIELD."
   (let ((existing (ebdb-record-field record (eieio-object-class field))))
+    ;; Using a class name with `ebdb-record-field' always returns a
+    ;; list.
     (when existing
-      (ebdb-record-delete-field record existing))
+      (dolist (f existing)
+       (ebdb-record-delete-field record f)))
     (condition-case nil
 	(cl-call-next-method)
-      ;; Put the old one back if something goes wrong.
-      (error (ebdb-record-insert-field record existing)))))
+      ;; Put the old one back if something goes wrong.  There should
+      ;; only be one field instance, so we blindly use `car'.
+      (error (ebdb-record-insert-field record (car existing))))))
 
 (cl-defmethod ebdb-field-image-get ((field ebdb-field-image) (record ebdb-record))
   "Return the image for image field FIELD.
