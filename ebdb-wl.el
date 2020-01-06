@@ -43,7 +43,7 @@
   :group 'ebdb-mua)
 
 (defcustom ebdb-wl-auto-update-p ebdb-mua-reader-update-p
-  "Wl-specific value of `ebdb-m-auto-update-p'."
+  "Wl-specific value of `ebdb-mua-auto-update-p'."
   :type '(choice (const :tag "do nothing" nil)
                  (const :tag "search for existing records" existing)
                  (const :tag "update existing records" update)
@@ -135,7 +135,7 @@ beginning) of the signature separator."
 
 (add-hook 'wl-folder-mode-hook #'ebdb-insinuate-wl)
 
-(add-hook 'wl-message-redisplay-hook #'ebdb-wl-auto-update)
+(add-hook 'wl-summary-redisplay-hook #'ebdb-wl-auto-update)
 
 (provide 'ebdb-wl)
 ;;; ebdb-wl.el ends here
