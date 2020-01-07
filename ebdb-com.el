@@ -1269,7 +1269,11 @@ database."
     (dolist (b (buffer-list))
       (with-current-buffer b
 	(when (derived-mode-p 'ebdb-mode)
-	  (set-buffer-modified-p nil))))))
+	  (let ((inhibit-read-only t))
+	    (set-buffer-modified-p nil))))))
+  ;; Make sure to return t, so `write-contents-functions'
+  ;; short-circuits correctly.
+  t)
 
 
 
