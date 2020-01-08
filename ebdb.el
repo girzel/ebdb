@@ -87,6 +87,11 @@ of (record-uuid . role-field). Hashtable entries are created and
 deleted by the `ebdb-init-field' and `ebdb-delete-field' methods
 of the `ebdb-field-role' field class.")
 
+(defvar ebdb-relation-hashtable (make-hash-table :size 500 :test #'equal)
+  "Hash table of record relationships.
+Keys are the related records' UUIDs, values are the relation
+fields themselves.")
+
 ;;; Internal variables
 (eval-and-compile
   (defvar ebdb-debug t
@@ -2090,6 +2095,23 @@ Eventually this method will go away."
 	(ebdb-string rec)
       "record not loaded")))
 
+(cl-defmethod ebdb-init-field ((rel ebdb-field-relation) record)
+  "Initialize REL related field for RECORD.
+Adds relation information to the `ebdb-relation-hashtable'."
+  (push (cons (ebdb-record-uuid record) rel)
+	(gethash (slot-value rel 'rel-uuid) ebdb-relation-hashtable)))
+
+(cl-defmethod ebdb-delete-field ((rel ebdb-field-relation) record
+				 &optional unload)
+  "Delete REL related field on RECORD.
+Removes relation information from the
+`ebdb-relation-hashtable'."
+  (setf (gethash (slot-value rel 'rel-uuid)
+		 ebdb-relation-hashtable)
+	(delete (cons (ebdb-record-uuid record) rel)
+		(gethash (slot-value rel 'rel-uuid)
+			 ebdb-relation-hashtable))))
+
 ;; Image field
 
 (defclass ebdb-field-image (ebdb-field)
@@ -3346,11 +3368,28 @@ ARGS are passed to `ebdb-compose-mail', and then to
   (let ((name (ebdb-parse ebdb-default-name-class name-string)))
     (ebdb-record-change-name record name)))
 
-(cl-defmethod ebdb-record-related ((_record ebdb-record-person)
+(cl-defmethod ebdb-record-related ((record ebdb-record-person)
 				   (field ebdb-field-relation))
-  (or
-   (ebdb-gethash (slot-value field 'rel-uuid) 'uuid)
-   (signal 'ebdb-related-unfound (list (slot-value field 'rel-uuid)))))
+  "Return the record that's related to RECORD according to FIELD.
+If FIELD is owned by RECORD, return the record pointed to by
+FIELD's `rel-uuid' slot.  Otherwise return the record that owns
+FIELD."
+  ;; The format of the `ebdb-relation-hashtable' could
+  ;; probably be reconsidered, this is a bit gross.  If we do
+  ;; a `rel-uuid' hashtable lookup, the value looks like:
+
+  ;; ((SRC-UUID  . REL-FIELD) (SRC-UUID . REL_FIELD))
+
+  ;; So we get the SRC-UUID via (rassq FIELD HASH_VALUE).
+  (let* ((rel-uuid (slot-value field 'rel-uuid))
+	 (target-uuid (if (equal (ebdb-record-uuid record)
+				 rel-uuid)
+			  (car-safe
+			   (rassq field
+				  (gethash rel-uuid ebdb-relation-hashtable)))
+			(slot-value field 'rel-uuid))))
+    (or (ebdb-gethash target-uuid 'uuid)
+	(signal 'ebdb-related-unfound (list field)))))
 
 (cl-defmethod ebdb-record-related ((_record ebdb-record-person)
 				   (field ebdb-field-role))
@@ -4165,7 +4204,8 @@ process.")
   (setq ebdb-db-list nil
 	ebdb-record-tracker nil)
   (clrhash ebdb-org-hashtable)
-  (clrhash ebdb-hashtable))
+  (clrhash ebdb-hashtable)
+  (clrhash ebdb-relation-hashtable))
 
 ;; Changing which database a record belongs to.
 
