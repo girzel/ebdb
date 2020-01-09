@@ -131,9 +131,13 @@ italicized, in all other cases it is left unchanged."
   (let* ((crm-separator (cadr (assq 'ebdb-field-tags ebdb-separator-alist)))
 	 (val (completing-read-multiple
 	       "Tags: "
-	       (append (org-global-tags-completion-table)
-		       (when ebdb-tags
-			 (mapcar #'list ebdb-tags)))
+	       (org--tag-add-to-alist
+		(org--tag-add-to-alist
+		 (org--tag-add-to-alist
+		  (org-global-tags-completion-table)
+		  org-tag-alist)
+		 org-tag-persistent-alist)
+		ebdb-tags)
 	       nil nil
 	       (when obj (ebdb-string obj)) 'org-tags-history)))
     (cl-call-next-method field (plist-put slots :tags val))))
