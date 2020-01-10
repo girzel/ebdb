@@ -1245,9 +1245,7 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
                               (length (ebdb-records))))
               '(:eval (concat "  "
                               (ebdb-concat " " (elt ebdb-modeline-info 0)
-                                           (elt ebdb-modeline-info 1)))))
-        mode-line-modified
-        '(:eval (if (object-assoc t 'dirty ebdb-db-list) "**" "--")))
+                                           (elt ebdb-modeline-info 1))))))
   (set (make-local-variable 'revert-buffer-function)
        'ebdb-redisplay-all-records)
   ;; In newer Emacs, this will make EBDB buffers eligible for save by
