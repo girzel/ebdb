@@ -1886,6 +1886,11 @@ commands, called from an *EBDB* buffer, and the lower-level
 	 (ebdb-current-field)))
   (let ((new-field (clone field)))
     (eieio-customize-object new-field)
+    ;; If the user is editing a role field from an organization
+    ;; record, do a switcharoo.
+    (when (and (ebdb-record-organization-p record)
+	       (ebdb-field-role-p field))
+      (setq record (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
     ;; The following two variables are buffer-local, and we're hoping
     ;; this will make them local to the customization buffer: ie, an
     ;; arbitrary number of *Customize* buffers can be opened, and the
