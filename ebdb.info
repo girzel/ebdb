@@ -333,10 +333,13 @@ following keys can be used to manipulate databases and their records.
      to nil, and then reload it with ‘ebdb-reload-database’.
 
    Typically, databases are saved using the ‘s’ binding in ‘ebdb-mode’
-buffers, which runs ‘ebdb-save’.  By default, EBDB also installs
-‘ebdb-save’ as part of the ‘kill-emacs-hook’, so that the EBDB is
-automatically saved before Emacs exit.  Set ‘ebdb-save-on-exit’ to nil
-to prevent this.
+buffers, which runs ‘ebdb-save’.  If you have open *EBDB* buffers and
+unsaved changes, you’ll also be prompted to save the database when
+running ‘save-some-buffers’.  If this isn’t enough, you can also set
+‘ebdb-save-on-exit’ to non-nil to have EBDB saved automatically (and
+silently) when killing Emacs.  Because killing Emacs already runs
+‘save-some-buffers’, this option is typically redundant and defaults to
+nil.
 
    Loading and initializing the EBDB can be slow for large databases.
 If you find yourself annoyed by the wait, try setting
@@ -1706,7 +1709,7 @@ radically changed by creating new classes, or overriding the existing
 methods of classes, without touching the original source code.  This
 manual won’t go into details about Emacs’ object-orientation support:
 see *note EIEIO: (eieio)Top. for information on defining classes, and
-*note Generic Functions: (elisp)Generic Functions. for information on
+*note Generic Functions: (elisp)Generic%20Functions. for information on
 writing generic functions and methods.
 
    Some information about EBDB’s various classes can had from Emacs’
@@ -2063,8 +2066,8 @@ File: ebdb.info,  Node: Writing Internationalization Libraries,  Next: Writing I
 ===========================================
 
 Writing new internationalization libraries involves using generic
-functions.  *note Generic Functions: (elisp)Generic Functions.  It will
-also require a bit of familiarity with EBDB’s internals.
+functions.  *note Generic Functions: (elisp)Generic%20Functions.  It
+will also require a bit of familiarity with EBDB’s internals.
 
    Internationalization affects three different field types: addresses,
 phone numbers, and names.  It works by providing “i18n” versions of
@@ -2302,7 +2305,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * d e:                                   The EBDB Database.   (line  46)
 * d m:                                   The EBDB Database.   (line  57)
 * d r:                                   The EBDB Database.   (line  67)
-* Database load times:                   The EBDB Database.   (line  84)
+* Database load times:                   The EBDB Database.   (line  87)
 * Databases:                             The EBDB Database.   (line  11)
 * Deleting fields:                       Deleting Records and Fields.
                                                               (line   6)
@@ -2545,7 +2548,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-sources:                          The EBDB Database.   (line  11)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  73)
-* ebdb-try-speedups:                     The EBDB Database.   (line  84)
+* ebdb-try-speedups:                     The EBDB Database.   (line  87)
 * ebdb-use-diary:                        Diary Integration.   (line  13)
 * ebdb-user-name-address-re:             Auto-Updating Records.
                                                               (line  66)
@@ -2577,7 +2580,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * Internationalization:                  Internationalization.
                                                               (line   6)
 * Inverting searches:                    Searching.           (line  48)
-* Loading databases:                     The EBDB Database.   (line  84)
+* Loading databases:                     The EBDB Database.   (line  87)
 * m:                                     The Basics of ebdb-mode.
                                                               (line  56)
 * M:                                     The Basics of ebdb-mode.
@@ -2643,60 +2646,60 @@ Node: Record Migration5031
 Node: Variables and Options5671
 Node: Migration from Org Contacts6158
 Node: The EBDB Database6918
-Node: Creating Records10906
-Node: Record classes11987
-Node: Record names12332
-Node: Record Fields13007
-Node: Inserting New Fields13251
-Node: Editing Existing Fields14047
-Node: Deleting Records and Fields14647
-Node: Field Types15043
-Node: Role fields17329
-Node: Tag field19310
-Node: Mail folder field19954
-Node: MUA Interaction20282
-Node: Loading MUA Code20835
-Node: Display and Updating21548
-Node: Pop-up Buffers22314
-Node: Auto-Updating Records24234
-Node: Noticing and Automatic Rules28640
-Node: Interactive Commands29973
-Node: EBDB and MUA summary buffers32447
-Node: Sender name display32965
-Node: Summary buffer marks34192
-Node: Mail Address Completion35371
-Node: A Note on Completion37880
-Node: Specific MUAs38503
-Node: Gnus38651
-Node: Posting Styles38873
-Node: EBDB Buffers40448
-Node: Searching41659
-Node: Changing Search Behavior43373
-Node: The Basics of ebdb-mode44620
-Node: Customizing Record Display48929
-Node: Marking53249
-Node: Exporting/Formatting53676
-Node: Completion54611
-Node: Snarfing55407
-Node: Internationalization57424
-Node: Diary Integration60125
-Node: Mail Aliases60990
-Node: vCard Support61704
-Node: Org Integration62203
-Node: Citing Records64101
-Node: Hacking EBDB64859
-Node: Field Classes67450
-Node: Init and Delete Methods70586
-Node: The Labeled Field Class72093
-Node: The Singleton Field Class72947
-Node: Actions73385
-Node: Custom Field Searching74057
-Node: Fast Lookups76924
-Node: Formatting in the EBDB Buffer78734
-Node: Writing Internationalization Libraries80810
-Node: Writing Integration For New MUAs85224
-Node: Article snarfing88672
-Node: Index89390
+Node: Creating Records11109
+Node: Record classes12190
+Node: Record names12535
+Node: Record Fields13210
+Node: Inserting New Fields13454
+Node: Editing Existing Fields14250
+Node: Deleting Records and Fields14850
+Node: Field Types15246
+Node: Role fields17532
+Node: Tag field19513
+Node: Mail folder field20157
+Node: MUA Interaction20485
+Node: Loading MUA Code21038
+Node: Display and Updating21751
+Node: Pop-up Buffers22517
+Node: Auto-Updating Records24437
+Node: Noticing and Automatic Rules28843
+Node: Interactive Commands30176
+Node: EBDB and MUA summary buffers32650
+Node: Sender name display33168
+Node: Summary buffer marks34395
+Node: Mail Address Completion35574
+Node: A Note on Completion38083
+Node: Specific MUAs38706
+Node: Gnus38854
+Node: Posting Styles39076
+Node: EBDB Buffers40651
+Node: Searching41862
+Node: Changing Search Behavior43576
+Node: The Basics of ebdb-mode44823
+Node: Customizing Record Display49132
+Node: Marking53452
+Node: Exporting/Formatting53879
+Node: Completion54814
+Node: Snarfing55610
+Node: Internationalization57627
+Node: Diary Integration60328
+Node: Mail Aliases61193
+Node: vCard Support61907
+Node: Org Integration62406
+Node: Citing Records64304
+Node: Hacking EBDB65062
+Node: Field Classes67655
+Node: Init and Delete Methods70791
+Node: The Labeled Field Class72298
+Node: The Singleton Field Class73152
+Node: Actions73590
+Node: Custom Field Searching74262
+Node: Fast Lookups77129
+Node: Formatting in the EBDB Buffer78939
+Node: Writing Internationalization Libraries81015
+Node: Writing Integration For New MUAs85431
+Node: Article snarfing88879
+Node: Index89597
 
 End Tag Table
 

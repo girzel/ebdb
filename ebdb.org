@@ -206,10 +206,13 @@ Other database-related commands:
 #+CINDEX: Saving the database
 #+VINDEX: ebdb-save-on-exit
 Typically, databases are saved using the {{{kbd(s)}}} binding in
-~ebdb-mode~ buffers, which runs ~ebdb-save~.  By default, EBDB also
-installs ~ebdb-save~ as part of the ~kill-emacs-hook~, so that the
-EBDB is automatically saved before Emacs exit.  Set
-~ebdb-save-on-exit~ to nil to prevent this.
+~ebdb-mode~ buffers, which runs ~ebdb-save~.  If you have open
+{{{buf(EBDB)}}} buffers and unsaved changes, you'll also be prompted
+to save the database when running ~save-some-buffers~.  If this isn't
+enough, you can also set ~ebdb-save-on-exit~ to non-nil to have EBDB
+saved automatically (and silently) when killing Emacs. Because killing
+Emacs already runs ~save-some-buffers~, this option is typically
+redundant and defaults to nil.
 
 #+CINDEX: Loading databases
 #+CINDEX: Database load times

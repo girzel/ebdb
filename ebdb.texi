@@ -367,10 +367,13 @@ a database, edit it using @code{ebdb-customize-database}, set
 @cindex Saving the database
 @vindex ebdb-save-on-exit
 Typically, databases are saved using the @kbd{s} binding in
-@code{ebdb-mode} buffers, which runs @code{ebdb-save}.  By default, EBDB also
-installs @code{ebdb-save} as part of the @code{kill-emacs-hook}, so that the
-EBDB is automatically saved before Emacs exit.  Set
-@code{ebdb-save-on-exit} to nil to prevent this.
+@code{ebdb-mode} buffers, which runs @code{ebdb-save}.  If you have open
+*EBDB* buffers and unsaved changes, you'll also be prompted
+to save the database when running @code{save-some-buffers}.  If this isn't
+enough, you can also set @code{ebdb-save-on-exit} to non-nil to have EBDB
+saved automatically (and silently) when killing Emacs. Because killing
+Emacs already runs @code{save-some-buffers}, this option is typically
+redundant and defaults to nil.
 
 @cindex Loading databases
 @cindex Database load times
@@ -1857,7 +1860,7 @@ classes: database, record, and field.  The behavior of EBDB can be
 radically changed by creating new classes, or overriding the existing
 methods of classes, without touching the original source code.  This
 manual won't go into details about Emacs' object-orientation support:
-see @ref{Top,EIEIO,,eieio,} for information on defining classes, and @ref{Generic Functions,Generic Functions,,elisp,}
+see @ref{Top,EIEIO,,eieio,} for information on defining classes, and @ref{Generic%20Functions,Generic Functions,,elisp,}
 for information on writing generic functions and methods.
 
 Some information about EBDB's various classes can had from Emacs'
@@ -2231,7 +2234,7 @@ used in the body of the method.
 @section Writing Internationalization Libraries
 
 Writing new internationalization libraries involves using generic
-functions. @ref{Generic Functions,Generic Functions,,elisp,}.  It will also require a bit of
+functions. @ref{Generic%20Functions,Generic Functions,,elisp,}.  It will also require a bit of
 familiarity with EBDB's internals.
 
 Internationalization affects three different field types: addresses,

@@ -141,8 +141,12 @@ Future merging strategies may be smarter."
   :group 'ebdb-eieio
   :type 'boolean)
 
-(defcustom ebdb-save-on-exit t
-  "If non-nil, automatically save EBDB when exiting Emacs."
+(defcustom ebdb-save-on-exit nil
+  "If non-nil, automatically save EBDB when exiting Emacs.
+The user is always prompted to save the EBDB as part of the Emacs
+shutdown process anyway, reducing the usefulness of this option.
+If you're using EBDB without opening `ebdb-mode' buffers, you
+might consider setting it to t."
   :group 'ebdb-eieio
   :type 'boolean)
 
