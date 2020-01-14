@@ -1153,15 +1153,15 @@ keybindings apply.
 
      #+KINDEX: t
      #+FINDEX: ebdb-toggle-records-format
-     Toggle between a multi-line and one-line display (see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing
+     Toggle between a multi-line, one-line, and full display (see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing
      Record Display]]) (~ebdb-toggle-records-format~).
 
 - T ::
 
      #+KINDEX: T
-     #+FINDEX: ebdb-display-records-completely
-     Display all of a record's fields
-     (~ebdb-display-records-completely~).
+     #+FINDEX: ebdb-toggle-all-records-format
+     Toggle the display of all the records in the current
+     {{{buf(EBDB)}}} buffer.  (~ebdb-toggle-all-records-format~).
 
 - r ::
 

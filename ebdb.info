@@ -1280,13 +1280,13 @@ keybindings apply.
      the ability to interpolate variables in the body text.
 
 ‘t’
-     Toggle between a multi-line and one-line display (see *note
+     Toggle between a multi-line, one-line, and full display (see *note
      Customizing Record Display: Customizing Record Display.)
      (‘ebdb-toggle-records-format’).
 
 ‘T’
-     Display all of a record’s fields
-     (‘ebdb-display-records-completely’).
+     Toggle the display of all the records in the current *EBDB* buffer.
+     (‘ebdb-toggle-all-records-format’).
 
 ‘r’
      Redisplay the record under point (‘ebdb-reformat-records’).
@@ -2389,8 +2389,6 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  45)
 * ebdb-delete-record-or-field:           Deleting Records and Fields.
                                                               (line   6)
-* ebdb-display-records-completely:       The Basics of ebdb-mode.
-                                                              (line  78)
 * ebdb-edit-field:                       Editing Existing Fields.
                                                               (line   6)
 * ebdb-edit-field <1>:                   The Basics of ebdb-mode.
@@ -2546,6 +2544,8 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-snarf-name-re:                    Snarfing.            (line  31)
 * ebdb-snarf-routines:                   Snarfing.            (line  26)
 * ebdb-sources:                          The EBDB Database.   (line  11)
+* ebdb-toggle-all-records-format:        The Basics of ebdb-mode.
+                                                              (line  78)
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  73)
 * ebdb-try-speedups:                     The EBDB Database.   (line  87)
@@ -2676,30 +2676,30 @@ Node: EBDB Buffers40651
 Node: Searching41862
 Node: Changing Search Behavior43576
 Node: The Basics of ebdb-mode44823
-Node: Customizing Record Display49132
-Node: Marking53452
-Node: Exporting/Formatting53879
-Node: Completion54814
-Node: Snarfing55610
-Node: Internationalization57627
-Node: Diary Integration60328
-Node: Mail Aliases61193
-Node: vCard Support61907
-Node: Org Integration62406
-Node: Citing Records64304
-Node: Hacking EBDB65062
-Node: Field Classes67655
-Node: Init and Delete Methods70791
-Node: The Labeled Field Class72298
-Node: The Singleton Field Class73152
-Node: Actions73590
-Node: Custom Field Searching74262
-Node: Fast Lookups77129
-Node: Formatting in the EBDB Buffer78939
-Node: Writing Internationalization Libraries81015
-Node: Writing Integration For New MUAs85431
-Node: Article snarfing88879
-Node: Index89597
+Node: Customizing Record Display49171
+Node: Marking53491
+Node: Exporting/Formatting53918
+Node: Completion54853
+Node: Snarfing55649
+Node: Internationalization57666
+Node: Diary Integration60367
+Node: Mail Aliases61232
+Node: vCard Support61946
+Node: Org Integration62445
+Node: Citing Records64343
+Node: Hacking EBDB65101
+Node: Field Classes67694
+Node: Init and Delete Methods70830
+Node: The Labeled Field Class72337
+Node: The Singleton Field Class73191
+Node: Actions73629
+Node: Custom Field Searching74301
+Node: Fast Lookups77168
+Node: Formatting in the EBDB Buffer78978
+Node: Writing Internationalization Libraries81054
+Node: Writing Integration For New MUAs85470
+Node: Article snarfing88918
+Node: Index89636
 
 End Tag Table
 

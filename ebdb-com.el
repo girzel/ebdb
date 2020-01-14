@@ -289,7 +289,7 @@ display information."
     (define-key km (kbd "s")		'ebdb-save-ebdb)
     (define-key km (kbd "C-x C-s")	'ebdb-save-ebdb)
     (define-key km (kbd "t")		'ebdb-toggle-records-format)
-    (define-key km (kbd "T")		'ebdb-display-records-completely)
+    (define-key km (kbd "T")		'ebdb-toggle-all-records-format)
     ;; Marking
     (define-key km (kbd "#")		'ebdb-toggle-record-mark)
     (define-key km (kbd "M-#")		'ebdb-toggle-all-record-marks)
@@ -2116,7 +2116,7 @@ With prefix ARG 0, RECORDS are displayed elided.
 With any other non-nil ARG, RECORDS are displayed expanded."
   (interactive (list (ebdb-do-records t) current-prefix-arg))
   (let* ((current-fmt (nth 1 (ebdb-current-record t)))
-	 (formatters (ebdb-available-ebdb-formatters))
+	 (formatters (ebdb-available-ebdb-formatters 'full-okay))
          (fmt
           (cond ((eq arg 0)
                  ebdb-default-oneline-formatter)
@@ -2125,10 +2125,10 @@ With any other non-nil ARG, RECORDS are displayed expanded."
                  ebdb-default-multiline-formatter)
 		;; layout is not the last element of layout-alist
 		;; and we switch to the following element of layout-alist
-                ((let ((idx (cl-position current-fmt formatters)))
-		   (if (= (1+ idx) (length formatters))
+                ((let ((idx (1+ (cl-position current-fmt formatters))))
+		   (if (= idx (length formatters))
 		       (car formatters)
-		     (nth (1+ idx) formatters)))))))
+		     (nth idx formatters)))))))
     (message "Using %S layout" (ebdb-string fmt))
     (ebdb-redisplay-records (mapcar #'car records) fmt)))
 
@@ -2137,6 +2137,14 @@ With any other non-nil ARG, RECORDS are displayed expanded."
   "Display all fields of RECORDS."
   (interactive (list (ebdb-do-records)))
   (ebdb-redisplay-records records ebdb-full-formatter))
+
+;;;###autoload
+(defun ebdb-toggle-all-records-format (&optional arg)
+  "Call `ebdb-toggle-records-format' on all displayed records.
+See that function's docstring for use of the prefix arg ARG."
+  (interactive "p")
+  (when ebdb-records
+    (ebdb-toggle-records-format ebdb-records arg)))
 
 ;;;###autoload
 (defun ebdb-display-records-with-fmt (records fmt)

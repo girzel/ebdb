@@ -1270,13 +1270,16 @@ where it was in the MUA, rather than quitting the EBDB buffer."
 		[?q])))))))
 
 ;;;###autoload
-(defun ebdb-mua-toggle-records-format ()
-  "Toggle format of all records without leaving MUA."
-  (interactive)
+(defun ebdb-mua-toggle-records-format (&optional arg)
+  "Toggle format of all records without leaving MUA.
+See the docstring of `ebdb-toglge-records-format' for use of the
+prefix arg ARG."
+  (interactive "p")
   (let ((buf (get-buffer (ebdb-make-buffer-name))))
     (when buf
-     (with-current-buffer buf
-       (ebdb-toggle-records-format ebdb-records)))))
+      (with-current-buffer buf
+	(when ebdb-records
+	  (ebdb-toggle-records-format ebdb-records arg))))))
 
 ;;;###autoload
 (defun ebdb-mua-edit-sender-notes ()

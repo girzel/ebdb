@@ -1388,14 +1388,14 @@ the ability to interpolate variables in the body text.
 @item t
 @kindex t
 @findex ebdb-toggle-records-format
-Toggle between a multi-line and one-line display (see @ref{Customizing Record Display, , Customizing
+Toggle between a multi-line, one-line, and full display (see @ref{Customizing Record Display, , Customizing
 Record Display}) (@code{ebdb-toggle-records-format}).
 
 @item T
 @kindex T
-@findex ebdb-display-records-completely
-Display all of a record's fields
-(@code{ebdb-display-records-completely}).
+@findex ebdb-toggle-all-records-format
+Toggle the display of all the records in the current
+*EBDB* buffer.  (@code{ebdb-toggle-all-records-format}).
 
 @item r
 @kindex r
