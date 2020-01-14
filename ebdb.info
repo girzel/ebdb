@@ -662,10 +662,12 @@ command, or by cloning or renaming existing buffers.
 
  -- User Option: ebdb-mua-default-formatter
      The default formatter to use for MUA pop-up buffers.  The value of
-     this option should be an instance of ‘ebdb-formatter-ebdb’; it
-     defaults to ‘ebdb-default-multiline-formatter’.  Other likely
-     options would be the value of ‘ebdb-default-oneline-formatter’, or
-     a custom-made formatter, see *note Customizing Record Display::.
+     this option should be an instance of either the
+     ‘ebdb-formatter-ebdb-multiline’ or the
+     ‘ebdb-formatter-ebdb-oneline’ class; it defaults to
+     ‘ebdb-default-multiline-formatter’.  Other likely options would be
+     the value of ‘ebdb-default-oneline-formatter’, or a custom-made
+     formatter, see *note Customizing Record Display::.
 
    EBDB can also integrate with atomic windows (*Note (elisp)Atomic
 Windows::).
@@ -2382,7 +2384,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-default-phone-class:              Hacking EBDB.        (line  40)
 * ebdb-default-record-class:             Creating Records.    (line  10)
 * ebdb-default-record-class <1>:         Hacking EBDB.        (line  24)
-* ebdb-default-window-size:              Pop-up Buffers.      (line  31)
+* ebdb-default-window-size:              Pop-up Buffers.      (line  33)
 * ebdb-delete-field:                     Init and Delete Methods.
                                                               (line  15)
 * ebdb-delete-field-or-record:           The Basics of ebdb-mode.
@@ -2428,7 +2430,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line   6)
 * ebdb-insert-field <1>:                 The Basics of ebdb-mode.
                                                               (line  30)
-* ebdb-join-atomic-windows:              Pop-up Buffers.      (line  26)
+* ebdb-join-atomic-windows:              Pop-up Buffers.      (line  28)
 * ebdb-join-atomic-windows <1>:          Customizing Record Display.
                                                               (line  24)
 * ebdb-mail:                             The Basics of ebdb-mode.
@@ -2661,45 +2663,45 @@ Node: MUA Interaction20485
 Node: Loading MUA Code21038
 Node: Display and Updating21751
 Node: Pop-up Buffers22517
-Node: Auto-Updating Records24437
-Node: Noticing and Automatic Rules28843
-Node: Interactive Commands30176
-Node: EBDB and MUA summary buffers32650
-Node: Sender name display33168
-Node: Summary buffer marks34395
-Node: Mail Address Completion35574
-Node: A Note on Completion38083
-Node: Specific MUAs38706
-Node: Gnus38854
-Node: Posting Styles39076
-Node: EBDB Buffers40651
-Node: Searching41862
-Node: Changing Search Behavior43576
-Node: The Basics of ebdb-mode44823
-Node: Customizing Record Display49171
-Node: Marking53491
-Node: Exporting/Formatting53918
-Node: Completion54853
-Node: Snarfing55649
-Node: Internationalization57666
-Node: Diary Integration60367
-Node: Mail Aliases61232
-Node: vCard Support61946
-Node: Org Integration62445
-Node: Citing Records64343
-Node: Hacking EBDB65101
-Node: Field Classes67694
-Node: Init and Delete Methods70830
-Node: The Labeled Field Class72337
-Node: The Singleton Field Class73191
-Node: Actions73629
-Node: Custom Field Searching74301
-Node: Fast Lookups77168
-Node: Formatting in the EBDB Buffer78978
-Node: Writing Internationalization Libraries81054
-Node: Writing Integration For New MUAs85470
-Node: Article snarfing88918
-Node: Index89636
+Node: Auto-Updating Records24515
+Node: Noticing and Automatic Rules28921
+Node: Interactive Commands30254
+Node: EBDB and MUA summary buffers32728
+Node: Sender name display33246
+Node: Summary buffer marks34473
+Node: Mail Address Completion35652
+Node: A Note on Completion38161
+Node: Specific MUAs38784
+Node: Gnus38932
+Node: Posting Styles39154
+Node: EBDB Buffers40729
+Node: Searching41940
+Node: Changing Search Behavior43654
+Node: The Basics of ebdb-mode44901
+Node: Customizing Record Display49249
+Node: Marking53569
+Node: Exporting/Formatting53996
+Node: Completion54931
+Node: Snarfing55727
+Node: Internationalization57744
+Node: Diary Integration60445
+Node: Mail Aliases61310
+Node: vCard Support62024
+Node: Org Integration62523
+Node: Citing Records64421
+Node: Hacking EBDB65179
+Node: Field Classes67772
+Node: Init and Delete Methods70908
+Node: The Labeled Field Class72415
+Node: The Singleton Field Class73269
+Node: Actions73707
+Node: Custom Field Searching74379
+Node: Fast Lookups77246
+Node: Formatting in the EBDB Buffer79056
+Node: Writing Internationalization Libraries81132
+Node: Writing Integration For New MUAs85548
+Node: Article snarfing88996
+Node: Index89714
 
 End Tag Table
 

@@ -471,10 +471,11 @@ below).
 #+ATTR_TEXINFO: :options ebdb-mua-default-formatter
 #+begin_defopt
 The default formatter to use for MUA pop-up buffers.  The value of
-this option should be an instance of ~ebdb-formatter-ebdb~; it
-defaults to ~ebdb-default-multiline-formatter~.  Other likely options
-would be the value of ~ebdb-default-oneline-formatter~, or a
-custom-made formatter, see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing Record Display]].
+this option should be an instance of either the
+~ebdb-formatter-ebdb-multiline~ or the ~ebdb-formatter-ebdb-oneline~
+class; it defaults to ~ebdb-default-multiline-formatter~.  Other
+likely options would be the value of ~ebdb-default-oneline-formatter~,
+or a custom-made formatter, see [[id:20fc7a2a-55a9-43ef-9534-9e5887682a88][Customizing Record Display]].
 #+end_defopt
 
 EBDB can also integrate with atomic windows (@@texinfo:@xref{Atomic

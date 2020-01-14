@@ -689,10 +689,11 @@ below).
 
 @defopt ebdb-mua-default-formatter
 The default formatter to use for MUA pop-up buffers.  The value of
-this option should be an instance of @code{ebdb-formatter-ebdb}; it
-defaults to @code{ebdb-default-multiline-formatter}.  Other likely options
-would be the value of @code{ebdb-default-oneline-formatter}, or a
-custom-made formatter, see @ref{Customizing Record Display}.
+this option should be an instance of either the
+@code{ebdb-formatter-ebdb-multiline} or the @code{ebdb-formatter-ebdb-oneline}
+class; it defaults to @code{ebdb-default-multiline-formatter}.  Other
+likely options would be the value of @code{ebdb-default-oneline-formatter},
+or a custom-made formatter, see @ref{Customizing Record Display}.
 @end defopt
 
 EBDB can also integrate with atomic windows (@xref{Atomic
