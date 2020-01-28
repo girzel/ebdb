@@ -543,6 +543,7 @@ This is used for fields which do not have an entry in `ebdb-separator-alist'."
     (affix "[,;]"  ", ")
     (aka "[,;]" ", ")
     (mail "[,;]" ", ")
+    (ebdb-field-tags ":" ":")
     (mail-alias "[,;]" ", ")
     (vm-folder "[,;]" ", ")
     (birthday "\n" "\n")
@@ -2334,8 +2335,6 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (defvar ebdb-tags nil
   "Variable holding tags defined for EBDB records.")
 
-(push '(ebdb-field-tags ":" ":") ebdb-separator-alist)
-
 (defclass ebdb-field-tags (ebdb-field-user ebdb-field-singleton)
   ((tags
     :initarg :tags
@@ -2829,7 +2828,11 @@ OLD-FIELD's values as defaults.")
     ;; Pick up all externally-defined user fields.
     (dolist (f (eieio-build-class-alist 'ebdb-field-user t))
       (setq user-class (intern (car f)))
-      (unless (rassq user-class alist)
+      (unless (or (rassq user-class alist)
+		  ;; Temporary hack, see comment on
+		  ;; `ebdb-org-field-tags' class definition in
+		  ;; ebdb-org.el.
+		  (eql user-class 'ebdb-org-field-tags))
 	(push (cons 'fields user-class) alist)))
     ;; Look, Ma, I used pcase!
     (pcase query

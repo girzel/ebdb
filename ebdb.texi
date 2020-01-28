@@ -591,14 +591,13 @@ person record, or a new person if point is on an organization.
 @subsection Tag field
 
 EBDB comes with a field holding arbitrary tags for records.  When
-searching on the tags field (using @kbd{/ x} and selecting
+searching on the tags field (using @kbd{/ t} and selecting
 ``tags''), EBDB provides the same tag search syntax as Org does,
 eg.@: ``work|laptop+night''.  @xref{Matching
 tags and properties,,,org} for more information.
 
-The @file{ebdb-org} library comes with another
-tagging class, @code{ebdb-org-field-tags}, that behaves just like the
-standard class, except the user's Org-file tags are offered for
+The @file{ebdb-org} library alters the
+behavior of this class, offering all the user's Org-file tags for
 completion.  @ref{Org Integration}.
 
 @node Mail folder field

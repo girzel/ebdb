@@ -401,14 +401,13 @@ person record, or a new person if point is on an organization.
 :ID:       d9073bc7-8731-4919-9fc0-7d1dcf98426e
 :END:
 EBDB comes with a field holding arbitrary tags for records.  When
-searching on the tags field (using {{{kbd(/ x)}}} and selecting
+searching on the tags field (using {{{kbd(/ t)}}} and selecting
 "tags"), EBDB provides the same tag search syntax as Org does,
 eg.@@texinfo:@:@@ "work|laptop+night".  @@texinfo:@xref{Matching
 tags and properties,,,org}@@ for more information.
 
-The @@texinfo:@file{@@ebdb-org@@texinfo:}@@ library comes with another
-tagging class, ~ebdb-org-field-tags~, that behaves just like the
-standard class, except the user's Org-file tags are offered for
+The @@texinfo:@file{@@ebdb-org@@texinfo:}@@ library alters the
+behavior of this class, offering all the user's Org-file tags for
 completion.  [[id:ee6b5ccb-a7a6-4c42-84a5-9eb0bbdc040f][Org Integration]].
 *** Mail folder field
 The "mail folder" field is used to indicate which folder or group

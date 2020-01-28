@@ -122,15 +122,26 @@ italicized, in all other cases it is left unchanged."
     (format "<text:span text:style-name=\"Emphasis\">%s</text:span>" desc))
    (t desc)))
 
+;; It was a mistake to make this a separate field class -- this
+;; library should have just provided a new `ebdb-read' method for the
+;; underlying `ebdb-field-tags' class.  I'm overriding `make-instance'
+;; to redirect to `ebdb-field-tags', and will leave this override in
+;; place for a year or so, then remove this class altogether some time
+;; around Feb 2021.
 ;;;###autoload
 (defclass ebdb-org-field-tags (ebdb-field-tags)
   nil
   :human-readable "org tags")
 
-(cl-defmethod ebdb-read ((field (subclass ebdb-org-field-tags)) &optional slots obj)
+(cl-defmethod make-instance :around ((cls (subclass ebdb-org-field-tags))
+				     &rest slots)
+  "Return an instance of `ebdb-field-tags' instead."
+  (apply #'cl-call-next-method 'ebdb-field-tags slots))
+
+(cl-defmethod ebdb-read ((field (subclass ebdb-field-tags)) &optional slots obj)
   (let* ((crm-separator (cadr (assq 'ebdb-field-tags ebdb-separator-alist)))
 	 (val (completing-read-multiple
-	       "Tags: "
+	       (format "Tags (separate with \"%s\"): " crm-separator)
 	       (org--tag-add-to-alist
 		(org--tag-add-to-alist
 		 (org--tag-add-to-alist

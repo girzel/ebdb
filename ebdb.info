@@ -561,15 +561,13 @@ File: ebdb.info,  Node: Tag field,  Next: Mail folder field,  Prev: Role fields,
 ---------------
 
 EBDB comes with a field holding arbitrary tags for records.  When
-searching on the tags field (using ‘/ x’ and selecting “tags”), EBDB
+searching on the tags field (using ‘/ t’ and selecting “tags”), EBDB
 provides the same tag search syntax as Org does, eg.
 “work|laptop+night”.  *Note (org)Matching tags and properties:: for more
 information.
 
-   The ‘ebdb-org’ library comes with another tagging class,
-‘ebdb-org-field-tags’, that behaves just like the standard class, except
-the user’s Org-file tags are offered for completion.  *note Org
-Integration::.
+   The ‘ebdb-org’ library alters the behavior of this class, offering
+all the user’s Org-file tags for completion.  *note Org Integration::.
 
 
 File: ebdb.info,  Node: Mail folder field,  Prev: Tag field,  Up: Field Types
@@ -2658,50 +2656,50 @@ Node: Deleting Records and Fields14850
 Node: Field Types15246
 Node: Role fields17532
 Node: Tag field19513
-Node: Mail folder field20157
-Node: MUA Interaction20485
-Node: Loading MUA Code21038
-Node: Display and Updating21751
-Node: Pop-up Buffers22517
-Node: Auto-Updating Records24515
-Node: Noticing and Automatic Rules28921
-Node: Interactive Commands30254
-Node: EBDB and MUA summary buffers32728
-Node: Sender name display33246
-Node: Summary buffer marks34473
-Node: Mail Address Completion35652
-Node: A Note on Completion38161
-Node: Specific MUAs38784
-Node: Gnus38932
-Node: Posting Styles39154
-Node: EBDB Buffers40729
-Node: Searching41940
-Node: Changing Search Behavior43654
-Node: The Basics of ebdb-mode44901
-Node: Customizing Record Display49249
-Node: Marking53569
-Node: Exporting/Formatting53996
-Node: Completion54931
-Node: Snarfing55727
-Node: Internationalization57744
-Node: Diary Integration60445
-Node: Mail Aliases61310
-Node: vCard Support62024
-Node: Org Integration62523
-Node: Citing Records64421
-Node: Hacking EBDB65179
-Node: Field Classes67772
-Node: Init and Delete Methods70908
-Node: The Labeled Field Class72415
-Node: The Singleton Field Class73269
-Node: Actions73707
-Node: Custom Field Searching74379
-Node: Fast Lookups77246
-Node: Formatting in the EBDB Buffer79056
-Node: Writing Internationalization Libraries81132
-Node: Writing Integration For New MUAs85548
-Node: Article snarfing88996
-Node: Index89714
+Node: Mail folder field20082
+Node: MUA Interaction20410
+Node: Loading MUA Code20963
+Node: Display and Updating21676
+Node: Pop-up Buffers22442
+Node: Auto-Updating Records24440
+Node: Noticing and Automatic Rules28846
+Node: Interactive Commands30179
+Node: EBDB and MUA summary buffers32653
+Node: Sender name display33171
+Node: Summary buffer marks34398
+Node: Mail Address Completion35577
+Node: A Note on Completion38086
+Node: Specific MUAs38709
+Node: Gnus38857
+Node: Posting Styles39079
+Node: EBDB Buffers40654
+Node: Searching41865
+Node: Changing Search Behavior43579
+Node: The Basics of ebdb-mode44826
+Node: Customizing Record Display49174
+Node: Marking53494
+Node: Exporting/Formatting53921
+Node: Completion54856
+Node: Snarfing55652
+Node: Internationalization57669
+Node: Diary Integration60370
+Node: Mail Aliases61235
+Node: vCard Support61949
+Node: Org Integration62448
+Node: Citing Records64346
+Node: Hacking EBDB65104
+Node: Field Classes67697
+Node: Init and Delete Methods70833
+Node: The Labeled Field Class72340
+Node: The Singleton Field Class73194
+Node: Actions73632
+Node: Custom Field Searching74304
+Node: Fast Lookups77171
+Node: Formatting in the EBDB Buffer78981
+Node: Writing Internationalization Libraries81057
+Node: Writing Integration For New MUAs85473
+Node: Article snarfing88921
+Node: Index89639
 
 End Tag Table
 
