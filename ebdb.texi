@@ -734,8 +734,20 @@ and mail fields as necessary), @code{query} (find existing records, and
 query about the editing and creation of new records), and @code{create}
 (automatically create new records).  A value of @code{t} is considered
 equivalent to @code{create}.  The option can also be set to a function
-which returns one of the above symbols.
+(called with no arguments) which returns one of the above symbols.
 @end defopt
+
+For instance, say you want to automatically create records for
+addresses you send mail to, but _not_ when sending messages to
+newsgroups.  If you're using @code{message-mode}, you could use the
+following:
+
+@lisp
+(setq ebdb-message-auto-update-p
+      (lambda ()
+        (unless (ebdb-mua-message-header "Newsgroups")
+          'query)))
+@end lisp
 
 This option only governs what EBDB does automatically, each time a
 message is displayed.  The same process can be run interactively using
