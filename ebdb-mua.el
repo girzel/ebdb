@@ -959,19 +959,19 @@ Return the records matching ADDRESS or nil."
                   (eq update-p 'update)
                   (not (or name mail)))
 	;; If there is no name, try to use the mail address as name
-	(if (and ebdb-message-mail-as-name mail
-		 (or (null name)
-                     (string= "" name)))
-            (setq name (funcall ebdb-message-clean-name-function mail)))
-	(if (or (eq update-p 'create)
-		(and (eq update-p 'query)
-                     (y-or-n-p (format "%s is not in the EBDB.  Add? "
-                                       (or name mail)))))
-            (setq records (list (ebdb-db-add-record
-				 (car ebdb-db-list)
-				 (make-instance
-				  record-class)))
-                  created-p t)))
+	(when (and ebdb-message-mail-as-name mail
+		   (or (null name)
+                       (string= "" name)))
+          (setq name (funcall ebdb-message-clean-name-function mail)))
+	(when (or (eq update-p 'create)
+		  (and (eq update-p 'query)
+                       (y-or-n-p (format "%s is not in the EBDB.  Add? "
+					 (or name mail)))))
+          (setq records (list (make-instance record-class))
+                created-p t)
+	  (run-hook-with-args 'ebdb-create-hook (car records))
+	  (run-hook-with-args 'ebdb-change-hook (car records))
+	  (ebdb-db-add-record (ebdb-prompt-for-db nil t) (car records))))
 
       (dolist (record records)
 	(let* ((old-name (ebdb-record-name record))
@@ -1077,7 +1077,9 @@ Return the records matching ADDRESS or nil."
                                             (ebdb-string record)))))
                           (progn
                             (setq record (make-instance ebdb-default-record-class))
-			    (ebdb-db-add-record (car ebdb-db-list) record)
+			    (run-hook-with-args 'ebdb-create-hook record)
+			    (run-hook-with-args 'ebdb-change-hook record)
+			    (ebdb-db-add-record (ebdb-prompt-for-db nil t) record)
                             (ebdb-record-change-name record name)
                             (setq created-p t))))
 
@@ -1120,7 +1122,8 @@ Return the records matching ADDRESS or nil."
 				(ebdb-string mail))
                      (message "created record with naked address \"%s\""
 			      (ebdb-string mail))))
-		 (ebdb-init-record record))
+		 (ebdb-init-record record)
+		 (run-hook-with-args 'ebdb-after-change-hook record))
 
 		(change-p
 		 (unless ebdb-silent
@@ -1132,7 +1135,8 @@ Return the records matching ADDRESS or nil."
 				   (ebdb-string mail)))
 			 (t
                           (message "noticed naked address \"%s\""
-				   (ebdb-string mail)))))))
+				   (ebdb-string mail)))))
+		 (run-hook-with-args 'ebdb-after-change-hook record)))
 
           (run-hook-with-args 'ebdb-notice-mail-hook record)
 
