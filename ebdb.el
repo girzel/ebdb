@@ -2153,6 +2153,74 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
       (signal 'ebdb-unparseable (list "invalid URL scheme"))))
   (cl-call-next-method class str slots))
 
+;; Location field
+
+;; Should this be a singleton?  But a record might have more than one
+;; "usual location".
+(defclass ebdb-field-location (ebdb-field-user)
+  ((location-label
+    :initarg :location-label
+    :initform ""
+    :type string
+    :custom string
+    :documentation "A human-readable location description")
+   (location-geo
+    :initarg :location-geo
+    :initform nil
+    :type (or list nil)
+    :custom '(choice (const :tag "Empty" nil)
+		    ((cons number number) :tag "Geo coordinate pair"))
+    :documentation "Geo coordinates as a cons of two numbers.")
+   (timezone
+    :initarg :timezone
+    :initform ""
+    :type string
+    :custom string
+    :documentation "Timezone in tzdata/Olson format, eg \"Europe/Berlin\".")
+   (actions :initform (("Display current time" . ebdb-location-current-time))))
+  :documentation "Field holding location data for the record.
+  Data is in three parts: an arbitrary location string, a cons of
+  lat/long geodata, and a tzdata/Olson timezone string."
+  :human-readable "location")
+
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-location)) &optional
+			 slots obj)
+  (let ((label (or (plist-get slots :location-label)
+		   (ebdb-read-string "Location label: "
+				     (when obj (slot-value
+						obj 'location-label)))))
+	(geo (or (plist-get slots :location-geo)
+		 (ebdb-with-exit
+		  (ebdb-read-string "Location geo (C-g to skip): "
+				    (when obj (slot-value
+					       obj 'location-geo))))))
+	(tz (or (plist-get slots :timezone)
+		(ebdb-with-exit
+		 (ebdb-read-string
+		  "Timezone (eg \"Europe/Berlin\"; C-g to skip): "
+		  (when obj (slot-value obj 'timezone)))))))
+    (cl-call-next-method class `(:location-label ,label
+						 :location-geo ,geo
+						 :timezone ,tz)
+			 obj)))
+
+(cl-defmethod ebdb-string ((field ebdb-field-location))
+  (with-slots (location-label timezone) field
+    (concat location-label (when timezone
+			     (format ": %s" timezone)))))
+
+(cl-defmethod ebdb-location-current-time ((rec ebdb-record)
+					  (field ebdb-field-location))
+  "Display the current time for REC.
+Uses the timezone value present in FIELD, and raises an error if
+there is no timezone value."
+  (with-slots (timezone) field
+    (if timezone
+	(message "%s's current time is: %s"
+		 (ebdb-string rec)
+		 (format-time-string "%c" nil timezone))
+      (signal 'ebdb-error (list "No timezone present")))))
+
 ;; Gender field
 
 (defclass ebdb-field-gender (ebdb-field-user
