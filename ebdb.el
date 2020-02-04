@@ -2214,7 +2214,8 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-language)) &optional slots obj)
   (let ((lang (ebdb-read-string
-	       "Language: " (when obj (slot-value obj 'language)) nil nil)))
+	       "Language: " (when obj (slot-value obj 'language))
+	       language-info-alist nil)))
     (cl-call-next-method class (plist-put slots :language lang) obj)))
 
 ;;; Bank account field
