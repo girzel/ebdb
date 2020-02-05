@@ -832,8 +832,8 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 		 (when (cadr address)
 		   (cl-pushnew (downcase
 				(concat "@"
-					(split-string
-					 (cadr address) "@" t)))
+					(nth 1 (split-string
+						(cadr address) "@" t))))
 			       ebdb-permanently-ignored-mails :test #'equal)
 		   (unless ebdb-permanent-ignores-file
 		     (message "Mail will be ignored for this session only")
