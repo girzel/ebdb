@@ -518,7 +518,7 @@ choice: that formatter should be selected explicitly."
 
 (cl-defmethod ebdb-record-db-char-string ((record ebdb-record))
   "Return a char string indicating RECORDs databases."
-  (let* ((dbs (slot-value (ebdb-record-cache record) 'database))
+  (let* ((dbs (ebdb-record-databases record))
 	 (char-string
 	  (concat
 	   (delq nil
@@ -1529,7 +1529,7 @@ reloaded with `ebdb-reload-database'."
 			      ;; Only disappear records that belong to
 			      ;; no other database.
 			      (= 1 (length
-				    (slot-value (ebdb-record-cache r) 'database))))
+				    (ebdb-record-databases r))))
 			    (slot-value db 'records))))
       (ebdb-redisplay-records recs 'remove)
       (ebdb-db-disable db)
@@ -1694,7 +1694,7 @@ runs `ebdb-after-change-hook', and redisplays the record."
   ;; within "body".  Hopefully that's not wrong.
   `(condition-case err
        (progn
-	 (dolist (d (slot-value (ebdb-record-cache ,record) 'database) nil)
+	 (dolist (d (ebdb-record-databases ,record) nil)
 	   (ebdb-db-editable d))
 	 (run-hook-with-args 'ebdb-change-hook ,record)
 	 ,@body
@@ -1765,7 +1765,7 @@ do the reverse."
    (list (ebdb-current-record)))
   (let ((make-org (if (object-of-class-p rec 'ebdb-record-person)
 		      t nil))
-	(db (car (slot-value (ebdb-record-cache rec) 'database)))
+	(db (car (ebdb-record-databases rec)))
 	new-rec role-field)
     (ebdb-create-record
      db

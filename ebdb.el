@@ -40,6 +40,9 @@
 ;; This file contains the basic data structures and behavior for EBDB,
 ;; including the class definitions for databases, records, and fields.
 
+;; The order of appearance of code in this file is mostly determined
+;; by the order in which the compiler wants to see things.
+
 ;;; Code:
 
 (require 'timezone)
@@ -832,12 +835,52 @@ You really should not disable debugging.  But it will speed things up."
       `(let ((debug-on-error t))
          ,@body)))
 
-(defmacro ebdb-add-to-list (list-var element)
+;; These two inlines are used along with `object-add-to-list' and
+;; `object-remove-from-list' -- typically the former are used to
+;; manipulate record cache slots (as caches are structs and can't use
+;; the object-* functions), and the latter to manipulate record slots
+;; directly.  But presumably we could replace all the object-*
+;; functions with the ebdb-* inlines.
+
+(define-inline ebdb-add-to-list (list-var element)
   "Add ELEMENT to the value of LIST-VAR if it isn't there yet and non-nil.
 The test for presence of ELEMENT is done with `equal'."
-  `(when ,element (cl-pushnew ,element ,list-var :test #'equal)))
+  (inline-quote (when ,element (cl-pushnew ,element ,list-var :test #'equal))))
 
-;;; Fields.
+(define-inline ebdb-remove-from-list (list-var element)
+  "Remove ELEMENT from LIST-VAR, if present.
+Test for presence is done with `equal'."
+  (inline-quote (when (and ,element ,list-var)
+		  (setf ,list-var
+			(delete ,element ,list-var)))))
+
+;;; Struct and object definitions.
+
+;; The calls to `cl-defstruct' and `defclass' are all up here
+;; together, to help with order of definition.
+
+(cl-defstruct ebdb-record-cache
+  "Structure holding cached values for a record."
+  (name-string "" :type string :documentation
+	       "Canonical name string")
+  (alt-names nil :type list :documentation
+	     "List of alternate names")
+  (organizations nil :type list :documentation
+		 "List of related organization name strings")
+  ;; FIXME: Nothing seems to use this mail-aka information.  Delete
+  ;; it, and/or consider a general re-working of how EBDB handles
+  ;; name-mail pairs.
+  (mail-aka nil :type list :documentation
+	    "List of akas associated with mail addresses")
+  (mail-canon nil :type list :documentation
+	      "List of all record's mail addresses")
+  ;; FIXME: Erm, we don't sort EBDB records at all!  And setting a
+  ;; single string as a sortkey is way too limiting: instead offer
+  ;; multiple sorting strategies.
+  (sortkey nil :type string :documentation
+	   "String used for sorting record against other records")
+  (databases nil :type list :documentation
+	     "List of database instances this record belongs to"))
 
 (defclass ebdb-field ()
   ((actions
@@ -850,9 +893,79 @@ The test for presence of ELEMENT is done with `equal'."
   :abstract t :documentation "Abstract class for EBDB fields.
   Subclass this to produce real field types.")
 
+(defclass ebdb-record (eieio-instance-tracker)
+  ((uuid
+    :initarg :uuid
+    :type (or null ebdb-field-uuid)
+    :initform nil)
+   (tracking-symbol
+    :initform ebdb-record-tracker)
+   (creation-date
+    :initarg :creation-date
+    :type (or null ebdb-field-creation-date)
+    :initform nil)
+   (timestamp
+    :initarg :timestamp
+    :type (or null ebdb-field-timestamp)
+    :initform nil)
+   (fields
+    :initarg :fields
+    :type (list-of ebdb-field-user)
+    :initform nil
+    :documentation "This slot contains all record fields except
+    those built in to record subclasses.")
+   (image
+    :initarg :image
+    :type (or null ebdb-field-image)
+    :initform nil)
+   (notes
+    :initarg :notes
+    :type (or null ebdb-field-notes)
+    :initform nil
+    :documentation "User notes for this contact.")
+   (dirty
+    :initarg :dirty
+    :type boolean
+    :initform nil
+    :documentation "Does this record have changed fields?")
+   (cache
+    :initarg :cache
+    :type (or null ebdb-record-cache)
+    :initform nil
+    ))
+  :abstract t
+  :allow-nil-initform t
+  :documentation "An abstract base class for creating EBDB
+  records.")
+
+(define-inline ebdb-record-databases (record)
+  "Record cache function: return RECORD's databases."
+  (inline-quote (ebdb-record-cache-databases (slot-value ,record 'cache))))
+
+(define-inline ebdb-record-mail-aka (record)
+  "Record cache function: return mail-aka for RECORD."
+  (inline-quote (ebdb-record-cache-mail-aka (slot-value ,record 'cache))))
+
+(define-inline ebdb-record-mail-canon (record)
+  "Record cache function: return all RECORD's mail addresses."
+  (inline-quote (ebdb-record-cache-mail-canon (slot-value ,record 'cache))))
+
+(define-inline ebdb-record-alt-names (record)
+  "Record cache function: return all RECORD's alternative names."
+  (inline-quote (ebdb-record-cache-alt-names (slot-value ,record 'cache))))
+
 (define-inline ebdb-record-name-string (record)
   "Record cache function: return RECORD's name as a string."
-  (slot-value (ebdb-record-cache record) 'name-string))
+  (inline-quote (ebdb-record-cache-name-string (slot-value ,record 'cache))))
+
+(define-inline ebdb-record-organizations (record)
+  "Record cache function: return RECORD's organizations.
+Returns a list of strings."
+  (inline-quote (ebdb-record-cache-organizations (slot-value ,record 'cache))))
+
+(define-inline ebdb-record-sortkey (record)
+  "Record cache function: return RECORD's string sortkey."
+  (inline-quote (ebdb-record-cache-sortkey (slot-value ,record 'cache))))
 
 (cl-defgeneric ebdb-init-field (field record)
   "Initialize FIELD.
@@ -1338,24 +1451,26 @@ first one."
     ;; Also hash against "first last", as an alternate search
     ;; strategy.
     (ebdb-puthash fl record)
-    (object-add-to-list (ebdb-record-cache record) 'alt-names lf-full)
-    (object-add-to-list (ebdb-record-cache record) 'alt-names fl-full)
-    (object-add-to-list (ebdb-record-cache record) 'alt-names fl))
+    (ebdb-add-to-list (ebdb-record-alt-names record) lf-full)
+    (ebdb-add-to-list (ebdb-record-alt-names record) fl-full)
+    (ebdb-add-to-list (ebdb-record-alt-names record) fl))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex) record &optional _unload)
+(cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex)
+				 record &optional _unload)
   (let ((lf-full (ebdb-name-lf name t))
 	(fl-full (ebdb-name-fl name t))
 	(fl (ebdb-name-fl name)))
     (ebdb-remhash lf-full record)
     (ebdb-remhash fl-full record)
     (ebdb-remhash fl record)
-    (object-remove-from-list (ebdb-record-cache record) 'alt-names lf-full)
-    (object-remove-from-list (ebdb-record-cache record) 'alt-names fl-full)
-    (object-remove-from-list (ebdb-record-cache record) 'alt-names fl))
+    (ebdb-remove-from-list (ebdb-record-alt-names record) lf-full)
+    (ebdb-remove-from-list (ebdb-record-alt-names record) fl-full)
+    (ebdb-remove-from-list (ebdb-record-alt-names record) fl))
   (cl-call-next-method))
 
-(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex)) &optional slots obj)
+(cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex))
+			 &optional slots obj)
   (if ebdb-read-name-articulate
       (let* ((surname-default (when obj (ebdb-name-last obj)))
 	     (given-default (when obj (ebdb-name-given obj t)))
@@ -1441,7 +1556,8 @@ first one."
       ;; `ebdb-init-field' should change a record's slots.
       (unless role-record-uuid
 	(setf role-record-uuid record-uuid))
-      (object-add-to-list (ebdb-record-cache record) 'organizations org-string)
+      (ebdb-add-to-list (ebdb-record-organizations record)
+			org-string)
       ;; Init the role mail against the record.
       (when (and mail (slot-value mail 'mail))
 	(ebdb-init-field mail record))
@@ -1470,8 +1586,8 @@ first one."
 		      record-uuid
 		      (object-assoc-list 'record-uuid org-entry))))
       ;; RECORD no long has any roles at ORG.
-      (object-remove-from-list (ebdb-record-cache record)
-			       'organizations org-string)))
+      (ebdb-remove-from-list (ebdb-record-organizations record)
+			     org-string)))
   (when (slot-value role 'mail)
     (ebdb-delete-field (slot-value role 'mail) record unload))
   (cl-call-next-method))
@@ -1541,22 +1657,21 @@ first one."
 (cl-defmethod ebdb-init-field ((field ebdb-field-mail) record)
   (with-slots (aka mail) field
     (ebdb-puthash mail record)
-    (object-add-to-list (ebdb-record-cache record) 'mail-canon mail)
-    (cl-pushnew (ebdb-dwim-mail record field) ebdb-dwim-completion-cache
-		:test #'equal)
+    (ebdb-add-to-list (ebdb-record-mail-canon record) mail)
+    (ebdb-add-to-list ebdb-dwim-completion-cache (ebdb-dwim-mail record field))
     (when aka
       (ebdb-puthash aka record)
-      (object-add-to-list (ebdb-record-cache record) 'mail-aka aka))))
+      (ebdb-add-to-list (ebdb-record-mail-aka record) aka))))
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field-mail) record &optional _unload)
   (with-slots (aka mail) field
     (when aka
       (ebdb-remhash aka record)
-      (object-remove-from-list (ebdb-record-cache record) 'mail-aka aka))
+      (ebdb-remove-from-list (ebdb-record-mail-aka record) aka))
     (setq ebdb-dwim-completion-cache (delete (ebdb-dwim-mail record field)
 					     ebdb-dwim-completion-cache))
     (ebdb-remhash mail record)
-    (object-remove-from-list (ebdb-record-cache record) 'mail-canon mail))
+    (ebdb-remove-from-list (ebdb-record-mail-canon record) mail))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-string ((mail ebdb-field-mail))
@@ -2598,111 +2713,12 @@ record uuids.")
 	     "%F" (apply #'encode-time 0 0 0
 			 (calendar-gregorian-from-absolute expiration-date))))))
 
-;;; The cache class
-
-;; This probably bears some re-thinking.  It would be nice to make it
-;; behave as a "real" cache, in the sense that all the accessors are
-;; accessors on the records themselves -- the records don't need to be
-;; aware of the cache.  The (probably multiple) cache classes should
-;; be parent classes, not slots on the record (or rather, the cache
-;; slot on the record comes from the cache parent class).  We ask the
-;; record for information, and the cache method intercepts the call,
-;; returns the value if it has it, and if not then asks the record for
-;; the value then stores it.  Ie, a real cache.  Not all the cache
-;; slots would work that way, of course -- for instance, a record has
-;; no way of knowing its databases except via the cache.
-
-(defclass ebdb-cache ()
-  ((name-string
-    :initarg :name-string
-    :type string
-    :initform nil
-    :documentation "The \"canonical\" name for the record, as
-    displayed in the *EBDB* buffer.")
-   (alt-names
-    :initarg :alt-names
-    :type (list-of string)
-    :initform nil
-    :documentation "A list of strings representing all other
-    alternate names for this record.")
-   (organizations
-    :initarg :organizations
-    :type list
-    :initform nil
-    :documentation
-    "A list of strings representing the organizations this record
-    is associated with.")
-   (mail-aka
-    :initarg :mail-aka
-    :type list
-    :initform nil)
-   (mail-canon
-    :initarg :mail-canon
-    :type list
-    :initform nil)
-   (sortkey
-    :initarg :sortkey
-    :type string
-    :initform nil)
-   (database
-    :initarg :database
-    :type (list-of ebdb-db)
-    :initform nil
-    :documentation
-    "The database(s) this record belongs to."))
-  :allow-nil-initform t)
-
 ;;; Records
 
 ;; The basic, abstract `ebdb-record' class should require no user
 ;; interaction, and has no real user-facing fields (except for the
 ;; "fields" bucket, of course).  It takes care of all the fundamental
 ;; setup and housekeeping automatically.
-
-(defclass ebdb-record (eieio-instance-tracker)
-  ((uuid
-    :initarg :uuid
-    :type (or null ebdb-field-uuid)
-    :initform nil)
-   (tracking-symbol
-    :initform ebdb-record-tracker)
-   (creation-date
-    :initarg :creation-date
-    :type (or null ebdb-field-creation-date)
-    :initform nil)
-   (timestamp
-    :initarg :timestamp
-    :type (or null ebdb-field-timestamp)
-    :initform nil)
-   (fields
-    :initarg :fields
-    :type (list-of ebdb-field-user)
-    :initform nil
-    :documentation "This slot contains all record fields except
-    those built in to record subclasses.")
-   (image
-    :initarg :image
-    :type (or null ebdb-field-image)
-    :initform nil)
-   (notes
-    :initarg :notes
-    :type (or null ebdb-field-notes)
-    :initform nil
-    :documentation "User notes for this contact.")
-   (dirty
-    :initarg :dirty
-    :type boolean
-    :initform nil
-    :documentation "Does this record have changed fields?")
-   (cache
-    :initarg :cache
-    :type (or null ebdb-cache)
-    :initform nil
-    ))
-  :abstract t
-  :allow-nil-initform t
-  :documentation "An abstract base class for creating EBDB
-  records.")
 
 (cl-defgeneric ebdb-init-record (record)
   "Initialize RECORD.
@@ -2746,8 +2762,8 @@ RECORD is responsible for parsing it correctly.")
     (apply 'make-instance class slots)))
 
 (cl-defmethod ebdb-delete-record ((record ebdb-record) &optional db unload)
-  (let ((dbs (if db (list db)
-	       (slot-value (ebdb-record-cache record) 'database)))
+  (let ((dbs (if db (if (consp db) db (list db))
+	       (ebdb-record-databases record)))
 	(uuid (ebdb-record-uuid record)))
     ;; If DB is passed in, assume that it will be responsible for
     ;; calling `ebdb-db-remove-record'.
@@ -2760,10 +2776,12 @@ RECORD is responsible for parsing it correctly.")
     (delete-instance record)))
 
 (cl-defmethod initialize-instance ((record ebdb-record) &optional slots)
-  "Add a cache to RECORD."
+  "Initialize RECORD.
+Adds a cache to the cache slot, and ensures the 'timestamp and
+'creation-date slots are filled."
   ;; This is the very first thing that happens to a record after it is
   ;; created (whether manually or loaded).
-  (let ((cache (make-instance 'ebdb-cache)))
+  (let ((cache (make-ebdb-record-cache)))
     (setq slots (plist-put slots :cache cache))
     (unless (plist-get slots :timestamp)
       (setq slots
@@ -2780,7 +2798,7 @@ RECORD is responsible for parsing it correctly.")
     (cl-call-next-method record slots)))
 
 (cl-defmethod ebdb-init-record ((record ebdb-record))
-  "Initiate RECORD after loading or creation."
+  "Initialize RECORD after loading or creation."
   (dolist (field (ebdb-record-user-fields record))
     (ebdb-init-field field record))
   (ebdb-record-set-sortkey record))
@@ -2855,7 +2873,7 @@ OLD-FIELD's values as defaults.")
   ;; First, the databases "actually" add the field to the record, ie
   ;; persistence.  The rest of this method is just updating the
   ;; existing record instance with the new field.
-  (dolist (db (slot-value (ebdb-record-cache record) 'database))
+  (dolist (db (ebdb-record-databases record))
     (when field
       (setq field (ebdb-db-add-record-field db record slot field))))
   (when field
@@ -2884,7 +2902,7 @@ OLD-FIELD's values as defaults.")
   "Delete FIELD from RECORD's SLOT, or set SLOT to nil, if no FIELD."
   ;; We don't use `slot-makeunbound' because that's a huge pain in the
   ;; ass, and why would anyone want those errors?
-  (dolist (db (slot-value (ebdb-record-cache record) 'database))
+  (dolist (db (ebdb-record-databases record))
     (ebdb-db-remove-record-field db record slot field))
   (if (listp (slot-value record slot))
       (object-remove-from-list record slot field)
@@ -2966,9 +2984,6 @@ only return fields that are suitable for user editing.")
     (when notes
       (push (cons 'notes notes) f-list)))
   f-list)
-
-(cl-defmethod ebdb-record-alt-names ((record ebdb-record))
-  (slot-value (ebdb-record-cache record) 'alt-names))
 
 (cl-defmethod cl-print-object ((record ebdb-record) stream)
   (princ (format "#<%S %s>"
@@ -3216,9 +3231,6 @@ If FIELD doesn't specify a year, use the current year."
 	(ebdb-string name))
   (ebdb-record-insert-field record name 'name))
 
-(cl-defmethod ebdb-record-organizations ((_record ebdb-record-entity))
-  nil)
-
 (cl-defgeneric ebdb-compose-mail (records &rest args)
   "Prepare to compose a mail message to RECORDS.
 Mail-sending MUAs can override this method to do extra setup
@@ -3290,8 +3302,7 @@ ARGS are passed to `ebdb-compose-mail', and then to
   (with-slots (name aka relations organizations) record
     (when name
       (ebdb-init-field name record)
-      (setf (ebdb-record-name-string record)
-	    (ebdb-string name)))
+      (setf (ebdb-record-name-string record) (ebdb-string name)))
     (dolist (f (append aka relations organizations))
       (ebdb-init-field f record)))
   (cl-call-next-method))
@@ -3410,24 +3421,22 @@ FIELD."
    (ebdb-gethash (slot-value field 'org-uuid) 'uuid)
    (signal 'ebdb-related-unfound (list (slot-value field 'org-uuid)))))
 
-(cl-defmethod ebdb-record-organizations ((record ebdb-record-person))
-  "Return a list of organization string names from RECORD's cache."
-  (slot-value (ebdb-record-cache record) 'organizations))
-
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
 			       (record ebdb-record-person))
-  (object-add-to-list
-   (ebdb-record-cache record) 'alt-names
-   (concat (ebdb-string name) " "
+  (ebdb-add-to-list
+   (ebdb-record-alt-names record)
+   (format "%s %s"
+	   (ebdb-string name)
 	   (ebdb-name-last (slot-value record 'name))))
+  ;; FIXME: Also add nickname-plus-surname to the hashtable.
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
 				 (record ebdb-record-person)
 				 &optional _unload)
-  (object-remove-from-list
-   (ebdb-record-cache record) 'alt-names
-   (concat (ebdb-string name) " "
+  (ebdb-remove-from-list
+   (ebdb-record-alt-names record)
+   (format "%s %s" (ebdb-string name)
 	   (ebdb-name-last (slot-value record 'name))))
   (cl-call-next-method))
 
@@ -3478,7 +3487,7 @@ FIELD."
   (let ((name (slot-value record 'name)))
     (ebdb-init-field name record)
     (setf (ebdb-record-name-string record)
-	  (ebdb-string name)))
+	  (ebdb-string name))
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-delete-record ((org ebdb-record-organization) &optional _db unload)
@@ -3915,8 +3924,7 @@ DB.")
     (condition-case err
 	(progn
 	  ;; Tell it about the database.
-	  (object-add-to-list (ebdb-record-cache rec)
-			      'database db)
+	  (ebdb-add-to-list (ebdb-record-databases rec) db)
 
 	  ;; Make sure its UUID is unique.  Doesn't create new UUIDs.
 	  (ebdb-check-uuid (ebdb-record-uuid rec))
@@ -3941,7 +3949,7 @@ DB.")
 	 ;; switch our assumptions about which record to delete.  This
 	 ;; at least gives us a fighting chance to update a writeable
 	 ;; database from a read-only one, and avoid an error.
-	 (dolist (d (slot-value (ebdb-record-cache double) 'database))
+	 (dolist (d (ebdb-record-databases double))
 	   (when (slot-value d 'read-only)
 	     (setq delete-double nil)))
 
@@ -3965,13 +3973,12 @@ DB.")
 	 ;; Make sure the right record is hashed against the duplicate uuid.
 	 (ebdb-puthash (ebdb-record-uuid keeper) keeper)
 
-	 (dolist (d (slot-value (ebdb-record-cache deleter) 'database))
+	 (dolist (d (ebdb-record-databases deleter))
 	   ;; Use low-level functions for this so we don't set the
 	   ;; database dirty.
 	   (object-remove-from-list d 'records deleter)
 	   (object-add-to-list d 'records keeper)
-	   (object-add-to-list (ebdb-record-cache keeper)
-			       'database d)
+	   (ebdb-add-to-list (ebdb-record-databases keeper) d)
 	   (ebdb-delete-record deleter d t)))))))
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
@@ -3981,9 +3988,9 @@ that doesn't belong to a different database."
   (dolist (r (slot-value db 'records))
     ;; Only disappear the record if it doesn't belong to any other
     ;; databases.
-    (if (= 1 (length (slot-value (ebdb-record-cache r) 'database)))
+    (if (= 1 (length (ebdb-record-databases r)))
 	(ebdb-delete-record r db t)
-      (object-remove-from-list (ebdb-record-cache r) 'database db))))
+      (ebdb-remove-from-list (ebdb-record-databases r) db))))
 
 (defun ebdb-db-reload (db)
   "Reload DB.
@@ -4112,7 +4119,7 @@ the persistent save, or allow them to propagate.")
 	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
     (ebdb-puthash (ebdb-record-uuid record) record))
   (object-add-to-list db 'records record)
-  (object-add-to-list (ebdb-record-cache record) 'database db)
+  (ebdb-add-to-list (ebdb-record-databases record) db)
   (setf (slot-value db 'dirty) t)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
@@ -4120,8 +4127,7 @@ the persistent save, or allow them to propagate.")
 
 (cl-defmethod ebdb-db-remove-record ((db ebdb-db) record)
   (object-remove-from-list db 'records record)
-  (object-remove-from-list (ebdb-record-cache record)
-			   'database db)
+  (ebdb-remove-from-list (ebdb-record-databases record) db)
   (setf (slot-value db 'dirty) t)
   record)
 
@@ -4228,8 +4234,7 @@ process.")
   "Move RECORD from its existing database to TO-DB."
   ;; It's not quite right to assume that we're *only* removing the
   ;; record from the first db in its list of dbs.
-  (let ((existing (car (slot-value (ebdb-record-cache record)
-				   'database))))
+  (let ((existing (car (ebdb-record-databases record))))
     (unless (equal existing to-db)
       (ebdb-db-add-record to-db record)
       (ebdb-db-remove-record existing record))))
@@ -4431,9 +4436,6 @@ If RECORDS are given, only search those records."
 ;;; Getters
 
 ;; TODO: Use :accessor tags for the simple cases.
-
-(defun ebdb-record-cache (record)
-  (slot-value record 'cache))
 
 (defun ebdb-record-user-fields (record)
   (slot-value record 'fields))
@@ -4913,14 +4915,6 @@ This strips garbage from the user full NAME string."
   ;; Remove text properties
   (substring-no-properties name))
 
-(defsubst ebdb-record-mail-aka (record)
-  "Record cache function: Return mail-aka for RECORD."
-  (slot-value (ebdb-record-cache record) 'mail-aka))
-
-(defsubst ebdb-record-mail-canon (record)
-  "Record cache function: Return mail-canon for RECORD."
-  (slot-value (ebdb-record-cache record) 'mail-canon))
-
 ;; `ebdb-hashtable' associates with each KEY a list of matching records.
 ;; KEY includes fl-name, lf-name, organizations, AKAs and email addresses.
 ;; When loading the database the hash table is initialized by calling
@@ -5018,21 +5012,15 @@ may correspond to RECORD without raising an error."
               (remq record records))
           (error "%s is already in EBDB" name)))))
 
-(defun ebdb-record-sortkey (record)
-  "Record cache function: Return the sortkey for RECORD.
-Set and store it if necessary."
-  (or (slot-value (ebdb-record-cache record) 'sortkey)
-      (ebdb-record-set-sortkey record)))
-
 (cl-defmethod ebdb-record-set-sortkey ((record ebdb-record-person))
   "Record cache function: Set and return RECORD's sortkey."
   (setf
-   (slot-value (ebdb-record-cache record) 'sortkey)
+   (ebdb-record-sortkey record)
    (downcase (ebdb-name-lf (slot-value record 'name)))))
 
 (cl-defmethod ebdb-record-set-sortkey ((record ebdb-record-organization))
   (setf
-   (slot-value (ebdb-record-cache record) 'sortkey)
+   (ebdb-record-sortkey record)
    (downcase (ebdb-string (slot-value record 'name)))))
 
 (cl-defgeneric ebdb-record-field (record field)
@@ -5674,7 +5662,7 @@ values, by default the search is not handed to the name field itself."
   (seq-find
    (lambda (o)
      (string-match-p regexp o))
-   (slot-value (ebdb-record-cache record) 'organizations)))
+   (ebdb-record-organizations record)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record-organization)
 				  (_type (eql organization))
@@ -5706,7 +5694,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (eql database))
 				  (db ebdb-db))
-  (member db (slot-value (ebdb-record-cache record) 'database)))
+  (member db (ebdb-record-databases record)))
 
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (eql record-class))

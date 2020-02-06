@@ -302,9 +302,7 @@ accordingly."
 	   (unless self-rec
 	     (user-error "`ebdb-user-mail-address-re' set to 'self, but `ebdb-record-self' is not set"))
 	   (setq ebdb-user-mail-address-re
-		 (regexp-opt (slot-value
-			      (ebdb-record-cache self-rec)
-			      'mail-canon)))))
+		 (regexp-opt (ebdb-record-mail-canon self-rec)))))
 	((and (eq ebdb-user-mail-address-re 'message)
 	      (boundp 'message-alternative-emails))
 	 (setq ebdb-user-mail-address-re

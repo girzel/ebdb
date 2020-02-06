@@ -919,7 +919,7 @@ belongs to:
 #+BEGIN_SRC elisp
   (setq ebdb-gnus-post-style-function
         (lambda (rec _mail)
-          (let ((dbs (slot-value (ebdb-record-cache rec) 'database)))
+          (let ((dbs (ebdb-record-databases rec)))
             (if (object-assoc "File: work.dat" 'label dbs)
                 "nnimap+WorkAccount:INBOX"
               "nnimap+PersonalAccount:INBOX"))))
