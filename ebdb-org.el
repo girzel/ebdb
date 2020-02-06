@@ -83,7 +83,7 @@
   (when (eq major-mode 'ebdb-mode)
     (let* ((rec (ebdb-current-record))
 	   (uuid (ebdb-record-uuid rec))
-	   (name (ebdb-record-name rec))
+	   (name (ebdb-record-name-string rec))
 	   (link (format "ebdb:uuid/%s" uuid)))
       (with-no-warnings
 	(funcall (if (fboundp 'org-link-store-props)

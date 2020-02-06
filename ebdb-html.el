@@ -56,7 +56,7 @@
 				      header-fields)
   (concat
    "<header>\n"
-   (format "<h1>%s</h1>\n" (ebdb-record-name rec))
+   (format "<h1>%s</h1>\n" (ebdb-record-name-string rec))
    (mapconcat
     (pcase-lambda ((map style inst _class))
       (format "<p>%s</p>" (mapconcat (lambda (f) (ebdb-fmt-field fmt f style rec)) inst ", ")))

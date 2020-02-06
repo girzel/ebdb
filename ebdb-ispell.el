@@ -46,7 +46,7 @@
 	 (seq-mapcat
 	  (lambda (r)
 	    (ebdb-ispell-collect-words
-	     (cons (ebdb-record-name r)
+	     (cons (ebdb-record-name-string r)
 		   (ebdb-record-alt-names r))))
 	  (ebdb-records)))
 	(count 0))

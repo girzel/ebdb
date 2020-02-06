@@ -410,7 +410,7 @@ BBDB sets the default of that option."
 		      (setq org (or (seq-find
 				     (lambda (r)
 				       (and (ebdb-record-organization-p r)
-					    (string= o (ebdb-record-name r))))
+					    (string= o (ebdb-record-name-string r))))
 				     c-records)
 				    (let ((time (current-time)))
 				      (ebdb-db-add-record

@@ -974,7 +974,7 @@ Return the records matching ADDRESS or nil."
 	  (ebdb-db-add-record (ebdb-prompt-for-db nil t) (car records))))
 
       (dolist (record records)
-	(let* ((old-name (ebdb-record-name record))
+	(let* ((old-name (ebdb-record-name-string record))
                (mail mail) ;; possibly changed below
                (created-p created-p)
                (update-p update-p)
@@ -1095,7 +1095,7 @@ Return the records matching ADDRESS or nil."
 			 (let ((form (format "redundant mail%s %s"
                                              (if (< 1 (length redundant)) "s" "")
                                              (ebdb-concat 'mail (nreverse redundant))))
-                               (name (ebdb-record-name record)))
+                               (name (ebdb-record-name-string record)))
                            (if redundant
                                (cond ((numberp ignore-redundant)
                                       (unless ebdb-silent
@@ -1116,7 +1116,7 @@ Return the records matching ADDRESS or nil."
 
           (cond (created-p
 		 (unless ebdb-silent
-                   (if (ebdb-record-name record)
+                   (if (ebdb-record-name-string record)
                        (message "created %s's record with address \"%s\""
 				(ebdb-string record)
 				(ebdb-string mail))
@@ -1129,7 +1129,7 @@ Return the records matching ADDRESS or nil."
 		 (unless ebdb-silent
                    (cond ((eq change-p 'name)
                           (message "noticed \"%s\"" (ebdb-string record)))
-			 ((ebdb-record-name record)
+			 ((ebdb-record-name-string record)
                           (message "noticed %s's address \"%s\""
                                    (ebdb-string record)
 				   (ebdb-string mail)))

@@ -850,6 +850,10 @@ The test for presence of ELEMENT is done with `equal'."
   :abstract t :documentation "Abstract class for EBDB fields.
   Subclass this to produce real field types.")
 
+(define-inline ebdb-record-name-string (record)
+  "Record cache function: return RECORD's name as a string."
+  (slot-value (ebdb-record-cache record) 'name-string))
+
 (cl-defgeneric ebdb-init-field (field record)
   "Initialize FIELD.
 What this means is entirely dependent upon the field class in
@@ -1422,7 +1426,7 @@ first one."
 	   (record-uuid (ebdb-record-uuid record))
 	   (org-string
 	    (condition-case nil
-		(ebdb-record-name
+		(ebdb-record-name-string
 		 (ebdb-record-related record role))
 	      (ebdb-related-unfound
 	       "record not loaded"))))
@@ -1451,7 +1455,7 @@ first one."
   (let* ((org-uuid (slot-value role 'org-uuid))
 	 (org-string
 	  (condition-case nil
-	      (ebdb-record-name
+	      (ebdb-record-name-string
 	       (ebdb-record-related record role))
 	    (ebdb-related-unfound
 	     nil)))
@@ -1493,7 +1497,7 @@ first one."
   ;; later.
   (let ((rec (ebdb-gethash (slot-value role 'record-uuid) 'uuid)))
     (condition-case nil
-	(ebdb-record-name
+	(ebdb-record-name-string
 	 (ebdb-record-related rec role))
       (ebdb-related-unfound
        "record not loaded"))))
@@ -2963,22 +2967,13 @@ only return fields that are suitable for user editing.")
       (push (cons 'notes notes) f-list)))
   f-list)
 
-;; TODO: rename this to `ebdb-record-name-string', it's confusing.
-(cl-defmethod ebdb-record-name ((record ebdb-record))
-  "Get or set-and-get the cached name string of RECORD."
-  (let ((cached (slot-value (ebdb-record-cache record) 'name-string)))
-    (or cached
-	(and (slot-value record 'name)
-	     (setf (slot-value (ebdb-record-cache record) 'name-string)
-		   (ebdb-string (slot-value record 'name)))))))
-
 (cl-defmethod ebdb-record-alt-names ((record ebdb-record))
   (slot-value (ebdb-record-cache record) 'alt-names))
 
 (cl-defmethod cl-print-object ((record ebdb-record) stream)
   (princ (format "#<%S %s>"
 		 (eieio-object-class-name record)
-		 (ebdb-record-name record))
+		 (ebdb-record-name-string record))
 	 stream))
 
 (cl-defgeneric ebdb-record-related (record field)
@@ -3217,7 +3212,7 @@ If FIELD doesn't specify a year, use the current year."
 				       (name ebdb-field-name))
   (when (slot-value record 'name)
     (ebdb-record-delete-field record (slot-value record 'name) 'name))
-  (setf (slot-value (ebdb-record-cache record) 'name-string)
+  (setf (ebdb-record-name-string record)
 	(ebdb-string name))
   (ebdb-record-insert-field record name 'name))
 
@@ -3283,7 +3278,7 @@ ARGS are passed to `ebdb-compose-mail', and then to
 
 (cl-defmethod ebdb-string ((record ebdb-record-person))
   "Return a readable string label for RECORD."
-  (ebdb-record-name record))
+  (ebdb-record-name-string record))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record-person)) &optional slots)
   "Read the name slot for a \"person\" record."
@@ -3294,7 +3289,9 @@ ARGS are passed to `ebdb-compose-mail', and then to
 (cl-defmethod ebdb-init-record ((record ebdb-record-person))
   (with-slots (name aka relations organizations) record
     (when name
-      (ebdb-init-field name record))
+      (ebdb-init-field name record)
+      (setf (ebdb-record-name-string record)
+	    (ebdb-string name)))
     (dolist (f (append aka relations organizations))
       (ebdb-init-field f record)))
   (cl-call-next-method))
@@ -3327,15 +3324,20 @@ ARGS are passed to `ebdb-compose-mail', and then to
 
 	(unless (equal rname lname)
 	  (let ((prefix (format "Merging %s with %s:"
-				(ebdb-record-name right)
-				(ebdb-record-name left))))
-	   (if (yes-or-no-p (format "%s Use %s as primary name? " prefix (ebdb-record-name right)))
-	       (progn
-		 (ebdb-record-change-name left rname)
-		 (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name left)))
-		   (object-add-to-list left 'aka lname)))
-	     (when (yes-or-no-p (format "%s Keep %s as an aka? " prefix (ebdb-record-name right)))
-	       (object-add-to-list left 'aka rname))))))
+				(ebdb-record-name-string right)
+				(ebdb-record-name-string left))))
+	    (if (yes-or-no-p (format "%s Use %s as primary name? "
+				     prefix (ebdb-record-name-string right)))
+		(progn
+		  (ebdb-record-change-name left rname)
+		  (when (yes-or-no-p
+			 (format "%s Keep %s as an aka? "
+				 prefix (ebdb-record-name-string left)))
+		    (object-add-to-list left 'aka lname)))
+	      (when (yes-or-no-p
+		     (format "%s Keep %s as an aka? "
+			     prefix (ebdb-record-name-string right)))
+		(object-add-to-list left 'aka rname))))))
 
       (setf (slot-value left 'relations)
 	    (delete-dups (append rrelations lrelations)))
@@ -3475,6 +3477,8 @@ FIELD."
 (cl-defmethod ebdb-init-record ((record ebdb-record-organization))
   (let ((name (slot-value record 'name)))
     (ebdb-init-field name record)
+    (setf (ebdb-record-name-string record)
+	  (ebdb-string name)))
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-delete-record ((org ebdb-record-organization) &optional _db unload)
@@ -3493,7 +3497,7 @@ FIELD."
 
 (cl-defmethod ebdb-string ((record ebdb-record-organization))
   "Return a string representation of RECORD."
-  (ebdb-record-name record))
+  (ebdb-record-name-string record))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-record-organization)) &optional slots)
   (let ((name (ebdb-read 'ebdb-field-name-simple slots
@@ -3551,7 +3555,7 @@ FIELD."
 (cl-defmethod ebdb-record-search ((record ebdb-record-organization)
 				  (_type (eql organization))
 				  (regex string))
-  (or (string-match-p regex (ebdb-record-name record))
+  (or (string-match-p regex (ebdb-record-name-string record))
       (and (slot-value record 'domain)
 	   (string-match-p regex (ebdb-string (slot-value record 'domain))))))
 
@@ -4492,7 +4496,8 @@ to use."
   (unless (ebdb-field-mail-p mail)
     (setq mail (ebdb-record-one-mail record (eq mail 'prompt) t)))
   (unless mail (error "Record has no mail addresses"))
-  (let* ((name-base (or (slot-value mail 'aka) (ebdb-record-name record)))
+  (let* ((name-base (or (slot-value mail 'aka)
+			(ebdb-record-name-string record)))
 	 (mail (slot-value mail 'mail))
 	 (name
 	  (cond
@@ -4957,7 +4962,7 @@ single record, otherwise returns a list."
   "Throw `ebdb-hash-ok' non-nil if KEY matches RECORD acording to PREDICATE.
 PREDICATE may take the same values as the elements of `ebdb-completion-list'."
   (if (and (seq-intersection '(name ebdb-field-name) predicate)
-           (ebdb-string= key (or (ebdb-record-name record) "")))
+           (ebdb-string= key (or (ebdb-record-name-string record) "")))
       (throw 'ebdb-hash-ok 'name))
   (if (seq-intersection '(organization ebdb-field-role) predicate)
       (mapc (lambda (organization) (if (ebdb-string= key organization)
@@ -5602,7 +5607,7 @@ values, by default the search is not handed to the name field itself."
 (cl-defmethod ebdb-record-search ((record ebdb-record)
 				  (_type (subclass ebdb-field-name))
 				  (regexp string))
-  (or (string-match-p regexp (or (ebdb-record-name record) ""))
+  (or (string-match-p regexp (or (ebdb-record-name-string record) ""))
       (seq-find
        (lambda (n)
 	 (string-match-p regexp n))

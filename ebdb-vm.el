@@ -108,7 +108,7 @@ Respect `vm-summary-uninteresting-senders'."
              (record (car (ebdb-message-search (car data) (cadr data)))))
         (if record
             (or (ebdb-record-xfield record 'mail-name)
-                (ebdb-record-name record))))))
+                (ebdb-record-name-string record))))))
 
 
 

@@ -473,7 +473,7 @@ multiple instances in a single alist."
 
   (with-slots (field-separator) fmt
     (concat
-     (ebdb-record-name rec)
+     (ebdb-record-name-string rec)
      field-separator
      (mapconcat
       (lambda (f)

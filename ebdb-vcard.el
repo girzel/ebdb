@@ -201,17 +201,19 @@ All this does is split role instances into multiple fields."
 	      ;; stick a UUID somewhere, but haven't immediately
 	      ;; figured out how that would be done.
 	      (push (cons "ORG"
-			  (ebdb-record-name org))
+			  (ebdb-record-name-string org))
 		    out-list)
-	      (push (cons (format "TITLE;TYPE=\"%s\"" (ebdb-record-name org))
+	      (push (cons (format "TITLE;TYPE=\"%s\""
+				  (ebdb-record-name-string org))
 			  (slot-value f 'label))
 		    out-list)
 	      (when (or mail fields)
 		(dolist (elt (cons mail fields))
 		  (push (cons
-			 (format "%s;%s"
-				 (ebdb-fmt-field-label fmt elt 'normal record)
-				 (format "TYPE=\"%s\"" (ebdb-record-name org)))
+			 (format
+			  "%s;%s"
+			  (ebdb-fmt-field-label fmt elt 'normal record)
+			  (format "TYPE=\"%s\"" (ebdb-record-name-string org)))
 			 (ebdb-fmt-field fmt elt 'normal record))
 			out-list)))))
 	(push f out-list)))
