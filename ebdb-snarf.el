@@ -328,16 +328,19 @@ automatically."
 			    "Use name: "
 			    name-alist)
 			   name-alist)))
-			(t nil))))
+			(t nil)))
+		 (db (ebdb-prompt-for-db nil t)))
 	    (setq record
 		  (make-instance
-		   ebdb-default-record-class
+		   (slot-value db 'record-class)
 		   :name (ebdb-read
 			  ebdb-default-name-class nil
 			  name)))
 	    (when name
 	      (setq names (delq name names)))
-	    (ebdb-db-add-record (car ebdb-db-list) record)
+	    (run-hook-with-args 'ebdb-create-hook record)
+	    (run-hook-with-args 'ebdb-change-hook record)
+	    (ebdb-db-add-record db record)
 	    (ebdb-init-record record))))
       (if record
 	  ;; We have a record, which of the fields and names should we
@@ -359,7 +362,8 @@ automatically."
 		       (progn (ebdb-record-insert-field
 			       record n 'aka)
 			      (ebdb-init-field n record))
-		     (push n leftovers))))
+		     (push n leftovers)))
+		 (run-hook-with-args 'ebdb-after-change-hook record))
 	;; We have no record, dump all the fields into LEFTOVERS.
 	(setq leftovers (append fields names leftovers)
 	      fields nil
@@ -376,10 +380,13 @@ automatically."
 			((yes-or-no-p
 			  (format "Add %s to new record? "
 				  (ebdb-string f)))
-			 (ebdb-init-record
-			  (ebdb-db-add-record
-			   (car ebdb-db-list)
-			   (ebdb-read ebdb-default-record-class))))
+			 (let* ((db (ebdb-prompt-for-db nil t))
+				(rec (ebdb-read
+				      (slot-value db 'record-class))))
+			   (run-hook-with-args 'ebdb-create-hook rec)
+			   (run-hook-with-args 'ebdb-change-hook rec)
+			   (ebdb-init-record
+			    (ebdb-db-add-record db rec))))
 			(t nil)))
 	(condition-case nil
 	    (progn
