@@ -52,6 +52,7 @@
 (require 'eieio)
 (require 'eieio-base)
 (require 'eieio-opt)
+(require 'mailabbrev)
 
 ;; Pacify the compiler.
 (autoload 'ebdb-i18n-countries "ebdb-i18n")
