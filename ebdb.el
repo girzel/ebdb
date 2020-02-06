@@ -2210,18 +2210,6 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     (concat location-label (when timezone
 			     (format ": %s" timezone)))))
 
-(cl-defmethod ebdb-location-current-time ((rec ebdb-record)
-					  (field ebdb-field-location))
-  "Display the current time for REC.
-Uses the timezone value present in FIELD, and raises an error if
-there is no timezone value."
-  (with-slots (timezone) field
-    (if timezone
-	(message "%s's current time is: %s"
-		 (ebdb-string rec)
-		 (format-time-string "%c" nil timezone))
-      (signal 'ebdb-error (list "No timezone present")))))
-
 ;; Gender field
 
 (defclass ebdb-field-gender (ebdb-field-user
@@ -2973,6 +2961,18 @@ by the field, or else raising the error `ebdb-related-unfound'.")
 
 ;; The following functions are here because they need to come after
 ;; `ebdb-record' has been defined.
+
+(cl-defmethod ebdb-location-current-time ((rec ebdb-record)
+					  (field ebdb-field-location))
+  "Display the current time for REC.
+Uses the timezone value present in FIELD, and raises an error if
+there is no timezone value."
+  (with-slots (timezone) field
+    (if timezone
+	(message "%s's current time is: %s"
+		 (ebdb-string rec)
+		 (format-time-string "%c" nil timezone))
+      (signal 'ebdb-error (list "No timezone present")))))
 
 (cl-defmethod ebdb-record-insert-field ((record ebdb-record)
 					(field ebdb-field-singleton)
