@@ -3099,6 +3099,14 @@ If FIELD doesn't specify a year, use the current year."
    (address
     :initarg :address
     :type (list-of ebdb-field-address)
+    :initform nil)
+   (organizations
+    :initarg :organizations
+    :type (list-of ebdb-field-role)
+    :initform nil)
+   (relations
+    :initarg :relations
+    :type (list-of ebdb-field-relation)
     :initform nil))
   :allow-nil-initform t
   :abstract t
@@ -3236,15 +3244,7 @@ ARGS are passed to `ebdb-compose-mail', and then to
     :initarg :aka
     :type (list-of ebdb-field-name)
     :initform nil
-    :accessor ebdb-record-aka)
-   (relations
-    :initarg :relations
-    :type (list-of ebdb-field-relation)
-    :initform nil)
-   (organizations
-    :initarg :organizations
-    :type (list-of ebdb-field-role)
-    :initform nil))
+    :accessor ebdb-record-aka))
   :allow-nil-initform t
   :documentation "A record class representing a person.")
 
@@ -3416,9 +3416,9 @@ ARGS are passed to `ebdb-compose-mail', and then to
     :type (or null ebdb-field-domain)
     :initform nil
     :documentation "The base domain name for this organization.
-    This can be used to open the organization's, and also as a
-    default for email addresses of people with roles tied to this
-    organization."))
+    This can be used to open the organization's web page, and
+    also as a default for email addresses of people with roles
+    tied to this organization."))
   :allow-nil-initform t
   :documentation "A record class representing an organization.")
 
