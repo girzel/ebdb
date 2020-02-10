@@ -85,8 +85,12 @@
 	   (uuid (ebdb-record-uuid rec))
 	   (name (ebdb-record-name rec))
 	   (link (format "ebdb:uuid/%s" uuid)))
-      (org-store-link-props :type "ebdb" :name name
-			    :link link :description name)
+      (with-no-warnings
+	(funcall (if (fboundp 'org-link-store-props)
+		     #'org-link-store-props
+		   #'org-store-link-props)
+		 :type "ebdb" :name name
+		 :link link :description name))
       link)))
 
 (defun ebdb-org-open (link)
@@ -133,7 +137,7 @@ italicized, in all other cases it is left unchanged."
   nil
   :human-readable "org tags")
 
-(cl-defmethod make-instance :around ((cls (subclass ebdb-org-field-tags))
+(cl-defmethod make-instance :around ((_cls (subclass ebdb-org-field-tags))
 				     &rest slots)
   "Return an instance of `ebdb-field-tags' instead."
   (apply #'cl-call-next-method 'ebdb-field-tags slots))
