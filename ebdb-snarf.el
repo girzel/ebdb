@@ -177,7 +177,7 @@ nil."
       ;; Snarfing mail buffers is very common, try deleting citation
       ;; prefixes from the buffer first.
       (insert (replace-regexp-in-string
-	       (concat "^" mail-citation-prefix-regexp "[:blank:]+")
+	       (concat "^" mail-citation-prefix-regexp "[[:blank:]]+")
 	       "" str))
       (goto-char (point-min))
       ;; SOMETHING from the big-re matched.
