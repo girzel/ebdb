@@ -4439,7 +4439,7 @@ RECORD.  If MAIL is nil use RECORD's primary mail address.  If
 MAIL is the symbol `prompt', prompt the user for a mail address
 to use."
   (unless (ebdb-field-mail-p mail)
-    (setq mail (ebdb-record-one-mail record (eq mail 'prompt) t t)))
+    (setq mail (ebdb-record-one-mail record (eq mail 'prompt) t)))
   (unless mail (error "Record has no mail addresses"))
   (let* ((name-base (or (slot-value mail 'aka) (ebdb-record-name record)))
 	 (mail (slot-value mail 'mail))
