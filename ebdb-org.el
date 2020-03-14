@@ -109,8 +109,12 @@
     (`("address" ,key) (ebdb-search (ebdb-records) `((ebdb-field-address ,key))))
     (`("notes" ,key) (ebdb-search (ebdb-records) `((ebdb-field-notes ,key))))
     (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
-    (`(,(and field (guard (child-of-class-p (intern-soft field) 'ebdb-field))) ,key)
-     (ebdb-search (ebdb-records) `((,(intern-soft field) ,key))))
+    (`(,(and field
+	     (let field-sym (intern-soft field))
+	     (and field-sym
+		  (guard (child-of-class-p field-sym 'ebdb-field))))
+       ,key)
+     (ebdb-search (ebdb-records) `((,field-sym ,key))))
     (`(,other _) (error "Unknown field search prefix: %s" other))))
 
 (defun ebdb-org-export (path desc format)
