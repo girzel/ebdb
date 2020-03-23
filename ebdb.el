@@ -5679,5 +5679,12 @@ prompt users for more complex search criteria, if necessary.")
   (read-string (format "Search records %smatching regexp: "
                        (if ebdb-search-invert "not " ""))))
 
+(cl-defmethod ebdb-search-read :around (_source)
+  "Trim string search criteria."
+  (let ((criterion (cl-call-next-method)))
+    (if (stringp criterion)
+	(string-trim criterion)
+      criterion)))
+
 (provide 'ebdb)
 ;;; ebdb.el ends here
