@@ -394,9 +394,10 @@ method is just responsible for formatting the record name."
 			      _style
 			      _record)
   (pcase-let ((`(,month ,day ,year)
-	       (calendar-gregorian-from-absolute
-		(slot-value ann 'date))))
-    (format "%d%02d%02d" year month day)))
+	       (slot-value ann 'date)))
+    (if (integerp year)
+	(format "%d%02d%02d" year month day)
+      (format "%02d%02d" month day))))
 
 (provide 'ebdb-vcard)
 ;;; ebdb-vcard.el ends here
