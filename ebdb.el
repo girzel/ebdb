@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
 
-;; Version: 0.6.15
+;; Version: 0.6.16
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -2082,9 +2082,14 @@ Eventually this method will go away."
   :human-readable "relationship")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-relation)) &optional slots obj)
-  (let* ((rec (ebdb-record-uuid (ebdb-prompt-for-record nil ebdb-default-record-class)))
+  (let* ((rec (if obj
+		  (slot-value obj 'rel-uuid)
+		(ebdb-record-uuid (ebdb-prompt-for-record
+				   nil ebdb-default-record-class))))
 	 (rel-label (ebdb-read-string "Reverse label (for the other record): "
-				      nil ebdb-relation-label-list)))
+				      (when obj
+					(slot-value obj 'rel-label))
+				      ebdb-relation-label-list)))
     (setq slots (plist-put slots :rel-uuid rec))
     (setq slots (plist-put slots :rel-label rel-label))
     (cl-call-next-method class slots obj)))

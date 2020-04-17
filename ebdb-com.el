@@ -1900,6 +1900,15 @@ commands, called from an *EBDB* buffer, and the lower-level
 		 'uuid)))
     (ebdb-record-change-field person field)))
 
+(cl-defmethod ebdb-com-edit-field ((record ebdb-record-person)
+				   (field ebdb-field-relation))
+  (if (equal (slot-value field 'rel-uuid)
+	     (ebdb-record-uuid record))
+      (ebdb-record-change-field
+       (ebdb-record-related record field)
+       field)
+    (cl-call-next-method)))
+
 ;;;###autoload
 (defun ebdb-edit-field-customize (record field)
   "Use the customize interface to edit FIELD of RECORD."
@@ -2057,6 +2066,16 @@ confirm before deleting the field."
 				     noprompt)
   (let ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
     (ebdb-com-delete-field person field noprompt)))
+
+(cl-defmethod ebdb-com-delete-field ((record ebdb-record-person)
+				     (field ebdb-field-relation)
+				     noprompt)
+  (if (equal (slot-value field 'rel-uuid)
+	     (ebdb-record-uuid record))
+      (ebdb-com-delete-field
+       (ebdb-record-related record field)
+       field noprompt)
+    (cl-call-next-method)))
 
 (cl-defmethod ebdb-com-delete-field :after ((record ebdb-record-entity)
 					    (mail ebdb-field-mail)
