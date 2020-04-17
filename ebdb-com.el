@@ -1480,7 +1480,7 @@ Use the symbol `mark', or the mark provided by MARK."
 
 (defun ebdb-reload-database (db)
   "Reload all records from database DB."
-  (interactive (list (ebdb-prompt-for-db)))
+  (interactive (list (ebdb-prompt-for-db nil t)))
   (let ((db-str (ebdb-string db))
 	(rec-uuids (mapcar #'ebdb-record-uuid (slot-value db 'records))))
     ;; I don't actually know if keeping pointers to DB's records would
