@@ -336,6 +336,14 @@ combined into a single string."
    fmt record
    (append field-list (gethash (ebdb-record-uuid record) ebdb-org-hashtable))))
 
+(cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-freeform)
+				       (record ebdb-record-person)
+				       &optional field-list)
+  (cl-call-next-method
+   fmt record
+   (append field-list (mapcar #'cdr (gethash (ebdb-record-uuid record)
+					     ebdb-relation-hashtable)))))
+
 (cl-defmethod ebdb-fmt-sort-fields ((fmt ebdb-formatter-freeform)
 				    (_record ebdb-record)
 				    field-list)

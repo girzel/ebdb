@@ -550,6 +550,17 @@ choice: that formatter should be selected explicitly."
 				    (_record ebdb-record))
   (format "address (%s)" (ebdb-field-label field)))
 
+(cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
+				    (field ebdb-field-relation)
+				    _style
+				    &optional (record ebdb-record))
+  ;; If FIELD doesn't belong to RECORD, we're showing a reverse
+  ;; relationship.
+  (let ((rel-id (slot-value field 'rel-uuid)))
+    (if (equal (ebdb-record-uuid record) rel-id)
+	(slot-value field 'rel-label)
+      (ebdb-field-label field))))
+
 (cl-defmethod ebdb-fmt-field :around ((_fmt ebdb-formatter-ebdb)
 				      (field ebdb-field)
 				      _style
@@ -599,6 +610,16 @@ Print the first line, add an ellipsis, and add a tooltip."
   (with-slots (bank-name account-name) field
     (format "%s: %s" bank-name account-name)))
 
+(cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
+			      (field ebdb-field-relation)
+			      _style
+			      (record ebdb-record))
+  "Format relation-field FIELD for RECORD.
+If FIELD really belongs to RECORD, display the \"other end\" of
+the relation.  If this RECORD is the \"other end\", display the
+record that actually owns the field."
+  (let ((rec (ebdb-record-related record field)))
+    (ebdb-string rec)))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-passport)
