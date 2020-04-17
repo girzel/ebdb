@@ -354,6 +354,8 @@ slot of FMT."
   (let* ((sort-order (slot-value fmt 'sort))
 	 (catchall (or (seq-position sort-order "_")
 		       (length sort-order)))
+	 ;; This sorts by class type, what we also want is, if the
+	 ;; "plumbing" fields are present, to put them first.
 	 (sorted (seq-sort #'ebdb-field-compare field-list)))
 
     (when sort-order

@@ -1008,12 +1008,12 @@ chance to react somehow.  TYPE is one of the symbols 'sender or
 in."
   nil)
 
+;; See actual implementation down below `ebdb-field-user' definition.
 (cl-defgeneric ebdb-field-compare (field1 field2)
-  "Return non-nil if FIELD1 should be sorted before FIELD2.")
+  "Return non-nil if FIELD1 should be sorted before FIELD2."
+  (:method (_field1 _field2)
+	   nil))
 
-(cl-defmethod ebdb-field-compare (_field1 _field2)
-  "By default, leave order unchanged."
-  nil)
 
 ;;; The UUID field.
 
@@ -1152,6 +1152,12 @@ process."
   `ebdb-field-user-simple', can subclass this class.  Any field
   class that subclasses this will be offered as a choice to the
   user when inserting new fields.")
+
+(cl-defmethod ebdb-field-compare ((field1 ebdb-field-user)
+				  (field2 ebdb-field-user))
+  "By default, order by field class."
+  (string< (symbol-name (eieio-object-class-name field1))
+	   (symbol-name (eieio-object-class-name field2))))
 
 (defvar ebdb-user-label-list nil
   "List of existing labels of user fields.")
@@ -2107,7 +2113,7 @@ Adds relation information to the `ebdb-relation-hashtable'."
 	(gethash (slot-value rel 'rel-uuid) ebdb-relation-hashtable)))
 
 (cl-defmethod ebdb-delete-field ((rel ebdb-field-relation) record
-				 &optional unload)
+				 &optional _unload)
   "Delete REL related field on RECORD.
 Removes relation information from the
 `ebdb-relation-hashtable'."
