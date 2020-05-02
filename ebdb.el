@@ -5137,7 +5137,8 @@ All the important work is done by the `ebdb-db-load' method."
   (let ((sources (if (listp ebdb-sources)
 		     ebdb-sources
 		   (list ebdb-sources)))
-	(eieio-skip-typecheck ebdb-try-speedups))
+	(eieio-skip-typecheck ebdb-try-speedups)
+	db-file-regexp)
     ;; Check if we're re-loading.
     (when (and ebdb-db-list
 	       (object-assoc t 'dirty ebdb-db-list))
@@ -5184,15 +5185,20 @@ All the important work is done by the `ebdb-db-load' method."
     (message "Initializing EBDB records... done")
     ;; Users will expect the same ordering as `ebdb-sources'
     (setq ebdb-db-list (nreverse ebdb-db-list))
+    (setq db-file-regexp
+	  (regexp-opt (mapcar (lambda (db)
+				(slot-value db 'file))
+			      ebdb-db-list)))
     ;; If users look at the database files, they should be read as
     ;; utf-8-emacs.
     (push
-     (cons
-      (regexp-opt (mapcar (lambda (db)
-			    (slot-value db 'file))
-			  ebdb-db-list))
-      'utf-8-emacs)
+     (cons db-file-regexp 'utf-8-emacs)
      auto-coding-alist)
+    ;; There's now a `lisp-data-mode'.
+    (when (fboundp 'lisp-data-mode)
+      (push
+       (cons db-file-regexp 'lisp-data-mode)
+       auto-mode-alist))
     (run-hooks 'ebdb-after-load-hook)
     (when ebdb-use-diary
       (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
