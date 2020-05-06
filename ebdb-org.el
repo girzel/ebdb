@@ -108,7 +108,7 @@
     (`("phone" ,key) (ebdb-search (ebdb-records) `((ebdb-field-phone ,key))))
     (`("address" ,key) (ebdb-search (ebdb-records) `((ebdb-field-address ,key))))
     (`("notes" ,key) (ebdb-search (ebdb-records) `((ebdb-field-notes ,key))))
-    (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-org-field-tags ,key))))
+    (`("tags" ,key) (ebdb-search (ebdb-records) `((ebdb-field-tags ,key))))
     (`(,(and field
 	     (let field-sym (intern-soft field))
 	     (and field-sym
