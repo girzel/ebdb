@@ -340,9 +340,24 @@ Emacs, always query before reverting."
   :group 'ebdb-utilities-anniv
   :type 'boolean)
 
+(defcustom ebdb-anniversary-md-format "%B %d"
+  "Format string used for displaying month-day anniversary dates.
+See the docstring of `format-time-string' for the meaning of
+various formatting escapes, but keep in mind that only month and
+day values are available."
+  :group 'ebdb-utilities-anniv
+  :type 'string)
+
+(defcustom ebdb-anniversary-ymd-format "%B %d, %Y"
+  "Format string used for displaying year-month-day anniversary dates.
+See the docstring of `format-time-string' for the meaning of
+various formatting escapes, but keep in mind that only year,
+month, and day values are available."
+  :group 'ebdb-utilities-anniv
+  :type 'string)
+
 (defvar ebdb-diary-entries nil
   "A list of all anniversary diary entries.
-
 Entries are added and removed in the `ebdb-init-field' and
 `ebdb-delete-field' methods of the `ebdb-field-anniversary'
 class, and added with the `ebdb-diary-add-entries' function.
@@ -2129,21 +2144,27 @@ Eventually this method will go away."
 				    (list month day year))
 			 obj)))
 
-(cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
-  (let* ((date (slot-value ann 'date))
-	 (month-name (aref calendar-month-name-array
-			   (1- (nth 0 date))))
-	 (str (format "%s %d" month-name (nth 1 date))))
-    (when (nth 2 date)
-      (setq str (concat str (format ", %d" (nth 2 date)))))
-    str))
-
 ;; `ebdb-field-anniv-diary-entry' is defined below.
 (cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) record)
   (when ebdb-use-diary
     (add-to-list
      'ebdb-diary-entries
      (ebdb-field-anniv-diary-entry anniv record))))
+
+(cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
+  (let* ((date (slot-value ann 'date))
+	 (encoded (encode-time
+		   ;; Why did I reverse the day month order?!
+		   `(0 0 0
+		       ,(nth 1 date)
+		       ,(car date)
+		       ,(nth 2 date)
+		       nil nil nil))))
+    (format-time-string
+     (if (nth 2 date)
+	 ebdb-anniversary-ymd-format
+       ebdb-anniversary-md-format)
+     encoded)))
 
 (cl-defmethod ebdb-delete-field ((anniv ebdb-field-anniversary)
 				 record &optional _unload)
