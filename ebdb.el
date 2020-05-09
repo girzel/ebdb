@@ -2158,7 +2158,7 @@ Eventually this method will go away."
 		   `(0 0 0
 		       ,(nth 1 date)
 		       ,(car date)
-		       ,(nth 2 date)
+		       ,(or (nth 2 date) 0)
 		       nil nil nil))))
     (format-time-string
      (if (nth 2 date)
