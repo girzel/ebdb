@@ -4499,10 +4499,7 @@ addresses.  Sort mails by descending priority."
 			mails)))
     (if label
 	(object-assoc label 'label mails)
-      (sort mails (lambda (m1 m2)
-		    (or (eql (slot-value m1 'priority) 'primary)
-			(and (eql (slot-value m1 'priority) 'normal)
-			     (eql (slot-value m2 'priority) 'defunct))))))))
+      (sort mails #'ebdb-field-compare))))
 
 
 
