@@ -4484,7 +4484,7 @@ If RECORDS are given, only search those records."
 If NO-ROLES is non-nil, exclude mail fields from RECORD's roles.
 If LABEL is a string, return the mail with that label.  If
 DEFUNCT is non-nil, also consider RECORD's defunct mail
-addresses."
+addresses.  Sort mails by descending priority."
   (let ((mails (slot-value record 'mail)))
     (when (and (null no-roles) (slot-exists-p record 'organizations))
       (dolist (r (slot-value record 'organizations))
@@ -4499,7 +4499,10 @@ addresses."
 			mails)))
     (if label
 	(object-assoc label 'label mails)
-      mails)))
+      (sort mails (lambda (m1 m2)
+		    (or (eql (slot-value m1 'priority) 'primary)
+			(and (eql (slot-value m1 'priority) 'normal)
+			     (eql (slot-value m2 'priority) 'defunct))))))))
 
 
 
