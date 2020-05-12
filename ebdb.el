@@ -4499,7 +4499,7 @@ addresses.  Sort mails by descending priority."
 			mails)))
     (if label
 	(object-assoc label 'label mails)
-      (sort mails #'ebdb-field-compare))))
+      (sort (copy-sequence mails) #'ebdb-field-compare))))
 
 
 
