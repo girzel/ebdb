@@ -1915,17 +1915,7 @@ The result looks like this:
       (when extension
 	(push (format "X%d" extension) outstring))
       (when number
-	(let ((numstring (split-string number "" t)))
-	  (push
-	   (apply #'format (cl-case (length numstring)
-			     (7
-			      "%s%s%s-%s%s%s%s")
-			     (8
-			      "%s%s%s%s-%s%s%s%s")
-			     (t
-			      number))
-		  numstring)
-	   outstring)))
+	(push number outstring))
       (when area-code
 	(push (format "(%d) " area-code) outstring))
       (when country-code
@@ -1993,25 +1983,24 @@ The result looks like this:
 		  (plist-put slots :area-code (string-to-number (match-string 1))))
 	    (goto-char (match-end 0)))))
       ;; There is no full regexp for the main phone number.  We just
-      ;; chomp up any and all numbers that come after the area code,
-      ;; until we hit an extension, or the end of the buffer.  All
-      ;; phone slots but "number" are actually saved as numbers.  The
-      ;; "number" is saved as a string, partially for ease in
-      ;; formatting, partially because if it's too long Emacs turns it
+      ;; chomp up everything that comes after the area code, until we
+      ;; hit an extension, or the end of the buffer.  All phone slots
+      ;; but "number" are actually saved as numbers.  The "number" is
+      ;; saved as a string, partially because it isn't really a
+      ;; number, partially because if it's too long Emacs turns it
       ;; into a float, which is a pain in the ass.
-      (unless (plist-member slots :number)
-	(while (and (< (point) (point-max))
-		    (null (looking-at-p ext-regexp))
-		    (looking-at "[ \t]?\\([0-9]+\\)[- .]?"))
-	  (setq acc (concat acc (match-string-no-properties 1)))
-	  (goto-char (match-end 0)))
-	(setq slots
-	      (plist-put slots :number acc)))
-      (unless (plist-member slots :number)
-	(when (looking-at ext-regexp)
+      (when (and (< (point) (point-max))
+		 (re-search-forward (format "\\([^[:blank:]]+\\)\\(%s\\)?"
+					    ext-regexp)))
+	(unless (plist-member slots :number)
 	  (setq slots
-		(plist-put slots :extension (string-to-number
-					     (match-string 1)))))))
+		(plist-put slots :number (match-string 1))))
+	(unless (or (plist-member slots :extension)
+		    (null (match-string 2)))
+	  (setq slots
+		(plist-put slots :extension
+			   (string-to-number
+			    (match-string 2)))))))
     (cl-call-next-method class string slots)))
 
 (cl-defmethod cl-print-object ((phone ebdb-field-phone) stream)
