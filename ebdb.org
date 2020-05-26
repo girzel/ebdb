@@ -54,6 +54,21 @@ EBDB comes with integration for a few other Emacs packages, including
 Org and a number of mail user agents; see the following sections below
 for details.
 
+- Emergency Escape Hatch :: EBDB strives to be bug-free, naturally,
+  but due to the nature of the package, when bugs /do/ arise they can
+  potentially interfere with the reading and sending of email.  No one
+  likes it when their email is interfered with.  If, God forbid, you
+  do encounter such a bug, you can prevent it from doing harm by
+  running:
+
+#+begin_src emacs-lisp
+  (setq ebdb-mua-auto-update-p nil)
+#+end_src
+
+  That will ensure that EBDB only runs when you explicitly command it
+  to do so; it won't interpose itself in other MUA operations.  If you
+  really need to kill it and make it go away, use ~M-x ebdb-shutdown~.
+
 ** Starting a New Database
 #+FINDEX: ebdb-open
 If you have no records you want to migrate from other contact
