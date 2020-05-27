@@ -1953,8 +1953,7 @@ The result looks like this:
 
   (let ((country-regexp "\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+")
 	(area-regexp "(?\\([0-9]\\{1,4\\}\\)[-)./ \t]+")
-        (ext-regexp "[ \t]?e?[xX]t?\\.?[ \t]?\\([0-9]+\\)")
-	acc)
+        (ext-regexp "[ \t]?e?[xX]t?\\.?[ \t]?\\([0-9]+\\)"))
     (with-temp-buffer
       (insert (ebdb-string-trim string))
       (goto-char (point-min))
