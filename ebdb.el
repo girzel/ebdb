@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
 
-;; Version: 0.6.17
+;; Version: 0.6.18
 ;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -2141,13 +2141,16 @@ Eventually this method will go away."
 
 (cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
   (let* ((date (slot-value ann 'date))
-	 (encoded (encode-time
-		   ;; Why did I reverse the day month order?!
-		   `(0 0 0
-		       ,(nth 1 date)
-		       ,(car date)
-		       ,(or (nth 2 date) 0)
-		       nil nil nil))))
+	 (bits `(0 0 0
+		   ,(nth 1 date)
+		   ,(car date)
+		   ,(or (nth 2 date) 0)
+		   nil nil nil))
+	 (encoded (condition-case nil
+		      (encode-time bits)
+		    (wrong-number-of-arguments
+		     ;; Emacs <=26
+		     (apply #'encode-time bits)))))
     (format-time-string
      (if (nth 2 date)
 	 ebdb-anniversary-ymd-format
