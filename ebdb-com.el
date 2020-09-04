@@ -618,8 +618,10 @@ Print the first line, add an ellipsis, and add a tooltip."
 If FIELD really belongs to RECORD, display the \"other end\" of
 the relation.  If this RECORD is the \"other end\", display the
 record that actually owns the field."
-  (let ((rec (ebdb-record-related record field)))
-    (ebdb-string rec)))
+  (condition-case nil
+      (let ((rec (ebdb-record-related record field)))
+	(ebdb-string rec))
+    (ebdb-related-unfound "record not loaded")))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-passport)
