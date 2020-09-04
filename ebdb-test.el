@@ -483,7 +483,7 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	   (list (make-instance
 		  'ebdb-record-person
 		  :name (ebdb-parse 'ebdb-field-name-complex "Björk Jónsdóttir")))))
-
+      (ebdb-initialize recs)
       (let ((ebdb-case-fold-search nil)
 	    (ebdb-char-fold-search nil)
 	    (ebdb-search-transform-functions nil))
