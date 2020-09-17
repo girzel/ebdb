@@ -2515,7 +2515,7 @@ holding text to be inserted as the body of each message."
    (list (or (seq-filter (lambda (r) (nth 3 r)) ebdb-records)
 	     (mapcar #'car ebdb-records))
 	 current-prefix-arg
-	 (ebdb-with-exit (ebdb-read-string "Subject header (C-g to skip): "))
+	 (ebdb-with-exit (ebdb-read-string "Subject header (C-g to skip)"))
 	 (ebdb-loop-with-exit
 	  (ebdb-dwim-mail
 	   (ebdb-prompt-for-record
@@ -3110,9 +3110,9 @@ message."
 		   (ebdb-record-self)
 		   t))
 	     (ebdb-read-string
-	      "Number to send from (or set `ebdb-record-self'): "))
+	      "Number to send from (or set `ebdb-record-self')"))
 	 (ebdb-do-records)
-	 (ebdb-read-string "Message contents: ")
+	 (ebdb-read-string "Message contents")
 	 (ebdb-loop-with-exit
 	  (expand-file-name
 	   (read-file-name "Attach file (C-g when done): "
@@ -3133,7 +3133,7 @@ message."
                  (list (ebdb-completing-read-record
                         (format "Add `%s' for: " url))
                        url
-		       (ebdb-read-string "URL label: "
+		       (ebdb-read-string "URL label"
 					 nil ebdb-url-label-list))))
   (let ((url-field (make-instance 'ebdb-field-url :url url :label label)))
     (ebdb-record-insert-field record url-field 'fields)

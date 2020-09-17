@@ -108,7 +108,7 @@ likely ways to extract information about the record."
 (cl-defmethod ebdb-read ((field (subclass ebdb-gnus-score-field)) &optional slots obj)
   (let ((score (string-to-number
 		(ebdb-read-string
-		 "Score: " (when obj (slot-value obj 'score))))))
+		 "Score" (when obj (slot-value obj 'score))))))
     (cl-call-next-method field (plist-put slots :score score) obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-gnus-score-field))

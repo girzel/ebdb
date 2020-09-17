@@ -110,6 +110,15 @@ See also `ebdb-silent'.")
 As mail field instances are created, a \"dwim\"-style string is
 added here, for use in `completion-at-point' in mail buffers.")
 
+(defvar ebdb-read-string-override nil
+  "An overriding prompt for `ebdb-read-string'.
+This is bound dynamically around code that will end up calling
+`ebdb-read-string'.  It can be a plain string, in which case the
+value will replace the existing prompt.  It can also be a cons
+of (STRING . POSITION), where POSITION can be one of the symbols
+`append' or `prepend', in which case STRING will be concatenated
+with the existing prompt as appropriate.")
+
 ;; Custom groups
 
 (defgroup ebdb-eieio nil
@@ -1315,7 +1324,7 @@ process."
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-user-simple)) &optional slots obj)
   (unless (plist-get slots :value)
     (let ((default (when obj (ebdb-string obj))))
-      (setq slots (plist-put slots :value (ebdb-read-string "Value: " default)))))
+      (setq slots (plist-put slots :value (ebdb-read-string "Value" default)))))
   (cl-call-next-method class slots obj))
 
 ;;; The name fields.  One abstract base class, and two instantiable
@@ -1364,7 +1373,7 @@ simple or complex name class."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-simple))
 			 &optional slots obj)
-  (let ((name (ebdb-read-string "Name: " (when obj (slot-value obj 'name)))))
+  (let ((name (ebdb-read-string "Name" (when obj (slot-value obj 'name)))))
     (cl-call-next-method class (plist-put slots :name name) obj)))
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple) record)
@@ -1489,12 +1498,12 @@ first one."
   (if ebdb-read-name-articulate
       (let* ((surname-default (when obj (ebdb-name-last obj)))
 	     (given-default (when obj (ebdb-name-given obj t)))
-	     (surname (read-string "Surname: " surname-default))
-	     (given-names (read-string "Given name(s): " given-default)))
+	     (surname (ebdb-read-string "Surname" surname-default))
+	     (given-names (ebdb-read-string "Given name(s)" given-default)))
 	(setq slots (plist-put slots :surname surname))
 	(setq slots (plist-put slots :given-names (split-string given-names)))
 	(cl-call-next-method class slots obj))
-    (ebdb-parse class (ebdb-read-string "Name: " (when obj (ebdb-string obj))) slots)))
+    (ebdb-parse class (ebdb-read-string "Name" (when obj (ebdb-string obj))) slots)))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
   (pcase-let ((`(,surname ,given-names ,suffix)
@@ -1697,7 +1706,7 @@ first one."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-mail)) &optional slots obj)
   (let* ((default (when obj (ebdb-string obj)))
-	 (input (ebdb-read-string "Mail address: " default))
+	 (input (ebdb-read-string "Mail address" default))
 	 (bits (ebdb-decompose-ebdb-address input))
 	 (mail (nth 1 bits)))
     ;; (unless (or ebdb-allow-duplicates
@@ -1803,23 +1812,23 @@ Primary sorts before normal sorts before defunct."
 	(locality
 	 (if (plist-member slots :locality)
 	     (plist-get slots :locality)
-	   (ebdb-read-string "Town/City: "
+	   (ebdb-read-string "Town/City"
 			     (when obj (ebdb-address-locality obj)) ebdb-locality-list)))
 	(region
 	 (if (plist-member slots :region)
 	     (plist-get slots :region)
-	   (ebdb-read-string "State/Province: "
+	   (ebdb-read-string "State/Province"
 			     (when obj (ebdb-address-region obj)) ebdb-region-list)))
 	(postcode
 	 (if (plist-member slots :postcode)
 	     (plist-get slots :postcode)
-	   (ebdb-read-string "Postcode: "
+	   (ebdb-read-string "Postcode"
 			     (when obj (ebdb-address-postcode obj))
 			     ebdb-postcode-list)))
 	(country
 	 (if (plist-member slots :country)
 	     (plist-get slots :country)
-	   (ebdb-read-string "Country: "
+	   (ebdb-read-string "Country"
 			     (if obj (slot-value obj 'country)
 			       ebdb-default-country)
 			     ebdb-country-list))))
@@ -2024,7 +2033,7 @@ The result looks like this:
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-notes)) &optional slots obj)
   (let ((default (when obj (ebdb-string obj))))
     (cl-call-next-method class
-			 (plist-put slots :notes (ebdb-read-string "Notes: " default))
+			 (plist-put slots :notes (ebdb-read-string "Notes" default))
 			 obj)))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-notes))
@@ -2184,7 +2193,7 @@ Eventually this method will go away."
   :human-readable "id number")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
-  (let ((id-number (ebdb-read-string "ID number: "
+  (let ((id-number (ebdb-read-string "ID number"
 				     (when obj (slot-value obj 'id-number)))))
     (cl-call-next-method class (plist-put slots :id-number id-number) obj)))
 
@@ -2223,7 +2232,7 @@ Eventually this method will go away."
 		  (slot-value obj 'rel-uuid)
 		(ebdb-record-uuid (ebdb-prompt-for-record
 				   nil ebdb-default-record-class))))
-	 (rel-label (ebdb-read-string "Reverse label (for the other record): "
+	 (rel-label (ebdb-read-string "Reverse label (for the other record)"
 				      (when obj
 					(slot-value obj 'rel-label))
 				      ebdb-relation-label-list)))
@@ -2301,7 +2310,7 @@ Removes relation information from the
   :human-readable "URL")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-url)) &optional slots obj)
-  (let ((url (ebdb-read-string "Url: " (when obj (slot-value obj 'url)))))
+  (let ((url (ebdb-read-string "Url" (when obj (slot-value obj 'url)))))
     (cl-call-next-method class (plist-put slots :url url) obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-field-url))
@@ -2351,12 +2360,12 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-location)) &optional
 			 slots obj)
   (let ((label (or (plist-get slots :location-label)
-		   (ebdb-read-string "Location label: "
+		   (ebdb-read-string "Location label"
 				     (when obj (slot-value
 						obj 'location-label)))))
 	(geo (or (plist-get slots :location-geo)
 		 (ebdb-with-exit
-		  (ebdb-read-string "Location geo (C-g to skip): "
+		  (ebdb-read-string "Location geo (C-g to skip)"
 				    (when obj (slot-value
 					       obj 'location-geo))))))
 	(tz (or (plist-get slots :timezone)
@@ -2403,7 +2412,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 	    ("not applicable" . na)))
 	 (gender (cdr
 		  (assoc-string
-		   (ebdb-read-string "Gender: "
+		   (ebdb-read-string "Gender"
 				     (when obj (rassoc (slot-value obj 'gender)
 						       choices))
 				     choices
@@ -2492,7 +2501,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-bank-account))
 			 &optional slots obj)
   (let ((bank-name (or (plist-get slots :bank-name)
-		       (ebdb-read-string "Bank name: "
+		       (ebdb-read-string "Bank name"
 					 (when obj (slot-value obj 'bank-name)))))
 	(bank-address (or (plist-get slots :bank-address)
 			  (ebdb-with-exit
@@ -2500,20 +2509,20 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 				      (when obj (slot-value obj 'bank-address))))))
 	(routing-aba (or (plist-get slots :routing-aba)
 			 (ebdb-with-exit
-			  (ebdb-read-string "Routing or ABA number: "
+			  (ebdb-read-string "Routing or ABA number"
 					    (when obj (slot-value obj 'routing-aba))))))
 	(swift-bic (or (plist-get slots :swift-bic)
 		       (ebdb-with-exit
-			(ebdb-read-string "SWIFT or BIC code: "
+			(ebdb-read-string "SWIFT or BIC code"
 					  (when obj (slot-value obj 'swift-bic))))))
 	(account-name (or (plist-get slots :account-name)
-			  (ebdb-read-string "Account name: "
+			  (ebdb-read-string "Account name"
 					    (when obj (slot-value obj 'account-name)))))
 	(account-numbers
 	 (or (plist-get slots :account-numbers)
 	     (ebdb-loop-with-exit
 	      (cons (ebdb-read-string "Account label (eg. \"checking\"): ")
-		    (ebdb-read-string "Account number/IBAN: ")))))
+		    (ebdb-read-string "Account number/IBAN")))))
 	(notes (or (plist-get slots :notes)
 		   (ebdb-with-exit
 		    (ebdb-read 'ebdb-field-notes nil
@@ -2652,7 +2661,7 @@ record uuids.")
   mail address to use with that alias.")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-mail-alias)) &optional slots obj)
-  (let ((alias (ebdb-read-string "Alias: " (when obj (slot-value obj 'alias))
+  (let ((alias (ebdb-read-string "Alias" (when obj (slot-value obj 'alias))
 				 (mapcar #'car ebdb-mail-alias-alist))))
     (cl-call-next-method class (plist-put slots :alias alias) obj)))
 
@@ -2702,8 +2711,8 @@ record uuids.")
   :human-readable "passport")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-passport)) &optional slots obj)
-  (let ((country (ebdb-read-string "Country: " (when obj (slot-value obj 'country))))
-	(number (ebdb-read-string "Number: " (when obj (slot-value obj 'number))))
+  (let ((country (ebdb-read-string "Country" (when obj (slot-value obj 'country))))
+	(number (ebdb-read-string "Number" (when obj (slot-value obj 'number))))
 	(issue-date (calendar-absolute-from-gregorian
 		     (calendar-read-date)))
 	(expiration-date (calendar-absolute-from-gregorian
@@ -3471,7 +3480,7 @@ FIELD."
   (cl-call-next-method
    domain
    (plist-put slots :domain
-	      (ebdb-read-string "Domain: "
+	      (ebdb-read-string "Domain"
 				(when obj (slot-value obj 'domain))))
    obj))
 
@@ -4400,7 +4409,7 @@ prompting if there's only one database."
     (if (and shortcut (= 1 (length collection)))
 	(car collection)
       (setq db-string
-	    (ebdb-read-string "Choose a database: "
+	    (ebdb-read-string "Choose a database"
 			      nil
 			      (mapcar
 			       (lambda (d)
@@ -4606,7 +4615,7 @@ leading \"+\"."
 			 number)))))
     (or number
 	(and (null no-prompt)
-	     (ebdb-read-string "Use phone number: ")))))
+	     (ebdb-read-string "Use phone number")))))
 
 (cl-defmethod ebdb-field-phone-signal-text ((_record ebdb-record-entity)
 					    (phone-field ebdb-field-phone))
@@ -4628,7 +4637,7 @@ command's docstring for more details."
 			 (and area-code
 			      (number-to-string area-code))
 			 number))))
-	(message (ebdb-read-string "Message contents: "))
+	(message (ebdb-read-string "Message contents"))
 	(attachments
 	 (ebdb-loop-with-exit
 	  (expand-file-name
@@ -4712,9 +4721,20 @@ The inverse function of `ebdb-split'."
 
 (defun ebdb-read-string (prompt &optional init collection require-match)
   "Read a string, trimming whitespace and text properties.
-PROMPT is a string to prompt with.  INIT appears as initial input
-which is useful for editing existing records.  COLLECTION and
-REQUIRE-MATCH have the same meaning as in `completing-read'."
+PROMPT is a string to prompt with, and should not include a final
+\": \".  INIT appears as initial input which is useful for
+editing existing records.  COLLECTION and REQUIRE-MATCH have the
+same meaning as in `completing-read'."
+  (setq prompt
+	(concat
+	 (pcase ebdb-read-string-override
+	   (`,(and str (pred stringp)) str)
+	   (`(,str . append)
+	    (concat str " " prompt))
+	   (`(,str . prepend)
+	    (concat prompt " " str))
+	   (_ prompt))
+	 ": "))
   (ebdb-string-trim
    (if collection
        ;; Hack: In `minibuffer-local-completion-map' remove

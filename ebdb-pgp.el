@@ -131,7 +131,7 @@ See info node `(message)security'."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-pgp)) &optional slots obj)
   (let ((val (intern (ebdb-read-string
-		      "PGP action: " (when obj (slot-value obj 'action))
+		      "PGP action" (when obj (slot-value obj 'action))
 		      ebdb-pgp-ranked-actions t))))
     (cl-call-next-method class (plist-put slots :action val) obj)))
 

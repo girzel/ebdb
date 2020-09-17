@@ -132,7 +132,7 @@ number, and any remaining as an extension."
 	   slots :region
 	   (cdr (assoc-string
 		 (ebdb-read-string
-		  "State: "
+		  "State"
 		  (when obj (ebdb-address-region obj))
 		  ebdb-i18n-usa-states t)
 		 ebdb-i18n-usa-states)))))
@@ -226,7 +226,7 @@ number, and any remaining as an extension."
 	   slots :region
 	   (cdr (assoc-string
 		 (ebdb-read-string
-		  "State: "
+		  "State"
 		  (when obj (ebdb-address-region obj))
 		  ebdb-i18n-india-states t)
 		 ebdb-i18n-india-states)))))

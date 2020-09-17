@@ -605,7 +605,7 @@ variable should be set before EBDB is loaded.")
   (unless (plist-get slots :folder)
     (setq slots (plist-put slots :folder
 			   (ebdb-read-string
-			    "Folder name: "
+			    "Folder name"
 			    (when obj (slot-value obj 'folder))
 			    ebdb-mail-folder-list))))
   (cl-call-next-method c slots obj))
