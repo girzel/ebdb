@@ -357,6 +357,13 @@ composed to a certain record."
   (define-key gnus-summary-mode-map ";" ebdb-mua-keymap)
   (define-key gnus-article-mode-map ";" ebdb-mua-keymap)
 
+  ;; Versions of Gnus with the gnus-search.el library allow us to
+  ;; perform contact auto-completion within search queries.
+  (when (boundp 'gnus-search-contact-tables)
+    (add-hook 'ebdb-after-load-hook
+	      (lambda ()
+		(push ebdb-hashtable gnus-search-contact-tables))))
+
   ;; Set up user field for use in `gnus-summary-line-format'
   ;; (1) Big solution: use whole name
   (if ebdb-mua-summary-unify-format-letter
