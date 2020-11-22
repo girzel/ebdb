@@ -466,11 +466,19 @@ BBDB sets the default of that option."
 	(uuid (aref v 9))
 	(c-date (aref v 10))
 	(ts (aref v 11))
-	name akas phones mails addresses fields notes lab val)
-    (setq name (make-instance ebdb-default-name-class
-			      :surname l-name
-			      :given-names (when f-name (split-string f-name " " nil))
-			      :affix affix))
+	name akas phones mails addresses fields notes lab val
+	instance)
+    (setq name (if (child-of-class-p ebdb-default-record-class
+				     'ebdb-record-person)
+		   (make-instance
+		    ebdb-default-name-class
+		    :surname l-name
+		    :given-names (when f-name (split-string f-name " " nil))
+		    :affix affix)
+		 (make-instance 'ebdb-field-name-simple
+				:name (if f-name
+					  (concat f-name " " l-name)
+					l-name))))
     (when aka
       (dolist (a aka)
 	(push (make-instance ebdb-default-name-class
@@ -551,11 +559,12 @@ BBDB sets the default of that option."
 	      val (cdr x))
 	(cond
 	 ((eq lab 'mail-alias)
-	  (push (make-instance 'ebdb-field-mail-alias
-			       :alias val
-			       :address (car-safe mails))
-		fields))
-	 ((and (stringp v)
+	  (when mails
+	    (push (make-instance 'ebdb-field-mail-alias
+				 :alias val
+				 :address (car-safe mails))
+		  fields)))
+	 ((and (stringp val)
 	       (string-match-p val url-handler-regexp))
 	  (push (make-instance 'ebdb-field-url
 			       :url val)
@@ -608,18 +617,23 @@ BBDB sets the default of that option."
 			       :label (symbol-name (car x))
 			       :value val)
 		fields)))))
-    (make-instance ebdb-default-record-class
-		   :name name
-		   :uuid uuid
-		   :aka akas
-		   :phone phones
-		   :address addresses
-		   :mail mails
-		   :timestamp ts
-		   :creation-date c-date
-		   :notes notes
-		   :dirty t
-		   :fields fields)))
+    (setq instance
+	  (make-instance ebdb-default-record-class
+			 :name name
+			 :uuid uuid
+			 :phone phones
+			 :address addresses
+			 :mail mails
+			 :timestamp ts
+			 :creation-date c-date
+			 :notes notes
+			 :dirty t
+			 :fields fields))
+    (when akas
+      (condition-case nil
+	  (setf (slot-value instance 'aka) akas)
+	(invalid-slot-type nil)))
+    instance))
 
 (defun ebdb-migrate-parse-records ()
   "Parse an earlier (non-EIEIO) version of a BBDB database file."
