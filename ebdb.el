@@ -2620,6 +2620,16 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 		   nil nil
 		   (when obj (ebdb-string obj))))))))
 
+(cl-defmethod ebdb-parse ((field (subclass ebdb-field-tags))
+			  str &optional slots)
+  (unless (plist-get slots :tags)
+    (setq slots (plist-put
+		 slots :tags
+		 (split-string
+		  str
+		  (nth 1 (assq 'ebdb-field-tags ebdb-separator-alist))))))
+  (cl-call-next-method field str slots))
+
 (cl-defmethod ebdb-search-read ((_class (subclass ebdb-field-tags)))
   (let ((search-string (ebdb-read-string
 			"Search for tags (eg +tag1-tag2|tag3): ")))
