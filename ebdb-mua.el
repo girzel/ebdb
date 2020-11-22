@@ -967,9 +967,9 @@ Return the records matching ADDRESS or nil."
 					 (or name mail)))))
           (setq records (list (make-instance record-class))
                 created-p t)
+	  (ebdb-db-add-record (ebdb-prompt-for-db nil t) (car records))
 	  (run-hook-with-args 'ebdb-create-hook (car records))
-	  (run-hook-with-args 'ebdb-change-hook (car records))
-	  (ebdb-db-add-record (ebdb-prompt-for-db nil t) (car records))))
+	  (run-hook-with-args 'ebdb-change-hook (car records))))
 
       (dolist (record records)
 	(let* ((old-name (ebdb-record-name-string record))
@@ -1075,9 +1075,10 @@ Return the records matching ADDRESS or nil."
                                             (ebdb-string record)))))
                           (progn
                             (setq record (make-instance ebdb-default-record-class))
+			    (ebdb-db-add-record (ebdb-prompt-for-db nil t) record)
 			    (run-hook-with-args 'ebdb-create-hook record)
 			    (run-hook-with-args 'ebdb-change-hook record)
-			    (ebdb-db-add-record (ebdb-prompt-for-db nil t) record)
+
                             (ebdb-record-change-name record name)
                             (setq created-p t))))
 
