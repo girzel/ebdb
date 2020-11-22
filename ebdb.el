@@ -171,7 +171,11 @@ might consider setting it to t."
 (defcustom ebdb-default-record-class 'ebdb-record-person
   "The default class to use for new records."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-record))))))
 
 (defcustom ebdb-default-name-class 'ebdb-field-name-complex
   "The default name class to use for person records.
@@ -179,27 +183,47 @@ might consider setting it to t."
 Organization names are currently hard-coded to use
 `ebdb-field-name-simple'."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-field-name))))))
 
 (defcustom ebdb-default-mail-class 'ebdb-field-mail
   "The default class to use for mail fields."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-field-mail))))))
 
 (defcustom ebdb-default-phone-class 'ebdb-field-phone
   "The default class to use for phone fields."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-field-phone))))))
 
 (defcustom ebdb-default-address-class 'ebdb-field-address
   "The default class to use for address fields."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-field-address))))))
 
 (defcustom ebdb-default-notes-class 'ebdb-field-notes
   "The default class to use for notes fields."
   :group 'ebdb-eieio
-  :type 'class)
+  :type '(restricted-sexp
+	  :match-alternatives ((lambda (cls)
+				 (and cls
+				      (child-of-class-p
+				       cls 'ebdb-field-notes))))))
 
 (defcustom ebdb-try-speedups nil
   "When non-nil, try to speed up loading by disabling checks.
