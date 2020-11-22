@@ -2701,10 +2701,10 @@ record uuids.")
 
 (cl-defmethod ebdb-string ((field ebdb-field-mail-alias))
   (with-slots (alias address) field
-    (format (if address
-		"%s: %s"
-	      "%s")
-	    alias (ebdb-string address))))
+    (if address (format
+		 "%s: %s"
+		 alias (ebdb-string address))
+      alias)))
 
 (cl-defmethod ebdb-init-field ((field ebdb-field-mail-alias) record)
   (with-slots (alias address) field
