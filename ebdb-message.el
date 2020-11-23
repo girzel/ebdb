@@ -162,6 +162,9 @@ Also fires when postponing a draft."
 (defun ebdb-message-auto-update ()
   (ebdb-mua-auto-update ebdb-message-auto-update-p))
 
+(defun ebdb-message-display-only ()
+  (ebdb-mua-auto-update 'existing))
+
 (add-hook 'message-mode-hook 'ebdb-insinuate-message)
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
 (add-hook 'message-send-hook 'ebdb-message-auto-update)
@@ -175,7 +178,9 @@ Also fires when postponing a draft."
 (add-hook 'ebdb-after-load-hook
 	  (lambda ()
 	    (with-eval-after-load "gnus-win"
-	      (add-hook 'message-header-setup-hook 'ebdb-message-auto-update)
+	      ;; Display only because we're going to be (possibly)
+	      ;; prompted for creation again when the message is sent.
+	      (add-hook 'message-header-setup-hook #'ebdb-message-display-only)
 
 	      (when ebdb-mua-pop-up
 		(add-to-list 'gnus-window-to-buffer
