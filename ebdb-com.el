@@ -2620,8 +2620,9 @@ Obey `ebdb-completion-list'."
   "Read and return a record from the EBDB.
 PROMPT is used in `completing-read'.  Actual completion is done
 using the function `ebdb-record-completion-table'."
-  (let ((string (completing-read
-		 prompt #'ebdb-record-completion-table nil t)))
+  (let* ((completion-ignore-case ebdb-completion-ignore-case)
+	 (string (completing-read
+		  prompt #'ebdb-record-completion-table nil t)))
     (unless (string-empty-p string)
       (or (car-safe (ebdb-gethash string '(name alt-names mail)))
 	  (message "No matching records for \"%s\"" string)))))
@@ -2629,8 +2630,9 @@ using the function `ebdb-record-completion-table'."
 ;;;###autoload
 (defun ebdb-completing-read-mails (prompt &optional init)
   "Like `read-string', but with `ebdb-complete-mail' completion."
-  (read-from-minibuffer prompt init
-                        ebdb-completing-read-mails-map))
+  (let ((completion-ignore-case ebdb-completion-ignore-case))
+    (read-from-minibuffer prompt init
+                          ebdb-completing-read-mails-map)))
 
 (defconst ebdb-quoted-string-syntax-table
   (let ((st (make-syntax-table)))

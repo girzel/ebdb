@@ -613,6 +613,13 @@ For fields lacking an entry here `ebdb-default-separator' is used instead."
   :group 'ebdb-record-edit
   :type '(repeat (list symbol regexp string)))
 
+(defcustom ebdb-completion-ignore-case t
+  "EBDB-specific value of `completion-ignore-case'.
+This has an effect when entering field data with completion, for
+instance anniversary months or address countries."
+  :group 'ebdb-record-edit
+  :type 'boolean)
+
 (defcustom ebdb-image-path nil
   "List of directories to search for `ebdb-image'."
   :group 'ebdb-record-edit
@@ -1126,6 +1133,11 @@ The OBJ argument is used when editing existing fields: OBJ is the
 old field.  By now we've sucked all the useful information out of
 it, and if this process is successful it will get deleted."
   (apply 'make-instance class slots))
+
+(cl-defmethod ebdb-read :around ((cls (subclass ebdb-field))
+				 &optional _slots _obj)
+  (let ((completion-ignore-case ebdb-completion-ignore-case))
+    (cl-call-next-method)))
 
 ;; Pretty much everything in here should implement an `ebdb-string'
 ;; method.
@@ -4774,17 +4786,18 @@ same meaning as in `completing-read'."
        ;; Hack: In `minibuffer-local-completion-map' remove
        ;; the binding of SPC to `minibuffer-complete-word'
        ;; and of ? to `minibuffer-completion-help'.
-       (minibuffer-with-setup-hook
-           (lambda ()
-             (use-local-map
-              (let ((map (make-sparse-keymap)))
-                (set-keymap-parent map (current-local-map))
-                (define-key map " " nil)
-                (define-key map "?" nil)
-                map)))
-         (completing-read prompt collection nil require-match init))
+       (let ((completion-ignore-case ebdb-completion-ignore-case))
+	 (minibuffer-with-setup-hook
+             (lambda ()
+               (use-local-map
+		(let ((map (make-sparse-keymap)))
+                  (set-keymap-parent map (current-local-map))
+                  (define-key map " " nil)
+                  (define-key map "?" nil)
+                  map)))
+           (completing-read prompt collection nil require-match init)))
      (let ((string (read-string prompt init)))
-       (if (string-empty-p string)
+       (if (string-blank-p string)
 	   (signal 'ebdb-empty (list prompt))
 	 string)))))
 
