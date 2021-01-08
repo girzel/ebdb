@@ -5805,6 +5805,13 @@ prompt users for more complex search criteria, if necessary.")
 		       (ebdb-field-readable-name cls)
 		       (if ebdb-search-invert "not " ""))))
 
+(cl-defmethod ebdb-search-read ((_cls (subclass ebdb-field-mail)))
+  (let ((ebdb-completion-list '(mail)))
+    (completing-read
+     (format "Search records with mail %smatching regexp: "
+	     (if ebdb-search-invert "not " ""))
+     ebdb-hashtable #'ebdb-completion-predicate)))
+
 (cl-defmethod ebdb-search-read ((field string))
   "Read regexp to search FIELD values of records."
   (read-string (format "Search records with %s %smatching regexp: "
