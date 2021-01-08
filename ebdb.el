@@ -5301,7 +5301,7 @@ This results in the creation of all the secondary data
 structures: label lists, `ebdb-org-hashtable', record caches,
 etc.  If optional argument RECORDS is given, only initialize
 those records."
-  (mapcar #'ebdb-init-record (or records ebdb-record-tracker)))
+  (mapc #'ebdb-init-record (or records ebdb-record-tracker)))
 
 (defun ebdb-initialize-threadwise (&optional records)
   "Exactly the same as `ebdb-initialize', but yields thread.
@@ -5313,7 +5313,7 @@ interleave it with other thread-yielding operations to create an
 actual speedup.  If optional argument RECORDS is given, only
 initialize those records."
   (let ((c 0))
-    (mapcar
+    (mapc
      (lambda (r)
        (ebdb-init-record r)
        (when (= (mod (cl-incf c) 10) 0)
