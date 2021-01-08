@@ -1416,14 +1416,6 @@ simple or complex name class."
   (ebdb-puthash (ebdb-string name) record)
   (cl-call-next-method))
 
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
-			       (record ebdb-record-person))
-  "Add a \"nickname-plus-lastname\" to the hash table."
-  (when-let ((last-name (ebdb-record-lastname record)))
-    (ebdb-puthash (concat (ebdb-string name) " " last-name)
-		  record))
-  (cl-call-next-method))
-
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple) record
 				 &optional _unload)
   (ebdb-remhash (ebdb-string name) record)
@@ -3504,6 +3496,14 @@ FIELD."
 	   (ebdb-string name)
 	   (ebdb-name-last (slot-value record 'name))))
   ;; FIXME: Also add nickname-plus-surname to the hashtable.
+  (cl-call-next-method))
+
+(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
+			       (record ebdb-record-person))
+  "Add a \"nickname-plus-lastname\" to the hash table."
+  (when-let ((last-name (ebdb-record-lastname record)))
+    (ebdb-puthash (concat (ebdb-string name) " " last-name)
+		  record))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
