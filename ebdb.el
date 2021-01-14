@@ -5274,7 +5274,8 @@ All the important work is done by the `ebdb-db-load' method."
     (setq ebdb-db-list (nreverse ebdb-db-list))
     (setq db-file-regexp
 	  (regexp-opt (mapcar (lambda (db)
-				(slot-value db 'file))
+				(expand-file-name
+				 (slot-value db 'file)))
 			      ebdb-db-list)))
     ;; If users look at the database files, they should be read as
     ;; utf-8-emacs.
