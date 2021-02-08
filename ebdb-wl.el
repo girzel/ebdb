@@ -67,6 +67,16 @@ the value of `ebdb-default-window-size'."
 			  (wl-summary-message-number)))
    (intern (downcase header)) 'string))
 
+(cl-defmethod ebdb-mua-message-header ((header string)
+				       &context (major-mode wl-summary-mode))
+  "Extract a message header in Wanderlust."
+  (elmo-message-entity-field
+   ;; It's possibly not safe to assume `wl-current-summary-buffer' is live?
+   (with-current-buffer wl-current-summary-buffer
+     (elmo-message-entity wl-summary-buffer-elmo-folder
+			  (wl-summary-message-number)))
+   (intern (downcase header)) 'string))
+
 (cl-defmethod ebdb-mua-prepare-article (&context (major-mode wl-summary-mode))
   (wl-summary-set-message-buffer-or-redisplay))
 
@@ -126,6 +136,7 @@ beginning) of the signature separator."
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."
   (define-key wl-summary-mode-map ";" ebdb-mua-keymap)
+  (define-key mime-view-mode-default-map ";" ebdb-mua-keymap)
   (when ebdb-complete-mail
     (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail))
   (add-hook 'wl-summary-exit-hook #'ebdb-wl-quit-window))
