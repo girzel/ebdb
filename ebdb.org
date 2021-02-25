@@ -650,6 +650,9 @@ brackets.  Domains to be ignored should start with the "@" symbol.
 The addresses are matched literally (though case-insensitively); it's
 not possible to use regexps.
 *** Noticing and Automatic Rules
+:PROPERTIES:
+:ID:       0e6d846d-de48-498f-99a3-25ceef0b6fde
+:END:
 
 #+CINDEX: Automatic Rules
 In addition to updating records' name and mail fields, it's possible
@@ -679,6 +682,17 @@ Functions,,,elisp}@@; suffice it to say that the first argument is the
 field instance being noticed, the second argument is one of the
 symbols ~sender~ or ~recipient~, and the third argument is the record
 being noticed.
+
+#+FINDEX: ebdb-mua-message-header
+A useful function here is ~ebdb-mua-message-header~, which can be used
+to extract the value of arbitrary headers from the current message.
+The header should be provided as a string, for example
+~(ebdb-mua-message-header "Subject")~.  There is currently no shortcut
+for extracting the text of the message body; code to do this will have
+to be written per-MUA.
+
+For functions that can be used to edit a record's field data,
+[[id:4a6d956e-54ee-4b67-a462-5b826678aa97][Manipulating Field Data Programmatically]].
 
 *** Interactive Commands
 :PROPERTIES:
@@ -1810,6 +1824,52 @@ Both methods should always end with a call to ~cl-call-next-method~.
    delete-and-create operation).
 4. When unloading a record from the database (the optional third
    @@texinfo:@var{unload}@@ argument will be non-nil).
+*** Manipulating Field Data Programmatically
+:PROPERTIES:
+:ID:       4a6d956e-54ee-4b67-a462-5b826678aa97
+:END:
+While ebdb-mode provides interactive commands for editing record data
+in an {{{buf(EBDB)}}} buffer, it can also be useful to do this inside
+Elisp functions, especially as a part of [[id:0e6d846d-de48-498f-99a3-25ceef0b6fde][Noticing and Automatic Rules]].
+Instead of manipulating field data directly, it's important to go
+through accessors that give a record's database(s) a chance to handle,
+persist, or update the field data.  There are three functions for
+doing this:
+
+#+ATTR_TEXINFO: :options ebdb-record-insert-field rec field &optional slot
+#+BEGIN_defun
+Insert FIELD into REC.
+#+END_defun
+
+#+ATTR_TEXINFO: :options ebdb-record-delete-field rec field &optional slot
+#+BEGIN_defun
+Delete FIELD from REC.  You'll need to get a handle to FIELD first,
+probably with ~ebdb-record-field~.
+#+END_defun
+
+#+ATTR_TEXINFO: :options ebdb-record-change-field rec old-field &optional new-field
+#+BEGIN_defun
+Editing a field in EBDB is actually a delete-then-insert operation.
+If the NEW-FIELD argument is nil, the user will be prompted for a
+value for the new field, using the OLD-FIELD's value as a default.
+#+END_defun
+
+The optional SLOT argument to the first two functions can almost
+always be omitted.
+
+Two convenience functions are provided for common editing operations:
+
+#+ATTR_TEXINFO: :options ebdb-record-add-tag rec tag
+#+begin_defun
+Add string TAG to REC's list of tags.
+#+end_defun
+
+#+ATTR_TEXINFO: :options ebdb-record-update rec note &optional replace
+#+begin_defun
+Add string NOTE to REC's note field.  The text will be appended to any
+existing notes, unless the optional argument REPLACE is non-nil.
+#+end_defun
+
 *** The Labeled Field Class
 Many field classes maintain their own list of labels: ie, anniversary
 fields can be labeled "birthday", "wedding", etc.  This functionality

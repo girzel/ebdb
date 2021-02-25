@@ -157,6 +157,7 @@ Hacking EBDB
 Field Classes
 
 * Init and Delete Methods::
+* Manipulating Field Data Programmatically::
 * The Labeled Field Class::
 * The Singleton Field Class::
 * Actions::
@@ -891,6 +892,17 @@ Functions,,,elisp}; suffice it to say that the first argument is the
 field instance being noticed, the second argument is one of the
 symbols @code{sender} or @code{recipient}, and the third argument is the record
 being noticed.
+
+@findex ebdb-mua-message-header
+A useful function here is @code{ebdb-mua-message-header}, which can be used
+to extract the value of arbitrary headers from the current message.
+The header should be provided as a string, for example
+@code{(ebdb-mua-message-header "Subject")}.  There is currently no shortcut
+for extracting the text of the message body; code to do this will have
+to be written per-MUA@.
+
+For functions that can be used to edit a record's field data,
+@ref{Manipulating Field Data Programmatically}.
 
 @node Interactive Commands
 @subsection Interactive Commands
@@ -2018,6 +2030,7 @@ provide default values for the new object.
 
 @menu
 * Init and Delete Methods::
+* Manipulating Field Data Programmatically::
 * The Labeled Field Class::
 * The Singleton Field Class::
 * Actions::
@@ -2075,6 +2088,46 @@ delete-and-create operation).
 When unloading a record from the database (the optional third
 @var{unload} argument will be non-nil).
 @end enumerate
+
+@node Manipulating Field Data Programmatically
+@subsection Manipulating Field Data Programmatically
+
+While ebdb-mode provides interactive commands for editing record data
+in an *EBDB* buffer, it can also be useful to do this inside
+Elisp functions, especially as a part of @ref{Noticing and Automatic Rules}.
+Instead of manipulating field data directly, it's important to go
+through accessors that give a record's database(s) a chance to handle,
+persist, or update the field data.  There are three functions for
+doing this:
+
+@defun ebdb-record-insert-field rec field &optional slot
+Insert FIELD into REC@.
+@end defun
+
+@defun ebdb-record-delete-field rec field &optional slot
+Delete FIELD from REC@.  You'll need to get a handle to FIELD first,
+probably with @code{ebdb-record-field}.
+@end defun
+
+@defun ebdb-record-change-field rec old-field &optional new-field
+Editing a field in EBDB is actually a delete-then-insert operation.
+If the NEW-FIELD argument is nil, the user will be prompted for a
+value for the new field, using the OLD-FIELD's value as a default.
+@end defun
+
+The optional SLOT argument to the first two functions can almost
+always be omitted.
+
+Two convenience functions are provided for common editing operations:
+
+@defun ebdb-record-add-tag rec tag
+Add string TAG to REC's list of tags.
+@end defun
+
+@defun ebdb-record-update rec note &optional replace
+Add string NOTE to REC's note field.  The text will be appended to any
+existing notes, unless the optional argument REPLACE is non-nil.
+@end defun
 
 @node The Labeled Field Class
 @subsection The Labeled Field Class

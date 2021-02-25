@@ -2077,6 +2077,27 @@ The result looks like this:
 			  &optional slots)
   (cl-call-next-method class str (plist-put slots :notes str)))
 
+(cl-defgeneric ebdb-record-update-notes (record note &optional replace)
+  "Convenience function for updating a record's notes field.
+NOTE will appended to REC's existing notes field (or added as a
+new notes field, if REC didn't already have one.
+
+If optional arg REPLACE is non-nil, replace any existing notes.")
+
+(cl-defmethod ebdb-record-update-notes ((rec ebdb-record)
+					(note string)
+					&optional replace)
+  (let ((existing (ebdb-record-field rec 'notes)))
+    (if existing
+	(ebdb-record-change-field
+	 rec existing
+	 (ebdb-parse ebdb-default-notes-class
+		     (if replace
+			 note
+		       (concat (ebdb-string existing) note))))
+      (ebdb-record-insert-field
+       rec (ebdb-parse ebdb-default-notes-class note)))))
+
 ;;; Timestamp field
 
 ;; For both these fields, I'd actually prefer to store
@@ -2674,6 +2695,21 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 (cl-defmethod ebdb-delete-field ((field ebdb-field-tags) record &optional _unload)
   (dolist (tag (slot-value field 'tags))
     (ebdb-remhash tag record)))
+
+(cl-defgeneric ebdb-record-add-tag (record tag)
+  "Convenience function for tagging a record.
+Adds string TAG to RECORD's list of tags.")
+
+(cl-defmethod ebdb-record-add-tag ((rec ebdb-record)
+				   (tag string))
+  (let ((existing (car-safe (ebdb-record-field rec 'ebdb-field-tags))))
+    (if existing
+	(ebdb-record-change-field
+	 rec existing
+	 (make-instance 'ebdb-field-tags :tags
+			(cons tag (slot-value existing 'tags))))
+      (ebdb-record-insert-field
+       rec (ebdb-parse 'ebdb-field-tags tag)))))
 
 ;;; Fields that change EBDB's behavior.
 

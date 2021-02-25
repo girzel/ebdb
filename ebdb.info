@@ -134,6 +134,7 @@ Hacking EBDB
 Field Classes
 
 * Init and Delete Methods::
+* Manipulating Field Data Programmatically::
 * The Labeled Field Class::
 * The Singleton Field Class::
 * Actions::
@@ -836,6 +837,16 @@ bit of familiarity with *note (elisp)Generic Functions::; suffice it to
 say that the first argument is the field instance being noticed, the
 second argument is one of the symbols ‘sender’ or ‘recipient’, and the
 third argument is the record being noticed.
+
+   A useful function here is ‘ebdb-mua-message-header’, which can be
+used to extract the value of arbitrary headers from the current message.
+The header should be provided as a string, for example
+‘(ebdb-mua-message-header "Subject")’.  There is currently no shortcut
+for extracting the text of the message body; code to do this will have
+to be written per-MUA.
+
+   For functions that can be used to edit a record’s field data, *note
+Manipulating Field Data Programmatically::.
 
 
 File: ebdb.info,  Node: Interactive Commands,  Prev: Noticing and Automatic Rules,  Up: Display and Updating
@@ -1852,6 +1863,7 @@ default values for the new object.
 * Menu:
 
 * Init and Delete Methods::
+* Manipulating Field Data Programmatically::
 * The Labeled Field Class::
 * The Singleton Field Class::
 * Actions::
@@ -1860,7 +1872,7 @@ default values for the new object.
 * Formatting in the EBDB Buffer::
 
 
-File: ebdb.info,  Node: Init and Delete Methods,  Next: The Labeled Field Class,  Up: Field Classes
+File: ebdb.info,  Node: Init and Delete Methods,  Next: Manipulating Field Data Programmatically,  Up: Field Classes
 
 16.1.1 Init and Delete Methods
 ------------------------------
@@ -1898,9 +1910,48 @@ must not change the database: they may not edit records or their fields.
      UNLOAD argument will be non-nil).
 
 
-File: ebdb.info,  Node: The Labeled Field Class,  Next: The Singleton Field Class,  Prev: Init and Delete Methods,  Up: Field Classes
+File: ebdb.info,  Node: Manipulating Field Data Programmatically,  Next: The Labeled Field Class,  Prev: Init and Delete Methods,  Up: Field Classes
 
-16.1.2 The Labeled Field Class
+16.1.2 Manipulating Field Data Programmatically
+-----------------------------------------------
+
+While ebdb-mode provides interactive commands for editing record data in
+an *EBDB* buffer, it can also be useful to do this inside Elisp
+functions, especially as a part of *note Noticing and Automatic Rules::.
+Instead of manipulating field data directly, it’s important to go
+through accessors that give a record’s database(s) a chance to handle,
+persist, or update the field data.  There are three functions for doing
+this:
+
+ -- Function: ebdb-record-insert-field rec field &optional slot
+     Insert FIELD into REC.
+
+ -- Function: ebdb-record-delete-field rec field &optional slot
+     Delete FIELD from REC.  You’ll need to get a handle to FIELD first,
+     probably with ‘ebdb-record-field’.
+
+ -- Function: ebdb-record-change-field rec old-field &optional new-field
+     Editing a field in EBDB is actually a delete-then-insert operation.
+     If the NEW-FIELD argument is nil, the user will be prompted for a
+     value for the new field, using the OLD-FIELD’s value as a default.
+
+   The optional SLOT argument to the first two functions can almost
+always be omitted.
+
+   Two convenience functions are provided for common editing operations:
+
+ -- Function: ebdb-record-add-tag rec tag
+     Add string TAG to REC’s list of tags.
+
+ -- Function: ebdb-record-update rec note &optional replace
+     Add string NOTE to REC’s note field.  The text will be appended to
+     any existing notes, unless the optional argument REPLACE is
+     non-nil.
+
+
+File: ebdb.info,  Node: The Labeled Field Class,  Next: The Singleton Field Class,  Prev: Manipulating Field Data Programmatically,  Up: Field Classes
+
+16.1.3 The Labeled Field Class
 ------------------------------
 
 Many field classes maintain their own list of labels: ie, anniversary
@@ -1919,7 +1970,7 @@ used to hold labels, and pointing to it in the class-allocated
 
 File: ebdb.info,  Node: The Singleton Field Class,  Next: Actions,  Prev: The Labeled Field Class,  Up: Field Classes
 
-16.1.3 The Singleton Field Class
+16.1.4 The Singleton Field Class
 --------------------------------
 
 Another abstract mix-in class is the ‘ebdb-field-singleton’ class.  Its
@@ -1930,7 +1981,7 @@ existing instance is deleted.
 
 File: ebdb.info,  Node: Actions,  Next: Custom Field Searching,  Prev: The Singleton Field Class,  Up: Field Classes
 
-16.1.4 Actions
+16.1.5 Actions
 --------------
 
 All field classes have a class-allocated slot called “actions”.  The
@@ -1946,7 +1997,7 @@ and the field instance under point.
 
 File: ebdb.info,  Node: Custom Field Searching,  Next: Fast Lookups,  Prev: Actions,  Up: Field Classes
 
-16.1.5 Custom Field Searching
+16.1.6 Custom Field Searching
 -----------------------------
 
 In most cases, searching the EBDB database is a matter of prompting for
@@ -2007,7 +2058,7 @@ EBDB code would create this search, external code conceivably might.
 
 File: ebdb.info,  Node: Fast Lookups,  Next: Formatting in the EBDB Buffer,  Prev: Custom Field Searching,  Up: Field Classes
 
-16.1.6 Fast Lookups
+16.1.7 Fast Lookups
 -------------------
 
 Usually, searches of the database are conducted by looping over all the
@@ -2043,7 +2094,7 @@ match the instance of that field (and not some other field string).
 
 File: ebdb.info,  Node: Formatting in the EBDB Buffer,  Prev: Fast Lookups,  Up: Field Classes
 
-16.1.7 Formatting in the EBDB Buffer
+16.1.8 Formatting in the EBDB Buffer
 ------------------------------------
 
 Most fields will be displayed in the *EBDB* buffer simply using
@@ -2499,7 +2550,9 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  67)
 * ebdb-mua-make-summary-mark on ebdb-record: Summary buffer marks.
                                                               (line  15)
-* ebdb-mua-message-header:               Writing Integration For New MUAs.
+* ebdb-mua-message-header:               Noticing and Automatic Rules.
+                                                              (line  28)
+* ebdb-mua-message-header <1>:           Writing Integration For New MUAs.
                                                               (line  22)
 * ebdb-mua-pop-up:                       Pop-up Buffers.      (line  11)
 * ebdb-mua-prepare-article:              Writing Integration For New MUAs.
@@ -2547,9 +2600,19 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  13)
 * ebdb-record-action:                    The Basics of ebdb-mode.
                                                               (line  50)
+* ebdb-record-add-tag:                   Manipulating Field Data Programmatically.
+                                                              (line  31)
+* ebdb-record-change-field:              Manipulating Field Data Programmatically.
+                                                              (line  21)
+* ebdb-record-delete-field:              Manipulating Field Data Programmatically.
+                                                              (line  17)
+* ebdb-record-insert-field:              Manipulating Field Data Programmatically.
+                                                              (line  14)
 * ebdb-record-self:                      Creating Records.    (line  21)
 * ebdb-record-self <1>:                  Auto-Updating Records.
                                                               (line  77)
+* ebdb-record-update:                    Manipulating Field Data Programmatically.
+                                                              (line  34)
 * ebdb-reformat-records:                 The Basics of ebdb-mode.
                                                               (line  82)
 * ebdb-rename-buffer:                    EBDB Buffers.        (line  23)
@@ -2663,67 +2726,68 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
 Tag Table:
 Node: Top807
-Node: Getting Started2635
-Node: Starting a New Database4585
-Node: Migration from BBDB5409
-Node: Record Migration5652
-Node: Variables and Options6292
-Node: Migration from Org Contacts6779
-Node: The EBDB Database7539
-Node: Creating Records11730
-Node: Record classes12811
-Node: Record names13156
-Node: Record Fields13831
-Node: Inserting New Fields14075
-Node: Editing Existing Fields14871
-Node: Deleting Records and Fields15471
-Node: Field Types15867
-Node: Role fields18153
-Node: Tag field20134
-Node: Mail folder field20703
-Node: MUA Interaction21031
-Node: Loading MUA Code21584
-Node: Display and Updating22297
-Node: Pop-up Buffers23063
-Node: Auto-Updating Records25061
-Node: Noticing and Automatic Rules29855
-Node: Interactive Commands31188
-Node: EBDB and MUA summary buffers33662
-Node: Sender name display34180
-Node: Summary buffer marks35407
-Node: Mail Address Completion36586
-Node: A Note on Completion39095
-Node: Specific MUAs39718
-Node: Gnus39866
-Node: Posting Styles40088
-Node: EBDB Buffers41644
-Node: Searching42855
-Node: Changing Search Behavior44569
-Node: The Basics of ebdb-mode45816
-Node: Customizing Record Display50164
-Node: Marking54484
-Node: Exporting/Formatting54911
-Node: Completion55846
-Node: Snarfing56642
-Node: Internationalization58659
-Node: Diary Integration61360
-Node: Mail Aliases62225
-Node: vCard Support62939
-Node: Org Integration63438
-Node: Citing Records65336
-Node: Hacking EBDB66094
-Node: Field Classes68687
-Node: Init and Delete Methods71823
-Node: The Labeled Field Class73330
-Node: The Singleton Field Class74184
-Node: Actions74622
-Node: Custom Field Searching75294
-Node: Fast Lookups78161
-Node: Formatting in the EBDB Buffer79971
-Node: Writing Internationalization Libraries82047
-Node: Writing Integration For New MUAs86463
-Node: Article snarfing89911
-Node: Index90629
+Node: Getting Started2680
+Node: Starting a New Database4630
+Node: Migration from BBDB5454
+Node: Record Migration5697
+Node: Variables and Options6337
+Node: Migration from Org Contacts6824
+Node: The EBDB Database7584
+Node: Creating Records11775
+Node: Record classes12856
+Node: Record names13201
+Node: Record Fields13876
+Node: Inserting New Fields14120
+Node: Editing Existing Fields14916
+Node: Deleting Records and Fields15516
+Node: Field Types15912
+Node: Role fields18198
+Node: Tag field20179
+Node: Mail folder field20748
+Node: MUA Interaction21076
+Node: Loading MUA Code21629
+Node: Display and Updating22342
+Node: Pop-up Buffers23108
+Node: Auto-Updating Records25106
+Node: Noticing and Automatic Rules29900
+Node: Interactive Commands31722
+Node: EBDB and MUA summary buffers34196
+Node: Sender name display34714
+Node: Summary buffer marks35941
+Node: Mail Address Completion37120
+Node: A Note on Completion39629
+Node: Specific MUAs40252
+Node: Gnus40400
+Node: Posting Styles40622
+Node: EBDB Buffers42178
+Node: Searching43389
+Node: Changing Search Behavior45103
+Node: The Basics of ebdb-mode46350
+Node: Customizing Record Display50698
+Node: Marking55018
+Node: Exporting/Formatting55445
+Node: Completion56380
+Node: Snarfing57176
+Node: Internationalization59193
+Node: Diary Integration61894
+Node: Mail Aliases62759
+Node: vCard Support63473
+Node: Org Integration63972
+Node: Citing Records65870
+Node: Hacking EBDB66628
+Node: Field Classes69221
+Node: Init and Delete Methods72402
+Node: Manipulating Field Data Programmatically73926
+Node: The Labeled Field Class75638
+Node: The Singleton Field Class76509
+Node: Actions76947
+Node: Custom Field Searching77619
+Node: Fast Lookups80486
+Node: Formatting in the EBDB Buffer82296
+Node: Writing Internationalization Libraries84372
+Node: Writing Integration For New MUAs88788
+Node: Article snarfing92236
+Node: Index92954
 
 End Tag Table
 
