@@ -698,9 +698,28 @@ controlling the window size of pop-up buffers.  Each option is named as
 ‘ebdb-<MUA>-window-size’, and each defaults to
 ‘ebdb-default-window-size’.
 
-   Beyond this, there are no other user customization options
-controlling the layout of MUA pop-up buffers.  Further customization
-will likely be added in the future: please complain to the author.
+   The Gnus and Message MUAs have their own special window configuration
+system (*Note (Gnus)Window Layout::).  If you’re not making special use
+of that system, EBDB will default to taking up a percentage of the
+article and message composition windows.  If you are using that system
+for more control, you use the ‘ebdb-gnus-window-configuration’ and
+‘ebdb-message-window-configuration’ options to do so.  They should be
+set to two arbitrary (but distinct) symbols, which will be added to the
+‘gnus-window-to-buffer’ alist, and can be used in
+‘gnus-add-configuration’ calls, for example:
+
+     (gnus-add-configuration
+      '(article
+        (vertical 1.0
+                  (summary 0.25 point)
+                  (horizontal 1.0
+                              (article 1.0)
+                              (ebdb-gnus 0.4)))))
+
+   Because Gnus and Message use separate EBDB buffers for record update
+and display, the two options must be separate, and used in the
+appropriate article-display vs message-composition window
+configurations.
 
 
 File: ebdb.info,  Node: Auto-Updating Records,  Next: Noticing and Automatic Rules,  Prev: Pop-up Buffers,  Up: Display and Updating
@@ -2485,6 +2504,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-gnus-auto-update-p:               Auto-Updating Records.
                                                               (line  48)
 * ebdb-gnus-post-style-function:         Posting Styles.      (line  13)
+* ebdb-gnus-window-configuration:        Pop-up Buffers.      (line  42)
 * ebdb-hash-extra-predicates:            Fast Lookups.        (line  30)
 * ebdb-hashtable:                        Fast Lookups.        (line  10)
 * ebdb-help:                             The Basics of ebdb-mode.
@@ -2520,6 +2540,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  48)
 * ebdb-message-clean-name-function:      Sender name display. (line  14)
 * ebdb-message-mail-as-name:             Sender name display. (line  18)
+* ebdb-message-window-configuration:     Pop-up Buffers.      (line  42)
 * ebdb-mhe-auto-update-p:                Auto-Updating Records.
                                                               (line  48)
 * ebdb-migrate-from-bbdb:                Record Migration.    (line   6)
@@ -2748,46 +2769,46 @@ Node: MUA Interaction21076
 Node: Loading MUA Code21629
 Node: Display and Updating22342
 Node: Pop-up Buffers23108
-Node: Auto-Updating Records25106
-Node: Noticing and Automatic Rules29900
-Node: Interactive Commands31722
-Node: EBDB and MUA summary buffers34196
-Node: Sender name display34714
-Node: Summary buffer marks35941
-Node: Mail Address Completion37120
-Node: A Note on Completion39629
-Node: Specific MUAs40252
-Node: Gnus40400
-Node: Posting Styles40622
-Node: EBDB Buffers42178
-Node: Searching43389
-Node: Changing Search Behavior45103
-Node: The Basics of ebdb-mode46350
-Node: Customizing Record Display50698
-Node: Marking55018
-Node: Exporting/Formatting55445
-Node: Completion56380
-Node: Snarfing57176
-Node: Internationalization59193
-Node: Diary Integration61894
-Node: Mail Aliases62759
-Node: vCard Support63473
-Node: Org Integration63972
-Node: Citing Records65870
-Node: Hacking EBDB66628
-Node: Field Classes69221
-Node: Init and Delete Methods72402
-Node: Manipulating Field Data Programmatically73926
-Node: The Labeled Field Class75638
-Node: The Singleton Field Class76509
-Node: Actions76947
-Node: Custom Field Searching77619
-Node: Fast Lookups80486
-Node: Formatting in the EBDB Buffer82296
-Node: Writing Internationalization Libraries84372
-Node: Writing Integration For New MUAs88788
-Node: Article snarfing92236
-Node: Index92954
+Node: Auto-Updating Records25958
+Node: Noticing and Automatic Rules30752
+Node: Interactive Commands32574
+Node: EBDB and MUA summary buffers35048
+Node: Sender name display35566
+Node: Summary buffer marks36793
+Node: Mail Address Completion37972
+Node: A Note on Completion40481
+Node: Specific MUAs41104
+Node: Gnus41252
+Node: Posting Styles41474
+Node: EBDB Buffers43030
+Node: Searching44241
+Node: Changing Search Behavior45955
+Node: The Basics of ebdb-mode47202
+Node: Customizing Record Display51550
+Node: Marking55870
+Node: Exporting/Formatting56297
+Node: Completion57232
+Node: Snarfing58028
+Node: Internationalization60045
+Node: Diary Integration62746
+Node: Mail Aliases63611
+Node: vCard Support64325
+Node: Org Integration64824
+Node: Citing Records66722
+Node: Hacking EBDB67480
+Node: Field Classes70073
+Node: Init and Delete Methods73254
+Node: Manipulating Field Data Programmatically74778
+Node: The Labeled Field Class76490
+Node: The Singleton Field Class77361
+Node: Actions77799
+Node: Custom Field Searching78471
+Node: Fast Lookups81338
+Node: Formatting in the EBDB Buffer83148
+Node: Writing Internationalization Libraries85224
+Node: Writing Integration For New MUAs89640
+Node: Article snarfing93088
+Node: Index93806
 
 End Tag Table
 

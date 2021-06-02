@@ -733,9 +733,33 @@ the window size of pop-up buffers.  Each option is named as
 @code{ebdb-<MUA>-window-size}, and each defaults to
 @code{ebdb-default-window-size}.
 
-Beyond this, there are no other user customization options controlling
-the layout of MUA pop-up buffers.  Further customization will likely
-be added in the future: please complain to the author.
+@vindex ebdb-gnus-window-configuration
+@vindex ebdb-message-window-configuration
+The Gnus and Message MUAs have their own special window
+configuration system (@xref{Window Layout,,,Gnus}).  If
+you're not making special use of that system, EBDB will default to
+taking up a percentage of the article and message composition
+windows.  If you are using that system for more control, you use the
+@code{ebdb-gnus-window-configuration} and
+@code{ebdb-message-window-configuration} options to do so.  They should be
+set to two arbitrary (but distinct) symbols, which will be added to
+the @code{gnus-window-to-buffer} alist, and can be used in
+@code{gnus-add-configuration} calls, for example:
+
+@lisp
+(gnus-add-configuration
+ '(article
+   (vertical 1.0
+             (summary 0.25 point)
+             (horizontal 1.0
+                         (article 1.0)
+                         (ebdb-gnus 0.4)))))
+@end lisp
+
+Because Gnus and Message use separate EBDB buffers for record update
+and display, the two options must be separate, and used in the
+appropriate article-display vs message-composition window
+configurations.
 
 @node Auto-Updating Records
 @subsection Auto-Updating Records

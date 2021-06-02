@@ -50,26 +50,21 @@ Size should be specified as a float between 0 and 1.  Defaults to
 the value of `ebdb-default-window-size'."
   :type 'float)
 
-(defcustom ebdb-gnus-window-configuration
-  `(article
-    ,(cond
-      (gnus-use-trees
-       `(vertical 1.0
-		  (summary 0.25 point)
-		  (tree 0.25)
-		  (horizontal 1.0
-			      (article 1.0)
-			      (ebdb-gnus ,ebdb-gnus-window-size))))
-      (t
-       `(vertical 1.0
-		  (summary 0.25 point)
-		  (horizontal 1.0
-			      (article 1.0)
-			      (ebdb-gnus ,ebdb-gnus-window-size))))))
-  "Gnus window configuration to include EBDB.
-By default, this adds the *EBDB-Gnus* window to the right of the
-article buffer, taking up 40% of the horizontal space."
-  :type 'list)
+(defcustom ebdb-gnus-window-configuration nil
+  "Symbol that names EBDB's Gnus window config.
+This option is nil by default, meaning Gnus will pop up the
+*EBDB-Gnus* window next to the *Article* buffer, with a
+width/height of `ebdb-gnus-window-size'.
+
+If more control is required, set this to a symbol name.  This
+symbol will be entered into the `gnus-window-to-buffer' alist,
+and can be used as an entry in more complex Gnus buffer/window
+configurations.
+
+Note that this should be a different symbol from that used in
+Message-mode article composition window config."
+  :type '(choice (const :tag nil)
+		 (symbol :tag "Window config name")))
 
 (defcustom ebdb-gnus-post-style-function
   (lambda (_rec _mail) nil)
@@ -248,14 +243,6 @@ Note that `( is the backquote, NOT the quote '(."
 (defsubst ebdb-gnus-buffer-name ()
   (format "*%s-Gnus*" ebdb-buffer-name))
 
-;; Tell Gnus how to display the *EBDB-Gnus* buffer.
-(add-hook 'ebdb-after-load-hook
-	  (lambda ()
-	   (with-eval-after-load "gnus-win"
-	     (when ebdb-mua-pop-up
-	       (add-to-list 'gnus-window-to-buffer
-			    `(ebdb-gnus . ,(ebdb-gnus-buffer-name)))
-	       (gnus-add-configuration ebdb-gnus-window-configuration)))))
 
 (cl-defmethod ebdb-make-buffer-name (&context (major-mode gnus-summary-mode))
   "Produce a EBDB buffer name associated with Gnus."
@@ -356,6 +343,13 @@ composed to a certain record."
   ;; that restores the window configuration.
   (define-key gnus-summary-mode-map ";" ebdb-mua-keymap)
   (define-key gnus-article-mode-map ";" ebdb-mua-keymap)
+
+  ;; If the user has set this to a symbol, it needs to be added to
+  ;; Gnus' `gnus-window-to-buffer' list.
+  (when ebdb-gnus-window-configuration
+    (add-to-list 'gnus-window-to-buffer
+		 (cons ebdb-gnus-window-configuration
+		       (ebdb-gnus-buffer-name))))
 
   ;; Versions of Gnus with the gnus-search.el library allow us to
   ;; perform contact auto-completion within search queries.

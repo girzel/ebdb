@@ -51,25 +51,26 @@ Size should be specified as a float between 0 and 1.  Defaults to
 the value of `ebdb-default-window-size'."
   :type 'float)
 
-(defcustom ebdb-message-reply-window-config
-  `(reply
-    (horizontal 1.0
-		(message 1.0 point)
-		(ebdb-message ,ebdb-message-window-size)))
-  "Message reply window configuration to show EBDB.
-See Gnus' manual for details."
-  :group 'ebdb-mua-message
-  :type 'list)
+(defcustom ebdb-message-window-configuration nil
+  "Symbol that names EBDB's Message reply window config.
+This option is nil by default, meaning Gnus will pop up the
+*EBDB-Message* buffer next to the message composition buffer,
+with width/height of `ebdb-message-window-size'.
 
-(defcustom ebdb-message-reply-yank-window-config
-  `(reply-yank
-     (horizontal 1.0
-		 (message 1.0 point)
-		 (ebdb-message ,ebdb-message-window-size)))
-  "Message reply-yank window configuration to show EBDB.
-See Gnus' manual for details."
+If more control is required, set this to a symbol name.  This
+symbol will be entered into the `gnus-window-to-buffer' alist,
+and can be used as an entry in more complex Gnus buffer/window
+configurations.
+
+Note that this should be a different symbol from that used in
+Gnus's article-reading config."
   :group 'ebdb-mua-message
-  :type 'list)
+  :type '(choice (const nil)
+		 (symbol :tag "Window config name")))
+
+(make-obsolete-variable 'ebdb-message-reply-yank-window-config
+			'ebdb-message-window-configuration
+			"0.6.23")
 
 ;; Suggestions welcome: What are good keybindings for the following
 ;; commands that do not collide with existing bindings?
@@ -157,6 +158,12 @@ Also fires when postponing a draft."
 		   nil t)))
     ('nil nil)
     (_ (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
+
+  (when ebdb-message-window-configuration
+    (add-to-list 'gnus-window-to-buffer
+		 (cons ebdb-message-window-configuration
+		       (ebdb-message-buffer-name))))
+
   (ebdb-undisplay-records))
 
 (defun ebdb-message-auto-update ()
@@ -169,28 +176,6 @@ Also fires when postponing a draft."
 (add-hook 'mail-setup-hook 'ebdb-insinuate-mail)
 (add-hook 'message-send-hook 'ebdb-message-auto-update)
 (add-hook 'mail-send-hook 'ebdb-message-auto-update)
-
-;; Slightly convoluted, but does it the "right way".  The
-;; `message-header-setup-hook' creates and populates the
-;; *EBDB-Message* buffer after the message-mode buffer is created.
-;; The gnus window configuration stanza makes sure it's displayed
-;; after the message buffer is set up.
-(add-hook 'ebdb-after-load-hook
-	  (lambda ()
-	    (with-eval-after-load "gnus-win"
-	      ;; Display only because we're going to be (possibly)
-	      ;; prompted for creation again when the message is sent.
-	      (add-hook 'message-header-setup-hook #'ebdb-message-display-only)
-
-	      (when ebdb-mua-pop-up
-		(add-to-list 'gnus-window-to-buffer
-			     `(ebdb-message . ,(ebdb-message-buffer-name)))
-
-		(gnus-add-configuration
-		 ebdb-message-reply-window-config)
-
-		(gnus-add-configuration
-		 ebdb-message-reply-yank-window-config)))))
 
 (provide 'ebdb-message)
 ;;; ebdb-message.el ends here
