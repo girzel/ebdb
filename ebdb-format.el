@@ -533,11 +533,5 @@ multiple instances in a single alist."
     (cdr (assoc (completing-read "Use formatter: " collection)
 		collection))))
 
-;;;###autoload
-(defun ebdb-format-all-records (&optional formatter records)
-  (interactive
-   (list (ebdb-prompt-for-formatter)))
-  (ebdb-format-to-tmp-buffer formatter (or records (ebdb-records))))
-
 (provide 'ebdb-format)
 ;;; ebdb-format.el ends here

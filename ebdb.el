@@ -786,7 +786,7 @@ corresponding mail addresses."
   :type 'function)
 
 (defcustom ebdb-completion-display-record t
-  "If non-nil function `ebdb-complete-mail' displays the EBDB record after completion."
+  "If non-nil, `ebdb-complete-mail' will display records after completion."
   :group 'ebdb-sendmail
   :type '(choice (const :tag "Update the EBDB buffer" t)
                  (const :tag "Do not update the EBDB buffer" nil)))
@@ -1134,7 +1134,7 @@ old field.  By now we've sucked all the useful information out of
 it, and if this process is successful it will get deleted."
   (apply 'make-instance class slots))
 
-(cl-defmethod ebdb-read :around ((cls (subclass ebdb-field))
+(cl-defmethod ebdb-read :around ((_cls (subclass ebdb-field))
 				 &optional _slots _obj)
   (let ((completion-ignore-case ebdb-completion-ignore-case))
     (cl-call-next-method)))
@@ -2188,11 +2188,12 @@ Eventually this method will go away."
 	 (last (calendar-last-day-of-month
 		;; If no year, assume a non-leap year.
 		month (or year 2017)))
-	 (day (calendar-read (format "Day (1-%d): " last)
-			     (lambda (x) (and (< 0 x)
-					      (<= x last)))
-			     (when obj (number-to-string
-					(nth 1 (slot-value obj 'date)))))))
+	 (day (with-no-warnings ; `with-suppressed-warnings' is too new.
+		(calendar-read (format "Day (1-%d): " last)
+			       (lambda (x) (and (< 0 x)
+						(<= x last)))
+			       (when obj (number-to-string
+					  (nth 1 (slot-value obj 'date))))))))
     (cl-call-next-method class
 			 (plist-put slots :date
 				    (list month day year))
@@ -4673,6 +4674,53 @@ Also see the variable `ebdb-ignore-redundant-mails'."
 (add-to-list 'completion-category-defaults
 	     `(ebdb-contact (styles substring basic)
 			    (cycle . ,ebdb-complete-mail-allow-cycling)))
+
+(defun ebdb-record-completion-table (str pred action)
+  "Function used as a completion table for EBDB records.
+STR is used to search the database.  The return value is the
+completed name string."
+  (let* ((completion-ignore-case ebdb-case-fold-search)
+	 (newstring (concat "^" str))
+	 ;; Completion searches the database, but we only use "fast
+	 ;; lookup" search clauses which use the hashtable, instead of
+	 ;; cycling over all records one by one.  Still pretty slow,
+	 ;; though.  Also unfortunate is that EBDB has a broader
+	 ;; concept of "matching string" than the completion
+	 ;; framework, which will later filter out strings that we
+	 ;; consider matching (e.g. according to character folding, or
+	 ;; romanization of non-English scripts).  Perhaps we could
+	 ;; make our own completion style to take care of that.
+	 (strings
+	  (mapcar #'ebdb-string
+		  (if (string-empty-p str)
+		      (ebdb-records)
+		    (ebdb-search
+		     (ebdb-records)
+		     (append
+		      (list `(ebdb-field-name ,newstring)
+			    `(ebdb-field-mail ,newstring)
+			    `(ebdb-field-tags ,newstring))
+		      (mapcar (lambda (f)
+				(list f newstring))
+			      ebdb-hash-extra-predicates)))))))
+    (if (eq action 'metadata)
+	'(metadata . ((category . ebdb-contact)))
+      (complete-with-action action strings str pred))))
+
+;;;###autoload
+(defun ebdb-completion-predicate (key records)
+  "Check if KEY is a value key to return RECORDS.
+For use as the third argument to `completing-read'.
+Obey `ebdb-completion-list'."
+  (cond ((null ebdb-completion-list)
+         nil)
+        ((eq t ebdb-completion-list)
+         t)
+        (t
+         (catch 'ebdb-hash-ok
+	   (dolist (record records)
+	     (ebdb-hash-p key record ebdb-completion-list))
+	   nil))))
 
 
 ;;; Dialing and texting.

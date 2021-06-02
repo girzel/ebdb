@@ -25,6 +25,10 @@
 
 ;;; Code:
 
+(eval-when-compile
+  ;; For `with-slots'.
+  (require 'eieio))
+
 ;;; USA
 
 (defvar ebdb-i18n-usa-states

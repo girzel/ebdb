@@ -37,6 +37,7 @@
 (defvar wl-draft-mode-map)
 (defvar wl-folder-buffer-name)
 (defvar wl-highlight-signature-separator)
+(defvar mime-view-mode-default-map)
 
 (defgroup ebdb-mua-wl nil
   "Options for EBDB's interaction with Wanderlust."

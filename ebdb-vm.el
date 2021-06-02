@@ -107,7 +107,7 @@ Respect `vm-summary-uninteresting-senders'."
       (let* ((data (ebdb-extract-address-components address))
              (record (car (ebdb-message-search (car data) (cadr data)))))
         (if record
-            (or (ebdb-record-xfield record 'mail-name)
+            (or (slot-value (ebdb-record-one-mail record) 'aka)
                 (ebdb-record-name-string record))))))
 
 
@@ -126,13 +126,13 @@ The order in this list is the order how matching will be performed."
   :type '(repeat (string :tag "header name")))
 
 ;;;###autoload
-(defcustom ebdb/vm-auto-folder-field 'vm-folder
+(defcustom ebdb/vm-auto-folder-field "vm-folder"
   "The xfield which `ebdb/vm-auto-folder' searches for."
   :group 'ebdb-mua-vm
   :type 'symbol)
 
 ;;;###autoload
-(defcustom ebdb/vm-virtual-folder-field 'vm-virtual
+(defcustom ebdb/vm-virtual-folder-field "vm-virtual"
   "The xfield which `ebdb/vm-virtual-folder' searches for."
   :group 'ebdb-mua-vm
   :type 'symbol)
@@ -148,23 +148,23 @@ If nil use `vm-primary-inbox'."
 ;;;###autoload
 (defun ebdb/vm-auto-folder ()
   "Add entries to `vm-auto-folder-alist' for the records in EBDB.
-For each record that has a `vm-folder' xfield, add an element
+For each record that has a `vm-folder' field, add an element
 \(MAIL-REGEXP . FOLDER-NAME) to `vm-auto-folder-alist'.
 The element gets added to the sublists of `vm-auto-folder-alist'
 specified in `ebdb/vm-auto-folder-headers'.
 MAIL-REGEXP matches the mail addresses of the EBDB record.
-The value of the `vm-folder' xfield becomes FOLDER-NAME.
-The `vm-folder' xfield is defined via `ebdb/vm-auto-folder-field'.
+The value of the `vm-folder' field becomes FOLDER-NAME.
+The `vm-folder' field is defined via `ebdb/vm-auto-folder-field'.
 
 Add this function to `ebdb-before-save-hook' and your .vm."
   (interactive)
-  (let ((records ; Collect EBDB records with a vm-folder xfield.
-          (delq nil
-                (mapcar (lambda (r)
-                          (if (ebdb-record-xfield r ebdb/vm-auto-folder-field)
-                              r))
-                        (ebdb-records))))
-         folder-list folder-name mail-regexp)
+  (let ((records       ; Collect EBDB records with a vm-folder field.
+         (delq nil
+               (mapcar (lambda (r)
+                         (if (ebdb-record-field r ebdb/vm-auto-folder-field)
+                             r))
+                       (ebdb-records))))
+        folder-list folder-name mail-regexp)
     ;; Add (MAIL-REGEXP . FOLDER-NAME) pair to this sublist of `vm-auto-folder-alist'
     (dolist (header ebdb/vm-auto-folder-headers)
       ;; create the folder-list in `vm-auto-folder-alist' if it does not exist
@@ -173,11 +173,11 @@ Add this function to `ebdb-before-save-hook' and your .vm."
         (setq folder-list (assoc header vm-auto-folder-alist)))
       (dolist (record records)
         ;; Ignore everything past a comma
-        (setq folder-name (car (ebdb-record-xfield-split
+        (setq folder-name (car (ebdb-record-field
                                 record ebdb/vm-auto-folder-field))
               ;; quote all the mail addresses for the record and join them
               mail-regexp (regexp-opt (ebdb-record-mail record)))
-        ;; In general, the values of xfields are strings (required for editing).
+        ;; In general, the values of fields are strings (required for editing).
         ;; If we could set the value of `ebdb/vm-auto-folder-field' to a symbol,
         ;; it could be a function that is called with arg record to calculate
         ;; the value of folder-name.
@@ -197,23 +197,23 @@ Add this function to `ebdb-before-save-hook' and your .vm."
 ;;;###autoload
 (defun ebdb/vm-virtual-folder ()
   "Create `vm-virtual-folder-alist' according to the records in EBDB.
-For each record that has a `vm-virtual' xfield, add or modify the
+For each record that has a `vm-virtual' field, add or modify the
 corresponding VIRTUAL-FOLDER-NAME element of `vm-virtual-folder-alist'.
 
   (VIRTUAL-FOLDER-NAME ((FOLDER-NAME ...)
                         (author-or-recipient MAIL-REGEXP)))
 
-VIRTUAL-FOLDER-NAME is the first element of the `vm-virtual' xfield.
-FOLDER-NAME ... are either the remaining elements of the `vm-virtual' xfield,
+VIRTUAL-FOLDER-NAME is the first element of the `vm-virtual' field.
+FOLDER-NAME ... are either the remaining elements of the `vm-virtual' field,
 or `ebdb/vm-virtual-real-folders' or `vm-primary-inbox'.
 MAIL-REGEXP matches the mail addresses of the EBDB record.
-The `vm-virtual' xfield is defined via `ebdb/vm-virtual-folder-field'.
+The `vm-virtual' field is defined via `ebdb/vm-virtual-folder-field'.
 
 Add this function to `ebdb-before-save-hook' and your .vm."
   (interactive)
   (let (real-folders mail-regexp folder val tmp)
     (dolist (record (ebdb-records))
-      (when (setq val (ebdb-record-xfield-split
+      (when (setq val (ebdb-record-field
                        record ebdb/vm-virtual-folder-field))
         (setq mail-regexp (regexp-opt (ebdb-record-mail record)))
         (unless (string= "" mail-regexp)
@@ -247,7 +247,7 @@ Add this function to `ebdb-before-save-hook' and your .vm."
 ;; the required labels in a rather simplistic way, checking merely
 ;; whether the sender's EBDB record uses a certain mail alias.
 ;; (Note that `ebdb/vm-virtual-folder' can achieve the same goal,
-;; yet this requires a second xfield that must be kept up-to-date, too.)
+;; yet this requires a second field that must be kept up-to-date, too.)
 ;; To make auto labels yet more useful, the code could allow more
 ;; sophisticated schemes, too.  Are there real-world applications
 ;; for this?
@@ -255,16 +255,16 @@ Add this function to `ebdb-before-save-hook' and your .vm."
 ;;; Howard Melman, contributed Jun 16 2000
 (defcustom ebdb/vm-auto-add-label-list nil
   "List used by `ebdb/vm-auto-add-label' to automatically label VM messages.
-Its elements may be strings used both as the xfield value to check for
+Its elements may be strings used both as the field value to check for
 and as the label to apply to the message.
-If an element is a cons pair (VALUE . LABEL), VALUE is the xfield value
+If an element is a cons pair (VALUE . LABEL), VALUE is the field value
 to search for and LABEL is the label to apply."
   :group 'ebdb-mua-vm
   :type 'list)
 
 (defcustom ebdb/vm-auto-add-label-field 'ebdb-mail-alias-field
-  "Xfields used by `ebdb/vm-auto-add-label' to automatically label messages.
-This is either a single EBDB xfield or a list of xfields that
+  "Fields used by `ebdb/vm-auto-add-label' to automatically label messages.
+This is either a single EBDB field or a list of fields that
 `ebdb/vm-auto-add-label' uses to check for labels to apply to a message.
 Defaults to `ebdb-mail-alias-field' which defaults to `mail-alias'."
   :group 'ebdb-mua-vm
@@ -291,10 +291,10 @@ from different senders."
               ;; Inspect the relevant fields of RECORD
               (append
                (mapcar (lambda (field)
-                         (ebdb-record-xfield-split record field))
+                         (ebdb-record-field record field))
                        (cond ((listp ebdb/vm-auto-add-label-field)
                               ebdb/vm-auto-add-label-field)
-                             ((symbolp ebdb/vm-auto-add-label-field)
+                             ((stringp ebdb/vm-auto-add-label-field)
                               (list ebdb/vm-auto-add-label-field))
                              (t (error "Bad value for ebdb/vm-auto-add-label-field"))))))
              ;; Collect the relevant labels from `ebdb/vm-auto-add-label-list'

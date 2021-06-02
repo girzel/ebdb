@@ -28,8 +28,7 @@
 (declare-function helm-other-buffer "ext:helm"
 		  (any-sources any-buffer))
 
-(declare-function helm-marked-candidates "ext:helm"
-		  (&key with-wildcard all-sources))
+(declare-function helm-marked-candidates "ext:helm")
 
 (defun ebdb-helm-candidates ()
   "Return a list of all records in the database."

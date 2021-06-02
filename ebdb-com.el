@@ -2566,53 +2566,6 @@ otherwise inline."
 
 ;;; Completion
 
-(defun ebdb-record-completion-table (str pred action)
-  "Function used as a completion table for EBDB records.
-STR is used to search the database.  The return value is the
-completed name string."
-  (let* ((completion-ignore-case ebdb-case-fold-search)
-	 (newstring (concat "^" str))
-	 ;; Completion searches the database, but we only use "fast
-	 ;; lookup" search clauses which use the hashtable, instead of
-	 ;; cycling over all records one by one.  Still pretty slow,
-	 ;; though.  Also unfortunate is that EBDB has a broader
-	 ;; concept of "matching string" than the completion
-	 ;; framework, which will later filter out strings that we
-	 ;; consider matching (e.g. according to character folding, or
-	 ;; romanization of non-English scripts).  Perhaps we could
-	 ;; make our own completion style to take care of that.
-	 (strings
-	  (mapcar #'ebdb-string
-		  (if (string-empty-p str)
-		      (ebdb-records)
-		    (ebdb-search
-		     (ebdb-records)
-		     (append
-		      (list `(ebdb-field-name ,newstring)
-			    `(ebdb-field-mail ,newstring)
-			    `(ebdb-field-tags ,newstring))
-		      (mapcar (lambda (f)
-				(list f newstring))
-			      ebdb-hash-extra-predicates)))))))
-    (if (eq action 'metadata)
-	'(metadata . ((category . ebdb-contact)))
-      (complete-with-action action strings str pred))))
-
-;;;###autoload
-(defun ebdb-completion-predicate (key records)
-  "Check if KEY is a value key to return RECORDS.
-For use as the third argument to `completing-read'.
-Obey `ebdb-completion-list'."
-  (cond ((null ebdb-completion-list)
-         nil)
-        ((eq t ebdb-completion-list)
-         t)
-        (t
-         (catch 'ebdb-hash-ok
-	   (dolist (record records)
-	     (ebdb-hash-p key record ebdb-completion-list))
-	   nil))))
-
 (defun ebdb-completing-read-record (prompt)
   "Read and return a record from the EBDB.
 PROMPT is used in `completing-read'.  Actual completion is done
@@ -3178,6 +3131,12 @@ RECORDS is the record under point, or all marked records."
     (let ((f (slot-value formatter 'post-format-function)))
       (when (fboundp f)
 	(funcall f)))))
+
+;;;###autoload
+(defun ebdb-format-all-records (&optional formatter records)
+  (interactive
+   (list (ebdb-prompt-for-formatter)))
+  (ebdb-format-to-tmp-buffer formatter (or records (ebdb-records))))
 
 ;;;###autoload
 (defun ebdb-format-these-records (formatter)
