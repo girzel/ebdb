@@ -58,7 +58,7 @@ list of regular expressions that can be used to produce instances
 of that class when passed to `ebdb-parse'.  Each regular
 expression should contain at least one parenthetical group: the
 `ebdb-parse' method of the class will receive the results of
-\(match-string 1\)."
+\(match-string 1)."
 
   :group 'ebdb-snarf
   :type 'list)

@@ -212,7 +212,7 @@ addresses better than the traditionally static global scorefile."
 	 (list :folder (plist-get slots :group))))
 
 (defun ebdb/gnus-split-folders-list ()
-  "Return a list of \( \"From\" mail-regexp imap-folder-name\) tuples
+  "Return a list of (\"From\" mail-regexp imap-folder-name) tuples
 based on the contents of the EBDB.
 
 Mail address elements are already `regexp-quote'-ed, so we just
@@ -223,10 +223,10 @@ use a backquote template, that is your setting will look like:
 \(setq nnimap-split-rule  'nnimap-split-fancy
        nnimap-split-inbox \"INBOX\"
        nnimap-split-fancy
-       `\(| ,@\(ebdb/gnus-split-folders-list\)
-            ... \)\)
+       `(| ,@(ebdb/gnus-split-folders-list)
+            ... ))
 
-Note that `\( is the backquote, NOT the quote '\(."
+Note that `( is the backquote, NOT the quote '(."
   (mapcar
    (lambda (elt)
      (list "From"

@@ -85,8 +85,8 @@
 (defun ebdb-ispell-collect-words (strings)
   "Find all individual words in STRINGS and filter.
 Removes strings that are too short
-\(`ebdb-ispell-min-word-length'\) or explicitly ignored
-\(`ebdb-ispell-ignore-re'\)."
+\(`ebdb-ispell-min-word-length') or explicitly ignored
+\(`ebdb-ispell-ignore-re')."
   (seq-filter
    (lambda (word)
      (and (>= (length word) ebdb-ispell-min-word-length)
