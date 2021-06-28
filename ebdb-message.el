@@ -135,6 +135,11 @@ Also fires when postponing a draft."
      (cl-pushnew '("^\\(Resent-\\)?\\(To\\|B?Cc\\|Reply-To\\|From\\|Mail-Followup-To\\|Mail-Copies-To\\):" . ebdb-complete-mail)
   		 message-completion-alist
   		 :test #'equal)))
+
+  (when ebdb-message-window-configuration
+    (add-to-list 'gnus-window-to-buffer
+		 (cons ebdb-message-window-configuration
+		       (ebdb-message-buffer-name))))
   (message-add-action
    #'ebdb-message-quit-ebdb 'exit 'postpone 'kill)
   ;; Other MUAs clear the EBDB buffer before displaying (in
