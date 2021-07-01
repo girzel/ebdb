@@ -1,9 +1,9 @@
 ;;; ebdb.el --- Contact management package           -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Version: 0.7
-;; Package-Requires: ((emacs "25.1") (cl-lib "0.5") (seq "2.15"))
+;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -954,7 +954,7 @@ Test for presence is done with `equal'."
     :type (or null ebdb-field-uuid)
     :initform nil)
    (tracking-symbol
-    :initform ebdb-record-tracker)
+    :initform 'ebdb-record-tracker)
    (creation-date
     :initarg :creation-date
     :type (or null ebdb-field-creation-date)
@@ -1064,7 +1064,7 @@ Then call `cl-call-next-method' with the new values.")
 (cl-defmethod ebdb-parse ((field-class (subclass ebdb-field)) str &optional slots)
   "Create the actual field instance."
   (condition-case nil
-      (apply 'make-instance field-class slots)
+      (apply #'make-instance field-class slots)
     (error (signal 'ebdb-unparseable (list str)))))
 
 (cl-defmethod ebdb-parse :before ((_field-class (subclass ebdb-field)) str &optional _slots)
@@ -1132,7 +1132,7 @@ responsible for creating the field object.
 The OBJ argument is used when editing existing fields: OBJ is the
 old field.  By now we've sucked all the useful information out of
 it, and if this process is successful it will get deleted."
-  (apply 'make-instance class slots))
+  (apply #'make-instance class slots))
 
 (cl-defmethod ebdb-read :around ((_cls (subclass ebdb-field))
 				 &optional _slots _obj)
@@ -1340,7 +1340,7 @@ process."
   "List of existing labels of user fields.")
 
 (defclass ebdb-field-user-simple (ebdb-field-labeled ebdb-field-user)
-  ((label-list :initform ebdb-user-label-list)
+  ((label-list :initform 'ebdb-user-label-list)
    (value
     :initarg :value
     :type (or atom list)
@@ -1559,7 +1559,7 @@ first one."
 (defvar ebdb-role-label-list nil)
 
 (defclass ebdb-field-role (ebdb-field-labeled ebdb-field)
-  ((label-list :initform ebdb-role-label-list)
+  ((label-list :initform 'ebdb-role-label-list)
    (record-uuid
     :initarg :record-uuid
     :type (or null string)
@@ -1700,7 +1700,7 @@ first one."
    (priority
     :initarg :priority
     :type (or null symbol)
-    :initform normal
+    :initform 'normal
     :custom (choice (const :tag "Normal priority" normal)
 		    (const :tag "Primary address" primary)
 		    (const :tag "Defunct address" defunct))
@@ -1791,7 +1791,7 @@ Primary sorts before normal sorts before defunct."
 ;;; Address fields
 
 (defclass ebdb-field-address (ebdb-field-labeled ebdb-field)
-  ((label-list :initform ebdb-address-label-list)
+  ((label-list :initform 'ebdb-address-label-list)
    (streets
     :initarg :streets
     :type (list-of string)
@@ -1913,7 +1913,7 @@ The result looks like this:
 			       country
 			       (ebdb-i18n-countries)))))
     (concat (if streets
-                (concat (mapconcat 'identity streets "\n") "\n"))
+                (concat (mapconcat #'identity streets "\n") "\n"))
             (ebdb-concat ", " (ebdb-address-locality address)
                          (ebdb-concat " " (ebdb-address-region address)
                                       (ebdb-address-postcode address)))
@@ -1923,7 +1923,7 @@ The result looks like this:
 ;;; Phone fields
 
 (defclass ebdb-field-phone (ebdb-field-labeled ebdb-field)
-  ((label-list :initform ebdb-phone-label-list)
+  ((label-list :initform 'ebdb-phone-label-list)
    (country-code
     :initarg :country-code
     :type (or null number)
@@ -2137,7 +2137,7 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
 (defvar ebdb-anniversary-label-list '("birthday" "marriage" "death"))
 
 (defclass ebdb-field-anniversary (ebdb-field-labeled ebdb-field-user)
-  ((label-list :initform ebdb-anniversary-label-list)
+  ((label-list :initform 'ebdb-anniversary-label-list)
    (date
     :initarg :date
     :type list
@@ -2149,7 +2149,7 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
    (calendar
     :initarg :calendar
     :type symbol
-    :initform gregorian
+    :initform 'gregorian
     :custom symbol
     :documentation "The calendar to which this date applies.")
    (actions
@@ -2175,8 +2175,8 @@ Eventually this method will go away."
 	 (month (cdr (assoc-string
 		      (completing-read
 		       "Month: "
-		       (mapcar 'list (append
-				      calendar-month-name-array nil))
+		       (mapcar #'list (append
+				       calendar-month-name-array nil))
 		       nil t (when obj
 			       (aref
 				calendar-month-name-array
@@ -2241,7 +2241,7 @@ Eventually this method will go away."
   "List of known ID labels.")
 
 (defclass ebdb-field-id (ebdb-field-labeled ebdb-field-obfuscated ebdb-field-user)
-  ((label-list :initform ebdb-id-label-list)
+  ((label-list :initform 'ebdb-id-label-list)
    (id-number
     :type string
     :custom string
@@ -2268,7 +2268,7 @@ Eventually this method will go away."
 				   "grandmother" "grandfather" "wife" "husband"))
 
 (defclass ebdb-field-relation (ebdb-field-labeled ebdb-field)
-  ((label-list :initform ebdb-relation-label-list)
+  ((label-list :initform 'ebdb-relation-label-list)
    (rel-uuid
     :initarg :rel-uuid
     :type string
@@ -2357,7 +2357,7 @@ Removes relation information from the
 
 (defclass ebdb-field-url (ebdb-field-labeled ebdb-field-user)
   ((label-list
-    :initform ebdb-url-label-list)
+    :initform 'ebdb-url-label-list)
    (url
     :type string
     :initarg :url
@@ -2409,7 +2409,7 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
     :type string
     :custom string
     :documentation "Timezone in tzdata/Olson format, eg \"Europe/Berlin\".")
-   (actions :initform (("Display current time" . ebdb-location-current-time))))
+   (actions :initform '(("Display current time" . ebdb-location-current-time))))
   :documentation "Field holding location data for the record.
   Data is in three parts: an arbitrary location string, a cons of
   lat/long geodata, and a tzdata/Olson timezone string."
@@ -2863,7 +2863,7 @@ RECORD is responsible for parsing it correctly.")
   (let ((notes (ebdb-with-exit (ebdb-read ebdb-default-notes-class))))
     (when notes
       (setq slots (plist-put slots :notes notes)))
-    (apply 'make-instance class slots)))
+    (apply #'make-instance class slots)))
 
 (cl-defmethod ebdb-delete-record ((record ebdb-record) &optional db unload)
   (let ((dbs (if db (if (consp db) db (list db))
@@ -4843,10 +4843,10 @@ The inverse function of `ebdb-split'."
   (if (symbolp separator)
       (setq separator (nth 1 (or (cdr (assq separator ebdb-separator-alist))
                                  ebdb-default-separator))))
-  (mapconcat 'identity
-             (delete "" (apply 'append (mapcar (lambda (x) (if (stringp x)
-                                                               (list x) x))
-                                               strings)))
+  (mapconcat #'identity
+             (delete "" (apply #'append (mapcar (lambda (x)
+                                                  (if (stringp x) (list x) x))
+                                                strings)))
 	     separator))
 
 (defun ebdb-list-strings (list)
@@ -4940,7 +4940,7 @@ See also `ebdb-decompose-ebdb-address'.
 If optional argument ALL is non-nil, pass it to
 `mail-extract-address-components' to extract multiple addresses."
   (if all
-      (mapcar 'ebdb-clean-address-components
+      (mapcar #'ebdb-clean-address-components
               (mail-extract-address-components address t))
     (ebdb-clean-address-components (mail-extract-address-components address))))
 

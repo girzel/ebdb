@@ -1,6 +1,6 @@
 ;;; ebdb-com.el --- User-level commands of EBDB      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: convenience, mail
@@ -39,7 +39,7 @@
 (defvar ebdb-crm-local-completion-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map crm-local-completion-map)
-    (define-key map " " 'self-insert-command)
+    (define-key map " " #'self-insert-command)
     map)
   "Keymap used for EBDB crm completions.")
 
@@ -262,101 +262,101 @@ display information."
   (let* ((marked (seq-filter (lambda (r) (nth 3 r)) ebdb-records))
 	 (recs (or marked (list (ebdb-current-record t)))))
     (setq recs (seq-filter (lambda (r) (eieio-object-p (car r))) recs))
-    (if full recs (mapcar 'car recs))))
+    (if full recs (mapcar #'car recs))))
 
 ;;; Keymap
 (defvar ebdb-mode-map
   (let ((km (make-sparse-keymap)))
-    (define-key km (kbd "!")		'ebdb-search-invert)
-    (define-key km (kbd "RET")		'ebdb-record-action)
-    (define-key km (kbd "A")		'ebdb-mail-aliases)
-    (define-key km (kbd "c")		'ebdb-create-record)
-    (define-key km (kbd "C")		'ebdb-create-record-extended)
-    (define-key km (kbd "R")            'ebdb-create-record-and-role)
-    (define-key km (kbd "e")		'ebdb-edit-field)
-    (define-key km (kbd "E")		'ebdb-edit-field-customize)
-    (define-key km (kbd ";")		'ebdb-edit-foo)
-    (define-key km (kbd "n")		'ebdb-next-record)
-    (define-key km (kbd "p")		'ebdb-prev-record)
-    (define-key km (kbd "N")		'ebdb-next-field)
-    (define-key km (kbd "TAB")		'ebdb-next-field)
-    (define-key km (kbd "P")		'ebdb-prev-field)
-    (define-key km (kbd "<backtab>")    'ebdb-prev-field)
+    (define-key km (kbd "!")		#'ebdb-search-invert)
+    (define-key km (kbd "RET")		#'ebdb-record-action)
+    (define-key km (kbd "A")		#'ebdb-mail-aliases)
+    (define-key km (kbd "c")		#'ebdb-create-record)
+    (define-key km (kbd "C")		#'ebdb-create-record-extended)
+    (define-key km (kbd "R")            #'ebdb-create-record-and-role)
+    (define-key km (kbd "e")		#'ebdb-edit-field)
+    (define-key km (kbd "E")		#'ebdb-edit-field-customize)
+    (define-key km (kbd ";")		#'ebdb-edit-foo)
+    (define-key km (kbd "n")		#'ebdb-next-record)
+    (define-key km (kbd "p")		#'ebdb-prev-record)
+    (define-key km (kbd "N")		#'ebdb-next-field)
+    (define-key km (kbd "TAB")		#'ebdb-next-field)
+    (define-key km (kbd "P")		#'ebdb-prev-field)
+    (define-key km (kbd "<backtab>")    #'ebdb-prev-field)
     ;; Database-related commands
-    (define-key km (kbd "d c")          'ebdb-copy-records)
-    (define-key km (kbd "d m")          'ebdb-move-records)
-    (define-key km (kbd "d e")          'ebdb-customize-database)
-    (define-key km (kbd "d r")          'ebdb-reload-database)
-    (define-key km (kbd "d d")          'ebdb-disable-database)
+    (define-key km (kbd "d c")          #'ebdb-copy-records)
+    (define-key km (kbd "d m")          #'ebdb-move-records)
+    (define-key km (kbd "d e")          #'ebdb-customize-database)
+    (define-key km (kbd "d r")          #'ebdb-reload-database)
+    (define-key km (kbd "d d")          #'ebdb-disable-database)
 
-    (define-key km (kbd "r")		'ebdb-reformat-records)
-    (define-key km (kbd "f")		'ebdb-format-to-tmp-buffer)
-    (define-key km (kbd "F")		'ebdb-format-these-records)
-    (define-key km (kbd "I")            'ebdb-cite-records-ebdb)
-    (define-key km (kbd "C-k")		'ebdb-delete-field-or-record)
-    (define-key km (kbd "i")		'ebdb-insert-field)
-    (define-key km (kbd "s")		'ebdb-save-ebdb)
-    (define-key km (kbd "C-x C-s")	'ebdb-save-ebdb)
-    (define-key km (kbd "t")		'ebdb-toggle-records-format)
-    (define-key km (kbd "T")		'ebdb-toggle-all-records-format)
+    (define-key km (kbd "r")		#'ebdb-reformat-records)
+    (define-key km (kbd "f")		#'ebdb-format-to-tmp-buffer)
+    (define-key km (kbd "F")		#'ebdb-format-these-records)
+    (define-key km (kbd "I")            #'ebdb-cite-records-ebdb)
+    (define-key km (kbd "C-k")		#'ebdb-delete-field-or-record)
+    (define-key km (kbd "i")		#'ebdb-insert-field)
+    (define-key km (kbd "s")		#'ebdb-save-ebdb)
+    (define-key km (kbd "C-x C-s")	#'ebdb-save-ebdb)
+    (define-key km (kbd "t")		#'ebdb-toggle-records-format)
+    (define-key km (kbd "T")		#'ebdb-toggle-all-records-format)
     ;; Marking
-    (define-key km (kbd "#")		'ebdb-toggle-record-mark)
-    (define-key km (kbd "M-#")		'ebdb-toggle-all-record-marks)
-    (define-key km (kbd "C-#")		'ebdb-unmark-all-records)
+    (define-key km (kbd "#")		#'ebdb-toggle-record-mark)
+    (define-key km (kbd "M-#")		#'ebdb-toggle-all-record-marks)
+    (define-key km (kbd "C-#")		#'ebdb-unmark-all-records)
 
-    (define-key km (kbd "o")		'ebdb-omit-records)
-    (define-key km (kbd "m")		'ebdb-mail)
-    (define-key km (kbd "M")		'ebdb-mail-each)
-    (define-key km (kbd "M-d")		'ebdb-dial)
-    (define-key km (kbd "h")		'ebdb-info)
-    (define-key km (kbd "?")		'ebdb-help)
+    (define-key km (kbd "o")		#'ebdb-omit-records)
+    (define-key km (kbd "m")		#'ebdb-mail)
+    (define-key km (kbd "M")		#'ebdb-mail-each)
+    (define-key km (kbd "M-d")		#'ebdb-dial)
+    (define-key km (kbd "h")		#'ebdb-info)
+    (define-key km (kbd "?")		#'ebdb-help)
     ;; Copying data
-    (define-key km (kbd "w r")		'ebdb-copy-records-as-kill)
-    (define-key km (kbd "w f")		'ebdb-copy-fields-as-kill)
-    (define-key km (kbd "w m")		'ebdb-copy-mail-as-kill)
-    (define-key km (kbd "=")		'delete-other-windows)
+    (define-key km (kbd "w r")		#'ebdb-copy-records-as-kill)
+    (define-key km (kbd "w f")		#'ebdb-copy-fields-as-kill)
+    (define-key km (kbd "w m")		#'ebdb-copy-mail-as-kill)
+    (define-key km (kbd "=")		#'delete-other-windows)
     ;; Buffer manipulation
-    (define-key km (kbd "b c")		'ebdb-clone-buffer)
-    (define-key km (kbd "b r")		'ebdb-rename-buffer)
+    (define-key km (kbd "b c")		#'ebdb-clone-buffer)
+    (define-key km (kbd "b r")		#'ebdb-rename-buffer)
     ;; Search keys
-    (define-key km (kbd "/ /")		'ebdb)
-    (define-key km (kbd "/ 1")		'ebdb-search-single-record)
-    (define-key km (kbd "/ n")		'ebdb-search-name)
-    (define-key km (kbd "| n")		'ebdb-search-name)
-    (define-key km (kbd "+ n")		'ebdb-search-name)
-    (define-key km (kbd "/ o")		'ebdb-search-organization)
-    (define-key km (kbd "| o")		'ebdb-search-organization)
-    (define-key km (kbd "+ o")		'ebdb-search-organization)
-    (define-key km (kbd "/ p")		'ebdb-search-phone)
-    (define-key km (kbd "| p")		'ebdb-search-phone)
-    (define-key km (kbd "+ p")		'ebdb-search-phone)
-    (define-key km (kbd "/ a")		'ebdb-search-address)
-    (define-key km (kbd "| a")		'ebdb-search-address)
-    (define-key km (kbd "+ a")		'ebdb-search-address)
-    (define-key km (kbd "/ m")		'ebdb-search-mail)
-    (define-key km (kbd "| m")		'ebdb-search-mail)
-    (define-key km (kbd "+ m")		'ebdb-search-mail)
-    (define-key km (kbd "/ x")		'ebdb-search-user-fields)
-    (define-key km (kbd "| x")		'ebdb-search-user-fields)
-    (define-key km (kbd "+ x")		'ebdb-search-user-fields)
-    (define-key km (kbd "/ c")		'ebdb-search-modified)
-    (define-key km (kbd "| c")		'ebdb-search-modified)
-    (define-key km (kbd "+ c")		'ebdb-search-modified)
-    (define-key km (kbd "/ t")		'ebdb-search-tags)
-    (define-key km (kbd "| t")		'ebdb-search-tags)
-    (define-key km (kbd "+ t")		'ebdb-search-tags)
-    (define-key km (kbd "/ C")		'ebdb-search-record-class)
-    (define-key km (kbd "/ C")		'ebdb-search-record-class)
-    (define-key km (kbd "| C")		'ebdb-search-record-class)
-    (define-key km (kbd "+ d")		'ebdb-search-duplicates)
-    (define-key km (kbd "/ D")		'ebdb-search-database)
-    (define-key km (kbd "| D")		'ebdb-search-database)
-    (define-key km (kbd "+ D")		'ebdb-search-database)
-    (define-key km (kbd "C-x n w")	'ebdb-display-all-records)
-    (define-key km (kbd "C-x n d")	'ebdb-display-current-record)
-    (define-key km (kbd "^")	        'ebdb-search-pop)
+    (define-key km (kbd "/ /")		#'ebdb)
+    (define-key km (kbd "/ 1")		#'ebdb-search-single-record)
+    (define-key km (kbd "/ n")		#'ebdb-search-name)
+    (define-key km (kbd "| n")		#'ebdb-search-name)
+    (define-key km (kbd "+ n")		#'ebdb-search-name)
+    (define-key km (kbd "/ o")		#'ebdb-search-organization)
+    (define-key km (kbd "| o")		#'ebdb-search-organization)
+    (define-key km (kbd "+ o")		#'ebdb-search-organization)
+    (define-key km (kbd "/ p")		#'ebdb-search-phone)
+    (define-key km (kbd "| p")		#'ebdb-search-phone)
+    (define-key km (kbd "+ p")		#'ebdb-search-phone)
+    (define-key km (kbd "/ a")		#'ebdb-search-address)
+    (define-key km (kbd "| a")		#'ebdb-search-address)
+    (define-key km (kbd "+ a")		#'ebdb-search-address)
+    (define-key km (kbd "/ m")		#'ebdb-search-mail)
+    (define-key km (kbd "| m")		#'ebdb-search-mail)
+    (define-key km (kbd "+ m")		#'ebdb-search-mail)
+    (define-key km (kbd "/ x")		#'ebdb-search-user-fields)
+    (define-key km (kbd "| x")		#'ebdb-search-user-fields)
+    (define-key km (kbd "+ x")		#'ebdb-search-user-fields)
+    (define-key km (kbd "/ c")		#'ebdb-search-modified)
+    (define-key km (kbd "| c")		#'ebdb-search-modified)
+    (define-key km (kbd "+ c")		#'ebdb-search-modified)
+    (define-key km (kbd "/ t")		#'ebdb-search-tags)
+    (define-key km (kbd "| t")		#'ebdb-search-tags)
+    (define-key km (kbd "+ t")		#'ebdb-search-tags)
+    (define-key km (kbd "/ C")		#'ebdb-search-record-class)
+    (define-key km (kbd "| C")		#'ebdb-search-record-class)
+    (define-key km (kbd "+ C")		#'ebdb-search-record-class)
+    (define-key km (kbd "+ d")		#'ebdb-search-duplicates)
+    (define-key km (kbd "/ D")		#'ebdb-search-database)
+    (define-key km (kbd "| D")		#'ebdb-search-database)
+    (define-key km (kbd "+ D")		#'ebdb-search-database)
+    (define-key km (kbd "C-x n w")	#'ebdb-display-all-records)
+    (define-key km (kbd "C-x n d")	#'ebdb-display-current-record)
+    (define-key km (kbd "^")	        #'ebdb-search-pop)
 
-    (define-key km [mouse-3]    'ebdb-mouse-menu)
+    (define-key km [mouse-3]    #'ebdb-mouse-menu)
     (define-key km [mouse-2]    (lambda (event)
                                   ;; Toggle record format
                                   (interactive "e")
@@ -1178,9 +1178,9 @@ displayed records."
 
 (defvar ebdb-completing-read-mails-map
   (let ((map (copy-keymap minibuffer-local-completion-map)))
-    (define-key map " " 'self-insert-command)
-    (define-key map "\t" 'ebdb-complete-mail)
-    (define-key map "\M-\t" 'ebdb-complete-mail)
+    (define-key map " "     #'self-insert-command)
+    (define-key map "\t"    #'ebdb-complete-mail)
+    (define-key map "\M-\t" #'ebdb-complete-mail)
     map)
   "Keymap used by `ebdb-completing-read-mails'.")
 
@@ -1270,21 +1270,22 @@ Derives from `special-mode'; the usual `special-mode' bindings apply.
         (list 24 (buffer-name) "  "
               '(:eval (format "%d/%d/%d"
                               (1+ (or (get-text-property
-                                       (point) 'ebdb-record-number) -1))
+                                       (point) 'ebdb-record-number)
+                                      -1))
                               (length ebdb-records)
                               (length (ebdb-records))))
               '(:eval (concat "  "
                               (ebdb-concat " " (elt ebdb-modeline-info 0)
                                            (elt ebdb-modeline-info 1))))))
   (set (make-local-variable 'revert-buffer-function)
-       'ebdb-redisplay-all-records)
+       #'ebdb-redisplay-all-records)
   ;; In newer Emacs, this will make EBDB buffers eligible for save by
   ;; `save-some-buffers'.
   (add-hook 'write-contents-functions #'ebdb-save-ebdb)
   (setq buffer-offer-save 'always)
   (when ebdb-mail-alias-alist
     (ebdb-mail-aliases))
-  (add-hook 'post-command-hook 'force-mode-line-update nil t))
+  (add-hook 'post-command-hook #'force-mode-line-update nil t))
 
 (defun ebdb-save-ebdb (&optional some)
   "Save all EBDB databases interactively.
@@ -2501,7 +2502,7 @@ The search results are displayed in the EBDB buffer using formatter FMT."
               (sit-for 0)))))
 
     (ebdb-display-records (sort (delete-dups ret)
-                                'ebdb-record-lessp)
+                                #'ebdb-record-lessp)
 			  fmt)))
 
 ;;;###autoload
@@ -2741,7 +2742,7 @@ as part of the MUA insinuation."
          (completion-ignore-case t)
          (completion (and orig
                           (try-completion orig ebdb-hashtable
-                                          'ebdb-completion-predicate)))
+                                          #'ebdb-completion-predicate)))
          all-completions dwim-completions one-record)
 
     (unless done
@@ -2760,14 +2761,14 @@ as part of the MUA insinuation."
           (setq completion (substring completion 0 (match-beginning 0))))
 
       (setq all-completions (all-completions orig ebdb-hashtable
-                                             'ebdb-completion-predicate))
+                                             #'ebdb-completion-predicate))
 
       ;; Resolve the records matching ORIG:
       ;; Multiple completions may match the same record
       (let ((records (delete-dups
-                      (apply 'append (mapcar (lambda (compl)
-					       (gethash compl ebdb-hashtable))
-					     all-completions)))))
+                      (apply #'append (mapcar (lambda (compl)
+					        (gethash compl ebdb-hashtable))
+					      all-completions)))))
         ;; Is there only one matching record?
         (setq one-record (and (not (cdr records))
                               (car records))))
@@ -2875,7 +2876,7 @@ as part of the MUA insinuation."
                     (push (ebdb-dwim-mail record mail) dwim-completions))))))
 
           (setq dwim-completions (sort (delete-dups dwim-completions)
-                                       'string-lessp))
+                                       #'string-lessp))
           (cond ((not dwim-completions)
                  (message "Matching record has no mail field")
                  (sit-for 1)
@@ -3234,7 +3235,7 @@ Prompts for FORMATTER to use."
             drec))
     (kill-new (replace-regexp-in-string
                "[ \t\n]*\\'" "\n"
-               (mapconcat 'identity (nreverse drec) "")))))
+               (mapconcat #'identity (nreverse drec) "")))))
 
 ;;;###autoload
 (defun ebdb-copy-fields-as-kill (records field &optional num)

@@ -1,6 +1,6 @@
 ;;; ebdb-org.el --- Org mode integration for EBDB    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords:
@@ -72,7 +72,7 @@
 			     :export 'ebdb-org-export)
   (with-no-warnings ;; I know it's obsolete.
     (org-add-link-type "ebdb" #'ebdb-org-open #'ebdb-org-export)
-    (add-hook 'org-store-link-functions 'ebdb-org-store-link)))
+    (add-hook 'org-store-link-functions #'ebdb-org-store-link)))
 
 ;; TODO: Put a custom keymap on the links (or else expand
 ;; `ebdb-org-open') so that users can choose what to do with the

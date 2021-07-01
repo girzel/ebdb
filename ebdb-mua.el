@@ -1,6 +1,6 @@
 ;;; ebdb-mua.el --- Mail user agent interaction for EBDB  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -142,7 +142,6 @@ Each element is of the form
 
 The symbol CLASS defines a class of headers.
 The strings HEADER belong to CLASS."
-  :group 'ebdb-mua
   :type 'list)
 
 (defcustom ebdb-message-all-addresses nil
@@ -151,7 +150,6 @@ The strings HEADER belong to CLASS."
 Otherwise this function returns only the first mail address of
 each message."
 
-  :group 'ebdb-mua
   :type 'boolean)
 
 (defcustom ebdb-message-try-all-headers nil
@@ -165,7 +163,6 @@ address is excluded because of `ebdb-user-mail-address-re') but
 `ebdb-message-try-all-headers' is t, then these commands will
 also consider the email addresses in the remaining headers."
 
-  :group 'ebdb-mua
   :type 'boolean)
 
 ;; TODO: Handle more headers.  Why not make it possible for EBDB to
@@ -192,7 +189,6 @@ or people posting about time travel.
 If t accept all messages.  If nil, accept all messages.
 
 See also `ebdb-ignore-header-alist', which has the opposite effect."
-  :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
 			  (symbol :tag "Recipients" recipients)
@@ -216,7 +212,6 @@ or messages sent to or CCed to either of two mailing lists.
 If t ignore all messages.  If nil do not ignore any messages.
 
 See also `ebdb-accept-header-alist', which has the opposite effect."
-  :group 'ebdb-mua
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
 			  (symbol :tag "Recipients" recipients)
@@ -240,7 +235,6 @@ recipients' email addresses from a message according to
 it matches `ebdb-user-mail-address-re'.  This way the commands
 will not operate on your own record.  See also
 `ebdb-message-try-all-headers'."
-  :group 'ebdb-mua
   :type '(choice (const :tag "Use addresses from `ebdb-record-self'" self)
 		 (const :tag "Use the value of `message-alternative-emails'" message)
 		 (regexp :tag "Regexp matching your mail addresses")))
@@ -325,7 +319,6 @@ Allowed values are:
  a regexp    If the new name matches this regexp ignore it.
                Otherwise query to add it.
 See also `ebdb-add-aka'."
-  :group 'ebdb-mua
   :type '(choice (const :tag "Automatically use the new name" t)
                  (const :tag "Query for name changes" query)
                  (const :tag "Ignore the new name" nil)
@@ -344,7 +337,6 @@ Allowed values are:
  a regexp    If the alternate name matches this regexp ignore it.
                Otherwise query to add it.
 See also `ebdb-add-name'."
-  :group 'ebdb-mua
   :type '(choice (const :tag "Automatically store alternate names as AKA" t)
                  (const :tag "Query for alternate names" query)
                  (const :tag "Ignore alternate names" nil)
@@ -367,7 +359,6 @@ Allowed values are:
  a regexp    If the new mail address matches this regexp ignore the new address.
                Otherwise query to add it.
 See also `ebdb-ignore-redundant-mails'."
-  :group 'ebdb-mua
   :type '(choice (const :tag "Automatically add new mail addresses" t)
                  (const :tag "Query before adding new mail addresses" query)
                  (const :tag "Never add new mail addresses" nil)
@@ -393,7 +384,6 @@ Allowed values are:
  a regexp    If the new mail address matches this regexp never ignore
                this mail address.  Otherwise query to ignore it.
 See also `ebdb-add-mails' and `ebdb-canonicalize-mail-function'."
-  :group 'ebdb-mua
   :type '(choice (const :tag "Automatically ignore redundant mail addresses" t)
                  (const :tag "Query whether to ignore them" query)
                  (const :tag "Do not ignore redundant mail addresses" nil)
@@ -403,7 +393,6 @@ See also `ebdb-add-mails' and `ebdb-canonicalize-mail-function'."
 
 (defcustom ebdb-message-mail-as-name t
   "If non-nil use mail address of message as fallback for name of new records."
-  :group 'ebdb-mua
   :type 'boolean)
 
 (defcustom ebdb-notice-mail-hook nil
@@ -422,7 +411,6 @@ determine the header and class of the mail address according to
 If a message contains multiple mail addresses belonging to one EBDB record,
 this hook is run for each mail address.  Use `ebdb-notice-record-hook'
 if you want to notice each record only once per message."
-  :group 'ebdb-mua
   :type 'hook)
 
 (defcustom ebdb-notice-record-hook nil
@@ -434,8 +422,8 @@ address.
 
 Run with two arguments: the record, and one of the symbols
 'sender or 'recipient.  It is up to the hook function to
-determine which MUA is used and to act appropriately."  :group
-'ebdb-mua :type 'hook)
+determine which MUA is used and to act appropriately."
+  :type 'hook)
 
 (cl-defgeneric ebdb-notice-record (record type)
   "Inform RECORD that it's been \"noticed\".
@@ -469,7 +457,6 @@ are not \"noticed\", nor is the timestamp updated."
 
 (defcustom ebdb-mua-pop-up t
   "If non-nil, display an auto-updated EBDB window while using a MUA."
-  :group 'ebdb-mua
   :type 'boolean)
 
 (defcustom ebdb-mua-default-formatter ebdb-default-multiline-formatter
@@ -479,7 +466,6 @@ The value should be an instance of the
 `ebdb-formatter-ebdb-oneline' classes.  Easy choices are the
 value of `ebdb-default-multiline-formatter' or
 `ebdb-default-oneline-formatter'."
-  :group 'ebdb-mua
   :type 'ebdb-formatter-ebdb)
 
 
@@ -499,7 +485,6 @@ addition, this list may also include the following elements:
 
 These provide a fallback if a message does not have a matching RECORD
 or if some FIELD of RECORD is empty."
-  :group 'ebdb-mua
   :type '(repeat (symbol :tag "Field")))
 
 ;; There are two ways to customize the mark shown for a record in an
@@ -541,7 +526,6 @@ or if some FIELD of RECORD is empty."
 If nil do not mark message addresses known to EBDB.
 See variable `ebdb-mua-summary-mark' and `ebdb-mua-summary-unify'.
 See also the field class `ebdb-field-summary-mark'."
-  :group 'ebdb-mua
   :type '(choice (string :tag "Mark used")
                  (const :tag "Do not mark known posters" nil)))
 
@@ -556,7 +540,6 @@ example, use \"%n %*%a %-17.17UB %-3.3m %2d %4l/%-5c
 `gnus-summary-line-format' / `vm-summary-format' is required to
 use `ebdb-mua-summary-unify'.  Currently no other MUAs support
 this EBDB feature."
-  :group 'ebdb-mua
   :type 'string)
 
 (defcustom ebdb-mua-summary-mark-format-letter "e"
@@ -570,7 +553,6 @@ example, use \"%n %*%a %Ue%-17.17F %-3.3m %2d %4l/%-5c
 `gnus-summary-line-format' / `vm-summary-format' is required to
 use function `ebdb-mua-summary-mark'.  Currently no other MUAs
 support this EBDB feature."
-  :group 'ebdb-mua
   :type 'string)
 
 (defvar ebdb-mail-folder-list nil
@@ -843,7 +825,7 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 	  (if (and records (not ebdb-message-all-addresses))
 	      (setq address-list nil))))
       (setq records
-            (if sort (sort records 'ebdb-record-lessp)
+            (if sort (sort records #'ebdb-record-lessp)
               ;; Make RECORDS a list ordered like ADDRESS-LIST.
               (nreverse records))))
 

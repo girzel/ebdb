@@ -1,6 +1,6 @@
 ;;; ebdb-vcard.el --- vCard export and import routine for EBDB  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -74,7 +74,6 @@
 			    ebdb-field-tags)
 		 :header nil)
   "The default formatter for VCard 4.0 exportation."
-  :group 'ebdb-vcard
   :type 'ebdb-formatter-vcard)
 
 (defcustom ebdb-vcard-default-30-formatter
@@ -96,7 +95,6 @@
 			    ebdb-field-tags)
 		 :header nil)
   "The default formatter for VCard 3.0 exportation."
-  :group 'ebdb-vcard
   :type 'ebdb-formatter-vcard)
 
 (defcustom ebdb-vcard-label-alist
@@ -119,8 +117,6 @@ This alist is neither exhaustive nor authoritative.  It's purpose
 is to simplify property labeling during the export process, and
 to classify properties during import.  The import process does
 not always respect these headings."
-
-  :group 'ebdb-vcard
   :type '(repeat
 	  (cons string symbol)))
 

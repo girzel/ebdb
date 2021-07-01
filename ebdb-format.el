@@ -1,6 +1,6 @@
 ;;; ebdb-format.el --- Formatting/exporting EBDB records  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -64,7 +64,7 @@
     :initarg :label
     :type string
     :initform "")
-   (tracking-symbol :initform ebdb-formatter-tracker)
+   (tracking-symbol :initform 'ebdb-formatter-tracker)
    (format-buffer-name
     :initarg :format-buffer-name
     :type string
