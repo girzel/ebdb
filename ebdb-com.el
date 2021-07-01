@@ -93,6 +93,15 @@ Used by `ebdb-mouse-menu'."
   "Hook run after the *EBDB* is filled in."
   :type 'hook)
 
+(defcustom ebdb-create-update-roles t
+  "When non-nil, offer to create and/or update role fields for records.
+For instance, note when the domain field of a newly-created
+organization matches existing records' mail fields, and offer to
+create roles for those records, etc."
+  :group 'ebdb-record-edit
+  :type 'boolean
+  :version "0.7")
+
 ;; Faces for font-lock
 (defgroup ebdb-faces nil
   "Faces used by EBDB."
@@ -1852,18 +1861,81 @@ SLOTS, if present, is passed to any subsequent call to
 (cl-defmethod ebdb-com-insert-field :after ((record ebdb-record-person)
 					    (field ebdb-field-role)
 					    &optional _slots)
-  (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
-    (when org
-      (ebdb-record-adopt-role-fields record org t))))
+  (when ebdb-create-update-roles
+    (let ((org (ebdb-gethash (slot-value field 'org-uuid) 'uuid)))
+      (when org
+	(ebdb-record-adopt-role-fields record org t)))))
 
 (cl-defmethod ebdb-com-insert-field :after ((org ebdb-record-organization)
-					    (_field ebdb-field-domain)
+					    (domain ebdb-field-domain)
 					    &optional _slot)
-  (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
-	rec)
-    (dolist (r roles)
-      (setq rec (ebdb-gethash (slot-value r 'record-uuid) 'uuid))
-      (ebdb-record-adopt-role-fields rec org t))))
+  (when ebdb-create-update-roles
+    (let ((roles (gethash (ebdb-record-uuid org) ebdb-org-hashtable))
+	  (matching-records (ebdb-search
+			     (ebdb-records)
+			     `((ebdb-field-mail
+				,(concat "@"
+					 (regexp-quote (ebdb-string domain))
+					 "\\'")))))
+	  rec mail)
+      (dolist (r roles)
+	(setq rec (ebdb-gethash (slot-value r 'record-uuid) 'uuid)
+	      matching-records (delete rec matching-records))
+	(ebdb-record-adopt-role-fields rec org t))
+      (dolist (m matching-records)
+	(when (y-or-n-p (format "Add role for %s at %s?"
+				(ebdb-string m)
+				(ebdb-string org)))
+	  (setq mail (seq-find (lambda (m)
+				 (string-suffix-p (ebdb-string domain)
+						  (ebdb-string m)))
+			       (ebdb-record-mail m)))
+	  (ebdb-record-insert-field
+	   m (ebdb-read 'ebdb-field-role
+			(list :org-uuid (ebdb-record-uuid org)
+			      :record-uuid (ebdb-record-uuid m)
+			      :mail mail)))
+	  (ebdb-record-delete-field m mail 'mail))))))
+
+;; This is an `ebdb-record-insert-field', while the reverse action
+;; (creating role fields when an organization gets a new domain field)
+;; happens above as part of an `ebdb-com-insert-field' method.  The
+;; reason being, there are no automated procedures that might add a
+;; domain field to an organization: it can currently only happen in an
+;; ebdb-mode buffer as the result of an interactive command.  But mail
+;; fields can be added to person records during MUA updating or
+;; snarfing (which is when this automated process is really helpful),
+;; so it needs to happen on a lower-level method.  We keep the
+;; definition here, though, so as not to pollute ebdb.el with
+;; user-prompting behavior.
+(cl-defmethod ebdb-record-insert-field :around ((record ebdb-record-person)
+						(mail ebdb-field-mail)
+						&optional _slot)
+  "Maybe add role fields to RECORD.
+If the domain part of MAIL matches any the domain field of any
+existing organization, ask the user if they want to create a role
+field."
+  (if ebdb-create-update-roles
+      (let ((orgs (ebdb-search (ebdb-records)
+			       `((ebdb-field-domain
+				  ,(nth 1 (split-string
+					   (ebdb-string mail)
+					   "@")))))))
+	(unless (seq-find
+		 (lambda (org)
+		   (when (y-or-n-p
+			  (format "Add role for %s at %s?"
+				  (ebdb-string record)
+				  (ebdb-string org)))
+		     (ebdb-record-insert-field
+		      record (ebdb-read
+			      'ebdb-field-role
+			      (list :org-uuid (ebdb-record-uuid org)
+				    :record-uuid (ebdb-record-uuid record)
+				    :mail mail)))))
+		 orgs)
+	  (cl-call-next-method)))
+    (cl-call-next-method)))
 
 ;;;###autoload
 (defun ebdb-edit-field (record field)

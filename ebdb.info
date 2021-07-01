@@ -564,9 +564,16 @@ very welcome.
    It can often feel a little clunky creating a new organization to
 associate with a person, or vice versa.  EBDB provides a convenience
 function to create a new person or organization record, and associate it
-with the existing record under point, in one step, using the ‘F’.  This
-will create a new organization if point is on a person record, or a new
+with the existing record under point, in one step, using ‘R’.  This will
+create a new organization if point is on a person record, or a new
 person if point is on an organization.
+
+   Lastly, EBDB will try to assist in creating role fields where it
+seems helpful.  When adding mail fields to person records, or domain
+fields to organization records, it will check if the mail or domain
+seems to match any existing records, and offer to create the
+corresponding role fields.  This behavior is enabled by default; set
+‘ebdb-create-update-roles’ to nil to disable it.
 
 
 File: ebdb.info,  Node: Tag field,  Next: Mail folder field,  Prev: Role fields,  Up: Field Types
@@ -2453,6 +2460,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-create-record-extended:           Creating Records.    (line  14)
 * ebdb-create-record-extended <1>:       The Basics of ebdb-mode.
                                                               (line  26)
+* ebdb-create-update-roles:              Role fields.         (line  40)
 * ebdb-dedicated-window:                 Customizing Record Display.
                                                               (line  19)
 * ebdb-default-address-class:            Hacking EBDB.        (line  43)
@@ -2763,52 +2771,52 @@ Node: Editing Existing Fields14916
 Node: Deleting Records and Fields15516
 Node: Field Types15912
 Node: Role fields18198
-Node: Tag field20179
-Node: Mail folder field20748
-Node: MUA Interaction21076
-Node: Loading MUA Code21629
-Node: Display and Updating22342
-Node: Pop-up Buffers23108
-Node: Auto-Updating Records25958
-Node: Noticing and Automatic Rules30752
-Node: Interactive Commands32574
-Node: EBDB and MUA summary buffers35048
-Node: Sender name display35566
-Node: Summary buffer marks36793
-Node: Mail Address Completion37972
-Node: A Note on Completion40481
-Node: Specific MUAs41104
-Node: Gnus41252
-Node: Posting Styles41474
-Node: EBDB Buffers43030
-Node: Searching44241
-Node: Changing Search Behavior45955
-Node: The Basics of ebdb-mode47202
-Node: Customizing Record Display51550
-Node: Marking55870
-Node: Exporting/Formatting56297
-Node: Completion57232
-Node: Snarfing58028
-Node: Internationalization60045
-Node: Diary Integration62746
-Node: Mail Aliases63611
-Node: vCard Support64325
-Node: Org Integration64824
-Node: Citing Records66722
-Node: Hacking EBDB67480
-Node: Field Classes70073
-Node: Init and Delete Methods73254
-Node: Manipulating Field Data Programmatically74778
-Node: The Labeled Field Class76490
-Node: The Singleton Field Class77361
-Node: Actions77799
-Node: Custom Field Searching78471
-Node: Fast Lookups81338
-Node: Formatting in the EBDB Buffer83148
-Node: Writing Internationalization Libraries85224
-Node: Writing Integration For New MUAs89640
-Node: Article snarfing93088
-Node: Index93806
+Node: Tag field20564
+Node: Mail folder field21133
+Node: MUA Interaction21461
+Node: Loading MUA Code22014
+Node: Display and Updating22727
+Node: Pop-up Buffers23493
+Node: Auto-Updating Records26343
+Node: Noticing and Automatic Rules31137
+Node: Interactive Commands32959
+Node: EBDB and MUA summary buffers35433
+Node: Sender name display35951
+Node: Summary buffer marks37178
+Node: Mail Address Completion38357
+Node: A Note on Completion40866
+Node: Specific MUAs41489
+Node: Gnus41637
+Node: Posting Styles41859
+Node: EBDB Buffers43415
+Node: Searching44626
+Node: Changing Search Behavior46340
+Node: The Basics of ebdb-mode47587
+Node: Customizing Record Display51935
+Node: Marking56255
+Node: Exporting/Formatting56682
+Node: Completion57617
+Node: Snarfing58413
+Node: Internationalization60430
+Node: Diary Integration63131
+Node: Mail Aliases63996
+Node: vCard Support64710
+Node: Org Integration65209
+Node: Citing Records67107
+Node: Hacking EBDB67865
+Node: Field Classes70458
+Node: Init and Delete Methods73639
+Node: Manipulating Field Data Programmatically75163
+Node: The Labeled Field Class76875
+Node: The Singleton Field Class77746
+Node: Actions78184
+Node: Custom Field Searching78856
+Node: Fast Lookups81723
+Node: Formatting in the EBDB Buffer83533
+Node: Writing Internationalization Libraries85609
+Node: Writing Integration For New MUAs90025
+Node: Article snarfing93473
+Node: Index94191
 
 End Tag Table
 

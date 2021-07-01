@@ -602,9 +602,17 @@ Suggestions are very welcome.
 It can often feel a little clunky creating a new organization to
 associate with a person, or vice versa.  EBDB provides a convenience
 function to create a new person or organization record, and associate
-it with the existing record under point, in one step, using the
-@kbd{F}.  This will create a new organization if point is on a
+it with the existing record under point, in one step, using
+@kbd{R}.  This will create a new organization if point is on a
 person record, or a new person if point is on an organization.
+
+@vindex ebdb-create-update-roles
+Lastly, EBDB will try to assist in creating role fields where it seems
+helpful.  When adding mail fields to person records, or domain fields
+to organization records, it will check if the mail or domain seems to
+match any existing records, and offer to create the corresponding role
+fields.  This behavior is enabled by default; set
+@code{ebdb-create-update-roles} to nil to disable it.
 
 @node Tag field
 @subsection Tag field
