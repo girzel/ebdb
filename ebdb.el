@@ -5834,6 +5834,13 @@ values, by default the search is not handed to the name field itself."
 		(when (ebdb-field-search m regexp)
 		  (throw 'found t))))))))
 
+(cl-defmethod ebdb-record-search ((org ebdb-record-organization)
+				  (_type (subclass ebdb-field-domain))
+				  (criterion string))
+  (let ((dom (slot-value org 'domain)))
+    (and dom
+	 (string-match-p criterion (ebdb-string dom)))))
+
 (cl-defmethod ebdb-record-search ((record ebdb-record-person)
 				  (_type (eql organization))
 				  (regexp string))
