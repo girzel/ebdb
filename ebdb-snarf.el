@@ -270,15 +270,14 @@ vectors, usually to `ebdb-snarf-query'."
 	      ;; the fields and names, and doesn't already have them.
 	      (dolist (f fields)
 		(condition-case nil
-		    (progn
-		      (when (and (car-safe (ebdb-record-field-slot-query
-					    (eieio-object-class record)
-					    `(nil . ,(eieio-object-class f))))
-				 (null (ebdb-record-search
-					record
-					(eieio-object-class f)
-					(ebdb-string f))))
-			(push f out-fields)))
+		    (when (and (car-safe (ebdb-record-field-slot-query
+					  (eieio-object-class record)
+					  `(nil . ,(eieio-object-class f))))
+			       (null (ebdb-record-search
+				      record
+				      (eieio-object-class f)
+				      (ebdb-string f))))
+		      (push f out-fields))
 		  (ebdb-unacceptable-field nil)))
 	      (dolist (name names)
 		(unless (ebdb-record-search
@@ -350,9 +349,10 @@ automatically."
 					    (ebdb-string elt)
 					    (ebdb-string record)))
 		       (condition-case nil
-			   (ebdb-record-insert-field
-			    record elt)
-			 (ebdb-init-field elt record)
+			   (progn
+			     (ebdb-record-insert-field
+			      record elt)
+			     (ebdb-init-field elt record))
 			 (ebdb-unacceptable-field nil))
 		     (push elt leftovers)))
 		 (dolist (n names)
