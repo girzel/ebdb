@@ -1248,8 +1248,8 @@ process."
     (setq label (ebdb-with-exit
 		    (ebdb-read-string
 		     (if (stringp human-readable)
-			 (format "%s label: " (capitalize human-readable))
-		       "Label: ")
+			 (format "%s label" (capitalize human-readable))
+		       "Label")
 		     label labels nil)))
     (when (and label
 	       (or
