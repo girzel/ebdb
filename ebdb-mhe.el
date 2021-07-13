@@ -107,31 +107,33 @@ Returns the empty string if HEADER is not in the message."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Use EBDB for interactive spec of MH-E commands
 
-(defadvice mh-send (before mh-ebdb-send act)
+(advice-add 'mh-send :before #'ebdb--mh-send-completion)
+(defun ebdb--mh-send-completion (&rest _)
   (interactive
    (list (ebdb-completing-read-mails "To: ")
          (ebdb-completing-read-mails "Cc: ")
-         (read-string "Subject: "))))
+         (read-string "Subject: ")))
+  nil)
 
-(defadvice mh-send-other-window (before mh-ebdb-send-other act)
-  (interactive
-   (list (ebdb-completing-read-mails "To: ")
-         (ebdb-completing-read-mails "Cc: ")
-         (read-string "Subject: "))))
+(advice-add 'mh-send-other-window :before #'ebdb--mh-send-completion)
 
-(defadvice mh-forward (before mh-ebdb-forward act)
+(advice-add 'mh-forward :before #'ebdb--mh-forward-completion)
+(defun ebdb--mh-forward-completion (&rest _)
   (interactive
    (list (ebdb-completing-read-mails "To: ")
          (ebdb-completing-read-mails "Cc: ")
          (if current-prefix-arg
              (mh-read-seq-default "Forward" t)
-           (mh-get-msg-num t)))))
+           (mh-get-msg-num t))))
+  nil)
 
-(defadvice mh-redistribute (before mh-ebdb-redist act)
+(advice-add 'mh-redistribute :before #'ebdb--mh-redistribute-completion)
+(defun ebdb--mh-redistribute-completion (&rest _)
   (interactive
    (list (ebdb-completing-read-mails "Redist-To: ")
          (ebdb-completing-read-mails "Redist-Cc: ")
-         (mh-get-msg-num t))))
+         (mh-get-msg-num t)))
+  nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
