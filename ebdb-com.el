@@ -1916,7 +1916,10 @@ SLOTS, if present, is passed to any subsequent call to
 If the domain part of MAIL matches any the domain field of any
 existing organization, ask the user if they want to create a role
 field."
-  (if ebdb-create-update-roles
+  (if (and ebdb-create-update-roles
+	   ;; This method also fires when editing a mail field,
+	   ;; possibly in order to set the priority to 'defunct.
+	   (null (eql (slot-value mail 'priority) 'defunct)))
       (let ((orgs (ebdb-search (ebdb-records)
 			       `((ebdb-field-domain
 				  ,(nth 1 (split-string
