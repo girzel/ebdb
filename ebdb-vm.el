@@ -25,10 +25,6 @@
 
 (require 'ebdb-mua)
 
-(when t
-  (require 'vm-autoloads)
-  (require 'vm))
-
 (declare-function vm-check-for-killed-summary "ext:vm-misc")
 (declare-function vm-error-if-folder-empty "ext:vm-misc")
 (declare-function vm-get-header-contents "ext:vm-summary")
