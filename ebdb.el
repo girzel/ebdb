@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.7.1
+;; Version: 0.8
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -62,8 +62,7 @@
 (autoload 'widget-group-match "wid-edit")
 (autoload 'ebdb-migrate-from-bbdb "ebdb-migrate")
 (autoload 'eieio-customize-object "eieio-custom")
-(autoload 'diary-sexp-entry "diary-lib")
-(autoload 'diary-add-to-list "diary-lib")
+(autoload 'diary-ordinal-suffix "diary-lib")
 (autoload 'org-agenda-list "org-agenda")
 (autoload 'org-make-tags-matcher "org")
 (defvar ebdb-i18n-countries)
@@ -377,6 +376,10 @@ Emacs, always query before reverting."
   :group 'ebdb-utilities-anniv
   :type 'boolean)
 
+(make-obsolete-variable
+ 'ebdb-use-diary
+ "Add %%(ebdb-diary-anniversaries) to your diary or to Org" "0.8")
+
 (defcustom ebdb-anniversary-md-format "%B %d"
   "Format string used for displaying month-day anniversary dates.
 See the docstring of `format-time-string' for the meaning of
@@ -393,26 +396,12 @@ month, and day values are available."
   :group 'ebdb-utilities-anniv
   :type 'string)
 
-(defvar ebdb-diary-entries nil
-  "A list of all anniversary diary entries.
-Entries are added and removed in the `ebdb-init-field' and
-`ebdb-delete-field' methods of the `ebdb-field-anniversary'
-class, and added with the `ebdb-diary-add-entries' function.
-
-Each entry is a two-element list: a string representation of the
-anniversary date, and the sexp (as a string):
-
-\(diary-anniversary MM DD YYYY) (the year is optional)")
-
-;; Dynamic var needed by `diary-sexp-entry'.
-(defvar original-date)
-
-(defun ebdb-diary-add-entries ()
-  "Add anniversaries from EBDB to the diary."
-  (pcase-dolist (`(,entry ,sexp) ebdb-diary-entries)
-    (let ((parsed (cdr-safe (diary-sexp-entry sexp entry original-date))))
-      (when parsed
-	(diary-add-to-list original-date parsed sexp)))))
+(defvar ebdb-diary-entries (make-hash-table :test #'equal)
+  "Hash table holding anniversary entries for the diary.
+Keys are dates in the format (MONTH DAY YEAR), values are lists
+of anniversary strings.  Instances of `ebdb-field-anniversary'
+fields can push descriptive strings into the hash entries for
+their dates.  Also see `ebdb-diary-anniversaries'.")
 
 (defcustom ebdb-before-load-hook nil
   "Hook run before loading databases."
@@ -2203,12 +2192,35 @@ Eventually this method will go away."
 				    (list month day year))
 			 obj)))
 
-;; `ebdb-field-anniv-diary-entry' is defined below.
+(defun ebdb-diary-anniversaries (&optional mark)
+  (with-no-warnings
+    (defvar date)
+    (defvar original-date))
+  (let ((entries (gethash (seq-subseq date 0 2) ebdb-diary-entries)))
+    (when (and (null (calendar-leap-year-p (nth 2 date)))
+	       (= 3 (nth 0 date)) (= 1 (nth 1 date)))
+      ;; If it's not a leap year, we "shift" all anniversaries for Feb
+      ;; 29th onto Mar 1.
+      (setq entries (append entries (gethash '(2 29) ebdb-diary-entries))))
+    (when entries
+      (cons mark
+	    (mapconcat (pcase-lambda (`(,field ,record))
+			 (if (bound-and-true-p original-date)
+			     ;; If we have `original-date', we're
+			     ;; displaying the diary list, so we need
+			     ;; the detailed string.
+			     (ebdb-field-anniv-diary-entry
+			      field record (nth 2 date))
+			   ;; If not, we're just marking dates on the
+			   ;; calendar, so any non-nil response value is
+			   ;; fine.
+			   entry))
+		       entries "; ")))))
+
 (cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) record)
-  (when ebdb-use-diary
-    (add-to-list
-     'ebdb-diary-entries
-     (ebdb-field-anniv-diary-entry anniv record))))
+  (with-slots (date) anniv
+    (push (list anniv record)
+	  (gethash (seq-subseq date 0 2) ebdb-diary-entries))))
 
 (cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
   (let* ((date (slot-value ann 'date))
@@ -2230,11 +2242,12 @@ Eventually this method will go away."
 
 (cl-defmethod ebdb-delete-field ((anniv ebdb-field-anniversary)
 				 record &optional _unload)
-  (when ebdb-use-diary
-    (setq
-     ebdb-diary-entries
-     (delete (ebdb-field-anniv-diary-entry anniv record)
-	     ebdb-diary-entries))))
+  (with-slots (date) anniv
+    (puthash (seq-subseq date 0 2)
+	     (seq-remove (lambda (e)
+			   (equal e (list anniv record)))
+			 (gethash (seq-subseq date 0 2) ebdb-diary-entries))
+	     ebdb-diary-entries)))
 
 ;;; Id field
 
@@ -3222,19 +3235,22 @@ If FIELD doesn't specify a year, use the current year."
      (format "%d-%d-%d" year (nth 0 date) (nth 1 date)))))
 
 (cl-defmethod ebdb-field-anniv-diary-entry ((field ebdb-field-anniversary)
-					    (record ebdb-record))
-  "Add a diary entry for FIELD's date."
-  (let ((cal-date (slot-value field 'date)))
-    (list (concat (format "%s's "
-			  (ebdb-string record))
-		  (if (nth 2 cal-date)
-		      "%d%s "
-		    "%s ")
-		  (slot-value field 'label))
-	  (apply #'format (if (nth 2 cal-date)
-			      "(diary-anniversary %s %s %s)"
-			    "(diary-anniversary %s %s)")
-		 cal-date))))
+					    (record ebdb-record)
+					    &optional now-year)
+  "Produce a diary entry for FIELD's date.
+The entry is a string noting how many years have passed for
+RECORD's FIELD anniversary, relative to NOW-YEAR."
+  ;; Essentially a re-write of `diary-anniversary'.
+  (pcase-let* ((`(,month ,day ,year) (slot-value field 'date))
+	       (label (slot-value field 'label))
+	       (num-years (when (and year now-year)
+			    (- now-year year))))
+    (concat (format "%s's " (ebdb-string record))
+	    (when year
+	      (format "%d%s " num-years (diary-ordinal-suffix num-years)))
+	    label
+	    (unless (string= label "birthday")
+	      " anniversary"))))
 
 ;;; `ebdb-record' subclasses
 
@@ -4342,6 +4358,7 @@ process.")
 	ebdb-record-tracker nil)
   (clrhash ebdb-org-hashtable)
   (clrhash ebdb-hashtable)
+  (clrhash ebdb-diary-entries)
   (clrhash ebdb-relation-hashtable))
 
 ;; Changing which database a record belongs to.
@@ -5376,8 +5393,6 @@ All the important work is done by the `ebdb-db-load' method."
        (cons db-file-regexp 'lisp-data-mode)
        auto-mode-alist))
     (run-hooks 'ebdb-after-load-hook)
-    (when ebdb-use-diary
-      (add-hook 'diary-list-entries-hook #'ebdb-diary-add-entries))
     (add-hook 'kill-emacs-hook #'ebdb-save-on-emacs-exit)
     (length ebdb-record-tracker)))
 

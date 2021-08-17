@@ -1587,22 +1587,22 @@ option will shadow the values in the variable.
 #+end_defopt
 
 * Diary Integration
+:PROPERTIES:
+:ID:       d7e3f675-b37c-45ed-9636-7851611b6a19
+:END:
 #+CINDEX: Diary integration
 Some EBDB fields hold dates or anniversaries (most notably the
 ~ebdb-field-anniversary~ field).  It's possible to integrate this
-information with Emacs' diary package (and from there to Org, via the
-~org-agenda-include-diary~ option).  At present, you'll need to have
-an actual diary file present at the location indicated by
-~diary-file~, though the file can be blank.
+information with Emacs' diary package.  To activate this, add the
+following line to your diary file:
 
-#+ATTR_TEXINFO: :options ebdb-use-diary
-#+BEGIN_defopt
-If non-nil, EBDB fields with date information will attempt to add that
-information to the diary.
-#+END_defopt
+#+begin_example
+%%(ebdb-diary-anniversaries)
+#+end_example
 
-When viewing the calendar, you can use the {{{kbd(d)}}} key to see
-diary information for that day.
+To integrate this with the Org Agenda, either set
+~org-agenda-include-diary~ non-nil, or the above line can be inserted
+directly in an Org file (instead of the diary file).
 
 Support for this feature is rudimentary.  More customization options
 are forthcoming.
@@ -1671,6 +1671,9 @@ buffer.
 
 This function could also be added to the ~org-agenda-mode-hook~, to
 pop up a buffer any time relevant records are found.
+
+It's also possible to have EBDB anniversaries and other date
+notifications show up in the Org Agenda. [[id:d7e3f675-b37c-45ed-9636-7851611b6a19][Diary Integration]].
 * Citing Records
 Often one wants to share contact information into other channels: for
 instance, pasting a contact's name and mail address in a message

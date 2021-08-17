@@ -1,4 +1,4 @@
-This is ebdb.info, produced by makeinfo version 6.7 from ebdb.texi.
+This is ebdb.info, produced by makeinfo version 6.8 from ebdb.texi.
 
 Copyright © 2016 Free Software Foundation, Inc.
 
@@ -288,24 +288,24 @@ database classes may store contacts elsewhere.
 
    Databases have a few user-facing settings:
 
- -- Instance Variable of Database: ‘boolean’ read-only
+ -- Instance Variable of Database: boolean read-only
      If non-nil, records can only be read from the database, not edited
      or deleted.
 
- -- Instance Variable of Database: ‘boolean’ auto-save
+ -- Instance Variable of Database: boolean auto-save
      If non-nil, the database’s records will not be autosaved.
 
- -- Instance Variable of Database: ‘character’ buffer-char
+ -- Instance Variable of Database: character buffer-char
      A single character that will be displayed next to records in the
      *EBDB* buffer, indicating which database they belong to.
 
- -- Instance Variable of Database: ‘boolean’ disabled
+ -- Instance Variable of Database: boolean disabled
      When non-nil , the database will essentially be ignored—no records
      will be read from it.  Setting this to t will only take effect on
      next restart; to disable a database immediately, use
      ‘ebdb-disable-database’ below.
 
- -- Instance Variable of Database: ‘symbol’ record-class
+ -- Instance Variable of Database: symbol record-class
      The default record class to use when creating new records in this
      database.  The default is ‘ebdb-default-record-class’.
 
@@ -1654,17 +1654,14 @@ File: ebdb.info,  Node: Diary Integration,  Next: Mail Aliases,  Prev: Internati
 
 Some EBDB fields hold dates or anniversaries (most notably the
 ‘ebdb-field-anniversary’ field).  It’s possible to integrate this
-information with Emacs’ diary package (and from there to Org, via the
-‘org-agenda-include-diary’ option).  At present, you’ll need to have an
-actual diary file present at the location indicated by ‘diary-file’,
-though the file can be blank.
+information with Emacs’ diary package.  To activate this, add the
+following line to your diary file:
 
- -- User Option: ebdb-use-diary
-     If non-nil, EBDB fields with date information will attempt to add
-     that information to the diary.
+     %%(ebdb-diary-anniversaries)
 
-   When viewing the calendar, you can use the ‘d’ key to see diary
-information for that day.
+   To integrate this with the Org Agenda, either set
+‘org-agenda-include-diary’ non-nil, or the above line can be inserted
+directly in an Org file (instead of the diary file).
 
    Support for this feature is rudimentary.  More customization options
 are forthcoming.
@@ -1738,6 +1735,9 @@ an *EBDB* buffer alongside an Org Agenda buffer.
 
    This function could also be added to the ‘org-agenda-mode-hook’, to
 pop up a buffer any time relevant records are found.
+
+   It’s also possible to have EBDB anniversaries and other date
+notifications show up in the Org Agenda.  *note Diary Integration::.
 
 
 File: ebdb.info,  Node: Citing Records,  Next: Hacking EBDB,  Prev: Org Integration,  Up: Top
@@ -2665,7 +2665,6 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-toggle-records-format:            The Basics of ebdb-mode.
                                                               (line  73)
 * ebdb-try-speedups:                     The EBDB Database.   (line  87)
-* ebdb-use-diary:                        Diary Integration.   (line  13)
 * ebdb-user-name-address-re:             Auto-Updating Records.
                                                               (line  77)
 * ebdb-vm-auto-update-p:                 Auto-Updating Records.
@@ -2762,61 +2761,61 @@ Node: Record Migration5697
 Node: Variables and Options6337
 Node: Migration from Org Contacts6824
 Node: The EBDB Database7584
-Node: Creating Records11775
-Node: Record classes12856
-Node: Record names13201
-Node: Record Fields13876
-Node: Inserting New Fields14120
-Node: Editing Existing Fields14916
-Node: Deleting Records and Fields15516
-Node: Field Types15912
-Node: Role fields18198
-Node: Tag field20564
-Node: Mail folder field21133
-Node: MUA Interaction21461
-Node: Loading MUA Code22014
-Node: Display and Updating22727
-Node: Pop-up Buffers23493
-Node: Auto-Updating Records26343
-Node: Noticing and Automatic Rules31137
-Node: Interactive Commands32959
-Node: EBDB and MUA summary buffers35433
-Node: Sender name display35951
-Node: Summary buffer marks37178
-Node: Mail Address Completion38357
-Node: A Note on Completion40866
-Node: Specific MUAs41489
-Node: Gnus41637
-Node: Posting Styles41859
-Node: EBDB Buffers43415
-Node: Searching44626
-Node: Changing Search Behavior46340
-Node: The Basics of ebdb-mode47587
-Node: Customizing Record Display51935
-Node: Marking56255
-Node: Exporting/Formatting56682
-Node: Completion57617
-Node: Snarfing58413
-Node: Internationalization60430
-Node: Diary Integration63131
-Node: Mail Aliases63996
-Node: vCard Support64710
-Node: Org Integration65209
-Node: Citing Records67107
-Node: Hacking EBDB67865
-Node: Field Classes70458
-Node: Init and Delete Methods73639
-Node: Manipulating Field Data Programmatically75163
-Node: The Labeled Field Class76875
-Node: The Singleton Field Class77746
-Node: Actions78184
-Node: Custom Field Searching78856
-Node: Fast Lookups81723
-Node: Formatting in the EBDB Buffer83533
-Node: Writing Internationalization Libraries85609
-Node: Writing Integration For New MUAs90025
-Node: Article snarfing93473
-Node: Index94191
+Node: Creating Records11745
+Node: Record classes12826
+Node: Record names13171
+Node: Record Fields13846
+Node: Inserting New Fields14090
+Node: Editing Existing Fields14886
+Node: Deleting Records and Fields15486
+Node: Field Types15882
+Node: Role fields18168
+Node: Tag field20534
+Node: Mail folder field21103
+Node: MUA Interaction21431
+Node: Loading MUA Code21984
+Node: Display and Updating22697
+Node: Pop-up Buffers23463
+Node: Auto-Updating Records26313
+Node: Noticing and Automatic Rules31107
+Node: Interactive Commands32929
+Node: EBDB and MUA summary buffers35403
+Node: Sender name display35921
+Node: Summary buffer marks37148
+Node: Mail Address Completion38327
+Node: A Note on Completion40836
+Node: Specific MUAs41459
+Node: Gnus41607
+Node: Posting Styles41829
+Node: EBDB Buffers43385
+Node: Searching44596
+Node: Changing Search Behavior46310
+Node: The Basics of ebdb-mode47557
+Node: Customizing Record Display51905
+Node: Marking56225
+Node: Exporting/Formatting56652
+Node: Completion57587
+Node: Snarfing58383
+Node: Internationalization60400
+Node: Diary Integration63101
+Node: Mail Aliases63794
+Node: vCard Support64508
+Node: Org Integration65007
+Node: Citing Records67041
+Node: Hacking EBDB67799
+Node: Field Classes70392
+Node: Init and Delete Methods73573
+Node: Manipulating Field Data Programmatically75097
+Node: The Labeled Field Class76809
+Node: The Singleton Field Class77680
+Node: Actions78118
+Node: Custom Field Searching78790
+Node: Fast Lookups81657
+Node: Formatting in the EBDB Buffer83467
+Node: Writing Internationalization Libraries85543
+Node: Writing Integration For New MUAs89959
+Node: Article snarfing93407
+Node: Index94125
 
 End Tag Table
 

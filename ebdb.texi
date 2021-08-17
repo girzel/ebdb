@@ -1824,18 +1824,16 @@ option will shadow the values in the variable.
 @cindex Diary integration
 Some EBDB fields hold dates or anniversaries (most notably the
 @code{ebdb-field-anniversary} field).  It's possible to integrate this
-information with Emacs' diary package (and from there to Org, via the
-@code{org-agenda-include-diary} option).  At present, you'll need to have
-an actual diary file present at the location indicated by
-@code{diary-file}, though the file can be blank.
+information with Emacs' diary package.  To activate this, add the
+following line to your diary file:
 
-@defopt ebdb-use-diary
-If non-nil, EBDB fields with date information will attempt to add that
-information to the diary.
-@end defopt
+@example
+%%(ebdb-diary-anniversaries)
+@end example
 
-When viewing the calendar, you can use the @kbd{d} key to see
-diary information for that day.
+To integrate this with the Org Agenda, either set
+@code{org-agenda-include-diary} non-nil, or the above line can be inserted
+directly in an Org file (instead of the diary file).
 
 Support for this feature is rudimentary.  More customization options
 are forthcoming.
@@ -1908,6 +1906,9 @@ buffer.
 
 This function could also be added to the @code{org-agenda-mode-hook}, to
 pop up a buffer any time relevant records are found.
+
+It's also possible to have EBDB anniversaries and other date
+notifications show up in the Org Agenda. @ref{Diary Integration}.
 
 @node Citing Records
 @chapter Citing Records
