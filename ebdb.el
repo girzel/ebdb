@@ -282,6 +282,10 @@ do not set this to nil."
   "Customizations for EBDB utilities."
   :group 'ebdb)
 
+(defgroup ebdb-utilities-anniv nil
+  "Customizations for EBDB anniversaries."
+  :group 'ebdb)
+
 (defgroup ebdb-utilities-dialing nil
   "EBDB customizations for phone number dialing."
   :group 'ebdb-utilities)
