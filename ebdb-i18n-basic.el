@@ -100,21 +100,20 @@
   "Parse a US phone number.
 Uses first three digits as the area code, next seven as the
 number, and any remaining as an extension."
-  (let ((numstr (replace-regexp-in-string "[^[:digit:]]+" "" str))
-	ext)
-    (setq slots
-	  (plist-put
-	   (plist-put
-	    slots :area-code
-	    (string-to-number (substring numstr 0 3)))
-	   :number (substring numstr 3 10)))
+  (let ((numstr (replace-regexp-in-string "[^[:digit:]]+" "" str)))
+    (unless (plist-get slots :area-code)
+      (setq slots
+	    (plist-put slots :area-code
+		       (string-to-number (substring numstr 0 3)))
+	    numstr (substring numstr 3)))
+    (setq slots (plist-put slots :number (substring numstr 0 7))
+	  numstr (substring numstr 7))
     (condition-case nil
 	(setq slots (plist-put
 		     slots
 		     :extension
-		     (when (and (setq ext (substring numstr 10))
-				(null (string-empty-p ext)))
-		       (string-to-number ext))))
+		     (when (and (null (string-empty-p numstr))
+				(string-to-number numstr)))))
       (args-out-of-range nil))
     slots))
 
