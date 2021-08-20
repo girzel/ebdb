@@ -636,8 +636,8 @@ record that actually owns the field."
 			      (field ebdb-field-passport)
 			      _style
 			      (_record ebdb-record))
-  (with-slots (country number) field
-    (format "(%s) %s" country number)))
+  (with-slots (country id-number) field
+    (format "(%s) %s" country id-number)))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter-ebdb)
 			      (field ebdb-field-mail)

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.8
+;; Version: 0.8.1
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -2264,13 +2264,45 @@ Eventually this method will go away."
     :custom string
     :initarg :id-number
     :initform ""
-    :documentation "The ID number itself."))
+    :documentation "The ID number itself.")
+   (issue-date
+    :initarg :issue-date
+    :type (or nil list)
+    :custom (choice (const :tag "None" nil)
+		    (list
+		     (integer :tag "Month")
+		     (integer :tag "Day")
+		     (integer :tag "Year"))))
+   (expiration-date
+    :initarg :expiration-date
+    :type (or nil list)
+    :custom (choice (const :tag "None" nil)
+		    (list
+		     (integer :tag "Month")
+		     (integer :tag "Day")
+		     (integer :tag "Year")))))
   :human-readable "id number")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
-  (let ((id-number (ebdb-read-string "ID number"
-				     (when obj (slot-value obj 'id-number)))))
-    (cl-call-next-method class (plist-put slots :id-number id-number) obj)))
+  (unless (plist-get slots :id-number)
+    (setq slots
+	  (plist-put slots :id-number
+		     (ebdb-read-string
+		      "ID number"
+		      (when obj (slot-value obj 'id-number))))))
+  (unless (plist-get slots :issue-date)
+    (setq slots
+	  (plist-put slots :issue-date
+		     (calendar-read-date
+		      nil
+		      (when obj (slot-value obj 'issue-date))))))
+  (unless (plist-get slots :expiration-date)
+    (setq slots
+	  (plist-put slots :expiration-date
+		     (calendar-read-date
+		      nil
+		      (when obj (slot-value obj 'expiration-date))))))
+  (cl-call-next-method class slots obj))
 
 (cl-defmethod ebdb-string ((field ebdb-field-id))
   (slot-value field 'id-number))
@@ -2791,48 +2823,51 @@ record uuids.")
 
 ;; Passports
 
-(defclass ebdb-field-passport (ebdb-field-user)
+(defclass ebdb-field-passport (ebdb-field-id)
   ((country
     :type string
     :initarg :country
     :custom string
-    :initform "")
-   (number
-    :type string
-    :initarg :number
-    :custom string
-    :initform "")
-   (issue-date
-    :initarg :issue-date
-    :type (or nil number))
-   (expiration-date
-    :initarg :expiration-date
-    :type (or nil number)))
+    :initform ""))
   :human-readable "passport")
 
+;; Passports didn't used to inherit from `ebdb-field-id', and the
+;; number slot was named differently.  Also, we used to store dates as
+;; absolutes (integers) which eventually seemed like a bad idea; now
+;; switched to calendar format.
+(cl-defmethod make-instance :around ((cls (subclass ebdb-field-passport))
+				     &rest slots)
+  (when (plist-get slots :number)
+    (setf (nth (cl-position :number slots) slots) :id-number))
+  (when (numberp (plist-get slots :issue-date))
+    (setq slots (plist-put slots
+			   :issue-date
+			   (calendar-gregorian-from-absolute
+			    (plist-get slots :issue-date)))))
+  (when (numberp (plist-get slots :expiration-date))
+    (setq slots (plist-put slots
+			   :expiration-date
+			   (calendar-gregorian-from-absolute
+			    (plist-get slots :expiration-date)))))
+  (apply #'cl-call-next-method cls slots))
+
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-passport)) &optional slots obj)
-  (let ((country (ebdb-read-string "Country" (when obj (slot-value obj 'country))))
-	(number (ebdb-read-string "Number" (when obj (slot-value obj 'number))))
-	(issue-date (calendar-absolute-from-gregorian
-		     (calendar-read-date)))
-	(expiration-date (calendar-absolute-from-gregorian
-			  (calendar-read-date))))
-    (setq slots (plist-put slots :country country))
-    (setq slots (plist-put slots :number number))
-    (setq slots (plist-put slots :issue-date issue-date))
-    (setq slots (plist-put slots :expiration-date expiration-date))
-    (cl-call-next-method class slots obj)))
+  (unless (plist-get slots :country)
+    (setq slots (plist-put slots :country
+			   (ebdb-read-string
+			    "Country" (when obj (slot-value obj 'country))))))
+  (cl-call-next-method class slots obj))
 
 (cl-defmethod ebdb-string ((field ebdb-field-passport))
-  (with-slots (country number issue-date expiration-date) field
+  (with-slots (country id-number issue-date expiration-date) field
     (format "(%s) %s\nIssued: %s\nExpires: %s"
-	    country number
+	    country id-number
 	    (format-time-string
 	     "%F" (apply #'encode-time 0 0 0
-			 (calendar-gregorian-from-absolute issue-date)))
+			 issue-date))
 	    (format-time-string
 	     "%F" (apply #'encode-time 0 0 0
-			 (calendar-gregorian-from-absolute expiration-date))))))
+			 expiration-date)))))
 
 ;;; Records
 
