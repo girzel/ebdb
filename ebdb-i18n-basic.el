@@ -113,7 +113,8 @@ number, and any remaining as an extension."
 		     slots
 		     :extension
 		     (when (and (null (string-empty-p numstr))
-				(string-to-number numstr)))))
+				(string-match-p "[[:digit:]]+" numstr))
+		       (string-to-number numstr))))
       (args-out-of-range nil))
     slots))
 

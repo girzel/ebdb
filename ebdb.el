@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.8.1
+;; Version: 0.8.2
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -2214,7 +2214,7 @@ Eventually this method will go away."
 			   ;; If not, we're just marking dates on the
 			   ;; calendar, so any non-nil response value is
 			   ;; fine.
-			   entry))
+			   t))
 		       entries "; ")))))
 
 (cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) record)
@@ -3276,7 +3276,7 @@ If FIELD doesn't specify a year, use the current year."
 The entry is a string noting how many years have passed for
 RECORD's FIELD anniversary, relative to NOW-YEAR."
   ;; Essentially a re-write of `diary-anniversary'.
-  (pcase-let* ((`(,month ,day ,year) (slot-value field 'date))
+  (pcase-let* ((`(,_ ,_ ,year) (slot-value field 'date))
 	       (label (slot-value field 'label))
 	       (num-years (when (and year now-year)
 			    (- now-year year))))
