@@ -223,29 +223,25 @@ a symbol indicating a style of some sort, such as 'compact or
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (cls (subclass ebdb-field))
 				    _style
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (ebdb-field-readable-name cls))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field)
 				    _style
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (ebdb-field-readable-name field))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
 				    _style
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (ebdb-field-label field))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter)
 				    (field ebdb-field-labeled)
 				    (_style (eql compact))
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (ebdb-field-readable-name field))
 
 (cl-defmethod ebdb-fmt-field ((fmt ebdb-formatter)

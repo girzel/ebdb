@@ -541,32 +541,29 @@ choice: that formatter should be selected explicitly."
 (cl-defmethod ebdb-fmt-field-label :around ((_fmt ebdb-formatter-ebdb)
 					    _field
 					    _style
-					    &optional
-					    (_record ebdb-record))
+					    &optional _record)
   (propertize (cl-call-next-method) 'face 'ebdb-label))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-phone)
 				    (_style (eql oneline))
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (format "phone (%s)" (ebdb-field-label field)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-address)
 				    (_style (eql oneline))
-				    &optional
-				    (_record ebdb-record))
+				    &optional _record)
   (format "address (%s)" (ebdb-field-label field)))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-relation)
 				    _style
-				    &optional (record ebdb-record))
+				    &optional record)
   ;; If FIELD doesn't belong to RECORD, we're showing a reverse
   ;; relationship.
   (let ((rel-id (slot-value field 'rel-uuid)))
-    (if (equal (ebdb-record-uuid record) rel-id)
+    (if (and record (equal (ebdb-record-uuid record) rel-id))
 	(slot-value field 'rel-label)
       (ebdb-field-label field))))
 
