@@ -380,6 +380,13 @@ Emacs, always query before reverting."
  'ebdb-use-diary
  "Add %%(ebdb-diary-anniversaries) to your diary or to Org" "0.8")
 
+(defcustom ebdb-use-notifications t
+  "If non-nil, notify the user about date-based field information.
+This means that EBDB itself will produce notifications about
+anniversaries, nearly-expired drivers licenses, etc.  "
+  :group 'ebdb-utilities-anniv
+  :type 'boolean)
+
 (defcustom ebdb-anniversary-md-format "%B %d"
   "Format string used for displaying month-day anniversary dates.
 See the docstring of `format-time-string' for the meaning of
@@ -396,12 +403,17 @@ month, and day values are available."
   :group 'ebdb-utilities-anniv
   :type 'string)
 
-(defvar ebdb-diary-entries (make-hash-table :test #'equal)
-  "Hash table holding anniversary entries for the diary.
-Keys are dates in the format (MONTH DAY YEAR), values are lists
-of anniversary strings.  Instances of `ebdb-field-anniversary'
-fields can push descriptive strings into the hash entries for
-their dates.  Also see `ebdb-diary-anniversaries'.")
+(defvar ebdb-notifiable-table nil
+  "List of notification data for notifiable fields.
+Each element is a list of (DATE-INFO FIELD RECORD), where date
+info can either be a single integer representing an absolute
+number of days (produced by `calendar-absolute-from-gregorian'),
+or a cons of two such integers, the first being an \"advance\"
+date for notification, the second the date of the field itself.
+
+Instances of field classes inheriting from
+`ebdb-field-notifiable' can push their relevant data onto this
+list.  Also see the function `ebdb-diary-anniversaries'.")
 
 (defcustom ebdb-before-load-hook nil
   "Hook run before loading databases."
@@ -1303,6 +1315,124 @@ process."
   displayed in the *EBDB* buffer.  Use for mildly sensitive
   information.")
 
+;; Abstract notifiable field type.
+
+(defclass ebdb-field-notifiable (ebdb-field)
+  ((notification-date-slot
+    :type symbol
+    :allocation :class
+    :initform nil)
+   (notification-suppress
+    :type boolean
+    :custom boolean
+    :initarg :notification-suppress
+    :initform nil)
+   (notification-string
+    :type string
+    :custom (choice (const :tag "Use default" nil)
+		    (string :tag "Custom string"))
+    :initarg :notification-string
+    :initform nil)
+   (days-in-advance
+    :type integer
+    :custom integer
+    :initarg :days-in-advance
+    :initform 0))
+  :abstract t
+  :documentation "An abstract field class mixin that registers
+ \"notification\" information for a field: allowing EBDB/the diary/Org
+ to provide the user with a date-based notification of some sort.")
+
+(cl-defmethod ebdb-init-field ((field ebdb-field-notifiable) record)
+  (let* ((field-md (seq-subseq
+		    (slot-value field
+				(slot-value field
+					    'notification-date-slot))
+		    0 2))
+	 (now (calendar-current-date))
+	 (effective-date
+	  ;; Get the next future occurrence of our date.
+	  (calendar-absolute-from-gregorian
+	   (if (calendar-date-compare
+		(list (append field-md
+			      (list (calendar-extract-year now))))
+		(list now))
+	       (append field-md (list)))))
+	 (days-in-advance (slot-value field 'days-in-advance))
+	 (advance-date
+	  ;; The "absolute" here is a number of days.
+	  (when (and days-in-advance
+		     (null (eql days-in-advance 0)))
+	    (calendar-gregorian-from-absolute
+	     (- effective-date days-in-advance)))))
+    (push (list field record)
+	  (gethash (seq-subseq effective-date 0 2) ebdb-notifiable-table))))
+
+(cl-defmethod ebdb-delete-field ((field ebdb-field-notifiable)
+				 record &optional _unload)
+  (let* ((date (slot-value field
+			   (slot-value field
+				       'notification-date-slot)))
+	 (days-in-advance (slot-value field 'days-in-advance))
+	 (effective-date
+	  ;; The "absolute" here is a number of days.
+	  (calendar-gregorian-from-absolute
+	   (- (calendar-absolute-from-gregorian date)
+	      days-in-advance))))
+    (puthash (seq-subseq effective-date 0 2)
+	     (seq-remove (lambda (e)
+			   (equal e (list anniv record)))
+			 (gethash (seq-subseq effective-date 0 2)
+				  ebdb-notifiable-table))
+	     ebdb-notifiable-table)))
+
+(defun ebdb-notifiables-for-date (date)
+  "Produce a list of notifiable field info for DATE.
+DATE should be a Gregorian date in calendar format: (MONTH DAY
+YEAR).  Field info is drawn from `ebdb-notifiable-table', which
+see."
+  )
+
+(cl-defgeneric ebdb-notifiable-fill-string (field record &optional date)
+  "Produce a notification string for RECORD's field FIELD.
+Notification is relative to DATE, if provided (in (MONTH DAY
+YEAR) format), or else the current date.
+
+The notification string comes from FIELD's `notification-string'
+slot.  The following escapes can be used in the string:
+
+%r: RECORD's name
+%l: The FIELD label
+%d: FIELD's date
+%n: DATE (or the current date)
+%y: The number of years between FIELD's date and DATE
+%o: The ordinal suffix (th, st, rd) corresponding to %y"
+  (:method
+   ((field ebdb-field-notifiable)
+    (record ebdb-record-entity) &optional date)
+   (let* ((date (or date (calendar-current-date)))
+	  (field-date (slot-value field 'date))
+	  (diff-years (when (= 3 (length field-date))
+			(- (calendar-extract-year date)
+			   (calendar-extract-year field-date))))
+	  (bits
+	   (list
+	    (cons ?r (ebdb-string record))
+	    (cons ?l (slot-value field 'label))
+	    (cons ?d (apply #'format-time-string
+			    (if (= 3 (length field-date))
+				ebdb-anniversary-ymd-format
+			      ebdb-anniversary-md-format)
+			    (apply #'encode-time 0 0 0 field-date)))
+	    (cons %n (apply #'format-time-string
+			    ebdb-anniversary-ymd-format
+			    (apply #'encode-time 0 0 0)))
+	    (cons %y diff-years)
+	    (cons %o (when diff-years
+		       (diary-ordinal-suffix diff-years))))))
+     (string-clean-whitespace
+      (format-spec (slot-value field 'notification-string) bits 'delete)))))
+
 ;; The singleton field type.  Records may only have one instance of
 ;; fields of this type.  (Unrelated to `eieio-singleton'.)
 
@@ -2168,13 +2298,20 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
 
 (defvar ebdb-anniversary-label-list '("birthday" "marriage" "death"))
 
-(defclass ebdb-field-anniversary (ebdb-field-labeled ebdb-field-user)
+(defclass ebdb-field-anniversary (ebdb-field-labeled
+				  ebdb-field-user ebdb-field-notifiable)
   ((label-list :initform 'ebdb-anniversary-label-list)
+   (notification-date-slot :initform 'date)
    (date
     :initarg :date
     :type list
-    :custom (choice (list integer integer)
-		    (list integer integer integer))
+    :custom (choice (list
+		     (integer :tag "Month")
+		     (integer :tag "Day"))
+		    (list
+		     (integer :tag "Month")
+		     (integer :tag "Day")
+		     (integer :tag "Year")))
     :documentation
     "A list of numbers representing a date, either (month day)
     or (month day year)")
@@ -2195,7 +2332,7 @@ This allows for anniversaries where we don't know the year.
 Eventually this method will go away."
   (when (integerp (plist-get slots :date))
     (setq slots (plist-put slots :date
-			   (calendar
+			   (calendar-gregorian-from-absolute
 			    (plist-get slots :date)))))
   (cl-call-next-method field slots))
 
@@ -2235,12 +2372,12 @@ Eventually this method will go away."
   (with-no-warnings
     (defvar date)
     (defvar original-date))
-  (let ((entries (gethash (seq-subseq date 0 2) ebdb-diary-entries)))
+  (let ((entries (gethash (seq-subseq date 0 2) ebdb-notifiable-table)))
     (when (and (null (calendar-leap-year-p (nth 2 date)))
 	       (= 3 (nth 0 date)) (= 1 (nth 1 date)))
       ;; If it's not a leap year, we "shift" all anniversaries for Feb
       ;; 29th onto Mar 1.
-      (setq entries (append entries (gethash '(2 29) ebdb-diary-entries))))
+      (setq entries (append entries (gethash '(2 29) ebdb-notifiable-table))))
     (when entries
       (cons mark
 	    (mapconcat (pcase-lambda (`(,field ,record))
@@ -2255,11 +2392,6 @@ Eventually this method will go away."
 			   ;; fine.
 			   t))
 		       entries "; ")))))
-
-(cl-defmethod ebdb-init-field ((anniv ebdb-field-anniversary) record)
-  (with-slots (date) anniv
-    (push (list anniv record)
-	  (gethash (seq-subseq date 0 2) ebdb-diary-entries))))
 
 (cl-defmethod ebdb-string ((ann ebdb-field-anniversary))
   (let* ((date (slot-value ann 'date))
@@ -2285,8 +2417,8 @@ Eventually this method will go away."
     (puthash (seq-subseq date 0 2)
 	     (seq-remove (lambda (e)
 			   (equal e (list anniv record)))
-			 (gethash (seq-subseq date 0 2) ebdb-diary-entries))
-	     ebdb-diary-entries)))
+			 (gethash (seq-subseq date 0 2) ebdb-notifiable-table))
+	     ebdb-notifiable-table)))
 
 ;;; Id field
 
@@ -2296,8 +2428,12 @@ Eventually this method will go away."
 (defvar ebdb-id-label-list '("SSN" "TIN" "ID" "UTR")
   "List of known ID labels.")
 
-(defclass ebdb-field-id (ebdb-field-labeled ebdb-field-obfuscated ebdb-field-user)
+(defclass ebdb-field-id (ebdb-field-labeled
+			 ebdb-field-obfuscated ebdb-field-user
+			 ebdb-field-notifiable)
   ((label-list :initform 'ebdb-id-label-list)
+   (notification-date-slot :initform 'expiration-date)
+   (days-in-advance :initform 30)
    (id-number
     :type string
     :custom string
@@ -2311,7 +2447,8 @@ Eventually this method will go away."
 		    (list
 		     (integer :tag "Month")
 		     (integer :tag "Day")
-		     (integer :tag "Year"))))
+		     (integer :tag "Year")))
+    :initform nil)
    (expiration-date
     :initarg :expiration-date
     :type (or nil list)
@@ -2319,7 +2456,8 @@ Eventually this method will go away."
 		    (list
 		     (integer :tag "Month")
 		     (integer :tag "Day")
-		     (integer :tag "Year")))))
+		     (integer :tag "Year")))
+    :initform nil))
   :human-readable "id number")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
@@ -4432,7 +4570,7 @@ process.")
 	ebdb-record-tracker nil)
   (clrhash ebdb-org-hashtable)
   (clrhash ebdb-hashtable)
-  (clrhash ebdb-diary-entries)
+  (clrhash ebdb-notifiable-table)
   (clrhash ebdb-relation-hashtable))
 
 ;; Changing which database a record belongs to.
