@@ -2027,11 +2027,15 @@ The result looks like this:
       ;; number, partially because if it's too long Emacs turns it
       ;; into a float, which is a pain in the ass.
       (when (and (< (point) (point-max))
-		 (re-search-forward (format "\\([^[:blank:]]+\\)\\(%s\\)?"
-					    ext-regexp)))
+		 (re-search-forward
+		  (format "\\([-[:digit:][:blank:]]+\\)\\(%s\\)?[[:blank:]]*\\'"
+			  ext-regexp)))
 	(unless (plist-member slots :number)
 	  (setq slots
-		(plist-put slots :number (match-string 1))))
+		(plist-put
+		 slots :number
+		 (replace-regexp-in-string
+		  "[^[:digit:]]" "" (match-string 1)))))
 	(unless (or (plist-member slots :extension)
 		    (null (match-string 2)))
 	  (setq slots

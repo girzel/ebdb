@@ -379,6 +379,17 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	    'surname)
 	   "Day-Lewis")))
 
+(ert-deftest ebdb-parse-phone ()
+  "Parse various strings as phone fields."
+  (let ((parsed (ebdb-parse 'ebdb-field-phone "+1 (226) 697-5852 ext. 22"))
+	(parsed2 (ebdb-parse 'ebdb-field-phone "+1 (226) 697 58 52X22")))
+   (should (eql (slot-value parsed 'country-code) 1))
+   (should (eql (slot-value parsed 'area-code) 226))
+   (should (equal (slot-value parsed 'number) "6975852"))
+   (should (eql (slot-value parsed 'extension) 22))
+   (should (equal (slot-value parsed2 'number) "6975852"))
+   (should (eql (slot-value parsed2 'extension) 22))))
+
 ;; Snarf testing.
 
 (ert-deftest ebdb-snarf-mail-and-name ()
