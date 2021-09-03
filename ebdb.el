@@ -691,10 +691,23 @@ In rare cases, this may lead to confusion with EBDB's MUA interface."
   :type '(repeat string))
 
 (defcustom ebdb-default-country "Emacs";; what do you mean, it's not a country?
-  "Default country to use if none is specified."
+  "Default country to use for addresses."
   :group 'ebdb-record-edit
   :type '(choice (const :tag "None" nil)
                  (string :tag "Default Country")))
+
+(defcustom ebdb-default-phone-country nil
+  "Default country to use for phone numbers.
+Should be an integer representing the country code for phone
+numbers.
+
+If EBDB can't determine the country when parsing a phone number,
+it will assume this default, if set.  When displaying phone
+numbers, the country code will be omitted if it matches this
+option."
+  :group 'ebdb-record-edit
+  :type '(choice (const :tag "None" nil)
+                 (integer :tag "Default Country")))
 
 (defcustom ebdb-default-user-field 'ebdb-field-notes
   "Default field when editing EBDB records."
@@ -1973,7 +1986,9 @@ internationalization."
 	(push number outstring))
       (when area-code
 	(push (format "(%d) " area-code) outstring))
-      (when country-code
+      (when (and country-code
+		 (null (eql country-code
+			    ebdb-default-phone-country)))
 	(push (format "+%d " country-code) outstring))
       (when outstring
 	(apply #'concat outstring)))))
@@ -2013,10 +2028,13 @@ internationalization."
       (insert (ebdb-string-trim string))
       (goto-char (point-min))
       (unless (plist-member slots :country-code)
-	(when (looking-at country-regexp)
-	  (setq slots
-		(plist-put slots :country-code (string-to-number (match-string 1))))
-	  (goto-char (match-end 0))))
+	(if (looking-at country-regexp)
+	    (progn
+	      (setq slots
+		    (plist-put slots :country-code (string-to-number (match-string 1))))
+	      (goto-char (match-end 0)))
+	  (when ebdb-default-phone-country
+	    (plist-put slots :country-code ebdb-default-phone-country))))
       (unless (plist-member slots :area-code)
 	(when (looking-at area-regexp)
 	  ;; Bit of a hack.  If we seem to have an area code, but there

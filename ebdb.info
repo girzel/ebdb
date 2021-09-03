@@ -239,6 +239,14 @@ prompted to create the new database, and upgrade from BBDB.  If any
 records could not be upgraded, they will be displayed in an *EBDB
 Migration Errors* buffer.  Migration bug reports are very welcome.
 
+   BBDB does not provide a country code field for phone numbers.  If
+you’ve stored your BBDB phone numbers as plain strings, and those
+strings contain country codes (formatted as “+44”, etc), then migration
+will parse them correctly.  Otherwise, if most of the records you’re
+migrating have phones in the same country, you can set
+‘ebdb-default-phone-country’ to the (integer) value of that country’s
+code.
+
 
 File: ebdb.info,  Node: Variables and Options,  Prev: Record Migration,  Up: Migration from BBDB
 
@@ -2397,6 +2405,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * C-k <1>:                               The Basics of ebdb-mode.
                                                               (line  45)
 * Command:                               Snarfing.            (line  40)
+* Country codes for BBDB phone numbers:  Record Migration.    (line  14)
 * Creating a database:                   The EBDB Database.   (line  11)
 * Creating records:                      Creating Records.    (line   6)
 * Customizing search:                    Changing Search Behavior.
@@ -2482,6 +2491,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 * ebdb-default-oneline-include:          Customizing Record Display.
                                                               (line  73)
 * ebdb-default-phone-class:              Hacking EBDB.        (line  40)
+* ebdb-default-phone-country:            Record Migration.    (line  14)
 * ebdb-default-record-class:             Creating Records.    (line  10)
 * ebdb-default-record-class <1>:         Hacking EBDB.        (line  24)
 * ebdb-default-window-size:              Pop-up Buffers.      (line  33)
@@ -2758,64 +2768,64 @@ Node: Getting Started2680
 Node: Starting a New Database4630
 Node: Migration from BBDB5454
 Node: Record Migration5697
-Node: Variables and Options6337
-Node: Migration from Org Contacts6824
-Node: The EBDB Database7584
-Node: Creating Records11745
-Node: Record classes12826
-Node: Record names13171
-Node: Record Fields13846
-Node: Inserting New Fields14090
-Node: Editing Existing Fields14886
-Node: Deleting Records and Fields15486
-Node: Field Types15882
-Node: Role fields18168
-Node: Tag field20534
-Node: Mail folder field21103
-Node: MUA Interaction21431
-Node: Loading MUA Code21984
-Node: Display and Updating22697
-Node: Pop-up Buffers23463
-Node: Auto-Updating Records26313
-Node: Noticing and Automatic Rules31107
-Node: Interactive Commands32929
-Node: EBDB and MUA summary buffers35403
-Node: Sender name display35921
-Node: Summary buffer marks37148
-Node: Mail Address Completion38327
-Node: A Note on Completion40836
-Node: Specific MUAs41459
-Node: Gnus41607
-Node: Posting Styles41829
-Node: EBDB Buffers43385
-Node: Searching44596
-Node: Changing Search Behavior46310
-Node: The Basics of ebdb-mode47557
-Node: Customizing Record Display51905
-Node: Marking56225
-Node: Exporting/Formatting56652
-Node: Completion57587
-Node: Snarfing58383
-Node: Internationalization60400
-Node: Diary Integration63101
-Node: Mail Aliases63794
-Node: vCard Support64508
-Node: Org Integration65007
-Node: Citing Records67041
-Node: Hacking EBDB67799
-Node: Field Classes70392
-Node: Init and Delete Methods73573
-Node: Manipulating Field Data Programmatically75097
-Node: The Labeled Field Class76809
-Node: The Singleton Field Class77680
-Node: Actions78118
-Node: Custom Field Searching78790
-Node: Fast Lookups81657
-Node: Formatting in the EBDB Buffer83467
-Node: Writing Internationalization Libraries85543
-Node: Writing Integration For New MUAs89959
-Node: Article snarfing93407
-Node: Index94125
+Node: Variables and Options6759
+Node: Migration from Org Contacts7246
+Node: The EBDB Database8006
+Node: Creating Records12167
+Node: Record classes13248
+Node: Record names13593
+Node: Record Fields14268
+Node: Inserting New Fields14512
+Node: Editing Existing Fields15308
+Node: Deleting Records and Fields15908
+Node: Field Types16304
+Node: Role fields18590
+Node: Tag field20956
+Node: Mail folder field21525
+Node: MUA Interaction21853
+Node: Loading MUA Code22406
+Node: Display and Updating23119
+Node: Pop-up Buffers23885
+Node: Auto-Updating Records26735
+Node: Noticing and Automatic Rules31529
+Node: Interactive Commands33351
+Node: EBDB and MUA summary buffers35825
+Node: Sender name display36343
+Node: Summary buffer marks37570
+Node: Mail Address Completion38749
+Node: A Note on Completion41258
+Node: Specific MUAs41881
+Node: Gnus42029
+Node: Posting Styles42251
+Node: EBDB Buffers43807
+Node: Searching45018
+Node: Changing Search Behavior46732
+Node: The Basics of ebdb-mode47979
+Node: Customizing Record Display52327
+Node: Marking56647
+Node: Exporting/Formatting57074
+Node: Completion58009
+Node: Snarfing58805
+Node: Internationalization60822
+Node: Diary Integration63523
+Node: Mail Aliases64216
+Node: vCard Support64930
+Node: Org Integration65429
+Node: Citing Records67463
+Node: Hacking EBDB68221
+Node: Field Classes70814
+Node: Init and Delete Methods73995
+Node: Manipulating Field Data Programmatically75519
+Node: The Labeled Field Class77231
+Node: The Singleton Field Class78102
+Node: Actions78540
+Node: Custom Field Searching79212
+Node: Fast Lookups82079
+Node: Formatting in the EBDB Buffer83889
+Node: Writing Internationalization Libraries85965
+Node: Writing Integration For New MUAs90381
+Node: Article snarfing93829
+Node: Index94547
 
 End Tag Table
 

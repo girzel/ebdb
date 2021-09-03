@@ -491,21 +491,24 @@ BBDB sets the default of that option."
     (when phone
       (dolist (p phone)
 	(let ((label (aref p 0))
-	      area extension number)
-	  (if (= 2 (length p))
-	      (setq number (aref p 1))
-	    (setq area (ebdb-vphone-area p)
-		  number (format "%d%d"
-				 (ebdb-vphone-exchange p)
-				 (ebdb-vphone-suffix p))
-		  extension (ebdb-vphone-extension p)))
-	  (push (make-instance ebdb-default-phone-class
-			       :label label
-			       :area-code area
-			       :number (replace-regexp-in-string "[- ]+"
-								 "" number)
-			       :extension extension)
-		phones))))
+	      instance)
+	  (setq instance
+		(if (= 2 (length p))
+		    (ebdb-parse ebdb-default-phone-class (aref p 1))
+		  (make-instance ebdb-default-phone-class
+				 :area-code (ebdb-vphone-area p)
+				 :number (replace-regexp-in-string
+					  "[- ]+"
+					  "" (format "%d%d"
+						     (ebdb-vphone-exchange p)
+						     (ebdb-vphone-suffix p)))
+				 :extension (ebdb-vphone-extension p))))
+	  (setf (slot-value instance 'label) label)
+	  (when (and (null (slot-value instance 'country-code))
+		     ebdb-default-phone-country)
+	    (setf (slot-value instance 'country-code)
+		  ebdb-default-phone-country))
+	  (push instance phones))))
     (when address
       (dolist (a address)
 	(let ((label (aref a 0))

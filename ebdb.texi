@@ -261,6 +261,16 @@ alternately EBDB will look in the default location, found using
 database, and upgrade from BBDB@.  If any records could not be
 upgraded, they will be displayed in an *EBDB Migration Errors* buffer.  Migration bug reports are very welcome.
 
+@cindex Country codes for BBDB phone numbers
+@vindex ebdb-default-phone-country
+BBDB does not provide a country code field for phone numbers.  If
+you've stored your BBDB phone numbers as plain strings, and those
+strings contain country codes (formatted as ``+44'', etc), then
+migration will parse them correctly.  Otherwise, if most of the
+records you're migrating have phones in the same country, you can set
+@code{ebdb-default-phone-country} to the (integer) value of that country's
+code.
+
 @node Variables and Options
 @subsection Variables and Options
 

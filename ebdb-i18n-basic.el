@@ -121,7 +121,9 @@ number, and any remaining as an extension."
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
 				(_cc (eql 1)))
   (with-slots (area-code number extension) phone
-    (format "+1 (%d) %s-%s%s"
+    (format "%s(%d) %s-%s%s"
+	    (if (eql ebdb-default-phone-country 1)
+		"" "+1 ")
 	    area-code
 	    (substring number 0 3)
 	    (substring number 3)
@@ -171,7 +173,8 @@ number, and any remaining as an extension."
                                 (_cc (eql 33)))
   (with-slots (area-code number extension) phone
     (concat
-     "+33 "
+     (unless (eql ebdb-default-phone-country 33)
+      "+33 ")
      (when area-code
        (format "%02d" area-code))
      (apply #'format "%s%s %s%s %s%s %s%s"
@@ -242,7 +245,8 @@ number, and any remaining as an extension."
 				(_cc (eql 8)))
   (with-slots (area-code number extension) phone
     (concat
-     "+8 "
+     (unless (eql ebdb-default-phone-country 8)
+      "+8 ")
      (when area-code (format "%d " area-code))
      (apply #'format
 	    (cl-case (length number)
