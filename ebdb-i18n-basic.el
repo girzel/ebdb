@@ -182,6 +182,34 @@ number, and any remaining as an extension."
      (when extension
        (format "X%d" extension)))))
 
+;;; Germany
+
+(cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
+                                (_cc (eql 49)))
+  (with-slots (area-code number extension) phone
+    (concat
+     (unless (eql ebdb-default-phone-country 49)
+       "+49 ")
+     (when area-code
+       (format "%02d" area-code))
+     (apply #'format "%s%s% s%s%s-%s%s"
+            (split-string number "" t))
+     (when extension
+       (format "X%d" extension)))))
+
+(cl-defmethod ebdb-string-i18n ((address ebdb-field-address)
+                                (_cc (eql deu)))
+  (with-slots (streets neighborhood locality region postcode) address
+    (concat
+     (when streets
+       (concat (mapconcat #'identity streets "\n") "\n"))
+     (ebdb-concat ", " (ebdb-address-locality address)
+		  (ebdb-address-neighborhood address)
+                  (ebdb-concat " " (ebdb-address-region address)
+                               (ebdb-address-postcode address)))
+     "\n"
+     (car-safe (rassq 'deu (ebdb-i18n-countries))))))
+
 ;;; UK
 
 (cl-defmethod ebdb-read-i18n ((_class (subclass ebdb-field-address))
