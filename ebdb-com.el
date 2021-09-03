@@ -1155,6 +1155,7 @@ displayed records."
     ("Manipulate database"
      ["Create new record" ebdb-create-record t]
      ["Edit current field" ebdb-edit-field t]
+     ["Edit field (extended)" ebdb-edit-field-customize t]
      ["Insert new field" ebdb-insert-field t]
      ["Edit some field" ebdb-edit-foo t]
      ["Delete record or field" ebdb-delete-field-or-record t]
