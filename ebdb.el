@@ -1792,6 +1792,13 @@ Primary sorts before normal sorts before defunct."
     :custom (repeat string)
     :accessor ebdb-address-streets
     :documentation "A list of strings representing the street address(es).")
+   (neighborhood
+    :initarg :neighborhood
+    :type string
+    :initform ""
+    :custom string
+    :accessor ebdb-address-neighborhood
+    :documentation "Smaller area within the locality.")
    (locality
     :initarg :locality
     :type string
@@ -1843,6 +1850,11 @@ Primary sorts before normal sorts before defunct."
 	     (plist-get slots :locality)
 	   (ebdb-read-string "Town/City"
 			     (when obj (ebdb-address-locality obj)) ebdb-locality-list)))
+	(neighborhood
+	 (if (plist-member slots :neighborhood)
+	     (plist-get slots :neighborhood)
+	   (ebdb-read-string "Neighborhood/Suburb/Zone"
+			     (when obj (ebdb-address-neighborhood obj)))))
 	(region
 	 (if (plist-member slots :region)
 	     (plist-get slots :region)
@@ -1866,6 +1878,7 @@ Primary sorts before normal sorts before defunct."
      class
      `(:streets ,streets
 		:locality ,locality
+		:neighborhood ,neighborhood
 		:label ,(plist-get slots :label)
 		:region ,region
 		:postcode ,postcode
@@ -1897,7 +1910,11 @@ The result looks like this:
               street
               ...
               locality, region postcode
-              country."
+              country.
+
+Note that the neighborhood is not output by default, though it
+may be for certain countries, when using EBDB
+internationalization."
   (let ((country (ebdb-address-country address))
         (streets (ebdb-address-streets address)))
     (when (symbolp country)
