@@ -192,10 +192,10 @@ number, and any remaining as an extension."
        "+49 ")
      (when area-code
        (format "%02d" area-code))
-     (apply #'format "%s%s% s%s%s-%s%s"
+     (apply #'format "%s%s%s %s%s%s"
             (split-string number "" t))
      (when extension
-       (format "X%d" extension)))))
+       (format "-%d" extension)))))
 
 (cl-defmethod ebdb-string-i18n ((address ebdb-field-address)
                                 (_cc (eql deu)))
