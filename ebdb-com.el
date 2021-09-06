@@ -1166,7 +1166,7 @@ displayed records."
      ["Reload database" ebdb-reload-database t]
      ["Disable database" ebdb-disable-database t]
      "--"
-     ["Save EBDB" ebdb-save t]
+     ["Save EBDB" ebdb-save-ebdb t]
      ["Revert EBDB" revert-buffer t])
     ("Help"
      ["Brief help" ebdb-help t]
