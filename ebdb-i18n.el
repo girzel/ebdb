@@ -785,7 +785,8 @@ for their symbol representations."
   (let* ((cc-reg "\\`(?\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+")
 	 (cc (or (plist-get slots :country-code)
 		 (and (string-match cc-reg str)
-		      (string-to-number (match-string 1 str))))))
+		      (string-to-number (match-string 1 str)))
+		 ebdb-default-phone-country)))
     (when cc
       (condition-case nil
 	  (setq slots
