@@ -720,7 +720,9 @@ are discarded as appropriate."
 					  "@"
 					  (nth 1 (split-string mail "@"))))
 					mail-list))
-			   (ebdb-mua-test-headers (car headers) address ignore-address))
+			   (not (string-match-p "undisclosed recipients" mail))
+			   (ebdb-mua-test-headers
+			    (car headers) address ignore-address))
 		  ;; Add each address only once. (Use MAIL-LIST for book keeping.)
 		  ;; Thus if we care about whether an address gets associated with
 		  ;; one or another header, the order of elements in
