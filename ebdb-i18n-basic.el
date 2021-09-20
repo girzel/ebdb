@@ -186,16 +186,58 @@ number, and any remaining as an extension."
 
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
                                 (_cc (eql 49)))
-  (with-slots (area-code number extension) phone
-    (concat
-     (unless (eql ebdb-default-phone-country 49)
-       "+49 ")
-     (when area-code
-       (format "%02d" area-code))
-     (apply #'format "%s%s%s %s%s%s"
-            (split-string number "" t))
-     (when extension
-       (format "-%d" extension)))))
+  "Display a German phone number."
+  (let ((is-default (eql ebdb-default-phone-country 49))
+	num-len)
+    (with-slots (area-code number extension) phone
+      (setq num-len (length number))
+      (concat
+       (unless is-default
+	 "+49 ")
+       (when area-code
+	 (format (if is-default "(%03d) " "%d ") area-code))
+       (if (>= 4 num-len)
+	   number
+	 (mapconcat #'identity
+		    (seq-partition number
+				   (if (= 0 (mod num-len 3))
+				       3 4))
+	  " "))
+       (when extension
+	 (format "-%d" extension))))))
+
+(cl-defmethod ebdb-parse-i18n ((_class (subclass ebdb-field-phone))
+			       (str string)
+			       (_cc (eql 49))
+			       &optional slots)
+  "Parse a German phone number.
+Uses first block of digits as the area code, anything following a
+hyphen as the extension, and everything in between as the number
+itself."
+  (let ((area-code-regexp "^(?\\([[:digit:]]+\\))? +")
+	(extension-regexp "-\\([[:digit:]]+\\)\\'"))
+    (setq slots
+	  (plist-put slots :area-code
+		     (when (string-match area-code-regexp str)
+		       (prog1
+			   (string-to-number (match-string 1 str))
+			 (setq str (replace-regexp-in-string
+				    area-code-regexp "" str)))))
+	  slots
+	  (plist-put slots :extension
+		     (when (string-match extension-regexp str)
+		       (prog1
+			   (string-to-number (match-string 1 str))
+			 (setq str (replace-regexp-in-string
+				    extension-regexp "" str))))))
+
+    (condition-case nil
+	(setq slots (plist-put
+		     slots
+		     :number
+		     (replace-regexp-in-string
+		      "[^[:digit:]]" "" str))))
+    slots))
 
 (cl-defmethod ebdb-string-i18n ((address ebdb-field-address)
                                 (_cc (eql deu)))
