@@ -896,6 +896,31 @@ You really should not disable debugging.  But it will speed things up."
       `(let ((debug-on-error t))
          ,@body)))
 
+;; Basically a copy of `with-slots', but for plists.  I got really
+;; sick of all the `plist-put's.
+(defmacro ebdb-with-plist (spec-list plist &rest body)
+  "Evaluate BODY with symbols in SPEC-LIST bound to values in PLIST.
+SPEC-LIST should be a list of symbols matching keywords in PLIST,
+without the leading colon.  In the body of the macro, the symbols
+in this list act as `plist-get' calls on PLIST, and can also be
+used with `setf' to set values in PLIST.
+
+An element of SPEC-LIST can also be a two-element list
+of (KEYWORD SYMBOL), where KEYWORD specifies a keyword in PLIST,
+and SYMBOL is the corresponding variable to use in the macro
+body."
+  (declare (indent 2) (debug (sexp sexp def-body)))
+  (macroexp-let2 nil plist plist
+    `(cl-symbol-macrolet
+	 ,(mapcar (lambda (elt)
+		    (let ((sym (if (listp elt) (cadr elt) elt))
+			  (kw (intern
+			       (format ":%S"
+				       (if (listp elt) (car elt) elt)))))
+		      (list sym `(plist-get ,plist ,kw))))
+		  spec-list)
+       ,@body)))
+
 ;; These two inlines are used along with `object-add-to-list' and
 ;; `object-remove-from-list' -- typically the former are used to
 ;; manipulate record cache slots (as caches are structs and can't use
@@ -1428,9 +1453,9 @@ simple or complex name class."
   (cl-call-next-method))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-simple)) str &optional slots)
-  (unless (plist-get slots :name)
-    (setq slots (plist-put slots :name str)))
-  (cl-call-next-method class str slots))
+  (ebdb-with-plist (name) slots
+    (setf name (or name str))
+   (cl-call-next-method class str slots)))
 
 (defclass ebdb-field-name-complex (ebdb-field-name)
   ((surname
@@ -1548,17 +1573,13 @@ first one."
     (ebdb-parse class (ebdb-read-string "Name" (when obj (ebdb-string obj))) slots)))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
-  (pcase-let ((`(,surname ,given-names ,suffix)
+  (pcase-let ((`(,sur ,given ,suff)
 	       (ebdb-divide-name str)))
-    (unless (plist-member slots :given-names)
-      (setq slots (plist-put slots :given-names
-			     given-names)))
-    (unless (plist-member slots :surname)
-      (setq slots (plist-put slots :surname
-			     (or surname ""))))
-    (unless (plist-member slots :suffix)
-      (setq slots (plist-put slots :suffix suffix)))
-    (cl-call-next-method class str slots)))
+    (ebdb-with-plist (given-names surname suffix) slots
+      (setf given-names (or given-names given)
+	    surname (or surname sur)
+	    suffix (or suffix suff))
+      (cl-call-next-method class str slots))))
 
 ;;; Role fields.
 
@@ -1659,18 +1680,19 @@ first one."
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((role (subclass ebdb-field-role)) &optional slots obj)
-  (let ((org-id (or (plist-get slots :org-uuid)
-		    (if obj (slot-value obj 'org-uuid)
-		      (ebdb-record-uuid (ebdb-prompt-for-record
-					 nil 'ebdb-record-organization)))))
-	(mail (or (plist-get slots :mail)
-		  (ebdb-with-exit
-		   (ebdb-read ebdb-default-mail-class nil
-			      (when obj (slot-value obj 'mail)))))))
-    (when mail
-      (setq slots (plist-put slots :mail mail)))
-    (setq slots (plist-put slots :org-uuid org-id))
-    (cl-call-next-method role slots obj)))
+  (ebdb-with-plist (org-uuid mail) slots
+    (let ((org-id (or org-uuid
+		      (if obj (slot-value obj 'org-uuid)
+			(ebdb-record-uuid (ebdb-prompt-for-record
+					   nil 'ebdb-record-organization)))))
+	  (new-mail (or mail
+			(ebdb-with-exit
+			 (ebdb-read ebdb-default-mail-class nil
+				    (when obj (slot-value obj 'mail)))))))
+      (when new-mail
+	(setf mail new-mail))
+      (setf org-uuid org-id)
+      (cl-call-next-method role slots obj))))
 
 (cl-defmethod ebdb-string ((role ebdb-field-role))
   "Display a string for this ROLE."
@@ -1750,32 +1772,34 @@ first one."
   (let* ((default (when obj (ebdb-string obj)))
 	 (input (ebdb-read-string "Mail address" default))
 	 (bits (ebdb-decompose-ebdb-address input))
-	 (mail (nth 1 bits)))
+	 (new-mail (nth 1 bits)))
     ;; (unless (or ebdb-allow-duplicates
     ;; 		(and obj
     ;; 		     (equal mail (slot-value obj 'mail))))
     ;;   (when (ebdb-gethash mail '(mail))
     ;; 	(error "Address %s belongs to another record" mail)))
-    (when (car bits)
-      (setq slots (plist-put slots :aka (car bits))))
-    (setq slots (plist-put slots :mail mail))
-    (when obj
-      (setq slots (plist-put slots :priority (slot-value obj 'priority))))
-    (cl-call-next-method class slots obj)))
+    (ebdb-with-plist (aka mail priority) slots
+     (when (car bits)
+       (setf aka (car bits)))
+     (setf mail new-mail)
+     (when obj
+       (setf priority (slot-value obj 'priority)))
+     (cl-call-next-method class slots obj))))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-mail))
 			  (str string)
 			  &optional slots)
   "Parse STR as though it were a mail field."
   (pcase-let
-      ((`(,name ,mail) (ebdb-decompose-ebdb-address str)))
-    (unless mail
+      ((`(,name ,parsed-mail) (ebdb-decompose-ebdb-address str)))
+    (unless parsed-mail
       (signal 'ebdb-unparseable (list str)))
-    (unless (plist-get slots :mail)
-      (setq slots (plist-put slots :mail mail)))
-    (unless (plist-get slots :aka)
-      (setq slots (plist-put slots :aka name)))
-    (cl-call-next-method class str slots)))
+    (ebdb-with-plist (mail aka) slots
+      (unless mail
+	(setf mail parsed-mail))
+      (unless aka
+	(setf aka name))
+      (cl-call-next-method class str slots))))
 
 (cl-defmethod ebdb-field-compare ((m-left ebdb-field-mail)
 				  (m-right ebdb-field-mail))
@@ -1994,28 +2018,29 @@ internationalization."
 	(apply #'concat outstring)))))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-phone)) &optional slots obj)
-  (let* ((country
-	  (or (and obj
-		   (slot-value obj 'country-code))
-	      (plist-get slots :country-code)))
-	 (area
-	  (or (and obj
-		   (slot-value obj 'area-code))
-	      (plist-get slots :area-code)))
-	 (prompt
-	  (concat "Number"
-		  (when country
-		    (format " +%d" country))
-		  ;; Why aren't we allowing them to change the area
-		  ;; code?
-		  (when area
-		    (format " (%d)" area))
-		  ": "))
-	 (default (when obj (slot-value obj 'number))))
-    (ebdb-error-retry
-     (ebdb-parse class
-		 (ebdb-read-string prompt default)
-		 slots))))
+  (ebdb-with-plist (country-code area-code) slots
+    (let* ((country
+	    (or (and obj
+		     (slot-value obj 'country-code))
+		country-code))
+	   (area
+	    (or (and obj
+		     (slot-value obj 'area-code))
+		area-code))
+	   (prompt
+	    (concat "Number"
+		    (when country
+		      (format " +%d" country))
+		    ;; Why aren't we allowing them to change the area
+		    ;; code?
+		    (when area
+		      (format " (%d)" area))
+		    ": "))
+	   (default (when obj (slot-value obj 'number))))
+      (ebdb-error-retry
+       (ebdb-parse class
+		   (ebdb-read-string prompt default)
+		   slots)))))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-phone))
 			  (string string)
@@ -2024,60 +2049,55 @@ internationalization."
   (let ((country-regexp "\\+(?\\([0-9]\\{1,3\\}\\))?[ \t]+")
 	(area-regexp "(?\\([0-9]\\{1,4\\}\\)[-)./ \t]+")
         (ext-regexp "[ \t]?e?[xX]t?\\.?[ \t]?\\([0-9]+\\)"))
-    (with-temp-buffer
-      (insert (ebdb-string-trim string))
-      (goto-char (point-min))
-      (unless (plist-member slots :country-code)
-	(if (looking-at country-regexp)
-	    (progn
-	      (setq slots
-		    (plist-put slots :country-code (string-to-number (match-string 1))))
-	      (goto-char (match-end 0)))
-	  (when ebdb-default-phone-country
-	    (plist-put slots :country-code ebdb-default-phone-country))))
-      (unless (plist-member slots :area-code)
-	(when (looking-at area-regexp)
-	  ;; Bit of a hack.  If we seem to have an area code, but there
-	  ;; are fewer than six digits *after* the area code, assume
-	  ;; it's not an area code at all, but part of the actual
-	  ;; number.
-	  (unless
-	      (save-excursion
-		(goto-char (match-end 0))
-		(save-match-data
-		  (< (abs (- (point)
-			     (or (when (re-search-forward ext-regexp (point-max) t)
-				   (goto-char (match-beginning 0))
-				   (point))
-				 (point-max))))
-		     6)))
-	    (setq slots
-		  (plist-put slots :area-code (string-to-number (match-string 1))))
-	    (goto-char (match-end 0)))))
-      ;; There is no full regexp for the main phone number.  We just
-      ;; chomp up everything that comes after the area code, until we
-      ;; hit an extension, or the end of the buffer.  All phone slots
-      ;; but "number" are actually saved as numbers.  The "number" is
-      ;; saved as a string, partially because it isn't really a
-      ;; number, partially because if it's too long Emacs turns it
-      ;; into a float, which is a pain in the ass.
-      (when (and (< (point) (point-max))
-		 (re-search-forward
-		  (format "\\([-[:digit:][:blank:]]+\\)\\(%s\\)?[[:blank:]]*\\'"
-			  ext-regexp)))
-	(unless (plist-member slots :number)
-	  (setq slots
-		(plist-put
-		 slots :number
-		 (replace-regexp-in-string
-		  "[^[:digit:]]" "" (match-string 1)))))
-	(unless (or (plist-member slots :extension)
-		    (null (match-string 2)))
-	  (setq slots
-		(plist-put slots :extension
-			   (string-to-number
-			    (match-string 2)))))))
-    (cl-call-next-method class string slots)))
+
+    (ebdb-with-plist (country-code area-code extension number) slots
+      (with-temp-buffer
+	(insert (ebdb-string-trim string))
+	(goto-char (point-min))
+	(unless (plist-member slots :country-code)
+	  (if (looking-at country-regexp)
+	      (progn
+		(setf country-code (string-to-number (match-string 1)))
+		(goto-char (match-end 0)))
+	    (when ebdb-default-phone-country
+	      (setf country-code ebdb-default-phone-country))))
+	(unless (plist-member slots :area-code)
+	  (when (looking-at area-regexp)
+	    ;; Bit of a hack.  If we seem to have an area code, but there
+	    ;; are fewer than six digits *after* the area code, assume
+	    ;; it's not an area code at all, but part of the actual
+	    ;; number.
+	    (unless
+		(save-excursion
+		  (goto-char (match-end 0))
+		  (save-match-data
+		    (< (abs (- (point)
+			       (or (when (re-search-forward ext-regexp (point-max) t)
+				     (goto-char (match-beginning 0))
+				     (point))
+				   (point-max))))
+		       6)))
+	      (setf area-code (string-to-number (match-string 1)))
+	      (goto-char (match-end 0)))))
+	;; There is no full regexp for the main phone number.  We just
+	;; chomp up everything that comes after the area code, until we
+	;; hit an extension, or the end of the buffer.  All phone slots
+	;; but "number" are actually saved as numbers.  The "number" is
+	;; saved as a string, partially because it isn't really a
+	;; number, partially because if it's too long Emacs turns it
+	;; into a float, which is a pain in the ass.
+	(when (and (< (point) (point-max))
+		   (re-search-forward
+		    (format "\\([-[:digit:][:blank:]]+\\)\\(%s\\)?[[:blank:]]*\\'"
+			    ext-regexp)))
+	  (unless (plist-member slots :number)
+	    (setf number
+		  (replace-regexp-in-string
+		   "[^[:digit:]]" "" (match-string 1))))
+	  (unless (or (plist-member slots :extension)
+		      (null (match-string 2)))
+	    (setf extension (string-to-number (match-string 2))))))
+      (cl-call-next-method class string slots))))
 
 (cl-defmethod cl-print-object ((phone ebdb-field-phone) stream)
   (princ (format "#<%S %s>"
@@ -2323,25 +2343,23 @@ Eventually this method will go away."
   :human-readable "id number")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
-  (unless (plist-get slots :id-number)
-    (setq slots
-	  (plist-put slots :id-number
-		     (ebdb-read-string
-		      "ID number"
-		      (when obj (slot-value obj 'id-number))))))
-  (unless (plist-get slots :issue-date)
-    (setq slots
-	  (plist-put slots :issue-date
-		     (calendar-read-date
-		      nil
-		      (when obj (slot-value obj 'issue-date))))))
-  (unless (plist-get slots :expiration-date)
-    (setq slots
-	  (plist-put slots :expiration-date
-		     (calendar-read-date
-		      nil
-		      (when obj (slot-value obj 'expiration-date))))))
-  (cl-call-next-method class slots obj))
+  (ebdb-with-plist (id-number issue-date expiration-date) slots
+    (setf id-number
+	  (or id-number
+	      (ebdb-read-string
+	       "ID number"
+	       (when obj (slot-value obj 'id-number))))
+	  issue-date
+	  (or issue-date
+	      (calendar-read-date
+	       nil
+	       (when obj (slot-value obj 'issue-date))))
+	  expiration-date
+	  (or expiration-date
+	      (calendar-read-date
+	       nil
+	       (when obj (slot-value obj 'expiration-date)))))
+    (cl-call-next-method class slots obj)))
 
 (cl-defmethod ebdb-string ((field ebdb-field-id))
   (slot-value field 'id-number))
@@ -2378,13 +2396,14 @@ Eventually this method will go away."
 		  (slot-value obj 'rel-uuid)
 		(ebdb-record-uuid (ebdb-prompt-for-record
 				   nil ebdb-default-record-class))))
-	 (rel-label (ebdb-read-string "Reverse label (for the other record)"
-				      (when obj
-					(slot-value obj 'rel-label))
-				      ebdb-relation-label-list)))
-    (setq slots (plist-put slots :rel-uuid rec))
-    (setq slots (plist-put slots :rel-label rel-label))
-    (cl-call-next-method class slots obj)))
+	 (label (ebdb-read-string "Reverse label (for the other record)"
+				  (when obj
+				    (slot-value obj 'rel-label))
+				  ebdb-relation-label-list)))
+    (ebdb-with-plist (rel-uuid rel-label) slots
+      (setf rel-uuid rec
+	    rel-label label)
+      (cl-call-next-method class slots obj))))
 
 (cl-defmethod ebdb-string ((rel ebdb-field-relation))
   (let ((rec (ebdb-gethash (slot-value rel 'rel-uuid) 'uuid)))
@@ -2505,24 +2524,25 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-location)) &optional
 			 slots obj)
-  (let ((label (or (plist-get slots :location-label)
-		   (ebdb-read-string "Location label"
-				     (when obj (slot-value
-						obj 'location-label)))))
-	(geo (or (plist-get slots :location-geo)
-		 (ebdb-with-exit
-		  (ebdb-read-string "Location geo (C-g to skip)"
-				    (when obj (slot-value
-					       obj 'location-geo))))))
-	(tz (or (plist-get slots :timezone)
-		(ebdb-with-exit
-		 (ebdb-read-string
-		  "Timezone (eg \"Europe/Berlin\"; C-g to skip): "
-		  (when obj (slot-value obj 'timezone)))))))
-    (cl-call-next-method class `(:location-label ,label
-						 :location-geo ,geo
-						 :timezone ,tz)
-			 obj)))
+  (ebdb-with-plist (location-label location-geo timezone) slots
+    (let ((label (or location-label
+		     (ebdb-read-string "Location label"
+				       (when obj (slot-value
+						  obj 'location-label)))))
+	  (geo (or location-geo
+		   (ebdb-with-exit
+		    (ebdb-read-string "Location geo (C-g to skip)"
+				      (when obj (slot-value
+						 obj 'location-geo))))))
+	  (tz (or timezone
+		  (ebdb-with-exit
+		   (ebdb-read-string
+		    "Timezone (eg \"Europe/Berlin\"; C-g to skip): "
+		    (when obj (slot-value obj 'timezone)))))))
+      (cl-call-next-method class `(:location-label ,label
+						   :location-geo ,geo
+						   :timezone ,tz)
+			   obj))))
 
 (cl-defmethod ebdb-string ((field ebdb-field-location))
   (with-slots (location-label timezone) field
@@ -2646,43 +2666,46 @@ See `ebdb-url-valid-schemes' for a list of acceptable schemes."
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-bank-account))
 			 &optional slots obj)
-  (let ((bank-name (or (plist-get slots :bank-name)
-		       (ebdb-read-string "Bank name"
-					 (when obj (slot-value obj 'bank-name)))))
-	(bank-address (or (plist-get slots :bank-address)
-			  (ebdb-with-exit
-			   (ebdb-read 'ebdb-field-address '(:label "office")
-				      (when obj (slot-value obj 'bank-address))))))
-	(routing-aba (or (plist-get slots :routing-aba)
+  (ebdb-with-plist (bank-name bank-address routing-aba
+			      swift-bic account-name account-numbers notes)
+      slots
+    (let ((bank-name (or bank-name
+			 (ebdb-read-string "Bank name"
+					   (when obj (slot-value obj 'bank-name)))))
+	  (bank-address (or bank-address
+			    (ebdb-with-exit
+			     (ebdb-read 'ebdb-field-address '(:label "office")
+					(when obj (slot-value obj 'bank-address))))))
+	  (routing-aba (or routing-aba
+			   (ebdb-with-exit
+			    (ebdb-read-string "Routing or ABA number"
+					      (when obj (slot-value obj 'routing-aba))))))
+	  (swift-bic (or swift-bic
 			 (ebdb-with-exit
-			  (ebdb-read-string "Routing or ABA number"
-					    (when obj (slot-value obj 'routing-aba))))))
-	(swift-bic (or (plist-get slots :swift-bic)
-		       (ebdb-with-exit
-			(ebdb-read-string "SWIFT or BIC code"
-					  (when obj (slot-value obj 'swift-bic))))))
-	(account-name (or (plist-get slots :account-name)
-			  (ebdb-read-string "Account name"
-					    (when obj (slot-value obj 'account-name)))))
-	(account-numbers
-	 (or (plist-get slots :account-numbers)
-	     (ebdb-loop-with-exit
-	      (cons (ebdb-read-string "Account label (eg. \"checking\"): ")
-		    (ebdb-read-string "Account number/IBAN")))))
-	(notes (or (plist-get slots :notes)
-		   (ebdb-with-exit
-		    (ebdb-read 'ebdb-field-notes nil
-			       (when obj (slot-value obj 'notes)))))))
-    (cl-call-next-method
-     class
-     `(:bank-name ,bank-name
-		  :bank-address ,bank-address
-		  :routing-aba ,routing-aba
-		  :swift-bic ,swift-bic
-		  :account-name ,account-name
-		  :account-numbers ,account-numbers
-		  :notes ,notes)
-     obj)))
+			  (ebdb-read-string "SWIFT or BIC code"
+					    (when obj (slot-value obj 'swift-bic))))))
+	  (account-name (or account-name
+			    (ebdb-read-string "Account name"
+					      (when obj (slot-value obj 'account-name)))))
+	  (account-numbers
+	   (or account-numbers
+	       (ebdb-loop-with-exit
+		(cons (ebdb-read-string "Account label (eg. \"checking\"): ")
+		      (ebdb-read-string "Account number/IBAN")))))
+	  (notes (or notes
+		     (ebdb-with-exit
+		      (ebdb-read 'ebdb-field-notes nil
+				 (when obj (slot-value obj 'notes)))))))
+      (cl-call-next-method
+       class
+       `(:bank-name ,bank-name
+		    :bank-address ,bank-address
+		    :routing-aba ,routing-aba
+		    :swift-bic ,swift-bic
+		    :account-name ,account-name
+		    :account-numbers ,account-numbers
+		    :notes ,notes)
+       obj))))
 
 (cl-defmethod ebdb-string ((acct ebdb-field-bank-account))
   (with-slots (bank-name bank-address routing-aba swift-bic
