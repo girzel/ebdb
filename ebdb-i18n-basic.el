@@ -239,6 +239,40 @@ itself."
 		      "[^[:digit:]]" "" str))))
     slots))
 
+(defvar ebdb-i18n-german-states
+ '(("Baden-Württemberg" . "BW")
+   ("Bayern" . "BY")
+   ("Berlin" . "BE")
+   ("Brandenburg" . "BB")
+   ("Bremen" . "HB")
+   ("Hamburg" . "HH")
+   ("Hessen" . "HE")
+   ("Mecklenburg-Vorpommern" . "MV")
+   ("Niedersachsen" . "NI")
+   ("Nordrhein-Westfalen" . "NW")
+   ("Rheinland-Pfalz" . "RP")
+   ("Saarland" . "SL")
+   ("Sachsen" . "SN")
+   ("Sachsen-Anhalt" . "ST")
+   ("Schleswig-Holstein" . "SH")
+   ("Thüringen" . "TH"))
+ "All the states in Germany, for use with completion.")
+
+(cl-defmethod ebdb-read-i18n ((_class (subclass ebdb-field-address))
+			      (_cc (eql deu))
+			      &optional slots obj)
+  (unless (plist-member slots :region)
+    (setq slots
+	  (plist-put
+	   slots :region
+	   (cdr (assoc-string
+		 (ebdb-read-string
+		  "State"
+		  (when obj (ebdb-address-region obj))
+		  ebdb-i18n-german-states t)
+		 ebdb-i18n-german-states)))))
+  slots)
+
 (cl-defmethod ebdb-string-i18n ((address ebdb-field-address)
                                 (_cc (eql deu)))
   (with-slots (streets neighborhood locality region postcode) address
@@ -248,7 +282,7 @@ itself."
      (ebdb-concat ", " (ebdb-address-locality address)
 		  (ebdb-address-neighborhood address)
                   (ebdb-concat " " (ebdb-address-region address)
-                               (ebdb-address-postcode address)))
+			       (ebdb-address-postcode address)))
      "\n"
      (car-safe (rassq 'deu (ebdb-i18n-countries))))))
 
