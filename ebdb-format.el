@@ -248,9 +248,13 @@ a symbol indicating a style of some sort, such as 'compact or
 			      (field ebdb-field-labeled)
 			      (_style (eql compact))
 			      (record ebdb-record))
-  (format "(%s) %s"
-	  (ebdb-field-label field)
-	  (ebdb-fmt-field fmt field 'oneline record)))
+  (let ((label (slot-value field 'label)))
+    ;; The compact style shouldn't output a default label, only use it
+    ;; if the field in question really has one.
+    (concat
+     (when label
+       (format "(%s) " label))
+     (ebdb-fmt-field fmt field 'oneline record))))
 
 (cl-defmethod ebdb-fmt-field ((_fmt ebdb-formatter)
 			      (field ebdb-field)

@@ -548,13 +548,24 @@ choice: that formatter should be selected explicitly."
 				    (field ebdb-field-phone)
 				    (_style (eql oneline))
 				    &optional _record)
-  (format "phone (%s)" (ebdb-field-label field)))
+  (let ((label (slot-value field 'label)))
+    ;; Don't use `ebdb-field-label' because if the field has no label,
+    ;; we end up outputting something stupid like "phone (phone)".
+    (concat
+     "phone"
+     (when label
+       (format " (%s)" label)))))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-address)
 				    (_style (eql oneline))
 				    &optional _record)
-  (format "address (%s)" (ebdb-field-label field)))
+  (let ((label (slot-value field 'label)))
+    ;; As above.
+    (concat
+     "address"
+     (when label
+       (format " (%s)" label)))))
 
 (cl-defmethod ebdb-fmt-field-label ((_fmt ebdb-formatter-ebdb)
 				    (field ebdb-field-relation)
