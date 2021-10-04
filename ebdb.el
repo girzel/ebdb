@@ -1250,7 +1250,7 @@ process."
   (let* ((field (cl-call-next-method class slots obj))
 	 (labels (symbol-value (oref-default class label-list)))
 	 (human-readable (ebdb-field-readable-name class))
-	 (label (slot-value field 'label)))
+	 (label (when obj (slot-value obj 'label))))
     (setq label (ebdb-with-exit
 		    (ebdb-read-string
 		     (if (stringp human-readable)
