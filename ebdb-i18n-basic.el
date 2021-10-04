@@ -262,15 +262,17 @@ itself."
 			      (_cc (eql deu))
 			      &optional slots obj)
   (unless (plist-member slots :region)
-    (setq slots
-	  (plist-put
-	   slots :region
-	   (cdr (assoc-string
-		 (ebdb-read-string
-		  "State"
-		  (when obj (ebdb-address-region obj))
-		  ebdb-i18n-german-states t)
-		 ebdb-i18n-german-states)))))
+    (let ((state (ebdb-with-exit
+		  (ebdb-read-string
+		   "State"
+		   (when obj (ebdb-address-region obj))
+		   ebdb-i18n-german-states t))))
+      (setq slots
+	    (plist-put
+	     slots :region
+	     (if state
+		 (cdr (assoc-string state ebdb-i18n-german-states))
+	       "")))))
   slots)
 
 (cl-defmethod ebdb-string-i18n ((address ebdb-field-address)
