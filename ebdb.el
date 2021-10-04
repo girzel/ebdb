@@ -1861,31 +1861,44 @@ Primary sorts before normal sorts before defunct."
 	(locality
 	 (if (plist-member slots :locality)
 	     (plist-get slots :locality)
-	   (ebdb-read-string "Town/City"
-			     (when obj (ebdb-address-locality obj)) ebdb-locality-list)))
+	   (or
+	    (ebdb-with-exit
+	     (ebdb-read-string "Town/City"
+			       (when obj (ebdb-address-locality obj)) ebdb-locality-list))
+	    "")))
 	(neighborhood
 	 (if (plist-member slots :neighborhood)
 	     (plist-get slots :neighborhood)
-	   (ebdb-read-string "Neighborhood/Suburb/Zone"
-			     (when obj (ebdb-address-neighborhood obj)))))
+	   (or
+	    (ebdb-with-exit
+	     (ebdb-read-string "Neighborhood/Suburb/Zone"
+			       (when obj (ebdb-address-neighborhood obj))))
+	    "")))
 	(region
 	 (if (plist-member slots :region)
 	     (plist-get slots :region)
-	   (ebdb-read-string "State/Province"
-			     (when obj (ebdb-address-region obj)) ebdb-region-list)))
+	   (or (ebdb-with-exit
+		(ebdb-read-string "State/Province"
+				  (when obj (ebdb-address-region obj)) ebdb-region-list))
+	       "")))
 	(postcode
 	 (if (plist-member slots :postcode)
 	     (plist-get slots :postcode)
-	   (ebdb-read-string "Postcode"
-			     (when obj (ebdb-address-postcode obj))
-			     ebdb-postcode-list)))
+	   (or (ebdb-with-exit
+		(ebdb-read-string "Postcode"
+				  (when obj (ebdb-address-postcode obj))
+				  ebdb-postcode-list))
+	       "")))
 	(country
 	 (if (plist-member slots :country)
 	     (plist-get slots :country)
-	   (ebdb-read-string "Country"
-			     (if obj (slot-value obj 'country)
-			       ebdb-default-country)
-			     ebdb-country-list))))
+	   (or
+	    (ebdb-with-exit
+	     (ebdb-read-string "Country"
+			       (if obj (slot-value obj 'country)
+				 ebdb-default-country)
+			       ebdb-country-list))
+	    ""))))
 
     (cl-call-next-method
      class
@@ -1905,7 +1918,7 @@ Primary sorts before normal sorts before defunct."
 	(while t
 	  (setq street
 		(ebdb-read-string
-		 (format "Street, line %d: " (1+ n))
+		 (format "Street, line %d" (1+ n))
 		 (nth n streets) ebdb-street-list))
 	  (push street list)
 	  (setq n (1+ n)))
