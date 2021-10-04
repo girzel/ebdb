@@ -360,5 +360,16 @@ itself."
 	    (split-string number "" t))
      (when extension (format " X%s" extension)))))
 
+;;; Singapore
+
+(cl-defmethod ebdb-read-i18n ((_cls (subclass ebdb-field-address))
+			      (_cc (eql sgp))
+			      &optional slots _obj)
+  "Singapore doesn't have localities, cities, or neighborhoods."
+  (setq slots (plist-put slots :locality "")
+	slots (plist-put slots :neighborhood "")
+	slots (plist-put slots :region ""))
+  slots)
+
 (provide 'ebdb-i18n-basic)
 ;;; ebdb-i18n-basic.el ends here
