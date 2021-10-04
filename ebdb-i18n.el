@@ -624,9 +624,8 @@ per ISO 3166-1 alpha 3.")
 ("Zimbabwe" .  263))
   "Mapping of country names to country-code numbers.")
 
-(cl-defgeneric ebdb-read-i18n (class slots obj spec)
+(cl-defgeneric ebdb-read-i18n (class spec slots obj)
   "An internationalized version of `ebdb-read'.
-
 This works the same as `ebdb-read', plus an additional argument
 SPEC.  What SPEC is depends on CLASS, but might be a phone
 country code, or a country symbol, or a script symbol.
@@ -765,7 +764,7 @@ for their symbol representations."
     (setq slots (plist-put slots :country-code country))
     (setq slots
 	  (condition-case nil
-	      (ebdb-read-i18n class slots obj country)
+	      (ebdb-read-i18n class country slots obj)
 	    (cl-no-method
 	     slots)))
     (cl-call-next-method class slots obj)))
