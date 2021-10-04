@@ -2163,7 +2163,7 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
   (setf (slot-value ts slot) (current-time)))
 
 (cl-defmethod ebdb-string ((field ebdb-field-timestamp))
-  (format-time-string ebdb-time-format (slot-value field 'timestamp) t))
+  (format-time-string ebdb-time-format (slot-value field 'timestamp)))
 
 ;;; Creation date field
 
