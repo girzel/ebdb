@@ -288,14 +288,6 @@ itself."
      "\n"
      (car-safe (rassq 'deu (ebdb-i18n-countries))))))
 
-;;; UK
-
-(cl-defmethod ebdb-read-i18n ((_class (subclass ebdb-field-address))
-			      (_cc (eql gbr))
-			      &optional slots _obj)
-  "UK addresses don't need a region."
-  (plist-put slots :region ""))
-
 ;;; India
 
 (defvar ebdb-i18n-india-states
