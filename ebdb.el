@@ -2186,8 +2186,13 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
    (date
     :initarg :date
     :type list
-    :custom (choice (list integer integer)
-		    (list integer integer integer))
+    :custom (choice (list
+		     (integer :tag "Month")
+		     (integer :tag "Day"))
+		    (list
+		     (integer :tag "Month")
+		     (integer :tag "Day")
+		     (integer :tag "Year")))
     :documentation
     "A list of numbers representing a date, either (month day)
     or (month day year)")
@@ -2208,7 +2213,7 @@ This allows for anniversaries where we don't know the year.
 Eventually this method will go away."
   (when (integerp (plist-get slots :date))
     (setq slots (plist-put slots :date
-			   (calendar
+			   (calendar-gregorian-from-absolute
 			    (plist-get slots :date)))))
   (cl-call-next-method field slots))
 
@@ -2324,7 +2329,8 @@ Eventually this method will go away."
 		    (list
 		     (integer :tag "Month")
 		     (integer :tag "Day")
-		     (integer :tag "Year"))))
+		     (integer :tag "Year")))
+    :initform nil)
    (expiration-date
     :initarg :expiration-date
     :type (or nil list)
@@ -2332,7 +2338,8 @@ Eventually this method will go away."
 		    (list
 		     (integer :tag "Month")
 		     (integer :tag "Day")
-		     (integer :tag "Year")))))
+		     (integer :tag "Year")))
+    :initform nil))
   :human-readable "id number")
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-id)) &optional slots obj)
