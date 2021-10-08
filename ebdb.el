@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.8.5
+;; Version: 0.8.6
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>

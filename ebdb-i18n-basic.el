@@ -281,10 +281,9 @@ itself."
     (concat
      (when streets
        (concat (mapconcat #'identity streets "\n") "\n"))
-     (ebdb-concat ", " (ebdb-address-locality address)
-		  (ebdb-address-neighborhood address)
-                  (ebdb-concat " " (ebdb-address-region address)
-			       (ebdb-address-postcode address)))
+     (when postcode
+       (format "%s " postcode))
+     locality
      "\n"
      (car-safe (rassq 'deu (ebdb-i18n-countries))))))
 
