@@ -2022,8 +2022,7 @@ internationalization."
 		  ;; Why aren't we allowing them to change the area
 		  ;; code?
 		  (when area
-		    (format " (%d)" area))
-		  ": "))
+		    (format " (%d)" area))))
 	 (default (when obj (slot-value obj 'number))))
     (ebdb-error-retry
      (ebdb-parse class
