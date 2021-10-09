@@ -55,7 +55,7 @@ the value of `ebdb-default-window-size'."
 
 (cl-defmethod ebdb-mua-message-header ((header string)
 				       &context (major-mode mu4e-view-mode))
-  (set-buffer (if mu4e-view-use-old
+  (set-buffer (if (bound-and-true-p mu4e-view-use-old)
               mu4e~view-buffer-name
               gnus-article-buffer))
   (message-field-value header))
