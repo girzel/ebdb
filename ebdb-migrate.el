@@ -568,7 +568,7 @@ BBDB sets the default of that option."
 				 :address (car-safe mails))
 		  fields)))
 	 ((and (stringp val)
-	       (string-match-p val url-handler-regexp))
+	       (string-match-p url-handler-regexp val))
 	  (push (make-instance 'ebdb-field-url
 			       :url val)
 		fields))
