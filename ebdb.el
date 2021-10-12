@@ -4557,13 +4557,12 @@ that class, or its subclasses.  If PROMPT is given, use that as
 the prompt."
   (let* ((recs (or records (ebdb-records)))
 	 (pairs
-	  (mapcar
+	  (mapcan
 	   (lambda (r)
-	     ;; This is bad, doesn't take into account all the
-	     ;; different strings that might be used to find a record.
-	     (cons
-	      (ebdb-string r)
-	      (ebdb-record-uuid r)))
+	     (mapcar
+	      (lambda (s)
+		(cons s (ebdb-record-uuid r)))
+	      (ebdb-record-alt-names r)))
 	   (if class
 	       (seq-filter
 		(lambda (r)
