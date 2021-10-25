@@ -138,7 +138,7 @@ number, and any remaining as an extension."
 	   slots :region
 	   (cdr (assoc-string
 		 (ebdb-read-string
-		  "State"
+		  "Address state"
 		  (when obj (rassoc (ebdb-address-region obj)
 				    ebdb-i18n-usa-states))
 		  ebdb-i18n-usa-states t)
