@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.8.7
+;; Version: 0.8.8
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -4565,7 +4565,10 @@ the prompt."
 	     (mapcar
 	      (lambda (s)
 		(cons s (ebdb-record-uuid r)))
-	      (ebdb-record-alt-names r)))
+	      (delete-dups
+	       (cons
+		(ebdb-string r)
+		(ebdb-record-alt-names r)))))
 	   (if class
 	       (seq-filter
 		(lambda (r)
