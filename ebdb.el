@@ -1923,7 +1923,9 @@ Primary sorts before normal sorts before defunct."
 	  (push street list)
 	  (setq n (1+ n)))
       ((ebdb-empty quit) nil))
-    (reverse list)))
+    (if list
+	(reverse list)
+      (signal 'ebdb-empty (list 'ebdb-field-address)))))
 
 (cl-defmethod ebdb-string ((address ebdb-field-address))
   (funcall ebdb-default-address-format-function address))
