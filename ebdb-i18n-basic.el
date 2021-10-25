@@ -139,7 +139,8 @@ number, and any remaining as an extension."
 	   (cdr (assoc-string
 		 (ebdb-read-string
 		  "State"
-		  (when obj (ebdb-address-region obj))
+		  (when obj (rassoc (ebdb-address-region obj)
+				    ebdb-i18n-usa-states))
 		  ebdb-i18n-usa-states t)
 		 ebdb-i18n-usa-states)))))
   slots)
