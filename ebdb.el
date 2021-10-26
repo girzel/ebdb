@@ -4993,25 +4993,27 @@ same meaning as in `completing-read'."
 	    (concat str " " (downcase prompt)))
 	   (_ prompt))
 	 ": "))
-  (ebdb-string-trim
-   (if collection
-       ;; Hack: In `minibuffer-local-completion-map' remove
-       ;; the binding of SPC to `minibuffer-complete-word'
-       ;; and of ? to `minibuffer-completion-help'.
-       (let ((completion-ignore-case ebdb-completion-ignore-case))
-	 (minibuffer-with-setup-hook
-             (lambda ()
-               (use-local-map
-		(let ((map (make-sparse-keymap)))
-                  (set-keymap-parent map (current-local-map))
-                  (define-key map " " nil)
-                  (define-key map "?" nil)
-                  map)))
-           (completing-read prompt collection nil require-match init)))
-     (let ((string (read-string prompt init)))
-       (if (string-blank-p string)
-	   (signal 'ebdb-empty (list prompt))
-	 string)))))
+  (let ((string
+	 (ebdb-string-trim
+	  (if collection
+	      ;; Hack: In `minibuffer-local-completion-map' remove
+	      ;; the binding of SPC to `minibuffer-complete-word'
+	      ;; and of ? to `minibuffer-completion-help'.
+	      (let ((completion-ignore-case ebdb-completion-ignore-case))
+		(minibuffer-with-setup-hook
+		    (lambda ()
+		      (use-local-map
+		       (let ((map (make-sparse-keymap)))
+			 (set-keymap-parent map (current-local-map))
+			 (define-key map " " nil)
+			 (define-key map "?" nil)
+			 map)))
+		  (completing-read
+		   prompt collection nil require-match init)))
+	    (read-string prompt init)))))
+    (if (string-blank-p string)
+	(signal 'ebdb-empty (list prompt))
+      string)))
 
 ;; FIXME: Get rid of this add-job and eval-spec stuff.
 (defsubst ebdb-add-job (spec record string)
