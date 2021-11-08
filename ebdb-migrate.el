@@ -438,7 +438,7 @@ BBDB sets the default of that option."
 	  (insert
 	   (mapconcat
 	    (lambda (r)
-	      (format "%S, error: %S" (car r) (cadr r)))
+	      (format "%S\nerror: %S" (car r) (cadr r)))
 	    duds "\n\n"))
 	  (fit-window-to-buffer)
 	  (goto-char (point-min)))
