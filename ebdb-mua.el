@@ -818,8 +818,27 @@ Usually this function is called by the wrapper `ebdb-mua-auto-update'."
 						(cadr address) "@" t))))
 			       ebdb-permanently-ignored-mails :test #'equal)
 		   (unless ebdb-permanent-ignores-file
-		     (message "Mail will be ignored for this session only")
+		     (message
+		      "Mail domain will be ignored for this session only")
 		     (sit-for 2))))
+		((eq task 'add-to-existing)
+		 (let ((existing (ebdb-completing-read-record "Add mail to: "))
+		       (mail-field (condition-case nil
+				       (ebdb-parse ebdb-default-mail-class
+						   (cadr address))
+				     (ebdb-unparseable nil))))
+		   (if mail-field
+		       (progn
+			 (ebdb-record-insert-field existing mail-field 'mail)
+			 (message (format "%s added to %s"
+					  (ebdb-string mail-field)
+					  (ebdb-string existing)))
+			 ;; This is an ugly way of doing it.  Don't we
+			 ;; have some other way of gathering and
+			 ;; consolidating messages so that the user is
+			 ;; sure to see them?
+			 (sit-for 2))
+		     (message (format "No usable address in %s" address)))))
 		((not (eq task 'next))
 		 (dolist (hit (delq nil (nreverse hits)))
 		   (cl-pushnew hit records :test #'equal)
@@ -846,7 +865,7 @@ Honor previous answers such as `!'."
     ;; `ebdb-offer-to-create' holds a character, i.e., a number.
     ;; -- Right now, we only remember "!".
     (when (not (integerp task))
-      (let ((prompt (format "%s is not in EBDB; add? (y,!,n,i,I,s,q,?) "
+      (let ((prompt (format "%s is not in EBDB; add? (y,!,a,n,i,I,s,q,?) "
                             (or (nth 0 ebdb-update-records-address)
                                 (nth 1 ebdb-update-records-address))))
             event)
@@ -871,35 +890,26 @@ Honor previous answers such as `!'."
 	   (throw 'done 'ignore))
 	  ((eq task ?I)
 	   (throw 'done 'ignore-domain))
+	  ((eq task ?a)
+	   (throw 'done 'add-to-existing))
           ((eq task ?s)
            (setq ebdb-update-records-p 'existing)
            (throw 'done 'next))
-          (t ; any other key sequence
-           (save-window-excursion
-             (let* ((buffer (get-buffer-create " *EBDB Help*"))
-                    (window (or (get-buffer-window buffer)
-                                (split-window (get-lru-window)))))
-               (with-current-buffer buffer
-                 (special-mode)
-                 (let (buffer-read-only)
-                   (erase-buffer)
-                   (insert
-                    "Your answer controls how EBDB updates/searches for records.
+          (t
+	   ;; Any other key sequence.
+	   (with-output-to-temp-buffer " *EBDB Help*"
+	     (prin1
+              "Your answer controls how EBDB updates/searches for records.
 
 Type ?  for this help.
-Type y  to add the current record.
-Type !  to add all remaining records.
-Type n  to skip the current record. (You can also type space)
+Type y  to add the current record
+Type !  to add all remaining records
+Type a  to add mail address to an existing record
+Type n  to skip the current record (You can also type space)
 Type i  to permanently ignore this mail address
 Type I  to permanently ignore this mail domain
 Type s  to switch from annotate to search mode.
-Type q  to quit updating records.  No more search or annotation is done.")
-                   (set-buffer-modified-p nil)
-                   (goto-char (point-min)))
-                 (set-window-buffer window buffer)
-                 (fit-window-to-buffer window)))
-             ;; Try again!
-             (ebdb-query-create))))))
+Type q  to quit updating records.  No more search or annotation is done."))))))
 
 
 
