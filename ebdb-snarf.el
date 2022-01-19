@@ -167,10 +167,10 @@ nil."
 	   "\\|*")
 	  "\\)+"))
 	(name-re (concat
-		  "\\("
+		  "\"?\\("
 		  (mapconcat #'identity
 			     ebdb-snarf-name-re "\\|")
-		  "\\)[-\n ,:]*"))
+		  "\\)[-\n\" ,:]*"))
 	field seen-fields)
 
     (with-temp-buffer
