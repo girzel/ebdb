@@ -474,7 +474,9 @@ BBDB sets the default of that option."
 		    ebdb-default-name-class
 		    :surname l-name
 		    :given-names (when f-name (split-string f-name " " nil))
-		    :affix affix)
+		    :affix (if (stringp affix)
+			       affix
+			     (mapconcat #'identity affix " ")))
 		 (make-instance 'ebdb-field-name-simple
 				:name (if f-name
 					  (concat f-name " " l-name)
