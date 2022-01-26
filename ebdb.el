@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
 
-;; Version: 0.8.9
+;; Version: 0.8.10
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -462,6 +462,18 @@ Run with one argument, the database being loaded."
 (defcustom ebdb-after-load-db-hook nil
   "Hook run after each database is loaded.
 Run with one argument, the database being loaded."
+  :group 'ebdb
+  :type 'hook)
+
+(defcustom ebdb-before-save-db-hook nil
+  "Hook run before each database is saved.
+Run with one argument, the database being saved."
+  :group 'ebdb
+  :type 'hook)
+
+(defcustom ebdb-after-save-db-hook nil
+  "Hook run after each database is saved.
+Run with one argument, the database being saved."
   :group 'ebdb
   :type 'hook)
 
@@ -4294,10 +4306,13 @@ their :records slot to nil before calling this method with
 the persistent save, or allow them to propagate.")
 
 (cl-defmethod ebdb-db-save :before ((db ebdb-db) &optional _prompt force)
-  "Prepare DB to be saved."
+  "Prepare DB to be saved.
+Possibly raise an error if the database is not editable.  Lastly
+run `ebdb-before-save-db-hook'."
   (when (and (null force)
 	     (ebdb-db-dirty db))
-    (ebdb-db-editable db)))
+    (ebdb-db-editable db))
+  (run-hook-with-args 'ebdb-before-save-db-hook db))
 
 (cl-defmethod ebdb-db-save ((db ebdb-db) &optional _prompt force)
   "Mark DB and all its records as \"clean\" after saving."
@@ -4317,13 +4332,15 @@ the persistent save, or allow them to propagate.")
 	 (signal 'error err))))))
 
 (cl-defmethod ebdb-db-save :after ((db ebdb-db) &optional _prompt _force)
-  "After saving DB, also delete its auto-save file, if any."
+  "After saving DB, also delete its auto-save file, if any.
+Also run `ebdb-after-save-db-hook'."
   (let ((auto-save-file
 	 (ebdb-db-make-auto-save-file-name
 	  (slot-value db 'file))))
     (setf (slot-value db 'sync-time) (current-time))
     (when (file-exists-p auto-save-file)
-      (delete-file auto-save-file))))
+      (delete-file auto-save-file))
+    (run-hook-with-args 'ebdb-after-save-db-hook db)))
 
 (cl-defgeneric ebdb-db-add-record (db record)
   "Associate RECORD with DB.")
