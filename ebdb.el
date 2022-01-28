@@ -2127,6 +2127,7 @@ internationalization."
   ((notes
     :type string
     :initarg :notes
+    :custom string
     :initform ""
     :documentation "User notes on this contact."))
   :human-readable "notes")
