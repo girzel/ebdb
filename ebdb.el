@@ -962,7 +962,15 @@ Test for presence is done with `equal'."
     :initform nil
     :documentation
     "A list of actions which this field can perform.  Each list
-  element is a cons of string name and function name."))
+  element is a cons of string name and function name.")
+   (comment
+    :type (or null string)
+    :custom (choice (const :tag "No comment" nil)
+		    (string :tag "Comment"))
+    :initarg :comment
+    :initform nil
+    :documentation
+    "Arbitrary comment on this field value"))
   :abstract t :documentation "Abstract class for EBDB fields.
   Subclass this to produce real field types.")
 
