@@ -70,6 +70,7 @@ the value of `ebdb-default-window-size'."
       (define-key notmuch-message-mode-map (kbd "TAB") #'ebdb-complete-mail))))
 
 (add-hook 'notmuch-show-mode-hook #'ebdb-insinuate-notmuch)
+(add-hook 'notmuch-message-mode-hook #'ebdb-insinuate-notmuch)
 
 (provide 'ebdb-notmuch)
 ;;; ebdb-notmuch.el ends here
