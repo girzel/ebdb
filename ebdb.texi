@@ -141,6 +141,7 @@ EBDB Buffers
 * The Basics of ebdb-mode::
 * Customizing Record Display::
 * Marking::
+* Image Display::
 * Exporting/Formatting::
 
 Searching
@@ -1256,6 +1257,7 @@ recreated next time the MUA requests another pop up.
 * The Basics of ebdb-mode::
 * Customizing Record Display::
 * Marking::
+* Image Display::
 * Exporting/Formatting::
 @end menu
 
@@ -1679,6 +1681,46 @@ toggle the mark of the record under point.  @kbd{M-#} will toggle
 the marks of all the records in the buffer, and @kbd{C-#} unmarks
 all records in the buffer.  Many  editing commands can act on multiple
 marked records.
+
+@node Image Display
+@section Image Display
+
+@cindex Displaying images
+@vindex ebdb-image-path
+@vindex ebdb-image-suffixes
+@vindex ebdb-image-additional-plist
+@vindex ebdb-image
+Records can have an image associated with them, by adding an instance
+of @code{ebdb-field-image}.  The actual image is not stored in the
+database, but in some external location which the field instance
+points to.  This pointer can be:
+
+@itemize
+@item
+An absolute file path
+@item
+A relative file path, in which case the function @code{locate-file} will
+be used to find the image, in conjunction with @code{ebdb-image-path} and
+@code{ebdb-image-suffixes}
+@item
+One of the symbols @code{name}, @code{lf-name}, or @code{fl-name}, in which case
+the record's name will be used to construct a relative file path, to
+be used as above.
+@item
+Any other value, in which case the function
+@code{ebdb-field-image-function} will be called with the image field and
+record as arguments.  This function is a generic method, and is
+unimplemented by default.
+@end itemize
+
+The option @code{ebdb-image} controls which of these methods to use by
+default, though separate methods can be chosen for each field
+instance.
+
+Lastly, display of the image can be controlled with the option
+@code{ebdb-image-addition-plist}.  The value should be a plist suitable for
+merging with Emacs' image data, see @ref{Image%20Descriptors,Image Descriptors,,elisp,} for more
+information.
 
 @node Exporting/Formatting
 @section Exporting/Formatting

@@ -320,6 +320,7 @@ called with two arguments: the image field and the record.  The
 function should return either a filename, or actual image data."
   :group 'ebdb-record-edit
   :type '(choice (const :tag "Use built-in function" nil)
+		 (string :tag "File name")
                  (const name)
 		 (const fl-name)
 		 (const lf-name)))
@@ -3277,13 +3278,21 @@ there is no timezone value."
 This function returns an actual image, suitable for display with
 `insert-image'."
   (let* ((image-slot (slot-value field 'image))
+	 (name-instance (slot-value record 'name))
 	 (image
 	  (cond ((stringp image-slot)
 		 image-slot)
-		((eq image-slot 'name)
-		 (ebdb-string record))
+		((memq image-slot '(name fl-name lf-name))
+		 (cond ((or (eq image-slot 'name)
+			    (null (cl-typep name-instance
+					    'ebdb-field-name-complex)))
+			(ebdb-string name-instance))
+		       ((eq image-slot 'lf-name)
+			(ebdb-name-lf name-instance))
+		       ((eq image-slot 'fl-name)
+			(ebdb-name-fl name-instance))))
 		(t
-		 (ebdb-field-image-function ebdb-image record)))))
+		 (ebdb-field-image-function field record)))))
     (when image
       (create-image
        (if (stringp image)

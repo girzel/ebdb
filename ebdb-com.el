@@ -81,6 +81,25 @@ the *EBDB* buffer."
   :type '(choice (const :tag "Always fill" nil)
                  (const :tag "Never fill" t)))
 
+(defcustom ebdb-image-additional-plist '(:max-width (6 . em))
+  "Property list added to image data before display.
+The value should be a property list containing keys meaningful
+for image display; see the info node `(elisp)Image Descriptors'
+for details.
+
+Most often this option will be used to control the sizing of
+displayed images, using one or more of the :width, :height,
+:max-width, :max-height or :scale keys.  The first four keys take
+either an integer value, representing number of pixels, or a pair
+\"(VALUE . em)\", meaning a number of units relative to the
+current font size.  The :scale value should be a number (greater
+than or less than 1) representing a multiple of the original
+image size."
+  :type 'plist
+  :options '(:width :height :max-width :max-height :scale
+		    :ascent :margin :relief :rotation
+		    :transform-smoothing :mask))
+
 (defcustom ebdb-user-menu-commands nil
   "User defined menu entries which should be appended to the EBDB menu.
 This should be a list of menu entries.
@@ -702,10 +721,12 @@ record that actually owns the field."
   (if (display-images-p)
       (progn
 	(require 'image)
-	(propertize
+	(apply
+	 #'propertize
 	 " "
 	 ;; Cribbed from `insert-image'.
-	 (list 'display (ebdb-field-image-get field record)
+	 (list 'display (append (ebdb-field-image-get field record)
+				ebdb-image-additional-plist)
                'rear-nonsticky '(display)
                'keymap image-map)))
     "<img>"))

@@ -118,6 +118,7 @@ EBDB Buffers
 * The Basics of ebdb-mode::
 * Customizing Record Display::
 * Marking::
+* Image Display::
 * Exporting/Formatting::
 
 Searching
@@ -1181,6 +1182,7 @@ existing EBDB buffers.
 * The Basics of ebdb-mode::
 * Customizing Record Display::
 * Marking::
+* Image Display::
 * Exporting/Formatting::
 
 
@@ -1503,7 +1505,7 @@ to get things exactly right, but the general signature looks like:
 ‘compact’, and ‘collapse’.
 
 
-File: ebdb.info,  Node: Marking,  Next: Exporting/Formatting,  Prev: Customizing Record Display,  Up: EBDB Buffers
+File: ebdb.info,  Node: Marking,  Next: Image Display,  Prev: Customizing Record Display,  Up: EBDB Buffers
 
 7.4 Marking
 ===========
@@ -1514,9 +1516,40 @@ records in the buffer, and ‘C-#’ unmarks all records in the buffer.
 Many editing commands can act on multiple marked records.
 
 
-File: ebdb.info,  Node: Exporting/Formatting,  Prev: Marking,  Up: EBDB Buffers
+File: ebdb.info,  Node: Image Display,  Next: Exporting/Formatting,  Prev: Marking,  Up: EBDB Buffers
 
-7.5 Exporting/Formatting
+7.5 Image Display
+=================
+
+Records can have an image associated with them, by adding an instance of
+‘ebdb-field-image’.  The actual image is not stored in the database, but
+in some external location which the field instance points to.  This
+pointer can be:
+
+   • An absolute file path
+   • A relative file path, in which case the function ‘locate-file’ will
+     be used to find the image, in conjunction with ‘ebdb-image-path’
+     and ‘ebdb-image-suffixes’
+   • One of the symbols ‘name’, ‘lf-name’, or ‘fl-name’, in which case
+     the record’s name will be used to construct a relative file path,
+     to be used as above.
+   • Any other value, in which case the function
+     ‘ebdb-field-image-function’ will be called with the image field and
+     record as arguments.  This function is a generic method, and is
+     unimplemented by default.
+
+   The option ‘ebdb-image’ controls which of these methods to use by
+default, though separate methods can be chosen for each field instance.
+
+   Lastly, display of the image can be controlled with the option
+‘ebdb-image-addition-plist’.  The value should be a plist suitable for
+merging with Emacs’ image data, see *note Image Descriptors:
+(elisp)Image%20Descriptors. for more information.
+
+
+File: ebdb.info,  Node: Exporting/Formatting,  Prev: Image Display,  Up: EBDB Buffers
+
+7.6 Exporting/Formatting
 ========================
 
 It is possible to export (referred to as “formatting”) records in
@@ -2423,6 +2456,7 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line   6)
 * Diary integration:                     Diary Integration.   (line   6)
 * disabled of Database:                  The EBDB Database.   (line  31)
+* Displaying images:                     Image Display.       (line   6)
 * e:                                     Editing Existing Fields.
                                                               (line   6)
 * E:                                     Editing Existing Fields.
@@ -2533,6 +2567,10 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
                                                               (line  47)
 * ebdb-ignore-header-list:               Auto-Updating Records.
                                                               (line  73)
+* ebdb-image:                            Image Display.       (line   6)
+* ebdb-image-additional-plist:           Image Display.       (line   6)
+* ebdb-image-path:                       Image Display.       (line   6)
+* ebdb-image-suffixes:                   Image Display.       (line   6)
 * ebdb-info:                             The Basics of ebdb-mode.
                                                               (line 118)
 * ebdb-init-field:                       Init and Delete Methods.
@@ -2764,68 +2802,69 @@ File: ebdb.info,  Node: Index,  Prev: Hacking EBDB,  Up: Top
 
 Tag Table:
 Node: Top807
-Node: Getting Started2680
-Node: Starting a New Database4630
-Node: Migration from BBDB5454
-Node: Record Migration5697
-Node: Variables and Options6759
-Node: Migration from Org Contacts7246
-Node: The EBDB Database8006
-Node: Creating Records12167
-Node: Record classes13248
-Node: Record names13593
-Node: Record Fields14268
-Node: Inserting New Fields14512
-Node: Editing Existing Fields15308
-Node: Deleting Records and Fields15908
-Node: Field Types16304
-Node: Role fields18590
-Node: Tag field20956
-Node: Mail folder field21525
-Node: MUA Interaction21853
-Node: Loading MUA Code22406
-Node: Display and Updating23119
-Node: Pop-up Buffers23885
-Node: Auto-Updating Records26735
-Node: Noticing and Automatic Rules31529
-Node: Interactive Commands33351
-Node: EBDB and MUA summary buffers35825
-Node: Sender name display36343
-Node: Summary buffer marks37570
-Node: Mail Address Completion38749
-Node: A Note on Completion41258
-Node: Specific MUAs41881
-Node: Gnus42029
-Node: Posting Styles42251
-Node: EBDB Buffers43807
-Node: Searching45018
-Node: Changing Search Behavior46732
-Node: The Basics of ebdb-mode47979
-Node: Customizing Record Display52327
-Node: Marking56647
-Node: Exporting/Formatting57074
-Node: Completion58009
-Node: Snarfing58805
-Node: Internationalization60822
-Node: Diary Integration63523
-Node: Mail Aliases64216
-Node: vCard Support64930
-Node: Org Integration65429
-Node: Citing Records67463
-Node: Hacking EBDB68221
-Node: Field Classes70814
-Node: Init and Delete Methods73995
-Node: Manipulating Field Data Programmatically75519
-Node: The Labeled Field Class77231
-Node: The Singleton Field Class78102
-Node: Actions78540
-Node: Custom Field Searching79212
-Node: Fast Lookups82079
-Node: Formatting in the EBDB Buffer83889
-Node: Writing Internationalization Libraries85965
-Node: Writing Integration For New MUAs90381
-Node: Article snarfing93829
-Node: Index94547
+Node: Getting Started2698
+Node: Starting a New Database4648
+Node: Migration from BBDB5472
+Node: Record Migration5715
+Node: Variables and Options6777
+Node: Migration from Org Contacts7264
+Node: The EBDB Database8024
+Node: Creating Records12185
+Node: Record classes13266
+Node: Record names13611
+Node: Record Fields14286
+Node: Inserting New Fields14530
+Node: Editing Existing Fields15326
+Node: Deleting Records and Fields15926
+Node: Field Types16322
+Node: Role fields18608
+Node: Tag field20974
+Node: Mail folder field21543
+Node: MUA Interaction21871
+Node: Loading MUA Code22424
+Node: Display and Updating23137
+Node: Pop-up Buffers23903
+Node: Auto-Updating Records26753
+Node: Noticing and Automatic Rules31547
+Node: Interactive Commands33369
+Node: EBDB and MUA summary buffers35843
+Node: Sender name display36361
+Node: Summary buffer marks37588
+Node: Mail Address Completion38767
+Node: A Note on Completion41276
+Node: Specific MUAs41899
+Node: Gnus42047
+Node: Posting Styles42269
+Node: EBDB Buffers43825
+Node: Searching45054
+Node: Changing Search Behavior46768
+Node: The Basics of ebdb-mode48015
+Node: Customizing Record Display52363
+Node: Marking56683
+Node: Image Display57103
+Node: Exporting/Formatting58511
+Node: Completion59452
+Node: Snarfing60248
+Node: Internationalization62265
+Node: Diary Integration64966
+Node: Mail Aliases65659
+Node: vCard Support66373
+Node: Org Integration66872
+Node: Citing Records68906
+Node: Hacking EBDB69664
+Node: Field Classes72257
+Node: Init and Delete Methods75438
+Node: Manipulating Field Data Programmatically76962
+Node: The Labeled Field Class78674
+Node: The Singleton Field Class79545
+Node: Actions79983
+Node: Custom Field Searching80655
+Node: Fast Lookups83522
+Node: Formatting in the EBDB Buffer85332
+Node: Writing Internationalization Libraries87408
+Node: Writing Integration For New MUAs91824
+Node: Article snarfing95272
+Node: Index95990
 
 End Tag Table
 
