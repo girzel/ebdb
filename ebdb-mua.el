@@ -191,9 +191,9 @@ If t accept all messages.  If nil, does not accept any message.
 See also `ebdb-ignore-header-alist', which has the opposite effect."
   :type '(repeat (cons
                   (choice (symbol :tag "Sender" sender)
-			              (symbol :tag "Recipients" recipients)
-			              (symbol :tag "Sender or recipients" any)
-			              (symbol :tag "Subject" subject))
+			  (symbol :tag "Recipients" recipients)
+			  (symbol :tag "Sender or recipients" any)
+			  (symbol :tag "Subject" subject))
                   (regexp :tag "Regexp to match on header value"))))
 
 (defcustom ebdb-ignore-header-alist nil
