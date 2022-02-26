@@ -805,15 +805,15 @@ more options come into play:
    There are also options governing whether EBDB will consider a mail
 address or not:
 
- -- User Option: ebdb-accept-header-list
+ -- User Option: ebdb-accept-header-alist
      An alist governing which addresses in which headers will be
      accepted.  See docstring for details.
 
- -- User Option: ebdb-ignore-header-list
+ -- User Option: ebdb-ignore-header-alist
      An alist governing which addresses in which headers will be
      ignored.  See docstring for details.
 
- -- User Option: ebdb-user-name-address-re
+ -- User Option: ebdb-user-mail-address-re
      A regular expression matching the user’s own mail address(es).  In
      addition to a regexp, this can also be the symbol ‘message’, in
      which case the value will be copied from

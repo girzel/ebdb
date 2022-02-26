@@ -178,7 +178,7 @@ also consider the email addresses in the remaining headers."
 The format of this alist is
    ((HEADER-TYPE . REGEXP) ...)
 
-Where HEADER-TYPE is one of the symbols 'sender, 'recipients',
+Where HEADER-TYPE is one of the symbols 'sender, 'recipients,
 'any (meaning 'sender or 'recipients), or 'subject.
 
 For example, if
@@ -186,7 +186,7 @@ For example, if
     (subject . \"time travel\"))
 EBDB records are only created for messages sent by people at Maximegalon U.,
 or people posting about time travel.
-If t accept all messages.  If nil, accept all messages.
+If t accept all messages.  If nil, does not accept any message.
 
 See also `ebdb-ignore-header-alist', which has the opposite effect."
   :type '(repeat (cons
