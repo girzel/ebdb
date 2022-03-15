@@ -493,10 +493,19 @@ BBDB sets the default of that option."
     (when phone
       (dolist (p phone)
 	(let ((label (aref p 0))
-	      instance)
+	      instance comment)
 	  (setq instance
 		(if (= 2 (length p))
-		    (ebdb-parse ebdb-default-phone-class (aref p 1))
+		    ;; BBDB let users put arbitrary strings in after
+		    ;; the phone number, when the number itself was a
+		    ;; plain string.  Pull that out and put it in the
+		    ;; `comment' slot.
+		    (let ((p-string (aref p 1)))
+		      (if (null (string-match "\\([^[:digit:]]+\\)\\'" p-string))
+			  (ebdb-parse ebdb-default-phone-class p-string)
+			(setq comment (string-trim (match-string 1 p-string)))
+			(ebdb-parse ebdb-default-phone-class
+				    (substring p-string 0 (match-beginning 1)))))
 		  (make-instance ebdb-default-phone-class
 				 :area-code (ebdb-vphone-area p)
 				 :number (replace-regexp-in-string
@@ -505,6 +514,8 @@ BBDB sets the default of that option."
 						     (ebdb-vphone-exchange p)
 						     (ebdb-vphone-suffix p)))
 				 :extension (ebdb-vphone-extension p))))
+	  (when comment
+	    (setf (slot-value instance 'comment) comment))
 	  (setf (slot-value instance 'label) label)
 	  (when (and (null (slot-value instance 'country-code))
 		     ebdb-default-phone-country)
