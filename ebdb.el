@@ -652,7 +652,7 @@ single string for the surname, and nothing else."
   :type 'boolean)
 
 (defcustom ebdb-lastname-prefixes
- '("von" "de" "di")
+ '("von" "van" "de" "di")
   "List of lastname prefixes recognized in name fields.
 Used to enhance dividing name strings into firstname and lastname parts.
 Case is ignored."
@@ -1490,7 +1490,10 @@ simple or complex name class."
 
 (cl-defmethod ebdb-name-last ((name ebdb-field-name-complex))
   "Return the surname of this name field."
-  (slot-value name 'surname))
+  (with-slots (surname prefix) name
+    (if prefix
+	(concat prefix " " surname)
+      surname)))
 
 (cl-defmethod ebdb-name-given ((name ebdb-field-name-complex) &optional full)
   "Return the given names of this name field.
@@ -1503,11 +1506,28 @@ first one."
 	(car given)))))
 
 (cl-defmethod ebdb-name-lf ((name ebdb-field-name-complex) &optional full)
-  (let ((given-string (ebdb-name-given name full))
-	(prefix (slot-value name 'prefix)))
-    (concat (ebdb-name-last name)
-	    (when prefix prefix)
-	    (when given-string (format ", %s" given-string)))))
+  "Format NAME with surname first.
+Surname comes first, followed by a comma and then the given name
+or names.  Only the first given name is used, unless FULL is
+non-nil.
+
+The name suffix (Jr., III, etc) is not used.  The prefix (di,
+von, van, etc) is output according to an arcane set of rules,
+loosely based on the MLA handbook, about when the prefix should
+be considered part of the surname and when not."
+  (with-slots (surname prefix) name
+    (let* ((given-string (ebdb-name-given name full))
+	   (case-fold-search nil)
+	   (cap-prefix (and prefix
+			    (string-match-p "^[[:upper:]]" prefix))))
+      ;; Basically, if the prefix is capitalized, we treat it as part
+      ;; of the surname, otherwise not.  There's more to it than that,
+      ;; but let's wait for someone to complain
+      (concat (when cap-prefix (concat prefix " "))
+	      surname
+	      (when given-string (format ", %s" given-string))
+	      (when (and prefix (null cap-prefix))
+		(concat " " prefix))))))
 
 (cl-defmethod ebdb-name-fl ((name ebdb-field-name-complex) &optional full)
   (let ((given (ebdb-name-given name full)))
@@ -1569,11 +1589,14 @@ first one."
     (ebdb-parse class (ebdb-read-string "Name" (when obj (ebdb-string obj))) slots)))
 
 (cl-defmethod ebdb-parse ((class (subclass ebdb-field-name-complex)) str &optional slots)
-  (pcase-let ((`(,surname ,given-names ,suffix)
+  (pcase-let ((`(,surname ,given-names ,suffix ,prefix)
 	       (ebdb-divide-name str)))
     (unless (plist-member slots :given-names)
       (setq slots (plist-put slots :given-names
 			     given-names)))
+    (unless (plist-member slots :prefix)
+      (setq slots (plist-put slots :prefix
+			     prefix)))
     (unless (plist-member slots :surname)
       (setq slots (plist-put slots :surname
 			     (or surname ""))))
@@ -5406,15 +5429,16 @@ also be one of the special symbols below.
 
 (defun ebdb-divide-name (string)
   "Divide STRING into its component parts.
-Return name as a list of (SURNAME GIVEN-NAMES SUFFIX).  SURNAME
-is always a string (possibly empty).  GIVEN-NAMES, if present, is
-a list of first names.  GIVEN-NAMES and SUFFIX may be nil.
+Return name as a list of (SURNAME GIVEN-NAMES SUFFIX PREFIX).
+SURNAME is always a string (possibly empty).  GIVEN-NAMES, if
+present, is a list of first names.  GIVEN-NAMES and SUFFIX may be
+nil.
 
 During parsing `case-fold-search' is non-nil, with the exception
 that a string of all-upper-case letters will be assumed (a la UN
 usage) to represent the surname."
   (let ((case-fold-search t)
-	given suffix)
+	given suffix prefix)
     ;; Separate a suffix.
     (when (string-match ebdb-lastname-suffix-re string)
       (setq suffix (match-string 1 string)
@@ -5439,10 +5463,16 @@ usage) to represent the surname."
              (setq given (and (not (zerop (match-beginning 0)))
                               (substring string 0 (match-beginning 0)))
                    string (match-string 1 string)))))
-    (delq nil
-	  (list (ebdb-string-trim string)
-		(and given (split-string given nil t))
-		suffix))))
+    (setq given (split-string given nil t))
+    (cond ((string-match (regexp-opt ebdb-lastname-prefixes) string)
+	   (setq prefix (substring string 0 (match-end 0))
+		 string (substring string (match-end 0))))
+	  ((and (>= (length given) 2)
+		(member-ignore-case (car (last given)) ebdb-lastname-prefixes))
+	   (setq prefix (car (last given))
+		 given (butlast given))))
+    (list (ebdb-string-trim string)
+	  given suffix prefix)))
 
 (defsubst ebdb-record-lessp (record1 record2)
   (string< (ebdb-record-sortkey record1)
