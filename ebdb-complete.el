@@ -35,9 +35,9 @@
 ;;
 ;; This can also be done manually, e.g.:
 ;;
-;; (define-key ebdb-mode-map "q" 'ebdb-complete-quit-window)
+;; (define-key ebdb-mode-map "q" 'ebdb-complete-bury-ebdb-buffer)
 ;; (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
-;; (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window)
+;; (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-bury-ebdb-buffer)
 ;; (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
 ;; (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
 
@@ -79,27 +79,42 @@
             (message "%s, will be push to buffer: \"%s\"" to buffer))
           (puthash :window-point (point) ebdb-complete-info))))))
 
-(defun ebdb-complete-quit-window ()
-  "Quit EBDB window and return message window.
-Before quit, this command will do some clean jobs."
+(define-obsolete-function-alias
+  'ebdb-complete-quit-window
+  'ebdb-complete-bury-ebdb-buffer "1.0.0")
+
+(defun ebdb-complete-bury-ebdb-buffer ()
+  "Hide EBDB buffer and switch to message buffer.
+Before switch, this command will do some clean jobs."
   (interactive)
   ;; Hide header line in EBDB window.
   (with-current-buffer (ebdb-make-buffer-name)
     (setq header-line-format nil))
-  (quit-window)
-  ;; Update window point in Message window.
-  (set-window-point
-   (gethash :window ebdb-complete-info)
-   (gethash :window-point ebdb-complete-info))
+  ;; Hide ebdb buffer and update window point in Message window.
+  (let ((buffer (gethash :buffer ebdb-complete-info))
+        (window (gethash :window ebdb-complete-info))
+        (window-point (gethash :window-point ebdb-complete-info)))
+    (when (and (buffer-live-p buffer)
+               (numberp window-point))
+      (switch-to-buffer buffer)
+      (set-window-point
+       (if (window-live-p window)
+           window
+         (get-buffer-window))
+       window-point)))
   ;; Clean hashtable `ebdb-complete-info'
   (setq ebdb-complete-info (clrhash ebdb-complete-info)))
 
-(defun ebdb-complete-push-mail-and-quit-window ()
-  "Push email-address to Message window and quit EBDB window."
+(define-obsolete-function-alias
+  'ebdb-complete-push-mail-and-quit-window
+  'ebdb-complete-push-mail-and-bury-ebdb-buffer "1.0.0")
+
+(defun ebdb-complete-push-mail-and-bury-ebdb-buffer ()
+  "Push email-address to Message window and hide EBDB buffer."
   (interactive)
   (if (gethash :buffer ebdb-complete-info)
       (progn (call-interactively 'ebdb-complete-push-mail)
-             (ebdb-complete-quit-window))
+             (ebdb-complete-bury-ebdb-buffer))
     (message "Invalid push buffer, Do nothing!!")))
 
 (defun ebdb-complete-grab-word ()
@@ -160,7 +175,7 @@ only useful in Message buffer."
               (format
                (substitute-command-keys
                 (concat
-                 "## Type `\\[ebdb-complete-push-mail]' or `\\[ebdb-complete-push-mail-and-quit-window]' "
+                 "## Type `\\[ebdb-complete-push-mail]' or `\\[ebdb-complete-push-mail-and-bury-ebdb-buffer]' "
                  "to push email to buffer \"%s\". ##"))
                (buffer-name buffer)))))))
 
@@ -186,9 +201,9 @@ when in message body, this command will indent regular text."
 
 (defun ebdb-complete-keybinding-setup ()
   "Setup ebdb-complete Keybindings."
-  (define-key ebdb-mode-map "q" 'ebdb-complete-quit-window)
+  (define-key ebdb-mode-map "q" 'ebdb-complete-bury-ebdb-buffer)
   (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
-  (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-quit-window))
+  (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-bury-ebdb-buffer))
 
 ;;;###autoload
 (defun ebdb-complete-enable ()
