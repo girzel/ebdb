@@ -2700,7 +2700,7 @@ using the function `ebdb-record-completion-table'."
 ;;;###autoload
 (defun ebdb-complete-mail (&optional beg cycle-completion-buffer)
   "In a mail buffer, complete the user name or mail before point.
-Completion happens up to the preceeding colon, comma, or BEG.
+Completion happens up to the preceding colon, comma, or BEG.
 Return non-nil if there is a valid completion, else return nil.
 
 Completion behaviour obeys `ebdb-completion-list' (see there).
@@ -2924,7 +2924,7 @@ as part of the MUA insinuation."
                  (setq done 'unique))
                 (t (setq done 'choose)))))))
 
-    ;; By now, we have considered all possiblities to perform a completion.
+    ;; By now, we have considered all possibilities to perform a completion.
     ;; If nonetheless we haven't done anything so far, consider cycling.
     ;;
     ;; Completion and cycling are really two very separate things.
@@ -2984,7 +2984,7 @@ as part of the MUA insinuation."
       ;; which introduced the variable `completion-base-position'.
       ;; For an older Emacs there is really no satisfactory workaround
       ;; (see GNU Emacs bug #4699), unless we use something radical like
-      ;; advicing `choose-completion-string' (used by EBDB v2).
+      ;; advising `choose-completion-string' (used by EBDB v2).
       (if (string< (substring emacs-version 0 4) "23.2")
           (message "*Completions* buffer requires at least GNU Emacs 23.2")
         ;; `completion-in-region' does not work here as `dwim-completions'

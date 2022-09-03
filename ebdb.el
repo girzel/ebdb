@@ -901,7 +901,7 @@ if CHILD-P is non-nil, one of its subclasses."
 	  (throw '--ebdb-loop-exit-- (nreverse acc)))))))
 
 (defmacro ebdb-debug (&rest body)
-  "Excecute BODY just like `progn' with debugging capability.
+  "Execute BODY just like `progn' with debugging capability.
 Debugging is enabled if variable `ebdb-debug' is non-nil during compile.
 You really should not disable debugging.  But it will speed things up."
   (declare (indent 0))
@@ -5237,7 +5237,7 @@ This strips garbage from the user full NAME string."
       (setq name (substring name (match-end 0))))
 
   (if (string-match "^\\([^@]+\\)@" name)
-      ;; The name is really a mail address and we use the part preceeding "@".
+      ;; The name is really a mail address and we use the part preceding "@".
       ;; Everything following "@" is ignored.
       (setq name (match-string 1 name)))
 
@@ -5304,7 +5304,7 @@ single record, otherwise returns a list."
 		(push record records))))))))
 
 (defun ebdb-hash-p (key record predicate)
-  "Throw `ebdb-hash-ok' non-nil if KEY matches RECORD acording to PREDICATE.
+  "Throw `ebdb-hash-ok' non-nil if KEY matches RECORD according to PREDICATE.
 PREDICATE may take the same values as the elements of `ebdb-completion-list'."
   (if (and (seq-intersection '(name ebdb-field-name) predicate)
            (ebdb-string= key (or (ebdb-record-name-string record) "")))
