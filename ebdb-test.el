@@ -375,7 +375,7 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	   "O'Toole"))
   (should (equal
 	   (slot-value
-	    (ebdb-parse 'ebdb-field-name-complex "Daniel Micahel Blake Day-Lewis")
+	    (ebdb-parse 'ebdb-field-name-complex "Daniel Michael Blake Day-Lewis")
 	    'surname)
 	   "Day-Lewis")))
 
