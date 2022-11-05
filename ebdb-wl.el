@@ -1,6 +1,6 @@
 ;;; ebdb-wl.el --- EBDB interface to Wanderlust  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2017-2022  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 

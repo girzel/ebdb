@@ -1,6 +1,6 @@
 ;;; ebdb-notmuch.el --- EBDB interface to Notmuch    -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2019  Free Software Foundation, Inc.
+;; Copyright (C) 2019-2022  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>

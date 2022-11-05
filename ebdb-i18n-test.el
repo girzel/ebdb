@@ -1,6 +1,6 @@
 ;;; ebdb-i18n-test.el --- Tests for EBDB's internationalization support  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017  Free Software Foundation, Inc.
+;; Copyright (C) 2017-2022  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 

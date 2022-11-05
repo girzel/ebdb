@@ -1,6 +1,6 @@
 ;;; ebdb-helm.el --- Helm integration for EBDB       -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018  Free Software Foundation, Inc.
+;; Copyright (C) 2018-2022  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 

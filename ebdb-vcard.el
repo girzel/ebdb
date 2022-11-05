@@ -1,6 +1,6 @@
 ;;; ebdb-vcard.el --- vCard export and import routine for EBDB  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2021  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
