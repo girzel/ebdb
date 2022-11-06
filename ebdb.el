@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 
-;; Version: 0.8.14
+;; Version: 0.8.15
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -5464,7 +5464,7 @@ usage) to represent the surname."
                               (substring string 0 (match-beginning 0)))
                    string (match-string 1 string)))))
     (setq given (when given (split-string given nil t)))
-    (cond ((string-match (regexp-opt ebdb-lastname-prefixes) string)
+    (cond ((string-match (concat "\\`" (regexp-opt ebdb-lastname-prefixes) " ") string)
 	   (setq prefix (substring string 0 (match-end 0))
 		 string (substring string (match-end 0))))
 	  ((and (>= (length given) 2)

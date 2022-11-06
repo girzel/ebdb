@@ -360,6 +360,11 @@ If it doesn't exist, raise `ebdb-related-unfound'."
 	   "Murakami"))
   (should (equal
 	   (slot-value
+	    (ebdb-parse 'ebdb-field-name-complex "John Reddemann")
+	    'surname)
+	   "Reddemann"))
+  (should (equal
+	   (slot-value
 	    (ebdb-parse 'ebdb-field-name-complex "Fintan O'Toole")
 	    'surname)
 	   "O'Toole"))
