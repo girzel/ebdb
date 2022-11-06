@@ -62,15 +62,17 @@ the value of `ebdb-default-window-size'."
 (cl-defmethod ebdb-popup-window (&context (major-mode notmuch-show-mode))
   (list (get-buffer-window) ebdb-notmuch-window-size))
 
-(defun ebdb-insinuate-notmuch ()
-  "Hook EBDB into Notmuch."
-  (define-key notmuch-show-mode-map ";" ebdb-mua-keymap)
-  (when ebdb-complete-mail
-    (with-eval-after-load "notmuch-message"
-      (define-key notmuch-message-mode-map (kbd "TAB") #'ebdb-complete-mail))))
+(defun ebdb-insinuate-notmuch-show ()
+  "Hook EBDB into Notmuch's `notmuch-show-mode'."
+  (define-key notmuch-show-mode-map ";" ebdb-mua-keymap))
 
-(add-hook 'notmuch-show-mode-hook #'ebdb-insinuate-notmuch)
-(add-hook 'notmuch-message-mode-hook #'ebdb-insinuate-notmuch)
+(defun ebdb-insinuate-notmuch-message ()
+  "Hook EBDB into Notmuch's `notmuch-message-mode'."
+  (when ebdb-complete-mail
+    (define-key notmuch-message-mode-map (kbd "TAB") #'ebdb-complete-mail)))
+
+(add-hook 'notmuch-show-mode-hook #'ebdb-insinuate-notmuch-show)
+(add-hook 'notmuch-message-mode-hook #'ebdb-insinuate-notmuch-message)
 
 (provide 'ebdb-notmuch)
 ;;; ebdb-notmuch.el ends here
