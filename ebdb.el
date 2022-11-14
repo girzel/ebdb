@@ -3915,16 +3915,56 @@ instances to add as part of the role."
     (ebdb-record-insert-field record role 'organizations)
     (ebdb-init-field role record)))
 
-(defclass ebdb-record-mailing-list (ebdb-record eieio-named)
+;;; mailinglist classes
+
+(defclass ebdb-field-list-type (ebdb-field)
+  ((list-type
+    :initarg :list-type
+    :type string
+    :initform "")
+   (actions
+    :initform '()))
+  :human-readable "list type"
+  :documentation "A mailing list's list type (i.e., what kind of
+  system is used to manage the list).")
+
+(cl-defmethod ebdb-read ((list-type (subclass ebdb-field-list-type)) &optional slots obj)
+  (cl-call-next-method list-type
+                       (plist-put slots :list-type
+                                  (ebdb-read-string "List type: "
+                                                    (when obj (slot-value obj 'list-type))))
+                       obj))
+
+(cl-defmethod ebdb-string ((list-type ebdb-field-list-type))
+  (slot-value list-type 'list-type))
+
+(defclass ebdb-record-mailing-list (ebdb-record)
   ((name
-    :type ebdb-field-name-simple
     :initarg :name
+    :type (or null ebdb-field-name-simple)
+    :initform nil)
+   (mail
+    :initarg :mail
+    :type (or null ebdb-field-mail)
+    :initform nil)
+   (list-type
+    :initarg nil
+    :type (or null ebdb-field-list-type)
     :initform nil))
   :allow-nil-initform t
   :documentation "A record class representing a mailing list.")
 
-(cl-defmethod ebdb-read ((_class (subclass ebdb-record-mailing-list)) &optional _db _slots)
-  (error "Mailing list records haven't been implemented yet"))
+(cl-defmethod ebdb-read ((class (subclass ebdb-record-mailing-list)) &optional slots)
+  (let ((name (ebdb-read 'ebdb-field-name-simple slots (plist-get slots :name)))
+        (mail (ebdb-read 'ebdb-field-mail)))
+    (setq slots (plist-put slots :name name))
+    (setq slots (plist-put slots :mail mail))
+    (cl-call-next-method class slots)))
+
+(cl-defmethod ebdb-record-set-sortkey ((record ebdb-record-mailing-list))
+  (setf
+   (ebdb-record-sortkey record)
+   (downcase (ebdb-string (slot-value record 'name)))))
 
 ;;; Merging
 
