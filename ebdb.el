@@ -3915,16 +3915,73 @@ instances to add as part of the role."
     (ebdb-record-insert-field record role 'organizations)
     (ebdb-init-field role record)))
 
-(defclass ebdb-record-mailing-list (ebdb-record eieio-named)
+(defclass ebdb-record-mailing-list (ebdb-record)
   ((name
     :type ebdb-field-name-simple
     :initarg :name
+    :initform nil)
+   (id
+    :type ebdb-field-domain
+    :initarg :id
+    :initform nil)
+   (posting-address
+    :type ebdb-field-mail
+    :initarg :posting-address
+    :initform nil)
+   (unsubscribe-address
+    :type ebdb-field-mail
+    :initarg :unsubscribe-address
+    :initform nil)
+   (unsubscribe-url
+    :type ebdb-field-url
+    :initarg :unsubscribe-url
+    :initform nil)
+   (user-address
+    :type ebdb-field-mail
+    :initarg :user-address
+    :initform nil)
+   (archive-url
+    :type ebdb-field-url
+    :initarg :archive-url
     :initform nil))
   :allow-nil-initform t
   :documentation "A record class representing a mailing list.")
 
-(cl-defmethod ebdb-read ((_class (subclass ebdb-record-mailing-list)) &optional _db _slots)
-  (error "Mailing list records haven't been implemented yet"))
+(cl-defmethod ebdb-read ((class (subclass ebdb-record-mailing-list)) &optional slots)
+  (let ((name (ebdb-read 'ebdb-field-name-simple))
+	(id (let ((ebdb-read-string-override "Mailing list id"))
+	      (ebdb-read 'ebdb-field-domain)))
+
+	(posting-address
+	 (let ((ebdb-read-string-override "Posting address"))
+	   (ebdb-with-exit
+	    (ebdb-read 'ebdb-field-mail))))
+
+	(user-address
+	 (let ((ebdb-read-string-override "Address to post from"))
+	   (ebdb-with-exit
+	    (ebdb-read
+	     'ebdb-field-mail nil
+	     (ebdb-parse 'ebdb-field-mail user-mail-address)))))
+
+	(archive-url
+	 (let ((ebdb-read-string-override "Archive URL"))
+	   (ebdb-with-exit
+	    (ebdb-read 'ebdb-field-url)))))
+    (setq slots (list :name name :id id :posting-address posting-address
+		      :user-address user-address :archive-url archive-url))
+    (cl-call-next-method class slots)))
+
+(cl-defmethod ebdb-init-record ((record ebdb-record-mailing-list))
+  (with-slots (name posting-address) record
+    (ebdb-init-field name record)
+    (ebdb-init-field posting-address record)))
+
+(cl-defmethod ebdb-string ((record ebdb-record-mailing-list))
+  (with-slots (name id) record
+    (if (and name id)
+	(concat name " " id)
+      (or name id))))
 
 ;;; Merging
 
@@ -4748,27 +4805,41 @@ If RECORDS are given, only search those records."
 	(object-assoc label 'label phones)
       phones)))
 
-(defun ebdb-record-mail (record &optional no-roles label defunct)
+(cl-defgeneric ebdb-record-mail (record &optional no-roles label defunct)
   "Return a list of all RECORD's mail fields.
 If NO-ROLES is non-nil, exclude mail fields from RECORD's roles.
 If LABEL is a string, return the mail with that label.  If
 DEFUNCT is non-nil, also consider RECORD's defunct mail
-addresses.  Sort mails by descending priority."
-  (let ((mails (slot-value record 'mail)))
-    (when (and (null no-roles) (slot-exists-p record 'organizations))
-      (dolist (r (slot-value record 'organizations))
-	(when (and (slot-value r 'mail)
-		   (or defunct
-		       (null (slot-value r 'defunct))))
-	  (push (slot-value r 'mail) mails))))
+addresses.  Sort mails by descending priority.")
+
+(cl-defmethod ebdb-record-mail :around ((record ebdb-record)
+					&optional no-roles label defunct)
+  (let ((found (cl-call-next-method)))
     (unless defunct
-      (setq mails
+      (setq found
 	    (seq-filter (lambda (m)
 			  (null (eq (slot-value m 'priority) 'defunct)))
-			mails)))
+			found)))
     (if label
-	(object-assoc label 'label mails)
-      (sort (copy-sequence mails) #'ebdb-field-compare))))
+	(object-assoc label 'label found)
+      (sort (copy-sequence found) #'ebdb-field-compare))))
+
+(cl-defmethod ebdb-record-mail :around ((record ebdb-record-entity)
+					&optional _no-roles _label _defunct)
+  (let ((found (cl-call-next-method)))
+    (append found (slot-value record 'mail))))
+
+(cl-defmethod ebdb-record-mail ((_record ebdb-record-organization)
+				&optional _no-roles _label _defunct)
+  nil)
+
+(cl-defmethod ebdb-record-mail ((record ebdb-record-person))
+  (delete nil (mapcar (lambda (role) (slot-value role 'mail))
+		      (slot-value record 'organizations))))
+
+(cl-defmethod ebdb-record-mail ((record ebdb-record-mailing-list)
+				&optional _no-roles _label _defunct)
+  (slot-value record 'posting-address))
 
 
 
