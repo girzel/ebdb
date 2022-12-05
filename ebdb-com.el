@@ -1262,8 +1262,9 @@ popped up from."
       (if (not (or split-window size))
 	  ;; Not splitting, but buffer isn't visible, just take up
 	  ;; the whole window.
-	  (pop-to-buffer-same-window buf)
-	(setq buffer-window (get-buffer-window buf t))
+	  (progn
+	    (pop-to-buffer-same-window buf)
+	    (setq buffer-window (get-buffer-window buf t)))
 	;; Otherwise split.
 	(setq
 	 buffer-window
