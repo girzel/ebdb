@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
 
-;; Version: 0.8.16
+;; Version: 0.8.17
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -4833,9 +4833,11 @@ addresses.  Sort mails by descending priority.")
 				&optional _no-roles _label _defunct)
   nil)
 
-(cl-defmethod ebdb-record-mail ((record ebdb-record-person))
-  (delete nil (mapcar (lambda (role) (slot-value role 'mail))
-		      (slot-value record 'organizations))))
+(cl-defmethod ebdb-record-mail ((record ebdb-record-person)
+				&optional no-roles _label _defunct)
+  (unless no-roles
+    (delete nil (mapcar (lambda (role) (slot-value role 'mail))
+		       (slot-value record 'organizations)))))
 
 (cl-defmethod ebdb-record-mail ((record ebdb-record-mailing-list)
 				&optional _no-roles _label _defunct)
