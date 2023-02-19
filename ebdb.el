@@ -1271,13 +1271,15 @@ process."
   (let* ((field (cl-call-next-method class slots obj))
 	 (labels (symbol-value (oref-default class label-list)))
 	 (human-readable (ebdb-field-readable-name class))
-	 (label (when obj (slot-value obj 'label))))
+	 (label (or
+		 (when obj (slot-value obj 'label))
+		 (slot-value field 'label))))
     (setq label (ebdb-with-exit
-		    (ebdb-read-string
-		     (if (stringp human-readable)
-			 (format "%s label" (capitalize human-readable))
-		       "Label")
-		     label labels nil)))
+		 (ebdb-read-string
+		  (if (stringp human-readable)
+		      (format "%s label" (capitalize human-readable))
+		    "Label")
+		  label labels nil)))
     (when (and label
 	       (or
 		(member label labels)
@@ -2359,7 +2361,7 @@ Eventually this method will go away."
 ;; Used for recording an ID or tax id number.  Ie, national
 ;; identification numbers, SSNs, TINs, UTRs, and so on.
 
-(defvar ebdb-id-label-list '("SSN" "TIN" "ID" "UTR")
+(defvar ebdb-id-label-list '("SSN" "TIN" "ID" "UTR" "passport")
   "List of known ID labels.")
 
 (defclass ebdb-field-id (ebdb-field-labeled ebdb-field-obfuscated ebdb-field-user)
@@ -2400,15 +2402,19 @@ Eventually this method will go away."
   (unless (plist-get slots :issue-date)
     (setq slots
 	  (plist-put slots :issue-date
-		     (calendar-read-date
-		      nil
-		      (when obj (slot-value obj 'issue-date))))))
+		     (let ((minibuffer-default-prompt-format
+			    " for issue date, default %s"))
+		       (calendar-read-date
+			nil
+			(when obj (slot-value obj 'issue-date)))))))
   (unless (plist-get slots :expiration-date)
     (setq slots
 	  (plist-put slots :expiration-date
-		     (calendar-read-date
-		      nil
-		      (when obj (slot-value obj 'expiration-date))))))
+		     (let ((minibuffer-default-prompt-format
+			     " for expiration date, default %s"))
+		       (calendar-read-date
+			nil
+			(when obj (slot-value obj 'expiration-date)))))))
   (cl-call-next-method class slots obj))
 
 (cl-defmethod ebdb-string ((field ebdb-field-id))
@@ -2931,7 +2937,8 @@ record uuids.")
 ;; Passports
 
 (defclass ebdb-field-passport (ebdb-field-id)
-  ((country
+  ((label :initform "passport")
+   (country
     :type string
     :initarg :country
     :custom string
@@ -2971,10 +2978,14 @@ record uuids.")
 	    country id-number
 	    (format-time-string
 	     "%F" (apply #'encode-time 0 0 0
-			 issue-date))
+			 (nth 1 issue-date)
+			 (nth 0 issue-date)
+			 (last issue-date)))
 	    (format-time-string
 	     "%F" (apply #'encode-time 0 0 0
-			 expiration-date)))))
+			 (nth 1 expiration-date)
+			 (nth 0 expiration-date)
+			 (last expiration-date))))))
 
 ;;; Records
 
