@@ -3494,18 +3494,24 @@ RECORD's FIELD anniversary, relative to NOW-YEAR."
    (append
     `((mail . ebdb-field-mail)
       (phone . ebdb-field-phone)
-      (address . ebdb-field-address))
+      (address . ebdb-field-address)
+      (organizations . ebdb-field-role)
+      (relations . ebdb-field-relation))
     alist)))
 
 (cl-defmethod ebdb-record-current-fields ((record ebdb-record-entity)
 					  &optional f-list all)
-  (with-slots (mail phone address) record
+  (with-slots (mail phone address organizations relations) record
     (dolist (m mail)
       (push `(mail . ,m) f-list))
     (dolist (p phone)
       (push `(phone . ,p) f-list))
     (dolist (a address)
-      (push `(address . ,a) f-list)))
+      (push `(address . ,a) f-list))
+    (dolist (o organizations)
+      (push `(organizations . ,o) f-list))
+    (dolist (r relations)
+      (push `(relations . ,r) f-list)))
   (cl-call-next-method record f-list all))
 
 (cl-defmethod ebdb-record-change-name ((record ebdb-record-entity)
@@ -3647,9 +3653,7 @@ ARGS are passed to `ebdb-compose-mail', and then to
    query
    (append
     '((aka . ebdb-field-name-complex)
-      (aka . ebdb-field-name-simple)
-      (relations . ebdb-field-relation)
-      (organizations . ebdb-field-role))
+      (aka . ebdb-field-name-simple))
     alist)))
 
 (cl-defmethod ebdb-record-firstname ((rec ebdb-record-person) &optional full)
@@ -3662,14 +3666,10 @@ ARGS are passed to `ebdb-compose-mail', and then to
 
 (cl-defmethod ebdb-record-current-fields ((record ebdb-record-person)
 					  &optional f-list all)
-  (with-slots (name aka relations organizations) record
+  (with-slots (name aka) record
     (push `(name . ,name) f-list)
     (dolist (a aka)
-      (push `(aka . ,a) f-list))
-    (dolist (r relations)
-      (push `(relations . ,r) f-list))
-    (dolist (o organizations)
-      (push `(organizations . ,o) f-list)))
+      (push `(aka . ,a) f-list)))
   (cl-call-next-method record f-list all))
 
 (cl-defmethod ebdb-record-change-name ((record ebdb-record-person)

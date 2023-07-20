@@ -2178,7 +2178,7 @@ confirm before deleting the field."
 				     (field ebdb-field-role)
 				     noprompt)
   (let ((person (ebdb-gethash (slot-value field 'record-uuid) 'uuid)))
-    (ebdb-com-delete-field person field noprompt)))
+    (cl-call-next-method source field noprompt)))
 
 (cl-defmethod ebdb-com-delete-field ((record ebdb-record-person)
 				     (field ebdb-field-relation)
