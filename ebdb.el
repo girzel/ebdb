@@ -1543,8 +1543,7 @@ be considered part of the surname and when not."
       (ebdb-string-trim
        (concat (when given
 		 (format "%s " given))
-	       (when prefix
-		 (format "%s " prefix))
+	       ;; Prefix is already included in `ebdb-name-last'.
 	       (ebdb-name-last name)
 	       (when suffix
 		 (format ", %s" suffix)))))))
