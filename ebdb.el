@@ -46,7 +46,7 @@
 ;;; Code:
 
 (require 'timezone)
-(require 'cl-lib)
+(require 'cl-macs)
 (require 'seq)
 (require 'map)
 (require 'calendar)
@@ -603,7 +603,6 @@ This is used for fields which do not have an entry in `ebdb-separator-alist'."
     (phone "[,;]" ", ")
     (address ";\n" ";\n")
     (organization "[,;]" ", ")
-    (affix "[,;]"  ", ")
     (aka "[,;]" ", ")
     (mail "[,;]" ", ")
     (ebdb-field-tags ":" ":")
@@ -1478,17 +1477,24 @@ simple or complex name class."
     :type (or null string)
     :custom (choice (const :tag "No suffix" nil)
 		    (string :tag "Suffix"))
-    :initform nil)
-   ;; What is an affix, actually?
-   (affix
-    :initarg :affix
-    :type (or null string)
-    :custom (choice (const :tag "No affix" nil)
-		    (string :tag "Affix"))
     :initform nil))
   :documentation "A name class for \"complex\", ie structured,
   names."
   :human-readable "alt name")
+
+(cl-defmethod initialize-instance ((field ebdb-field-name-complex) &optional slots)
+  "\"Upgrade\" routine to remove the `affix' slot, which never made sense."
+  ;; Both `prefix' and `suffix' are types of "affix", we didn't need a
+  ;; separate `affix' slot.  Turn it into a `suffix' instead.
+  (let ((aff (plist-get slots :affix))
+	(pref (plist-get slots :prefix)))
+    (when aff
+      (cl-remf slots :affix)
+      (setq slots (plist-put slots :prefix
+			     (if pref
+				 (format "%s %s" pref aff)
+			       aff)))))
+  (cl-call-next-method field slots))
 
 (cl-defmethod ebdb-name-last ((name ebdb-field-name-complex))
   "Return the surname of this name field."
@@ -5470,7 +5476,6 @@ also be one of the special symbols below.
  firstname     Return the first name of RECORD
  lastname      Return the last name of RECORD
  name-lf       Return the full name of RECORD (last name first)
- affix         Return the list of affixes
  aka-all       Return the list of AKAs plus mail-akas.
  mail-aka      Return the list of name parts in mail addresses
  mail-primary  Return the record's primary mail address
@@ -5481,7 +5486,6 @@ also be one of the special symbols below.
   (pcase field
     ('firstname (ebdb-record-firstname record))
     ('lastname (ebdb-record-lastname record))
-    ('affix    (slot-value (slot-value record 'name) 'affix))
     ('mail-canon (ebdb-record-mail-canon record)) ; derived (cached) field
     ;; Mail is special-cased, because mail addresses can come from
     ;; more than one slot.
