@@ -125,7 +125,7 @@
     :type list
     :initarg :header
     :initform  '((ebdb-record-person ebdb-field-role ebdb-field-image)
-		 (ebdb-record-organization ebdb-field-domain ebdb-field-image))
+		 (ebdb-record-organization ebdb-field-domain ebdb-field-role ebdb-field-image))
     :documentation "A list of field classes which will be output
     in the header of the record, grouped by record class type."))
   :abstract t
@@ -332,6 +332,7 @@ combined into a single string."
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-freeform)
 				       (record ebdb-record-organization)
 				       &optional field-list)
+  "Collect all role fields that point at this organization."
   (cl-call-next-method
    fmt record
    (append field-list (gethash (ebdb-record-uuid record) ebdb-org-hashtable))))
@@ -339,6 +340,7 @@ combined into a single string."
 (cl-defmethod ebdb-fmt-collect-fields ((fmt ebdb-formatter-freeform)
 				       (record ebdb-record-person)
 				       &optional field-list)
+  "Collect all relation fields that point at this person."
   (cl-call-next-method
    fmt record
    (append field-list (mapcar #'cdr (gethash (ebdb-record-uuid record)
@@ -414,16 +416,26 @@ multiple instances in a single alist."
 			       (record ebdb-record))
   (pcase-let* ((header-classes (cdr (assoc (eieio-object-class-name record)
 					   (slot-value fmt 'header))))
+	       (record-uuid (ebdb-record-uuid record))
 	       ((map header-fields body-fields)
 		(seq-group-by
 		 (lambda (f)
 		   ;; FIXME: Consider doing the header/body split in
 		   ;; `ebdb-fmt-process-fields', we've already got the
 		   ;; formatter there.
-		   (if (ebdb-foo-in-list-p (alist-get 'class f)
-					   header-classes)
-		       'header-fields
-		     'body-fields))
+		   (let ((cls (alist-get 'class f))
+			 (inst (car (alist-get 'inst f))))
+		    (if (child-of-class-p cls 'ebdb-field-role)
+			;; This is all getting super hacky... If the
+			;; role field is "to" some other record, put
+			;; it in the header.  If it's "to" this
+			;; record, put it in the body.
+			(if (equal record-uuid (slot-value inst 'record-uuid))
+			    'header-fields
+			  'body-fields)
+		      (if (ebdb-foo-in-list-p cls header-classes)
+			  'header-fields
+			'body-fields))))
 		 (ebdb-fmt-process-fields
 		  fmt record
 		  (ebdb-fmt-sort-fields

@@ -1645,7 +1645,7 @@ be considered part of the surname and when not."
     :initform '(("Display role relation" . ebdb-follow-related))))
   :documentation "This class represents a relationship between
   the record which owns this field, and the
-  `ebdb-record-organization' pointed to by the \"organization\"
+  `ebdb-record-organization' pointed to by the \"org-uuid\"
   slot.  The \"mail\" slot holds the record's organizational
   email address.  The \"fields\" slot holds whatever extra fields
   might be relevant to the role."
@@ -3907,11 +3907,17 @@ Currently only works for mail fields."
 	    (ebdb-record-delete-field record m)
 	    (ebdb-init-field r record)))))))
 
-(cl-defmethod ebdb-record-related ((_record ebdb-record-organization)
+(cl-defmethod ebdb-record-related ((record ebdb-record-organization)
 				   (field ebdb-field-role))
-  (or
-   (ebdb-gethash (slot-value field 'record-uuid) 'uuid)
-   (signal 'ebdb-related-unfound (list (slot-value field 'record-uuid)))))
+  ;; Role fields can point to or from an organization; figure out
+  ;; which this is.
+  (let* ((this-uuid (ebdb-record-uuid record))
+	 (rec-uuid (slot-value field 'record-uuid))
+	 (org-uuid (slot-value field 'org-uuid))
+	 (wanted (if (equal this-uuid rec-uuid) org-uuid rec-uuid)))
+    (or
+     (ebdb-gethash wanted 'uuid)
+     (signal 'ebdb-related-unfound (list wanted)))))
 
 (cl-defmethod ebdb-record-add-org-role ((record ebdb-record-person)
 				     (org ebdb-record-organization)
