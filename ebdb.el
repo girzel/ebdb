@@ -46,7 +46,7 @@
 ;;; Code:
 
 (require 'timezone)
-(require 'cl-macs)
+(require 'cl-lib)
 (require 'seq)
 (require 'map)
 (require 'calendar)
