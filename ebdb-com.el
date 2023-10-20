@@ -1,6 +1,6 @@
 ;;; ebdb-com.el --- User-level commands of EBDB      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: convenience, mail
@@ -60,7 +60,7 @@
 
 (defcustom ebdb-dedicated-window nil
   "Make *EBDB* window a dedicated window.
-Allowed values include nil (not dedicated) 'ebdb (weakly dedicated)
+Allowed values include nil (not dedicated) \\='ebdb (weakly dedicated)
 and t (strongly dedicated)."
   :type '(choice (const :tag "EBDB window not dedicated" nil)
                  (const :tag "EBDB window weakly dedicated" ebdb)
@@ -449,10 +449,10 @@ position-marker mark)."
 (defcustom ebdb-default-multiline-include nil
   "A list of field types to include in multiline display.
 Valid list values include all field class names (ebdb-field-*),
-as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
-and 'role, and the special shortcuts 'mail-primary,
-'mail-defunct, 'mail-not-defunct, 'role-defunct, and
-'role-not-defunct.
+as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
+and \\='role, and the special shortcuts \\='mail-primary,
+\\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
+\\='role-not-defunct.
 
 If this option is set, *only* fields listed here will be
 displayed.  Also see `ebdb-default-multiline-exclude'."
@@ -465,10 +465,10 @@ displayed.  Also see `ebdb-default-multiline-exclude'."
     mail-defunct role-defunct)
   "A list of field types to exclude in multiline display.
 Valid list values include all field class names (ebdb-field-*),
-as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
-and 'role, and the special shortcuts 'mail-primary,
-'mail-defunct, 'mail-not-defunct, 'role-defunct, and
-'role-not-defunct.
+as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
+and \\='role, and the special shortcuts \\='mail-primary,
+\\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
+\\='role-not-defunct.
 
 If `ebdb-default-multiline-include' is set, this option will be
 ignored."
@@ -482,10 +482,10 @@ ignored."
 displayed on one line.
 
 Valid list values include all field class names (ebdb-field-*),
-as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
-and 'role, and the special shortcuts 'mail-primary,
-'mail-defunct, 'mail-not-defunct, 'role-defunct, and
-'role-not-defunct."
+as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
+and \\='role, and the special shortcuts \\='mail-primary,
+\\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
+\\='role-not-defunct."
   :type 'list
   :group 'ebdb-record-display)
 
@@ -496,10 +496,10 @@ and 'role, and the special shortcuts 'mail-primary,
 field class will be displayed.
 
 Valid list values include all field class names (ebdb-field-*),
-as well as the shortcuts 'mail, 'phone, 'address, 'notes, 'tags,
-and 'role, and the special shortcuts 'mail-primary,
-'mail-defunct, 'mail-not-defunct, 'role-defunct, and
-'role-not-defunct."
+as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
+and \\='role, and the special shortcuts \\='mail-primary,
+\\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
+\\='role-not-defunct."
   :type 'list
   :group 'ebdb-record-display)
 
@@ -610,7 +610,7 @@ choice: that formatter should be selected explicitly."
 				      (field ebdb-field)
 				      _style
 				      (_record ebdb-record))
-  "Put the 'ebdb-field text property on FIELD.  The value of the
+  "Put the \\='ebdb-field text property on FIELD.  The value of the
 property is the field instance itself."
   (let ((str (cl-call-next-method)))
     ;; If the field fails to produce a string, or produces an empty
@@ -784,7 +784,7 @@ record that actually owns the field."
   "Turn FIELD-ALIST into a string.
 The FIELD-ALIST structure is that returned by
 `ebdb-fmt-collect-fields'.  It is an alist with three keys:
-'class, 'style, and 'inst.
+\\='class, \\='style, and \\='inst.
 
 This function passes the class and field instances to FMT, which
 formats them appropriately, and concatenates them into a

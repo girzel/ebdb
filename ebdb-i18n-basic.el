@@ -118,6 +118,9 @@ number, and any remaining as an extension."
       (args-out-of-range nil))
     slots))
 
+;; Defined in `ebdb.el'
+(defvar ebdb-default-phone-country)
+
 (cl-defmethod ebdb-string-i18n ((phone ebdb-field-phone)
 				(_cc (eql 1)))
   (with-slots (area-code number extension) phone

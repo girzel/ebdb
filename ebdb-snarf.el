@@ -1,6 +1,6 @@
 ;;; ebdb-snarf.el --- Creating or displaying records based on free-form pieces of text  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 ;; Keywords: mail
@@ -187,9 +187,8 @@ nil."
 	       (name (save-excursion
 		       (when (re-search-backward
 			      name-re
-			      (if (bolp)
-				  (line-beginning-position 0)
-				(point-at-bol))
+                              (line-beginning-position
+                               (when (bolp) 0))
 			      t)
 			 ;; If something goes wrong with the
 			 ;; name, don't worry about it.

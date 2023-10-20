@@ -1,6 +1,6 @@
 ;;; ebdb.el --- Contact management package           -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
 ;; Version: 0.8.18
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
@@ -1199,15 +1199,15 @@ RECORD has taken place.  It is up to the class of FIELD to decide
 what, if anything, to do about this.
 
 TYPE is a further indicator of how RECORD was noticed: in normal
-MUAs it is one of the symbols 'sender or 'recipient.")
+MUAs it is one of the symbols \\='sender or \\='recipient.")
 
 (cl-defmethod ebdb-notice-field ((_field ebdb-field)
 				 &optional _type _record)
   "Ask FIELD of RECORD to react to RECORD being \"noticed\".
 When the user receives an email from or cc'd to RECORD, that
 record will call `ebdb-notice' on all its fields, and give them a
-chance to react somehow.  TYPE is one of the symbols 'sender or
-'recipient, indicating which message header the record was found
+chance to react somehow.  TYPE is one of the symbols \\='sender or
+\\='recipient, indicating which message header the record was found
 in."
   nil)
 
@@ -1257,12 +1257,12 @@ in."
   "Prompt for a label for a new object of class CLASS.
 OBJ is used as as a default, and the results are stored in SLOTS.
 
-All subclasses of `ebdb-field-labeled' should have a 'label-list
+All subclasses of `ebdb-field-labeled' should have a \\='label-list
 slot pointing to a var holding known labels for that class.  This
 method checks that the label is known, and asks for confirmation
 if it isn't.
 
-This method also signals the 'ebdb-empty error if the user gives
+This method also signals the \\='ebdb-empty error if the user gives
 an empty string as a label, which allows interruption of the read
 process."
   ;; FIXME: Now that labels are read after the main class, this should
@@ -3056,8 +3056,8 @@ RECORD is responsible for parsing it correctly.")
 
 (cl-defmethod initialize-instance ((record ebdb-record) &optional slots)
   "Initialize RECORD.
-Adds a cache to the cache slot, and ensures the 'timestamp and
-'creation-date slots are filled."
+Adds a cache to the cache slot, and ensures the \\='timestamp and
+\\='creation-date slots are filled."
   ;; This is the very first thing that happens to a record after it is
   ;; created (whether manually or loaded).
   (let ((cache (make-ebdb-record-cache)))
@@ -3123,8 +3123,8 @@ acceptable fields.  Each list element is a cons of the form (SLOT
 . FIELDCLASS), meaning that RECORD-CLASS can accept fields of
 class FIELDCLASS in SLOT.
 
-If QUERY is non-nil, it should be a cons of either '(SLOT . nil),
-or '(nil . FIELDCLASS).  The \"nil\" is the value to query for:
+If QUERY is non-nil, it should be a cons of either \\='(SLOT . nil),
+or \\='(nil . FIELDCLASS).  The \"nil\" is the value to query for:
 either \"which slot can accept this field class\", or \"which
 fieldclass is appropriate for this slot\".  The return value in
 either case is a cons with both slot and fieldclass filled in.")
@@ -4875,7 +4875,7 @@ addresses.  Sort mails by descending priority.")
 However, if both the first name and last name are constituents of
 the address as in John.Doe@Some.Host, and
 `ebdb-mail-avoid-redundancy' is non-nil, then the address is used
-as is.  If `ebdb-mail-avoid-redundancy' is 'mail-only the name is
+as is.  If `ebdb-mail-avoid-redundancy' is \\='mail-only the name is
 never included.  MAIL may be a mail address to be used for
 RECORD.  If MAIL is nil use RECORD's primary mail address.  If
 MAIL is the symbol `prompt', prompt the user for a mail address
@@ -5172,7 +5172,7 @@ same meaning as in `completing-read'."
 (defsubst ebdb-add-job (spec record string)
   "Internal function: Evaluate SPEC for RECORD and STRING.
 If SPEC is a function call it with args RECORD and STRING.  Return value.
-If SPEC is a regexp, return 'query unless SPEC matches STRING.
+If SPEC is a regexp, return \\='query unless SPEC matches STRING.
 Otherwise return SPEC.
 Used with variable `ebdb-add-name' and friends."
   (cond ((functionp spec)
@@ -5183,7 +5183,7 @@ Used with variable `ebdb-add-name' and friends."
 
 (defsubst ebdb-eval-spec (spec prompt)
   "Internal function: Evaluate SPEC using PROMPT.
-Return t if either SPEC equals t, or SPEC equals 'query and `ebdb-silent'
+Return t if either SPEC equals t, or SPEC equals \\='query and `ebdb-silent'
 is non-nil or `y-or-no-p' returns t using PROMPT.
 Used with return values of `ebdb-add-job'."
   (or (eq spec t)
@@ -5715,7 +5715,7 @@ inserting it."
 
 (cl-defgeneric ebdb-records-cite (style records)
   "Return mode-appropriate mail strings for RECORDS.
-STYLE is a symbol, one of 'inline or 'list.  This is interpreted
+STYLE is a symbol, one of \\='inline or \\='list.  This is interpreted
 differently by different major modes; the default looks like
 \"Firstname Lastname <email@address.com>\".
 

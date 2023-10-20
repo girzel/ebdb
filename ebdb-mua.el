@@ -1,6 +1,6 @@
 ;;; ebdb-mua.el --- Mail user agent interaction for EBDB  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -178,8 +178,8 @@ also consider the email addresses in the remaining headers."
 The format of this alist is
    ((HEADER-TYPE . REGEXP) ...)
 
-Where HEADER-TYPE is one of the symbols 'sender, 'recipients,
-'any (meaning 'sender or 'recipients), or 'subject.
+Where HEADER-TYPE is one of the symbols \\='sender, \\='recipients,
+\\='any (meaning \\='sender or \\='recipients), or \\='subject.
 
 For example, if
    ((sender . \"@.*\\.maximegalon\\.edu\")
@@ -201,8 +201,8 @@ See also `ebdb-ignore-header-alist', which has the opposite effect."
 The format of this alist is
    ((HEADER-TYPE . REGEXP) ... )
 
-Where HEADER-TYPE is one of the symbols 'sender, 'recipients',
-'any (meaning 'sender or 'recipients), or 'subject.
+Where HEADER-TYPE is one of the symbols \\='sender, \\='recipients,
+\\='any (meaning \\='sender or \\='recipients), or \\='subject.
 
 For example, if
    ((sender . \"mailer-daemon\")
@@ -225,8 +225,8 @@ See also `ebdb-accept-header-alist', which has the opposite effect."
        (concat "\\<" (regexp-quote (match-string 1 user-mail-address)) "\\>"))
   "A regular expression matching your mail addresses.
 This option can be directly set to a regexp.  It can also be the
-symbol 'message, in which case the value of
-`message-alternative-emails' will be used, or the symbol 'self,
+symbol \\='message, in which case the value of
+`message-alternative-emails' will be used, or the symbol \\='self,
 in which case the value will be constructed from the mail
 addresses of the record pointed to by option `ebdb-record-self'.
 Several EBDB commands extract either the sender or the
@@ -287,7 +287,7 @@ Reads mail addresses to permanently ignore from the option
 (defun ebdb-get-user-mail-address-re ()
   "Get or set the value of variable `ebdb-user-mail-address-re'.
 
-If it's a symbol, check if it's one of 'self or 'message, and set
+If it's a symbol, check if it's one of \\='self or \\='message, and set
 accordingly."
   (cond ((stringp ebdb-user-mail-address-re)
 	 ebdb-user-mail-address-re)
@@ -421,14 +421,14 @@ existing EBDB record or to a record EBDB has created for the mail
 address.
 
 Run with two arguments: the record, and one of the symbols
-'sender or 'recipient.  It is up to the hook function to
+\\='sender or \\='recipient.  It is up to the hook function to
 determine which MUA is used and to act appropriately."
   :type 'hook)
 
 (cl-defgeneric ebdb-notice-record (record type)
   "Inform RECORD that it's been \"noticed\".
 
-TYPE is one of the symbols 'sender or 'recipient, indicating
+TYPE is one of the symbols \\='sender or \\='recipient, indicating
 RECORD's location in the message headers.")
 
 (cl-defmethod ebdb-notice-record ((rec ebdb-record) type)
@@ -1172,7 +1172,7 @@ found in that header.  When ALL is non-nil, behave as if
 
 This command is meant for manually updating records when
 `ebdb-mua-auto-update-p' is nil: it behaves as if that option
-were set to 'query.  The rules of `ebdb-select-message' still
+were set to \\='query.  The rules of `ebdb-select-message' still
 apply, however."
   (interactive)
   ;; Temporarily copy and paste from `ebdb-mua-display-records',

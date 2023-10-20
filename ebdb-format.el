@@ -1,6 +1,6 @@
 ;;; ebdb-format.el --- Formatting/exporting EBDB records  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 
@@ -209,8 +209,8 @@ possibly with text properties attached.")
 (cl-defgeneric ebdb-fmt-field-label (fmt field-or-class style &optional record)
   "Format a field label, using formatter FMT.
 FIELD-OR-CLASS is a field class or a field instance, and STYLE is
-a symbol indicating a style of some sort, such as 'compact or
-'expanded.")
+a symbol indicating a style of some sort, such as \\='compact or
+\\='expanded.")
 
 ;;; Basic method implementations
 
@@ -351,7 +351,7 @@ combined into a single string."
 				    field-list)
   "Sort FIELD-LIST using sort order from FMT.
 First sorts all fields with `ebdb-field-compare', then sorts
-again by the order of each field's class symbol in the 'sort
+again by the order of each field's class symbol in the \\='sort
 slot of FMT."
   (let* ((sort-order (slot-value fmt 'sort))
 	 (catchall (or (seq-position sort-order "_")
@@ -380,8 +380,8 @@ This method assumes that fields in FIELD-LIST have already been
 grouped by field class.
 
 The return value is a list of alists.  Each alist has three keys:
-'class, holding a class symbol, 'style, holding either the symbol
-`collapse' or the symbol `normal', and 'inst, a list of all the
+\\='class, holding a class symbol, \\='style, holding either the symbol
+`collapse' or the symbol `normal', and \\='inst, a list of all the
 instances in this bundle.  The `combine' style works by putting
 multiple instances in a single alist."
   (let (outlist f acc)
