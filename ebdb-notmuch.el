@@ -62,10 +62,12 @@ the value of `ebdb-default-window-size'."
 (cl-defmethod ebdb-popup-window (&context (major-mode notmuch-show-mode))
   (list (get-buffer-window) ebdb-notmuch-window-size))
 
+;;;###autoload
 (defun ebdb-insinuate-notmuch-show ()
   "Hook EBDB into Notmuch's `notmuch-show-mode'."
   (define-key notmuch-show-mode-map ";" ebdb-mua-keymap))
 
+;;;###autoload
 (defun ebdb-insinuate-notmuch-message ()
   "Hook EBDB into Notmuch's `notmuch-message-mode'."
   (when ebdb-complete-mail

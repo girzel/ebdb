@@ -399,6 +399,7 @@ from different senders."
             ;; the EBDB record of the sender.
             (lambda (m) (ebdb-mua-summary-mark (vm-su-from m))))))
 
+;;;###autoload
 (defun ebdb-vm-auto-update ()
   (ebdb-mua-auto-update ebdb-vm-auto-update-p))
 

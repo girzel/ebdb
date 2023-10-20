@@ -67,6 +67,7 @@ the value of `ebdb-default-window-size'."
 (cl-defmethod ebdb-popup-window (&context (major-mode mu4e-view-mode))
   (list (get-buffer-window) ebdb-mu4e-window-size))
 
+;;;###autoload
 (defun ebdb-insinuate-mu4e ()
   "Hook EBDB into mu4e."
   ;; Tackle headers later

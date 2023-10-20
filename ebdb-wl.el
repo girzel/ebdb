@@ -134,6 +134,7 @@ beginning) of the signature separator."
       (when win
 	(quit-window nil win)))))
 
+;;;###autoload
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."
   (define-key wl-summary-mode-map ";" ebdb-mua-keymap)
@@ -142,6 +143,7 @@ beginning) of the signature separator."
     (define-key wl-draft-mode-map (kbd "TAB") #'ebdb-complete-mail))
   (add-hook 'wl-summary-exit-hook #'ebdb-wl-quit-window))
 
+;;;###autoload
 (defun ebdb-wl-auto-update ()
   (ebdb-mua-auto-update ebdb-wl-auto-update-p))
 

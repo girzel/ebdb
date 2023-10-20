@@ -336,6 +336,7 @@ composed to a certain record."
 	    (apply #'message-mail (ebdb-dwim-mail record mail) args)))
       (cl-call-next-method))))
 
+;;;###autoload
 (defun ebdb-insinuate-gnus ()
   "Hook EBDB into Gnus."
   ;; `ebdb-mua-display-sender' fails in *Article* buffers, where
