@@ -1,6 +1,6 @@
 ;;; ebdb-complete.el --- Completion functionality for EBDB      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2022  Free Software Foundation, Inc.
+;; Copyright (C) 2017-2023  Free Software Foundation, Inc.
 
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
