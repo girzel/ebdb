@@ -82,6 +82,8 @@ the value of `ebdb-default-window-size'."
 ;;;###autoload
 (defun ebdb-insinuate-rmail ()
   "Hook EBDB into RMAIL."
+  (unless ebdb-db-list
+    (ebdb-load))
   (define-key rmail-mode-map ";" ebdb-mua-keymap))
 
 ;;;###autoload

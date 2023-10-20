@@ -137,6 +137,8 @@ beginning) of the signature separator."
 ;;;###autoload
 (defun ebdb-insinuate-wl ()
   "Hook EBDB into Wanderlust."
+  (unless ebdb-db-list
+    (ebdb-load))
   (define-key wl-summary-mode-map ";" ebdb-mua-keymap)
   (define-key mime-view-mode-default-map ";" ebdb-mua-keymap)
   (when ebdb-complete-mail

@@ -339,6 +339,8 @@ composed to a certain record."
 ;;;###autoload
 (defun ebdb-insinuate-gnus ()
   "Hook EBDB into Gnus."
+  (unless ebdb-db-list
+    (ebdb-load))
   ;; `ebdb-mua-display-sender' fails in *Article* buffers, where
   ;; `gnus-article-read-summary-keys' provides an additional wrapper
   ;; that restores the window configuration.

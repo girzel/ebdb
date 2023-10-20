@@ -120,6 +120,8 @@ Also fires when postponing a draft."
 
 (defun ebdb-insinuate-message ()
   ;; We don't currently bind the `ebdb-mua-keymap'.
+  (unless ebdb-db-list
+    (ebdb-load))
   (pcase ebdb-complete-mail
     ('capf (progn (add-hook
 		   'completion-at-point-functions
@@ -153,6 +155,8 @@ Also fires when postponing a draft."
 (defun ebdb-insinuate-mail ()
   "Hook EBDB into Mail Mode."
   ;; We don't currently bind the `ebdb-mua-keymap'.
+  (unless ebdb-db-list
+    (ebdb-load))
   (pcase ebdb-complete-mail
     ('capf (progn (add-hook
 		   'completion-at-point-functions

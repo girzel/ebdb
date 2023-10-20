@@ -65,11 +65,15 @@ the value of `ebdb-default-window-size'."
 ;;;###autoload
 (defun ebdb-insinuate-notmuch-show ()
   "Hook EBDB into Notmuch's `notmuch-show-mode'."
+  (unless ebdb-db-list
+    (ebdb-load))
   (define-key notmuch-show-mode-map ";" ebdb-mua-keymap))
 
 ;;;###autoload
 (defun ebdb-insinuate-notmuch-message ()
   "Hook EBDB into Notmuch's `notmuch-message-mode'."
+  (unless ebdb-db-list
+    (ebdb-load))
   (when ebdb-complete-mail
     (define-key notmuch-message-mode-map (kbd "TAB") #'ebdb-complete-mail)))
 

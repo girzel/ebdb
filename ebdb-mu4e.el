@@ -71,6 +71,8 @@ the value of `ebdb-default-window-size'."
 (defun ebdb-insinuate-mu4e ()
   "Hook EBDB into mu4e."
   ;; Tackle headers later
+  (unless ebdb-db-list
+    (ebdb-load))
   (define-key mu4e-view-mode-map ";" ebdb-mua-keymap)
   (add-hook 'message-sent-hook
 	    (lambda ()

@@ -369,6 +369,8 @@ from different senders."
 ;;;###autoload
 (defun ebdb-insinuate-vm ()
   "Hook EBDB into VM."
+  (unless ebdb-db-list
+    (ebdb-load))
   (define-key vm-mode-map ";" ebdb-mua-keymap)
   (define-key vm-mode-map "/" 'ebdb)
   ;; `mail-mode-map' is the parent of `vm-mail-mode-map'.
