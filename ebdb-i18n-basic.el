@@ -235,12 +235,11 @@ itself."
 			 (setq str (replace-regexp-in-string
 				    extension-regexp "" str))))))
 
-    (condition-case nil
-	(setq slots (plist-put
-		     slots
-		     :number
-		     (replace-regexp-in-string
-		      "[^[:digit:]]" "" str))))
+    (setq slots (plist-put
+		 slots
+		 :number
+		 (replace-regexp-in-string
+		  "[^[:digit:]]" "" str)))
     slots))
 
 (defvar ebdb-i18n-german-states

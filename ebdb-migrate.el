@@ -671,7 +671,7 @@ BBDB sets the default of that option."
           (setq migrate (< file-format ebdb-file-format)))
 	(unless (re-search-forward "^\\[" nil t)
 	  (error "Unreadabe BBDB file: no contacts found"))
-	(goto-char (point-at-bol))
+	(goto-char (line-beginning-position))
         ;; narrow the buffer to skip over the rubbish before the first record.
         (narrow-to-region (point) (point-max))
         (let ((modp (buffer-modified-p))

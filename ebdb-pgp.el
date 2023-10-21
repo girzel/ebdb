@@ -161,8 +161,8 @@ reasons why.  Instead, you might want to call the command
 If you do decide to set up automatic signing/encryption hooks,
 use one of the following, as appropriate:
 
- (add-hook 'message-send-hook #'ebdb-pgp)
- (add-hook 'mail-send-hook #'ebdb-pgp)"
+ (add-hook \\='message-send-hook #\\='ebdb-pgp)
+ (add-hook \\='mail-send-hook #\\='ebdb-pgp)"
   (interactive)
   (save-excursion
     (save-restriction

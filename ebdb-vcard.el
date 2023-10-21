@@ -330,11 +330,11 @@ method is just responsible for formatting the record name."
   (with-slots (priority) mail
     (concat
      (cl-call-next-method)
-     (cl-case priority
+     (pcase priority
        ('primary ";PREF=1")
        ('normal ";PREF=10")
        ('defunct ";PREF=100")
-       (t "")))))
+       (_ "")))))
 
 (cl-defmethod ebdb-fmt-field-label ((_f ebdb-formatter-vcard)
 			 	    (field ebdb-field-labeled)

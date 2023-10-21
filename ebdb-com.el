@@ -857,7 +857,7 @@ string."
 			      inst " "))
 		 field-list ", ")))))
 
-(cl-defgeneric ebdb-make-buffer-name (&context (major-mode t))
+(cl-defgeneric ebdb-make-buffer-name (&context major-mode)
   "Return the buffer to be used by EBDB.
 
 This examines the current major mode, and makes a decision from

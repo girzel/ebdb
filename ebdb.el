@@ -4411,7 +4411,7 @@ of sync but has no local modifications.")
 	    nil
 	  (signal err (list db))))))
 
-(cl-defgeneric ebdb-db-save ((db ebdb-db) &optional prompt force)
+(cl-defgeneric ebdb-db-save (db &optional prompt force)
   "Save DB to its persistence file.
 When PROMPT is non-nil, prompt the user before saving (currently
 unimplemented).  When FORCE is non-nil, save regardless of
@@ -4834,8 +4834,8 @@ If LABEL is a string, return the mail with that label.  If
 DEFUNCT is non-nil, also consider RECORD's defunct mail
 addresses.  Sort mails by descending priority.")
 
-(cl-defmethod ebdb-record-mail :around ((record ebdb-record)
-					&optional no-roles label defunct)
+(cl-defmethod ebdb-record-mail :around ((_record ebdb-record)
+					&optional _no-roles label defunct)
   (let ((found (cl-call-next-method)))
     (unless defunct
       (setq found
