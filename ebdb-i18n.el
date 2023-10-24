@@ -49,15 +49,15 @@
   :group 'ebdb)
 
 (defcustom ebdb-i18n-ignorable-scripts '(latin)
-  "A list of script types that should be considered \"standard\";
-  ie, no special handling will be done for them."
-  :type 'list
+  "A list of script types that should be considered \"standard\".
+That is, no special handling will be done for them."
+  :type '(repeat :tag "Script type" symbol)
   :group 'ebdb-i18n)
 
-(defcustom ebdb-i18n-countries-pref-scripts nil
+(defcustom ebdb-i18ngroup-countries-pref-scripts nil
   "An alist equivalent to `ebdb-i18n-countries', but in alternate scripts.
-Ie, each alist element is a cons of a country name, in a
-non-English script, plus the same three-letter symbol as found in
+Each alist element is a cons of a country name, in a non-English
+script, plus the same three-letter symbol as found in
 `ebdb-i18n-countries'.  This is meant to allow country names to
 be listed in the country's own script, but the name can be given
 in any script the user prefers.
@@ -66,7 +66,7 @@ Any country name listed here will be offered along with the
 English version for completion, and will be preferred over the
 English version for display."
 
-  :type 'list
+  :type '(repeat (cons string string))
   :group 'ebdb-i18n)
 
 ;; defvars come first to pacify compiler.

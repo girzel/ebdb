@@ -29,6 +29,11 @@
   ;; For `with-slots'.
   (require 'eieio))
 
+(declare-function ebdb-i18n-countries "ebdb-i18n")
+(declare-function ebdb-with-exit "ebdb")
+(declare-function ebdb-address-region "ebdb")
+(declare-function ebdb-read-string "ebdb")
+
 ;;; USA
 
 (defvar ebdb-i18n-usa-states

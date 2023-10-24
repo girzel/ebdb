@@ -331,7 +331,8 @@ If a string, assume a system executable.  If a symbol, assume an
 elisp function for creating UUIDs.  For instance, `org-id-uuid'
 is a good candidate."
   :group 'ebdb
-  :type '(or string symbol))
+  :type '(choice (string :tag "System executable name")
+                 (function :tag "Function creating UUIDs")))
 
 (defcustom ebdb-record-self nil
   "The UUID of the record representing the user.
@@ -346,7 +347,7 @@ behavior in any way.  You can also require the \"ebdb-i18n\"
 library for more internationally-aware functionality, in which
 case this variable will be ignored."
   :group 'ebdb
-  :type '(list-of string))
+  :type '(repeat string))
 
 (defcustom ebdb-default-address-format-function #'ebdb-format-address-default
   "Default function used to format an address.
@@ -506,7 +507,7 @@ search is not a string, it will not be passed through these
 functions."
 
   :group 'ebdb-search
-  :type 'list)
+  :type '(repeat :tag "String transformation function" function))
 
 (defcustom ebdb-case-fold-search (default-value 'case-fold-search)
   "Value of `case-fold-search' used when searching EBDB records."
@@ -536,7 +537,7 @@ and a record, and returns t if the key is acceptable for
 returning that record."
   :group 'ebdb-search
   :package-version "0.2"
-  :type '(repeat (cons symbol functionp)))
+  :type '(repeat (cons symbol function)))
 
 (defcustom ebdb-signal-program (executable-find "signal-cli")
   "The name of the signal-cli program, if installed.

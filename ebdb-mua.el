@@ -142,7 +142,7 @@ Each element is of the form
 
 The symbol CLASS defines a class of headers.
 The strings HEADER belong to CLASS."
-  :type 'list)
+  :type '(repeat (symbol (list string))))
 
 (defcustom ebdb-message-all-addresses nil
   "If t `ebdb-update-records' returns all mail addresses of a message.

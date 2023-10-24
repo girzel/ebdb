@@ -256,7 +256,7 @@ and as the label to apply to the message.
 If an element is a cons pair (VALUE . LABEL), VALUE is the field value
 to search for and LABEL is the label to apply."
   :group 'ebdb-mua-vm
-  :type 'list)
+  :type '(repeat string))
 
 (defcustom ebdb/vm-auto-add-label-field 'ebdb-mail-alias-field
   "Fields used by `ebdb/vm-auto-add-label' to automatically label messages.
@@ -264,7 +264,7 @@ This is either a single EBDB field or a list of fields that
 `ebdb/vm-auto-add-label' uses to check for labels to apply to a message.
 Defaults to `ebdb-mail-alias-field' which defaults to `mail-alias'."
   :group 'ebdb-mua-vm
-  :type '(choice symbol list))
+  :type '(choice symbol (repeat symbol)))
 
 (defun ebdb/vm-auto-add-label (record)
   "Automatically add labels to VM messages.

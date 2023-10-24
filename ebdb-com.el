@@ -456,7 +456,7 @@ and \\='role, and the special shortcuts \\='mail-primary,
 
 If this option is set, *only* fields listed here will be
 displayed.  Also see `ebdb-default-multiline-exclude'."
-  :type 'list
+  :type '(repeat symbol)
   :group 'ebdb-record-display)
 
 (defcustom ebdb-default-multiline-exclude
@@ -472,7 +472,7 @@ and \\='role, and the special shortcuts \\='mail-primary,
 
 If `ebdb-default-multiline-include' is set, this option will be
 ignored."
-  :type 'list
+  :type '(repeat symbol)
   :group 'ebdb-record-display)
 
 (defcustom ebdb-default-multiline-combine
@@ -486,7 +486,7 @@ as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
 and \\='role, and the special shortcuts \\='mail-primary,
 \\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
 \\='role-not-defunct."
-  :type 'list
+  :type '(repeat symbol)
   :group 'ebdb-record-display)
 
 (defcustom ebdb-default-multiline-collapse
@@ -500,7 +500,7 @@ as well as the shortcuts \\='mail, \\='phone, \\='address, \\='notes, \\='tags,
 and \\='role, and the special shortcuts \\='mail-primary,
 \\='mail-defunct, \\='mail-not-defunct, \\='role-defunct, and
 \\='role-not-defunct."
-  :type 'list
+  :type '(repeat symbol)
   :group 'ebdb-record-display)
 
 (defcustom ebdb-default-multiline-formatter
@@ -516,7 +516,7 @@ and \\='role, and the special shortcuts \\='mail-primary,
 
 (defcustom ebdb-default-oneline-include '(mail-primary)
   "Fields to include in the default oneline view."
-  :type 'list
+  :type '(repeat symbol)
   :group 'ebdb-record-display)
 
 (defcustom ebdb-default-oneline-formatter
@@ -857,7 +857,8 @@ string."
 			      inst " "))
 		 field-list ", ")))))
 
-(cl-defgeneric ebdb-make-buffer-name (&context major-mode)
+;;; This actually takes a &context on major-mode.
+(cl-defgeneric ebdb-make-buffer-name ()
   "Return the buffer to be used by EBDB.
 
 This examines the current major mode, and makes a decision from

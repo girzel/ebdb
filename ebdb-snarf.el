@@ -61,7 +61,7 @@ expression should contain at least one parenthetical group: the
 \(match-string 1)."
 
   :group 'ebdb-snarf
-  :type 'list)
+  :type '(repeat (symbol string)))
 
 (defcustom ebdb-snarf-name-re
   (list "\\(?:[[:upper:]][[:lower:]'-]+[,.[:blank:]]*\\)\\{2,\\}")
@@ -75,7 +75,7 @@ Regular expressions in this list should not include parenthetical
 groups."
 
   :group 'ebdb-snarf
-  :type 'list)
+  :type '(repeat string))
 
 ;;;###autoload
 (defun ebdb-snarf (&optional string start end recs ret)

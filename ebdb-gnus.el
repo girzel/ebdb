@@ -213,15 +213,16 @@ based on the contents of the EBDB.
 Mail address elements are already `regexp-quote'-ed, so we just
 concat them.  Please note: in order that this will work with the
 `nnimap-split-fancy' or `nnmail-split-fancy' methods you have to
-use a backquote template, that is your setting will look like:
+use a backquote template, in other words your Gnus server
+variable will look like:
 
-\(setq nnimap-split-rule  'nnimap-split-fancy
-       nnimap-split-inbox \"INBOX\"
-       nnimap-split-fancy
-       `(| ,@(ebdb/gnus-split-folders-list)
-            ... ))
+\(nnimap \"imap.example.com\"
+        (nnimap-inbox \"INBOX\")
+        (nnimap-split-fancy
+        \\=`(| ,@(ebdb/gnus-split-folders-list)
+            ... )))
 
-Note that `( is the backquote, NOT the quote '(."
+Note that \\=`( is the backquote, NOT the quote \\='(."
   (mapcar
    (lambda (elt)
      (list "From"
