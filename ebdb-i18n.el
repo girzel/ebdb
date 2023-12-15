@@ -51,8 +51,7 @@
 (defcustom ebdb-i18n-ignorable-scripts '(latin)
   "A list of script types that should be considered \"standard\".
 That is, no special handling will be done for them."
-  :type '(repeat :tag "Script type" symbol)
-  :group 'ebdb-i18n)
+  :type '(repeat :tag "Script type" symbol))
 
 (defcustom ebdb-i18ngroup-countries-pref-scripts nil
   "An alist equivalent to `ebdb-i18n-countries', but in alternate scripts.
@@ -66,8 +65,7 @@ Any country name listed here will be offered along with the
 English version for completion, and will be preferred over the
 English version for display."
 
-  :type '(repeat (cons string string))
-  :group 'ebdb-i18n)
+  :type '(repeat (cons string string)))
 
 ;; defvars come first to pacify compiler.
 

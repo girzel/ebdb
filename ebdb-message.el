@@ -64,7 +64,6 @@ configurations.
 
 Note that this should be a different symbol from that used in
 Gnus's article-reading config."
-  :group 'ebdb-mua-message
   :type '(choice (const nil)
 		 (symbol :tag "Window config name")))
 
@@ -167,7 +166,7 @@ Also fires when postponing a draft."
 		   #'ebdb-message-complete-mail-cleanup
 		   nil t)))
     ('nil nil)
-    (_ (define-key mail-mode-map "\M-\t" 'ebdb-complete-mail)))
+    (_ (define-key mail-mode-map "\M-\t" #'ebdb-complete-mail)))
 
   (when ebdb-message-window-configuration
     (add-to-list 'gnus-window-to-buffer

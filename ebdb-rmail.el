@@ -90,9 +90,9 @@ the value of `ebdb-default-window-size'."
 (defun ebdb-rmail-auto-update ()
   (ebdb-mua-auto-update ebdb-rmail-auto-update-p))
 
-(add-hook 'rmail-mode-hook 'ebdb-insinuate-rmail)
+(add-hook 'rmail-mode-hook #'ebdb-insinuate-rmail)
 
-(add-hook 'rmail-show-message-hook 'ebdb-rmail-auto-update)
+(add-hook 'rmail-show-message-hook #'ebdb-rmail-auto-update)
 
 (provide 'ebdb-rmail)
 ;;; ebdb-rmail.el ends here

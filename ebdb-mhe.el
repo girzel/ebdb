@@ -28,7 +28,6 @@
 (require 'mh-e)
 (if (fboundp 'mh-version)
     (require 'mh-comp))              ; For mh-e 4.x
-(require 'advice)
 
 (defgroup ebdb-mua-mhe nil
   "EBDB customizations for mhe."
@@ -144,16 +143,16 @@ Returns the empty string if HEADER is not in the message."
     (ebdb-load))
   (define-key mh-folder-mode-map ";" ebdb-mua-keymap)
   (when ebdb-complete-mail
-    (define-key mh-letter-mode-map "\M-;" 'ebdb-complete-mail)
-    (define-key mh-letter-mode-map "\e\t" 'ebdb-complete-mail)))
+    (define-key mh-letter-mode-map "\M-;" #'ebdb-complete-mail)
+    (define-key mh-letter-mode-map "\e\t" #'ebdb-complete-mail)))
 
 ;;;###autoload
 (defun ebdb-mhe-auto-update ()
   (ebdb-mua-auto-update ebdb-mhe-auto-update-p))
 
-(add-hook 'mh-show-hook 'ebdb-mhe-auto-update)
+(add-hook 'mh-show-hook #'ebdb-mhe-auto-update)
 
-(add-hook 'mh-folder-mode-hook 'ebdb-insinuate-mh)
+(add-hook 'mh-folder-mode-hook #'ebdb-insinuate-mh)
 
 (provide 'ebdb-mhe)
 ;;; ebdb-mhe.el ends here

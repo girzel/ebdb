@@ -81,7 +81,7 @@
 
 (define-obsolete-function-alias
   'ebdb-complete-quit-window
-  'ebdb-complete-bury-ebdb-buffer "1.0.0")
+  #'ebdb-complete-bury-ebdb-buffer "1.0.0")
 
 (defun ebdb-complete-bury-ebdb-buffer ()
   "Hide EBDB buffer and switch to message buffer.
@@ -107,7 +107,7 @@ Before switch, this command will do some clean jobs."
 
 (define-obsolete-function-alias
   'ebdb-complete-push-mail-and-quit-window
-  'ebdb-complete-push-mail-and-bury-ebdb-buffer "1.0.0")
+  #'ebdb-complete-push-mail-and-bury-ebdb-buffer "1.0.0")
 
 (defun ebdb-complete-push-mail-and-bury-ebdb-buffer ()
   "Push email-address to Message window and hide EBDB buffer."
@@ -201,18 +201,18 @@ when in message body, this command will indent regular text."
 
 (defun ebdb-complete-keybinding-setup ()
   "Setup ebdb-complete Keybindings."
-  (define-key ebdb-mode-map "q" 'ebdb-complete-bury-ebdb-buffer)
-  (define-key ebdb-mode-map "\C-c\C-c" 'ebdb-complete-push-mail)
-  (define-key ebdb-mode-map (kbd "RET") 'ebdb-complete-push-mail-and-bury-ebdb-buffer))
+  (define-key ebdb-mode-map "q" #'ebdb-complete-bury-ebdb-buffer)
+  (define-key ebdb-mode-map "\C-c\C-c" #'ebdb-complete-push-mail)
+  (define-key ebdb-mode-map (kbd "RET") #'ebdb-complete-push-mail-and-bury-ebdb-buffer))
 
 ;;;###autoload
 (defun ebdb-complete-enable ()
   "Enable ebdb-complete, it will rebind TAB key in `message-mode-map'."
   (interactive)
   (require 'message)
-  (add-hook 'ebdb-mode-hook 'ebdb-complete-keybinding-setup)
-  (define-key message-mode-map "\t" 'ebdb-complete-message-tab)
-  (define-key mail-mode-map "\t" 'ebdb-complete-message-tab)
+  (add-hook 'ebdb-mode-hook #'ebdb-complete-keybinding-setup)
+  (define-key message-mode-map "\t" #'ebdb-complete-message-tab)
+  (define-key mail-mode-map "\t" #'ebdb-complete-message-tab)
   (message "ebdb-complete: Override EBDB keybindings: `q', `C-c C-c' and `RET'"))
 
 (provide 'ebdb-complete)

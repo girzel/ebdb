@@ -118,26 +118,22 @@ the value of `ebdb-default-window-size'."
 (defcustom ebdb/vm-auto-folder-headers '("From:" "To:" "CC:")
   "The headers used by `ebdb/vm-auto-folder'.
 The order in this list is the order how matching will be performed."
-  :group 'ebdb-mua-vm
   :type '(repeat (string :tag "header name")))
 
 ;;;###autoload
 (defcustom ebdb/vm-auto-folder-field "vm-folder"
   "The xfield which `ebdb/vm-auto-folder' searches for."
-  :group 'ebdb-mua-vm
   :type 'symbol)
 
 ;;;###autoload
 (defcustom ebdb/vm-virtual-folder-field "vm-virtual"
   "The xfield which `ebdb/vm-virtual-folder' searches for."
-  :group 'ebdb-mua-vm
   :type 'symbol)
 
 ;;;###autoload
 (defcustom ebdb/vm-virtual-real-folders nil
   "Real folders used for defining virtual folders.
 If nil use `vm-primary-inbox'."
-  :group 'ebdb-mua-vm
   :type '(choice (const :tag "Use vm-primary-inbox" nil)
                  (repeat (string :tag "Real folder"))))
 
@@ -255,7 +251,6 @@ Its elements may be strings used both as the field value to check for
 and as the label to apply to the message.
 If an element is a cons pair (VALUE . LABEL), VALUE is the field value
 to search for and LABEL is the label to apply."
-  :group 'ebdb-mua-vm
   :type '(repeat string))
 
 (defcustom ebdb/vm-auto-add-label-field 'ebdb-mail-alias-field
@@ -263,7 +258,6 @@ to search for and LABEL is the label to apply."
 This is either a single EBDB field or a list of fields that
 `ebdb/vm-auto-add-label' uses to check for labels to apply to a message.
 Defaults to `ebdb-mail-alias-field' which defaults to `mail-alias'."
-  :group 'ebdb-mua-vm
   :type '(choice symbol (repeat symbol)))
 
 (defun ebdb/vm-auto-add-label (record)
@@ -310,7 +304,7 @@ from different senders."
                             ebdb/vm-auto-add-label-list))))
         (if labels
             (vm-add-message-labels
-             (mapconcat 'identity labels " ") 1)))))
+             (mapconcat #'identity labels " ") 1)))))
 
 
 
@@ -372,11 +366,11 @@ from different senders."
   (unless ebdb-db-list
     (ebdb-load))
   (define-key vm-mode-map ";" ebdb-mua-keymap)
-  (define-key vm-mode-map "/" 'ebdb)
+  (define-key vm-mode-map "/" #'ebdb)
   ;; `mail-mode-map' is the parent of `vm-mail-mode-map'.
   ;; So the following is also done by `ebdb-insinuate-mail'.
   (if (and ebdb-complete-mail (boundp 'vm-mail-mode-map))
-      (define-key vm-mail-mode-map "\M-\t" 'ebdb-complete-mail))
+      (define-key vm-mail-mode-map "\M-\t" #'ebdb-complete-mail))
 
   ;; Set up user field for use in `vm-summary-format'
   ;; (1) Big solution: use whole name
