@@ -909,24 +909,16 @@ You really should not disable debugging.  But it will speed things up."
       `(let ((debug-on-error t))
          ,@body)))
 
-;; These two inlines are used along with `object-add-to-list' and
-;; `object-remove-from-list' -- typically the former are used to
-;; manipulate record cache slots (as caches are structs and can't use
-;; the object-* functions), and the latter to manipulate record slots
-;; directly.  But presumably we could replace all the object-*
-;; functions with the ebdb-* inlines.
+(defmacro ebdb-pushnew (element place)
+  `(cl-pushnew ,element ,place :test #'equal))
 
-(define-inline ebdb-add-to-list (list-var element)
-  "Add ELEMENT to the value of LIST-VAR if it isn't there yet and non-nil.
-The test for presence of ELEMENT is done with `equal'."
-  (inline-quote (when ,element (cl-pushnew ,element ,list-var :test #'equal))))
-
-(define-inline ebdb-remove-from-list (list-var element)
+(defmacro ebdb-delete-from-list (element list-var)
   "Remove ELEMENT from LIST-VAR, if present.
 Test for presence is done with `equal'."
-  (inline-quote (when (and ,element ,list-var)
-		  (setf ,list-var
-			(delete ,element ,list-var)))))
+  (macroexp-let2 nil element element
+    `(when ,element
+       ,(gv-letplace (getter setter) list-var
+	  (funcall setter `(delete ,element ,getter))))))
 
 ;;; Struct and object definitions.
 
@@ -1291,7 +1283,8 @@ process."
 (cl-defmethod ebdb-init-field ((field ebdb-field-labeled) _record)
   "Add FIELD's label to its class label list."
   (let ((label-var (slot-value field 'label-list)))
-    (ebdb-add-to-list (symbol-value label-var) (slot-value field 'label))
+    (cl-pushnew (slot-value field 'label) (symbol-value label-var)
+		:test #'equal)
     (cl-call-next-method)))
 
 (cl-defmethod ebdb-field-label ((field ebdb-field-labeled))
@@ -1566,9 +1559,9 @@ be considered part of the surname and when not."
     ;; Also hash against "first last", as an alternate search
     ;; strategy.
     (ebdb-puthash fl record)
-    (ebdb-add-to-list (ebdb-record-alt-names record) lf-full)
-    (ebdb-add-to-list (ebdb-record-alt-names record) fl-full)
-    (ebdb-add-to-list (ebdb-record-alt-names record) fl))
+    (ebdb-pushnew lf-full (ebdb-record-alt-names record))
+    (ebdb-pushnew fl-full (ebdb-record-alt-names record))
+    (ebdb-pushnew fl (ebdb-record-alt-names record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-complex)
@@ -1579,9 +1572,9 @@ be considered part of the surname and when not."
     (ebdb-remhash lf-full record)
     (ebdb-remhash fl-full record)
     (ebdb-remhash fl record)
-    (ebdb-remove-from-list (ebdb-record-alt-names record) lf-full)
-    (ebdb-remove-from-list (ebdb-record-alt-names record) fl-full)
-    (ebdb-remove-from-list (ebdb-record-alt-names record) fl))
+    (ebdb-delete-from-list lf-full (ebdb-record-alt-names record))
+    (ebdb-delete-from-list fl-full (ebdb-record-alt-names record))
+    (ebdb-delete-from-list fl (ebdb-record-alt-names record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-name-complex))
@@ -1674,8 +1667,8 @@ be considered part of the surname and when not."
       ;; `ebdb-init-field' should change a record's slots.
       (unless role-record-uuid
 	(setf role-record-uuid record-uuid))
-      (ebdb-add-to-list (ebdb-record-organizations record)
-			org-string)
+      (ebdb-pushnew org-string
+		    (ebdb-record-organizations record))
       ;; Init the role mail against the record.
       (when (and mail (slot-value mail 'mail))
 	(ebdb-init-field mail record))
@@ -1704,8 +1697,8 @@ be considered part of the surname and when not."
 		      record-uuid
 		      (object-assoc-list 'record-uuid org-entry))))
       ;; RECORD no long has any roles at ORG.
-      (ebdb-remove-from-list (ebdb-record-organizations record)
-			     org-string)))
+      (ebdb-delete-from-list org-string
+			     (ebdb-record-organizations record))))
   (when (slot-value role 'mail)
     (ebdb-delete-field (slot-value role 'mail) record unload))
   (cl-call-next-method))
@@ -1775,21 +1768,21 @@ be considered part of the surname and when not."
 (cl-defmethod ebdb-init-field ((field ebdb-field-mail) record)
   (with-slots (aka mail) field
     (ebdb-puthash mail record)
-    (ebdb-add-to-list (ebdb-record-mail-canon record) mail)
-    (ebdb-add-to-list ebdb-dwim-completion-cache (ebdb-dwim-mail record field))
+    (ebdb-pushnew mail (ebdb-record-mail-canon record))
+    (ebdb-pushnew (ebdb-dwim-mail record field) ebdb-dwim-completion-cache)
     (when aka
       (ebdb-puthash aka record)
-      (ebdb-add-to-list (ebdb-record-mail-aka record) aka))))
+      (ebdb-pushnew (ebdb-record-mail-aka record) aka))))
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field-mail) record &optional _unload)
   (with-slots (aka mail) field
     (when aka
       (ebdb-remhash aka record)
-      (ebdb-remove-from-list (ebdb-record-mail-aka record) aka))
+      (ebdb-delete-from-list aka (ebdb-record-mail-aka record)))
     (setq ebdb-dwim-completion-cache (delete (ebdb-dwim-mail record field)
 					     ebdb-dwim-completion-cache))
     (ebdb-remhash mail record)
-    (ebdb-remove-from-list (ebdb-record-mail-canon record) mail))
+    (ebdb-delete-from-list mail (ebdb-record-mail-canon record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-string ((mail ebdb-field-mail))
@@ -1898,12 +1891,15 @@ Primary sorts before normal sorts before defunct."
 (cl-defmethod ebdb-init-field ((address ebdb-field-address) _record)
   (with-slots (streets locality region postcode country) address
     (dolist (s streets)
-      (ebdb-add-to-list ebdb-street-list s))
-    (ebdb-add-to-list ebdb-locality-list locality)
+      (ebdb-pushnew s ebdb-street-list))
+    (when locality
+     (ebdb-pushnew locality ebdb-locality-list))
     (when (stringp country)
-     (ebdb-add-to-list ebdb-country-list country))
-    (ebdb-add-to-list ebdb-region-list region)
-    (ebdb-add-to-list ebdb-postcode-list postcode)))
+     (ebdb-pushnew country ebdb-country-list))
+    (when region
+     (ebdb-pushnew region ebdb-region-list))
+    (when postcode
+     (ebdb-pushnew postcode ebdb-postcode-list))))
 
 (cl-defmethod ebdb-read ((class (subclass ebdb-field-address)) &optional slots obj)
   (let* ((ebdb-read-string-override '("Address" . prepend))
@@ -3714,11 +3710,11 @@ FIELD."
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
 			       (record ebdb-record-person))
-  (ebdb-add-to-list
-   (ebdb-record-alt-names record)
+  (ebdb-pushnew
    (format "%s %s"
 	   (ebdb-string name)
-	   (ebdb-name-last (slot-value record 'name))))
+	   (ebdb-name-last (slot-value record 'name)))
+   (ebdb-record-alt-names record))
   ;; FIXME: Also add nickname-plus-surname to the hashtable.
   (cl-call-next-method))
 
@@ -3733,10 +3729,10 @@ FIELD."
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
 				 (record ebdb-record-person)
 				 &optional _unload)
-  (ebdb-remove-from-list
-   (ebdb-record-alt-names record)
+  (ebdb-delete-from-list
    (format "%s %s" (ebdb-string name)
-	   (ebdb-name-last (slot-value record 'name))))
+	   (ebdb-name-last (slot-value record 'name)))
+   (ebdb-record-alt-names record))
   (cl-call-next-method))
 
 ;;; other record subclasses.
@@ -4286,7 +4282,7 @@ DB.")
     (condition-case err
 	(progn
 	  ;; Tell it about the database.
-	  (ebdb-add-to-list (ebdb-record-databases rec) db)
+	  (cl-pushnew db (ebdb-record-databases rec))
 
 	  ;; Make sure its UUID is unique.  Doesn't create new UUIDs.
 	  (ebdb-check-uuid (ebdb-record-uuid rec))
@@ -4340,7 +4336,7 @@ DB.")
 	   ;; database dirty.
 	   (object-remove-from-list d 'records deleter)
 	   (object-add-to-list d 'records keeper)
-	   (ebdb-add-to-list (ebdb-record-databases keeper) d)
+	   (cl-pushnew d (ebdb-record-databases keeper))
 	   (ebdb-delete-record deleter d t)))))))
 
 (cl-defmethod ebdb-db-unload ((db ebdb-db))
@@ -4352,7 +4348,7 @@ that doesn't belong to a different database."
     ;; databases.
     (if (= 1 (length (ebdb-record-databases r)))
 	(ebdb-delete-record r db t)
-      (ebdb-remove-from-list (ebdb-record-databases r) db))))
+      (ebdb-delete-from-list db (ebdb-record-databases r)))))
 
 (defun ebdb-db-reload (db)
   "Reload DB.
@@ -4486,7 +4482,7 @@ Also run `ebdb-after-save-db-hook'."
 	   :uuid (ebdb-make-uuid (slot-value db 'uuid-prefix))))
     (ebdb-puthash (ebdb-record-uuid record) record))
   (object-add-to-list db 'records record)
-  (ebdb-add-to-list (ebdb-record-databases record) db)
+  (cl-pushnew db (ebdb-record-databases record))
   (setf (slot-value db 'dirty) t)
   ;; TODO: Is there any need to sort the DB's records after insertion?
   ;; What about sorting ebdb-record-tracker?
@@ -4494,7 +4490,7 @@ Also run `ebdb-after-save-db-hook'."
 
 (cl-defmethod ebdb-db-remove-record ((db ebdb-db) record)
   (object-remove-from-list db 'records record)
-  (ebdb-remove-from-list (ebdb-record-databases record) db)
+  (ebdb-delete-from-list db (ebdb-record-databases record))
   (setf (slot-value db 'dirty) t)
   record)
 
