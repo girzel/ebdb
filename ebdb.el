@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
 
-;; Version: 0.8.19
+;; Version: 0.8.20
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
@@ -1772,7 +1772,7 @@ be considered part of the surname and when not."
     (ebdb-pushnew (ebdb-dwim-mail record field) ebdb-dwim-completion-cache)
     (when aka
       (ebdb-puthash aka record)
-      (ebdb-pushnew (ebdb-record-mail-aka record) aka))))
+      (ebdb-pushnew aka (ebdb-record-mail-aka record)))))
 
 (cl-defmethod ebdb-delete-field ((field ebdb-field-mail) record &optional _unload)
   (with-slots (aka mail) field
