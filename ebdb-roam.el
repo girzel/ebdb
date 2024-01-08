@@ -27,16 +27,44 @@
 
 ;; org-roam-buffer Section
 
-(defun ebdb-org-roam-section (node)
+(defun ebdb-roam--get-node-text (node)
+  "Get text of NODE."
+  (when-let ((file-path (org-roam-node-file node)))
+    (with-current-buffer (find-buffer-visiting file-path)
+      (buffer-substring-no-properties (org-roam-node-point node) (org-roam-node-marker node)))))
+
+(defun ebdb-roam--get-links (node)
+  "Get non-reference EBDB links for NODE."
+  (let* ((bare-ref (car (org-roam-node-refs node)))
+         (link (and (stringp bare-ref)
+                    (string-match-p "^uuid/" bare-ref)
+                    (substring bare-ref 5))))
+    (cl-remove-duplicates
+     (cl-remove-if-not #'stringp
+                       (cons link
+                             (org-element-map (with-temp-buffer
+                                                (ebdb-roam--get-node-text node)
+                                                (org-mode)
+                                                (org-element-parse-buffer))
+                                 'link
+                               (lambda (link)
+                                 (when-let ((link-type-p (string= "ebdb" (org-element-property :type link)))
+                                            (uuid-link (string-match-p (rx eol "uuid/") (org-element-property :path link))))
+                                   (substring uuid-link 5))))))
+     :test #'string=)))
+
+(defun ebdb-roam-section (node)
   "Show EBDB entry for current NODE."
-  (when-let ((bare-ref (car (org-roam-node-refs node)))
-             (reference (when (string-match-p "^uuid/" bare-ref)
-                          (substring bare-ref 5)))
-             (entry (ebdb-gethash reference 'uuid)))
+  (when-let ((references (ebdb-roam--get-links node))
+             (entries (cl-remove-if #'null
+                                    (mapcar (lambda (reference)
+                                              (ebdb-gethash reference 'uuid))
+                                            references))))
     (magit-insert-section (org-roam-ebdb-section)
-      (magit-insert-heading "Address Book Entry")
-      (insert (ebdb-fmt-record ebdb-default-multiline-formatter entry))
-      (insert "\n\n"))))
+      (magit-insert-heading "Address Book Entries")
+      (dolist (entry entries)
+        (insert (ebdb-fmt-record ebdb-default-multiline-formatter entry))
+        (insert "\n\n")))))
 
 (provide 'ebdb-roam)
 ;;; ebdb-roam.el ends here
