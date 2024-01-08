@@ -61,10 +61,10 @@
 (defun ebdb-roam-section (node)
   "Show EBDB entries for current NODE."
   (when-let ((references (ebdb-roam--get-links node))
-             (entries (cl-remove-if #'null
-                                    (mapcar (lambda (reference)
-                                              (ebdb-gethash reference 'uuid))
-                                            references))))
+             (entries (delq nil
+                            (mapcar (lambda (reference)
+                                      (ebdb-gethash reference 'uuid))
+                                    references))))
     (magit-insert-section (org-roam-ebdb-section)
       (magit-insert-heading "Address Book Entries")
       (dolist (entry entries)
