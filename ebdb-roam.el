@@ -59,7 +59,7 @@
      :test #'string=)))
 
 (defun ebdb-roam-section (node)
-  "Show EBDB entry for current NODE."
+  "Show EBDB entries for current NODE."
   (when-let ((references (ebdb-roam--get-links node))
              (entries (cl-remove-if #'null
                                     (mapcar (lambda (reference)
