@@ -31,7 +31,12 @@
   "Get text of NODE."
   (when-let ((file-path (org-roam-node-file node)))
     (with-current-buffer (find-buffer-visiting file-path)
-      (buffer-substring-no-properties (org-roam-node-point node) (org-roam-node-marker node)))))
+      (org-with-wide-buffer
+       (let ((start (save-excursion
+                      (org-roam-node-point node)
+                      (forward-line 0)
+                      (point))))
+         (buffer-substring-no-properties start (point-max))))))) ;HACK: Not currently a way to get the end of node
 
 (defun ebdb-roam--get-links (node)
   "Get non-reference EBDB links for NODE."
