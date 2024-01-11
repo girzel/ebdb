@@ -27,17 +27,6 @@
 
 ;; org-roam-buffer Section
 
-(defun ebdb-roam--get-node-text (node)
-  "Get text of NODE."
-  (when-let ((file-path (org-roam-node-file node)))
-    (with-current-buffer (find-buffer-visiting file-path)
-      (org-with-wide-buffer
-       (let ((start (save-excursion
-                      (org-roam-node-point node)
-                      (forward-line 0)
-                      (point))))
-         (buffer-substring-no-properties start (point-max))))))) ;HACK: Not currently a way to get the end of node
-
 (defun ebdb-roam--get-links (node)
   "Get non-reference EBDB links for NODE."
   (let* ((bare-ref (car (org-roam-node-refs node)))
@@ -47,10 +36,11 @@
     (cl-remove-duplicates
      (cl-remove-if-not #'stringp
                        (cons link
-                             (org-element-map (with-temp-buffer
-                                                (ebdb-roam--get-node-text node)
-                                                (org-mode)
-                                                (org-element-parse-buffer))
+                             (org-element-map (with-current-buffer (find-buffer-visiting (org-roam-node-file node))
+                                                (save-excursion
+                                                  (org-with-wide-buffer
+                                                   (goto-char (org-roam-node-point node))
+                                                   (org-element-at-point))))
                                  'link
                                (lambda (link)
                                  (when-let ((link-type-p (string= "ebdb" (org-element-property :type link)))
