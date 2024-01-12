@@ -27,21 +27,27 @@
 
 ;; org-roam-buffer Section
 
+(defun ebdb-roam--get-element-for (node)
+  "Get the element containing NODE."
+  (cl-do ((element (with-current-buffer (find-buffer-visiting (org-roam-node-file node))
+                     (save-excursion
+                       (org-with-wide-buffer
+                        (goto-char (org-roam-node-point node))
+                        (org-element-at-point))))
+                   (org-element-parent element)))
+      ((org-element-type-p element 'section) elem)))
+
 (defun ebdb-roam--get-links (node)
   "Get non-reference EBDB links for NODE."
   (let* ((bare-ref (car (org-roam-node-refs node)))
          (link (and (stringp bare-ref)
                     (string-match-p "^uuid/" bare-ref)
-                    (substring bare-ref 5))))
+                    (substring bare-ref 5)))
+         (element (ebdb-roam--get-element-for node)))
     (cl-remove-duplicates
      (cl-remove-if-not #'stringp
                        (cons link
-                             (org-element-map (with-current-buffer (find-buffer-visiting (org-roam-node-file node))
-                                                (save-excursion
-                                                  (org-with-wide-buffer
-                                                   (goto-char (org-roam-node-point node))
-                                                   (org-element-at-point))))
-                                 'link
+                             (org-element-map element 'link
                                (lambda (link)
                                  (when-let ((link-type-p (string= "ebdb" (org-element-property :type link)))
                                             (uuid-link (string-match-p (rx eol "uuid/") (org-element-property :path link))))
