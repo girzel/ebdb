@@ -61,14 +61,21 @@ type, if none, uuid links are searched for."
                    query-results))
      :test #'string=)))
 
-(cl-defun ebdb-roam-section (node)
-  "Show EBDB entries for current NODE."
+(cl-defun ebdb-roam-section (node &key (heading "Address Book Entries")
+                                  (record-formatter ebdb-default-multiline-formatter))
+  "Show EBDB entries for current NODE.
+
+Appearance can be controlled with the HEADING and
+RECORD-FORMATTER keyword arguments.  The former is a string to be
+inserted (defaults to \"Address Book Entries\").  The latter
+should be an instance of `ebdb-formatter', with a default of
+`ebdb-default-multiline-formatter'."
   (when-let ((uuid-list (ebdb-roam--get-links node)))
     (magit-insert-section (org-roam-ebdb-section)
-      (magit-insert-heading "Address Book Entries")
+      (magit-insert-heading header)
       (dolist (uuid uuid-list)
         (when-let ((entry (ebdb-gethash uuid 'uuid)))
-          (insert (ebdb-fmt-record ebdb-default-multiline-formatter entry))))
+          (insert (ebdb-fmt-record record-formatter entry))))
       (insert "\n"))))
 
 (provide 'ebdb-roam)
