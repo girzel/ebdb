@@ -27,45 +27,49 @@
 
 ;; org-roam-buffer Section
 
-(defun ebdb-roam--get-element-for (node)
-  "Get the element containing NODE."
-  (cl-do ((element (with-current-buffer (find-buffer-visiting (org-roam-node-file node))
-                     (save-excursion
-                       (org-with-wide-buffer
-                        (goto-char (org-roam-node-point node))
-                        (org-element-at-point))))
-                   (org-element-parent element)))
-      ((org-element-type-p element 'section) elem)))
+(defun ebdb-roam--get-links (node &optional link-type)
+  "Get EBDB links of LINK-TYPE for Org Roam NODE.
 
-(defun ebdb-roam--get-links (node)
-  "Get non-reference EBDB links for NODE."
-  (let* ((bare-ref (car (org-roam-node-refs node)))
-         (link (and (stringp bare-ref)
-                    (string-match-p "^uuid/" bare-ref)
-                    (substring bare-ref 5)))
-         (element (ebdb-roam--get-element-for node)))
+NODE can be either an instance of `org-roam-node' or an Org Roam
+node id (i.e., a UUID).  LINK-TYPE can be any valid EBDB link
+type, if none, uuid links are searched for."
+  (let* ((node (if (org-roam-node-p node)
+                   node
+                 (org-roam-node-from-id node)))
+         (uuid (org-roam-node-id node))
+         (query-result-links (org-roam-db-query [:select [dest]
+                                                         :from links
+                                                         :where (and (= type "ebdb")
+                                                                     (= source $s1))]
+                                                uuid))
+         (query-result-refs (org-roam-db-query [:select [ref]
+                                                        :from refs
+                                                        :where (and (= type "ebdb")
+                                                                    (= node_id $s1))]
+                                               uuid))
+         (query-results (append query-result-refs query-result-links))
+         (desired-type (or link-type "uuid")))
     (cl-remove-duplicates
-     (cl-remove-if-not #'stringp
-                       (cons link
-                             (org-element-map element 'link
-                               (lambda (link)
-                                 (when-let ((link-type-p (string= "ebdb" (org-element-property :type link)))
-                                            (uuid-link (string-match-p (rx eol "uuid/") (org-element-property :path link))))
-                                   (substring uuid-link 5))))))
+     (delq nil
+           (mapcar (lambda (row)
+                     (unless (null row)
+                       (let* ((dest (car row))
+                              (split-dest (split-string dest "/"))
+                              (dest-type (car split-dest))
+                              (dest-address (cadr split-dest)))
+                         (and (string-equal dest-type desired-type) dest-address))))
+                   query-results))
      :test #'string=)))
 
-(defun ebdb-roam-section (node)
+(cl-defun ebdb-roam-section (node)
   "Show EBDB entries for current NODE."
-  (when-let ((references (ebdb-roam--get-links node))
-             (entries (delq nil
-                            (mapcar (lambda (reference)
-                                      (ebdb-gethash reference 'uuid))
-                                    references))))
+  (when-let ((uuid-list (ebdb-roam--get-links node)))
     (magit-insert-section (org-roam-ebdb-section)
       (magit-insert-heading "Address Book Entries")
-      (dolist (entry entries)
-        (insert (ebdb-fmt-record ebdb-default-multiline-formatter entry))
-        (insert "\n\n")))))
+      (dolist (uuid uuid-list)
+        (when-let ((entry (ebdb-gethash uuid 'uuid)))
+          (insert (ebdb-fmt-record ebdb-default-multiline-formatter entry))))
+      (insert "\n"))))
 
 (provide 'ebdb-roam)
 ;;; ebdb-roam.el ends here
