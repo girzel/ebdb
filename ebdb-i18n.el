@@ -53,7 +53,7 @@
 That is, no special handling will be done for them."
   :type '(repeat :tag "Script type" symbol))
 
-(defcustom ebdb-i18ngroup-countries-pref-scripts nil
+(defcustom ebdb-i18n-countries-pref-scripts nil
   "An alist equivalent to `ebdb-i18n-countries', but in alternate scripts.
 Each alist element is a cons of a country name, in a non-English
 script, plus the same three-letter symbol as found in
