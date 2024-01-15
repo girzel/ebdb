@@ -1,6 +1,6 @@
 ;;; ebdb-roam.el --- Org-Roam integration for EBDB   -*- lexical-binding: t; -*-
 
-;; Author: Samuel W. Flint <swflint@flintfam.org>
+;; Authors: Samuel W. Flint <swflint@flintfam.org>, hokreb
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
