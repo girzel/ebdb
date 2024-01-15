@@ -20,9 +20,9 @@
 
 ;;; Code:
 
-(require 'org-roam-node)
 (require 'ebdb)
 (require 'ebdb-format)
+(require 'org-roam-node)
 
 
 ;; org-roam-buffer Section
@@ -61,6 +61,7 @@ type, if none, uuid links are searched for."
                    query-results))
      :test #'string=)))
 
+;;;###autoload
 (cl-defun ebdb-roam-section (node &key (heading "Address Book Entries")
                                   (record-formatter ebdb-default-multiline-formatter))
   "Show EBDB entries for current NODE.
