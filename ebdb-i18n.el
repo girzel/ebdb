@@ -1,6 +1,6 @@
 ;;; ebdb-i18n.el --- Internationalization support for EBDB  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2023  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2024  Free Software Foundation, Inc.
 
 ;; Author: Eric Abrahamsen <eric@ericabrahamsen.net>
 

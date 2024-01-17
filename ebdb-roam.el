@@ -1,5 +1,7 @@
 ;;; ebdb-roam.el --- Org-Roam integration for EBDB   -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2024  Free Software Foundation, Inc.
+
 ;; Authors: Samuel W. Flint <swflint@flintfam.org>, hokreb
 ;; Keywords:
 
