@@ -5404,7 +5404,7 @@ PREDICATE may take the same values as the elements of `ebdb-completion-list'."
   (if (seq-intersection '(organization ebdb-field-role) predicate)
       (mapc (lambda (organization) (if (ebdb-string= key organization)
                                        (throw 'ebdb-hash-ok 'organization)))
-            (ebdb-record-organization record)))
+            (ebdb-record-organizations record)))
   (if (memq 'alt-names predicate)
       (mapc (lambda (name) (if (ebdb-string= key (ebdb-string name))
                               (throw 'ebdb-hash-ok 'alt-names)))
