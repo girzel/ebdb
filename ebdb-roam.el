@@ -24,7 +24,7 @@
 
 (require 'ebdb)
 (require 'ebdb-format)
-(require 'org-roam-node)
+(require 'org-roam-node nil t) ;It's normal if this package is missing!
 
 
 ;; org-roam-buffer Section
@@ -75,7 +75,7 @@ should be an instance of `ebdb-formatter', with a default of
 `ebdb-default-multiline-formatter'."
   (when-let ((uuid-list (ebdb-roam--get-links node)))
     (magit-insert-section (org-roam-ebdb-section)
-      (magit-insert-heading header)
+      (magit-insert-heading heading)
       (dolist (uuid uuid-list)
         (when-let ((entry (ebdb-gethash uuid 'uuid)))
           (insert (ebdb-fmt-record record-formatter entry))))
