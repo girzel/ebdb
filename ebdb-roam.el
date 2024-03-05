@@ -23,8 +23,15 @@
 ;;; Code:
 
 (require 'ebdb)
+(require 'ebdb-com)
 (require 'ebdb-format)
-(require 'org-roam-node nil t) ;It's normal if this package is missing!
+(require 'org-roam-node nil t) ; It's normal if this package is missing!
+(declare-function org-roam-db-query "org-roam")
+(declare-function org-roam-node-id "org-node")
+(declare-function org-roam-node-from-id "org-node")
+(declare-function org-roam-node-p "org-node")
+(declare-function magit-insert-section "magit-section")
+(declare-function magit-insert-heading "magit-section")
 
 
 ;; org-roam-buffer Section
@@ -74,12 +81,13 @@ inserted (defaults to \"Address Book Entries\").  The latter
 should be an instance of `ebdb-formatter', with a default of
 `ebdb-default-multiline-formatter'."
   (when-let ((uuid-list (ebdb-roam--get-links node)))
-    (magit-insert-section (org-roam-ebdb-section)
-      (magit-insert-heading heading)
-      (dolist (uuid uuid-list)
-        (when-let ((entry (ebdb-gethash uuid 'uuid)))
-          (insert (ebdb-fmt-record record-formatter entry))))
-      (insert "\n"))))
+    (with-suppressed-warnings ((free-vars org-roam-ebdb-section))
+      (magit-insert-section org-roam-ebdb-section
+	(magit-insert-heading heading)
+	(dolist (uuid uuid-list)
+          (when-let ((entry (ebdb-gethash uuid 'uuid)))
+            (insert (ebdb-fmt-record record-formatter entry))))
+	(insert "\n")))))
 
 (provide 'ebdb-roam)
 ;;; ebdb-roam.el ends here
