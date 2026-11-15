@@ -3716,7 +3716,7 @@ FIELD."
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
 			       (record ebdb-record-person))
   "Add a \"nickname-plus-lastname\" to the hash table."
-  (when-let ((last-name (ebdb-record-lastname record)))
+  (when-let* ((last-name (ebdb-record-lastname record)))
     (ebdb-puthash (concat (ebdb-string name) " " last-name)
 		  record))
   (cl-call-next-method))

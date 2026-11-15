@@ -80,12 +80,12 @@ RECORD-FORMATTER keyword arguments.  The former is a string to be
 inserted (defaults to \"Address Book Entries\").  The latter
 should be an instance of `ebdb-formatter', with a default of
 `ebdb-default-multiline-formatter'."
-  (when-let ((uuid-list (ebdb-roam--get-links node)))
+  (when-let* ((uuid-list (ebdb-roam--get-links node)))
     (with-suppressed-warnings ((free-vars org-roam-ebdb-section))
       (magit-insert-section org-roam-ebdb-section
 	(magit-insert-heading heading)
 	(dolist (uuid uuid-list)
-          (when-let ((entry (ebdb-gethash uuid 'uuid)))
+          (when-let* ((entry (ebdb-gethash uuid 'uuid)))
             (insert (ebdb-fmt-record record-formatter entry))))
 	(insert "\n")))))
 
