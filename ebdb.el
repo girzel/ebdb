@@ -3705,31 +3705,30 @@ FIELD."
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
 			       (record ebdb-record-person))
-  (let ((nick-and-surname
-	 (format "%s %s"
-	    (ebdb-string name)
-	    (ebdb-record-lastname record))))
+  "Add a \"nickname-plus-lastname\" to the hash table."
+  (when-let* ((last-name (ebdb-record-lastname record))
+	      (nick-and-surname
+	       (format "%s %s"
+		       (ebdb-string name)
+		       (ebdb-record-lastname record))))
+    (ebdb-puthash nick-and-surname record)
     (ebdb-pushnew
      nick-and-surname
-     (ebdb-record-alt-names record))
-    (ebdb-puthash nick-and-surname record))
-  (cl-call-next-method))
-
-(cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
-			       (record ebdb-record-person))
-  "Add a \"nickname-plus-lastname\" to the hash table."
-  (when-let* ((last-name (ebdb-record-lastname record)))
-    (ebdb-puthash (concat (ebdb-string name) " " last-name)
-		  record))
+     (ebdb-record-alt-names record)))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-delete-field ((name ebdb-field-name-simple)
 				 (record ebdb-record-person)
 				 &optional _unload)
+  (when-let* ((last-name (ebdb-record-lastname record))
+	      (nick-and-surname
+	       (format "%s %s"
+		       (ebdb-string name)
+		       (ebdb-record-lastname record))))
+  (ebdb-remhash nick-and-surname record)
   (ebdb-delete-from-list
-   (format "%s %s" (ebdb-string name)
-	   (ebdb-name-last (slot-value record 'name)))
-   (ebdb-record-alt-names record))
+   nick-and-surname
+   (ebdb-record-alt-names record)))
   (cl-call-next-method))
 
 ;;; other record subclasses.
