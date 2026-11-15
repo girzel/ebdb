@@ -3705,12 +3705,14 @@ FIELD."
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
 			       (record ebdb-record-person))
-  (ebdb-pushnew
-   (format "%s %s"
-	   (ebdb-string name)
-	   (ebdb-name-last (slot-value record 'name)))
-   (ebdb-record-alt-names record))
-  ;; FIXME: Also add nickname-plus-surname to the hashtable.
+  (let ((nick-and-surname
+	 (format "%s %s"
+	    (ebdb-string name)
+	    (ebdb-record-lastname record))))
+    (ebdb-pushnew
+     nick-and-surname
+     (ebdb-record-alt-names record))
+    (ebdb-puthash nick-and-surname record))
   (cl-call-next-method))
 
 (cl-defmethod ebdb-init-field ((name ebdb-field-name-simple)
