@@ -1,8 +1,8 @@
 ;;; ebdb.el --- Contact management package           -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016-2024  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2026  Free Software Foundation, Inc.
 
-;; Version: 0.8.22
+;; Version: 0.8.23
 ;; Package-Requires: ((emacs "25.1") (seq "2.15"))
 
 ;; Maintainer: Eric Abrahamsen <eric@ericabrahamsen.net>
