@@ -194,12 +194,12 @@ Faces are used to font-lock their names in the *EBDB* buffer."
   :group 'ebdb-faces)
 
 (defface ebdb-mail-defunct
-  '((t :inherit ebdb-defunct ebdb-mail-default))
+  '((t :inherit (ebdb-defunct ebdb-mail-default)))
   "Face used to display a defunct mail address."
   :group 'ebdb-faces)
 
 (defface ebdb-mail-primary
-  '((t (:inherit font-lock-builtin-face ebdb-mail-default)))
+  '((t (:inherit (font-lock-builtin-face ebdb-mail-default))))
   "Face used to display a record's primary mail address."
   :group 'ebdb-faces)
 
