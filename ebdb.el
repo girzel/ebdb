@@ -2199,7 +2199,7 @@ If optional arg REPLACE is non-nil, replace any existing notes.")
 (defclass ebdb-field-timestamp (ebdb-field)
   ((timestamp
     :initarg :timestamp
-    :type list
+    :type (or list integer)
     :initform nil))
   :human-readable "timestamp")
 

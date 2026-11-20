@@ -448,6 +448,18 @@ BBDB sets the default of that option."
 	(message "Migrating records from BBDB... %d records migrated"
 		 (length c-records))))))
 
+(defun ebdb-migrate--parse-time-string (str)
+  "Convert BBDB time string STR to a list-format Lisp timestamp.
+Emacs 32 and later return integer or (TICKS . HZ) timestamps from
+`encode-time' by default; convert to the (HIGH LOW USEC PSEC) form
+when `time-convert' is available."
+  (let ((time (apply #'encode-time
+		     (mapcar (lambda (el) (or el 0))
+			     (parse-time-string str)))))
+    (if (fboundp 'time-convert)
+	(time-convert time 'list)
+      time)))
+
 (defun ebdb-migrate-vector-to-class (v)
   "Migrate a single vector-style BBDB record V to EBDB style EIEIO object."
   ;; In the vector version, vector elements were:
@@ -551,24 +563,10 @@ BBDB sets the default of that option."
 	(setf (slot-value (car (last mails)) 'priority) 'primary)))
     (when ts
       (setq ts (make-instance 'ebdb-field-timestamp
-			      :timestamp
-			      (apply #'encode-time
-				     (mapcar
-				      (lambda (el)
-					(if (null el)
-					    0
-					  el))
-				      (parse-time-string ts))))))
+			      :timestamp (ebdb-migrate--parse-time-string ts))))
     (when c-date
       (setq c-date (make-instance 'ebdb-field-creation-date
-				  :timestamp
-				  (apply #'encode-time
-					 (mapcar
-					  (lambda (el)
-					    (if (null el)
-						0
-					      el))
-					  (parse-time-string c-date))))))
+				  :timestamp (ebdb-migrate--parse-time-string c-date))))
     (when xfields
       (dolist (x xfields)
 	(setq lab (car x)
@@ -585,7 +583,7 @@ BBDB sets the default of that option."
 	  (push (make-instance 'ebdb-field-url
 			       :url val)
 		fields))
-	 ((eq lab 'anniversary)
+	 ((memq lab (list 'anniversary 'birthday))
 	  (let* ((bits (split-string val " "))
 		 (date-bits (split-string (car bits) "-")))
 	    (push (make-instance 'ebdb-field-anniversary
@@ -593,7 +591,7 @@ BBDB sets the default of that option."
 					(string-to-number (nth 1 date-bits))
 					(string-to-number (nth 2 date-bits))
 					(string-to-number (car date-bits)))
-				 :label (cadr bits))
+				 :label (if (eq lab 'birthday) "birthday" (cadr bits)))
 		  fields)))
 	 ((eq lab 'notes)
 	  (setq notes (make-instance 'ebdb-field-notes
