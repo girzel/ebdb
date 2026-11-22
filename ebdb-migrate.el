@@ -574,10 +574,11 @@ when `time-convert' is available."
 	(cond
 	 ((eq lab 'mail-alias)
 	  (when mails
-	    (push (make-instance 'ebdb-field-mail-alias
-				 :alias val
-				 :address (car-safe mails))
-		  fields)))
+	    (dolist (ma (split-string val "," t " +"))
+	      (push (make-instance 'ebdb-field-mail-alias
+				   :alias ma
+				   :address (car-safe mails))
+		    fields))))
 	 ((and (stringp val)
 	       (string-match-p url-handler-regexp val))
 	  (push (make-instance 'ebdb-field-url
